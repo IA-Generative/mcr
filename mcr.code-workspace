@@ -1,0 +1,33 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "path": "./mcr-frontend"
+    },
+    {
+      "path": "./mcr-gateway"
+    },
+    {
+      "path": "./mcr-generation"
+    },
+    {
+      "path": "./mcr-core"
+    },
+    {
+      "path": "./mcr-capture-worker"
+    },
+    {
+      "path": "../mirai-infra",
+      "name": "mcr-infra"
+    },
+    {
+      "path": "../mirai-values",
+      "name": "mcr-infra-values"
+    }
+  ],
+  "settings": {
+    "i18n-ally.keystyle": "nested"
+  }
+}

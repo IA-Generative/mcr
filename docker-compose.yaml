@@ -1,0 +1,351 @@
+services:
+  redis:
+    image: redis:8.0.3-alpine3.21
+    container_name: mcr-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --save 20 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - mcr-network
+
+  flower:
+    image: mher/flower:latest
+    container_name: mcr-flower
+    restart: always
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://${REDIS_HOST}:${REDIS_PORT}/0
+      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/1
+      - FLOWER_UNAUTHENTICATED_API=true
+    depends_on:
+      - redis
+    networks:
+      - mcr-network
+
+  transcription_worker:
+    build:
+      context: ./mcr-core
+      target: worker-dev
+    container_name: mcr-transcription-worker
+    depends_on:
+      - redis
+    restart: always
+    environment:
+      - STT_MODEL=${STT_MODEL}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_EXTERNAL_ENDPOINT=${S3_EXTERNAL_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_REGION=${S3_REGION}
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - ENV_MODE=${ENV_MODE}
+      - MCR_FRONTEND_URL=${MCR_FRONTEND_URL}
+      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
+      - SENTRY_CORE_DSN=${SENTRY_CORE_DSN}
+      - SENTRY_TRANSCRIPTION_DSN=${SENTRY_TRANSCRIPTION_DSN}
+      - COLORIZE=${COLORIZE}
+      - LEVEL=${LEVEL}
+      - DISPLAY_REQUEST_ID=${DISPLAY_REQUEST_ID}
+      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+
+    ports:
+      - "5672:5672"
+      # Debugging port
+      - "7002:7002"
+    volumes:
+      - ./mcr-core/mcr_meeting:/app/mcr_meeting
+    networks:
+      - mcr-network
+
+  postgres:
+    image: postgres:17.6
+    container_name: mcr-postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mcr-network
+
+  orchestrator:
+    build:
+      context: ./mcr-gateway
+      target: dev
+    container_name: mcr-orchestrator
+    ports:
+      - "8000:8000"
+      # Debugging port
+      - "5678:5678"
+    volumes:
+      - ./mcr-gateway/mcr_gateway:/app/mcr_gateway
+    networks:
+      - mcr-network
+    environment:
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
+      - ENV_MODE=${ENV_MODE}
+      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
+
+  meeting:
+    build:
+      context: ./mcr-core
+      target: api-dev
+    container_name: mcr-core
+    ports:
+      - "8001:8001"
+      # Debugging port
+      - "7001:7001"
+    depends_on:
+      - postgres
+    networks:
+      - mcr-network
+    volumes:
+      - ./mcr-core/mcr_meeting:/app/mcr_meeting
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_EXTERNAL_ENDPOINT=${S3_EXTERNAL_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_REGION=${S3_REGION}
+      - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - ENV_MODE=${ENV_MODE}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_SENDER=${SMTP_SENDER}
+      - SMTP_ENDPOINT=${SMTP_ENDPOINT}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_SECRET=${SMTP_SECRET}
+      - MCR_FRONTEND_URL=${MCR_FRONTEND_URL}
+      - PARALLEL_PODS_COUNT=${PARALLEL_PODS_COUNT}
+      - AVERAGE_TRANSCRIPTION_TIME_MINUTES=${AVERAGE_TRANSCRIPTION_TIME_MINUTES}
+      - AVERAGE_MEETING_DURATION_HOURS=${AVERAGE_MEETING_DURATION_HOURS}
+      - SENTRY_CORE_DSN=${SENTRY_CORE_DSN}
+      - UNLEASH_URL=${UNLEASH_URL}
+      - UNLEASH_INSTANCE_ID=${UNLEASH_INSTANCE_ID}
+      - SENTRY_TRANSCRIPTION_DSN=${SENTRY_TRANSCRIPTION_DSN}
+      - COLORIZE=${COLORIZE}
+      - LEVEL=${LEVEL}
+      - DISPLAY_REQUEST_ID=${DISPLAY_REQUEST_ID}
+      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+
+  generation:
+    build:
+      context: ./mcr-generation
+      target: dev
+    container_name: mcr-generation
+    environment:
+      - ENV_MODE=${ENV_MODE}
+      - LLM_HUB_API_URL=${LLM_HUB_API_URL}
+      - LLM_HUB_API_KEY=${LLM_HUB_API_KEY}
+      - LLM_MODEL_NAME=${LLM_MODEL_NAME}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_REGION=${S3_REGION}
+      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
+      - SENTRY_GENERATION_DSN=${SENTRY_GENERATION_DSN}
+      - COLORIZE=${COLORIZE}
+      - LEVEL=${LEVEL}
+      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+    ports:
+      - "8003:8003"
+      # Debugging port
+      - "7003:7003"
+    volumes:
+      - ./mcr-generation/mcr_generation:/app/mcr_generation
+    networks:
+      - mcr-network
+
+  frontend:
+    build:
+      context: ./mcr-frontend
+      target: dev
+    container_name: mcr-frontend
+    ports:
+      - "8881:5173"
+    volumes:
+      - ./mcr-frontend:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      - ENV_MODE=${ENV_MODE}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+      - VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
+      - VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
+      - VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
+      - VITE_SENTRY_FRONTEND_DSN=${VITE_SENTRY_FRONTEND_DSN}
+      - VITE_UNLEASH_URL=${VITE_UNLEASH_URL}
+      - VITE_UNLEASH_CLIENT_KEY=${VITE_UNLEASH_CLIENT_KEY}
+    networks:
+      - mcr-network
+
+  capture_worker:
+    build:
+      context: ./mcr-capture-worker
+    container_name: mcr-capture-worker
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=5432
+      - DEV=true
+      - ENV_MODE=${ENV_MODE}
+      - S3_ENDPOINT=${S3_ENDPOINT}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - S3_BUCKET=${S3_BUCKET}
+      - S3_REGION=${S3_REGION}
+      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
+      - SENTRY_CAPTURE_DSN=${SENTRY_CAPTURE_DSN}
+      - COLORIZE=${COLORIZE}
+      - LEVEL=${LEVEL}
+      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+    networks:
+      - mcr-network
+    depends_on:
+      - postgres
+
+  migration:
+    build:
+      context: ./mcr-core
+      target: api-dev
+    container_name: mcr-migration
+    command: ["uv", "run", "alembic", "upgrade", "head"]
+    depends_on:
+      - postgres
+    links:
+      - postgres
+    networks:
+      - mcr-network
+    volumes:
+      - ./mcr-core/mcr_meeting:/app/mcr_meeting
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - DEV_POSTGRES_HOST=${DEV_POSTGRES_HOST}
+      - GENERATION_API=${GENERATION_API}
+      - ENV_MODE=${ENV_MODE}
+  minio:
+    image: minio/minio:latest
+    container_name: mcr-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      ## No secret leak here: the docker compose file is used only for local development
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    networks:
+      - mcr-network
+
+  minio-setup:
+    image: minio/mc:latest
+    container_name: mcr-minio-setup
+    depends_on:
+      - minio
+    # This script makes sure that all requested buckets are created at startup
+    # It also sets up the event notification for the audio bucket to send messages to the transcription task webhook
+    entrypoint: >
+      /bin/sh -c "sleep 5;
+      /usr/bin/mc alias set miniodocker ${S3_ENDPOINT} ${S3_ACCESS_KEY} ${S3_SECRET_KEY};
+      /usr/bin/mc mb miniodocker/${S3_BUCKET} --ignore-existing;
+      /usr/bin/mc ilm rule add  --expire-days ${S3_ILM_EXPIRE_DAYS} miniodocker/${S3_BUCKET};
+      exit 0;"
+    networks:
+      - mcr-network
+
+  kc_postgres:
+    image: postgres:latest
+    container_name: mcr-kc-postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 1s
+      timeout: 2s
+      retries: 300
+    ports:
+      - "5434:5432"
+    env_file:
+      - docker/auth/.env.kc.local
+    networks:
+      - mcr-network
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:20.0.1
+    container_name: mcr-keycloak
+    volumes:
+      - ./docker/auth/kc-mcr-local-config.json:/opt/keycloak/data/import/realm.json
+    command:
+      - start-dev
+      - --features=preview
+      - --http-port=8083
+      - --import-realm
+      - --proxy=edge
+      - --hostname-url=http://localhost:8083
+      - --hostname-admin-url=http://localhost:8083/
+      - --hostname-strict=false
+      - --hostname-strict-https=false
+      - --health-enabled=true
+      - --metrics-enabled=true
+    healthcheck:
+      test:
+        ["CMD", "curl", "--head", "-fsS", "http://localhost:8083/health/ready"]
+      interval: 1s
+      timeout: 2s
+      retries: 300
+    env_file:
+      - docker/auth/.env.kc.local
+    ports:
+      - "8083:8083"
+    depends_on:
+      kc_postgres:
+        condition: service_healthy
+        restart: true
+    networks:
+      - mcr-network
+
+networks:
+  mcr-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:
+  frontend_node_modules:
+  redis_data:

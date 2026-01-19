@@ -1,0 +1,7 @@
+.vscode/settings.json
+.env
+.idea
+*.iml
+tmp/
+.coverage
+.DS_Store

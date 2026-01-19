@@ -1,0 +1,22 @@
+# Temporary and binary files
+__pycache__/*
+*.pyc
+browser
+# Unittest and coverage
+htmlcov/*
+.coverage
+.tox
+junit.xml
+coverage.xml
+.pytest_cache
+.coveragerc
+
+# macOS Desktop Services Store
+.DS_Store
+
+# Environment
+.venv
+.env
+
+# debug scripts
+debug*.sh

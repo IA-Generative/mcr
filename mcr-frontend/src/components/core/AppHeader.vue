@@ -1,0 +1,106 @@
+<template>
+  <DsfrHeader
+    :service-title="$t('header.app.name')"
+    :service-description="$t('header.app.description')"
+    :logo-text
+    :quick-links
+    :show-beta="true"
+  >
+  </DsfrHeader>
+  <DsfrNotice
+    v-if="isBetaEnabled"
+    :title="$t('header.notice.title')"
+  >
+    <template #desc>
+      <i18n-t
+        keypath="header.notice.desc"
+        tag="p"
+      >
+        <template #link>
+          <a
+            :href="URL_FORM_FEEDBACK"
+            target="_blank"
+          >
+            {{ $t('header.notice.link') }}
+          </a>
+        </template>
+      </i18n-t>
+    </template>
+  </DsfrNotice>
+</template>
+
+<script setup lang="ts">
+import type { DsfrHeaderProps } from '@gouvminint/vue-dsfr';
+import { useI18n } from 'vue-i18n';
+import { useAuth } from '../sign-in/use-auth';
+import { useUserStore } from '@/stores/useUserStore';
+import { computed } from 'vue';
+import { useFeatureFlag } from '@/composables/use-feature-flag.ts';
+
+const logoText = computed(() => [t('header.logo.text1'), t('header.logo.text2')]);
+const { t } = useI18n();
+
+const userStore = useUserStore();
+const { signOut } = inject('auth') as ReturnType<typeof useAuth>;
+
+const isBetaEnabled = useFeatureFlag('beta');
+
+const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
+  {
+    label: t('header.links.user-guide'),
+    icon: 'ri-question-line',
+    to: '/fcr-guide-utilisateur.pdf',
+    target: '_blank',
+  },
+  {
+    label: t('header.links.sign-out'),
+    icon: 'ri-logout-box-line',
+    to: '/',
+    onClick: () => {
+      signOut();
+    },
+  },
+];
+
+const whenNotLoggedLinks: DsfrHeaderProps['quickLinks'] = [
+  {
+    label: t('header.links.sign-in'),
+    to: '/',
+    icon: 'ri-login-box-line',
+  },
+];
+
+const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
+  if (userStore.isLogged) {
+    return whenLoggedLinks;
+  } else {
+    return whenNotLoggedLinks;
+  }
+});
+
+const URL_FORM_FEEDBACK = 'https://docs.getgrist.com/forms/5aDwHhMVY1PpCxaT1vuJpp/4';
+</script>
+
+<style scoped>
+:deep() div.fr-notice__body > p {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Breakpoint used in dsfr, close to tw md: */
+@media (min-width: 48em) {
+  :deep() div.fr-notice__body > p {
+    display: flex;
+    flex-direction: row;
+  }
+
+  :deep() .fr-notice__title {
+    margin-bottom: 0;
+  }
+}
+
+:deep(.fr-badge) {
+  background-color: #e8edff;
+  color: #0063cb;
+}
+</style>

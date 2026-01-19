@@ -1,0 +1,138 @@
+[project]
+name = "mcr-meeting"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = "~=3.12.0"
+
+dependencies = [
+    "pydantic-settings==2.11.0",
+    "loguru>=0.7.3",
+    "sqlalchemy[postgresql-psycopg2binary]==2.0.32",
+    "pydantic[email]==2.12.0",
+    "boto3>=1.35.0",
+    "celery[redis]==5.5.3",
+    "numpy>=2.2.6",
+    "soundfile>=0.12.1",
+    "mypy_boto3_s3>=1.40.26",
+    "python-statemachine>=2.5.0",
+    "unleashclient>=6.3.0",
+]
+
+[project.optional-dependencies]
+api = [
+    "docxtpl>=0.20.2",
+    "python-docx==1.1.2",
+    "fastapi[standard]==0.116.1",
+    "starlette",
+    "uvicorn==0.30.6",
+    "sentry-sdk[fastapi]>=2.34.1",
+    "alembic==1.16.4",
+    "dotenv==0.9.9",
+]
+worker = [
+    "pandas>=2.3.1",
+    "jiwer>=4.0.0",
+    "ffmpeg-python>=0.2.0",
+    "openai-whisper==20240927",
+    "transformers==4.52.4",
+    "torch==2.7.1",
+    "torchaudio==2.7.1",
+    "pytorch-lightning==2.5.5",
+    "lightning==2.5.5",
+    "onnxruntime==1.21.0",
+    "llvmlite>=0.44.0",
+    "numba>=0.61.0",
+    "pyannote-audio",
+    "pyannote-metrics",
+    "httpx>=0.28.1",
+    "sentry-sdk[celery]>=2.34.1",
+    "faster-whisper>=1.2.0",
+]
+
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-dotenv",
+    "pytest-cov",
+    "pytest-asyncio",
+    "pytest-mock",
+]
+dev = [
+    "ruff",
+    "debugpy",
+    "watchdog[watchmedo]>=6.0.0",
+    "boto3-stubs[s3]>=1.40.36",
+    "pydot>=4.0.1",
+]
+typing = [
+    "celery-types==0.23.0",
+    "mypy",
+    "pandas-stubs>=2.3.0.250703",
+    "numpy-typing>=1.1.1",
+]
+tools = ["mypy-clean-slate", "deptry"]
+provisioning = ["python-keycloak"]
+
+[tool.mypy]
+# disallow_any_unimported = true
+# disallow_any_expr = true
+# disallow_any_decorated = true
+disallow_any_explicit = true
+# disallow_any_generics = true
+# disallow_subclassing_any = true
+strict = true
+plugins = ["pydantic.mypy"]
+disable_error_code = "unused-ignore"
+exclude = [
+    "^mcr_meeting/app/db/migrations(/.*)?$",
+] # MyPy uses regex for exclusion rather than glob patterns
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+# This ignore type check on untyped imported modules.
+module = [
+    "whisper_timestamped",
+    "jiwer",
+    "ffmpeg",
+    "pyannote.*",
+    "soundfile",
+    "docxtpl.*",
+]
+ignore_missing_imports = true
+
+[tool.ruff.lint]
+# T20:  flake8-print -> No print statements
+# I:    isort -> Sorted imports
+# G:    flake8-logging-format -> logging format
+extend-select = ["T20", "I", "G"]
+logger-objects = ["loguru.logger"]
+
+exclude = ["scripts/**"]
+
+[tool.pytest.ini_options]
+env_override_existing_values = 1
+env_files = ["../.env.local.docker", "../.env", "../.env.local.testing"]
+
+[tool.deptry]
+extend_exclude = ["scripts/**"]
+
+[tool.deptry.package_module_name_map]
+"ffmpeg-python" = ["ffmpeg"]
+
+[tool.deptry.per_rule_ignores]
+# These dependencies are used by whisper_timestamped but are never imported in the code
+DEP002 = [
+    "openai-whisper",
+    "transformers",
+    "torchaudio",
+    "pytorch-lightning",
+    "lightning",
+    "onnxruntime",
+    "llvmlite",
+    "numba",
+]

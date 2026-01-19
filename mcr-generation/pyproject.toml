@@ -1,0 +1,43 @@
+[project]
+name = "mcr-generation"
+version = "0.0.1"
+requires-python = "~=3.13.0"
+
+
+dependencies = [
+    "uvicorn == 0.27.0",
+    "langchain == 0.3.27",
+    "openai == 1.92.2",
+    "python-multipart == 0.0.7",
+    "pydantic == 2.11.7",
+    "pydantic-settings == 2.10.1",
+    "langchain-community == 0.3.27",
+    "instructor==1.9.0",
+    "loguru>=0.7.3",
+    "unstructured==0.18.11",
+    "celery[redis]==5.5.3",
+    "boto3>=1.35.0",
+    "httpx>=0.28.1",
+    "python-docx>=1.2.0",
+    "sentry-sdk[celery]>=2.34.1",
+    "langfuse>=3.10.5",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-dotenv", "pytest-cov", "pytest-mock"]
+dev = ["ruff", "mypy", "debugpy", "boto3-stubs[s3]>=1.35.0"]
+typing = ["mypy-clean-slate", "celery-types==0.23.0"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.ruff]
+exclude = ["**/*.ipynb"]
+
+[tool.ruff.lint]
+# T20:  flake8-print -> No print statements
+# I:    isort -> Sorted imports
+# G:    flake8-logging-format -> logging format
+extend-select = ["T20", "I", "G"]
+logger-objects = ["loguru.logger"]

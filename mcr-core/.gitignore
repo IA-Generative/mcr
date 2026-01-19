@@ -1,0 +1,26 @@
+# Temporary and binary files
+__pycache__/*
+*.pyc
+
+# Unittest and coverage
+htmlcov/*
+.coverage
+.tox
+junit.xml
+coverage.xml
+.pytest_cache
+.coveragerc
+
+# macOS Desktop Services Store
+.DS_Store
+
+# Environment
+.venv
+*.env
+
+
+# Evaluation Data files
+mcr_meeting/evaluation/data/inputs/raw_audios/*
+mcr_meeting/evaluation/data/inputs/reference_transcripts/*
+mcr_meeting/evaluation/data/outputs/hypothesis_transcripts/*
+mcr_meeting/evaluation/data/outputs/*

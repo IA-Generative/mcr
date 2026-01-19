@@ -1,0 +1,397 @@
+{
+  "common": {
+    "from": "de",
+    "to": "à",
+    "cancel": "Annuler",
+    "yes": "Oui",
+    "no": "Non",
+    "modal": {
+      "confirm-title": {
+        "default": "Êtes vous sûr\u00a0?",
+        "delete": "Voulez vous vraiment supprimer cet élément\u00a0?",
+        "delete-button": "Supprimer"
+      }
+    },
+    "form": {
+      "update": "Mettre à jour"
+    }
+  },
+  "header": {
+    "app": {
+      "name": "France Compte Rendu",
+      "description": "Aide à la rédaction de compte rendu"
+    },
+    "notice": {
+      "title": "Cet outil est en version bêta.",
+      "desc": "Aidez-nous à l'améliorer en remplissant ce {link}",
+      "link": "formulaire Grist"
+    },
+    "logo": {
+      "text1": "Ministère",
+      "text2": "de l'intérieur"
+    },
+    "links": {
+      "user-guide": "Guide utilisateur",
+      "sign-in": "Se connecter",
+      "sign-out": "Se déconnecter"
+    },
+    "main-menu": {
+      "meetings": "Liste des réunions",
+      "directory": "Annuaire",
+      "users": "Gestion des utilisateurs"
+    }
+  },
+  "about-us": {
+    "text": "A propos"
+  },
+  "home": {
+    "text": "Accueil"
+  },
+  "sign-in": {
+    "username": "Identifiant",
+    "password": "Mot de passe",
+    "connect": "Se connecter",
+    "connected-as": "Connecté(e) en tant que"
+  },
+  "meetings": {
+    "waiting-time-warning-title": "Délai de traitement prolongé",
+    "waiting-time-warning-description": "En raison d'un fort volume de demandes, le délai de génération d'une transcription est plus long que d'habitude. Le délai estimé pour obtenir une transcription est de ",
+    "subtitle": "Consultez les réunions pour lesquelles une transcription est prévue, en cours ou terminée. Vous pouvez également planifier une nouvelle transcription.",
+    "status": {
+      "NONE": "En attente",
+      "IN_PROGRESS": "En cours",
+      "DONE": "Terminée",
+      "DONE_IMPORT": "Importée",
+      "FAILED": "Erreur"
+    },
+    "table": {
+      "title": "Liste des réunions",
+      "actions": {
+        "add-visio": "Utiliser une URL de visio",
+        "add-import": "Importer un fichier audio ou vidéo",
+        "add-record": "Démarrer une réunion en présentiel"
+      },
+      "add": "Ajouter une réunion",
+      "columns": {
+        "status": "Statut",
+        "platform": "Plateforme",
+        "title": "Titre",
+        "date": "Date",
+        "actions": "Actions"
+      }
+    }
+  },
+  "meeting": {
+    "confirm-delete": {
+      "title": "Êtes-vous sûr de vouloir supprimer la réunion\u00a0?"
+    },
+    "subtitle": {
+      "scheduled": "Programmée le",
+      "imported": "Importée le",
+      "recorded": "Enregistrement du"
+    },
+    "edit": "Éditer la réunion",
+    "delete": "Supprimer la réunion",
+    "modal": {
+      "title": "Éditer la réunion"
+    },
+    "record-form": {
+      "title": "Démarrer une réunion en présentiel",
+      "steps": {
+        "step-1": "Informations sur la réunion",
+        "step-2": "Rappels aux participants"
+      },
+      "fields": {
+        "name": "@:meeting.import-form.fields.name",
+        "devices": "Microphone",
+        "notice": {
+          "title": "Pour garantir une bonne qualité de la transcription\u00a0:",
+          "mic": {
+            "bold": "Placez le micro au centre de la table",
+            "text": "{bold}, à proximité des intervenants."
+          },
+          "noise": {
+            "bold": "Limitez les bruits de fond",
+            "text": "{bold} (fenêtres, claviers, discussions croisées)."
+          },
+          "clarity": {
+            "bold": "Parlez clairement, évitez les sigles",
+            "text": "{bold} ou expliquez-les."
+          }
+        },
+        "notice-2": {
+          "title": "Avant de démarrer l'enregistrement, pensez à\u00a0:",
+          "warning": "Informer les participants de l'utilisation de France Compte Rendu pour cette réunion."
+        }
+      },
+      "actions": {
+        "next": "Suivant",
+        "back": "Retour",
+        "submit": "Démarrer l'enregistrement",
+        "update": "@:common.form.update",
+        "cancel": "@:common.cancel"
+      }
+    },
+    "import-form": {
+      "title": "@:meetings.table.actions.add-import",
+      "fields": {
+        "file": {
+          "label": "Sélectionner un fichier",
+          "download-in-progress": "Téléchargement en cours",
+          "download-done": "Téléchargement terminé",
+          "placeholder": "Aucun fichier sélectionné",
+          "hint": "Taille maximale : 200 Mo. Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov.",
+          "hint-with-multipart-upload-enabled": "Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov."
+        },
+        "name": "Titre de la réunion",
+        "date": "Date de la réunion"
+      },
+      "errors": {
+        "file-size": "Le fichier est trop volumineux. Taille maximale : 200 Mo",
+        "file-type": "Type de fichier non pris en charge",
+        "file-invalid": "Le fichier sélectionné n'a pas pu être converti.",
+        "unsupported-format": "Désolé, ce format de fichier n'est pas encore supporté par FCR."
+      },
+      "submit": "Importer et transcrire",
+      "update": "@:common.form.update"
+    },
+    "form": {
+      "title": "Utiliser une URL de visioconférence",
+      "add-with-url": "Ajouter avec l'url modérateur",
+      "fields": {
+        "url": {
+          "label": "Url modérateur",
+          "validate": "Valider mon URL"
+        },
+        "name": "Titre",
+        "external-password": "Mot de passe modérateur",
+        "external-id": "ID"
+      },
+      "submit": "Ajouter une réunion",
+      "update": "@:common.form.update",
+      "errors": {
+        "url": {
+          "not-found": "L'URL entré n'a pas pu être validée, vérifiez l'url ou utiliser l'identifiant/mot de passe",
+          "not-supported": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire ou Webconf. Les autres plateformes de visioconférence ne sont pas encore supportées par FCR.",
+          "not-moderator": "Veuillez renseigner l'URL modérateur de votre Webinaire. Demandez-le à l'organisateur ou rendez-vous sur le site de Webinaire > Mes réunions > Inviter > Inviter les modérateurs",
+          "not-private": "URL COMU publique détectée. Veuillez renseigner l'URL privée de la réunion (finissant par un secret) ou utiliser l'identifiant/mot de passe de la réunion en cliquant sur l'interrupteur",
+          "invalid-comu-parsing": "L'URL COMU est invalide, il ne contient pas d'identifiant/mot de passe ni de secret."
+        }
+      }
+    },
+    "transcription": {
+      "start": "Démarrer l'enregistrement",
+      "stop": "Arrêter l'enregistrement",
+      "download": "Télécharger la transcription",
+
+      "transcription-pending": {
+        "title": "La génération de la transcription est en cours...",
+        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre transcription sera disponible au téléchargement une fois terminée."
+      },
+      "transcription-generation-in-progress": {
+        "title": "Votre transcription est en cours de génération",
+        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
+        "estimation": "Temps d’attente restant estimé : ",
+        "reachement-deadline": "La transcription prend plus de temps que prévu.",
+        "less-than-1-hour": "Moins d'une heure",
+        "less-than-5-minutes": "Moins de 5 minutes"
+      },
+      "transcription-in-queue": {
+        "title": "Votre transcription est dans la file d’attente",
+        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
+        "estimation": "Temps d’attente restant estimé : ",
+        "reachement-deadline": "La transcription prend plus de temps que prévu.",
+        "computing-estimation": "Calcul en cours..."
+      },
+      "bot-connecting": {
+        "title": "Connexion en cours...",
+        "subtitle": "Le bot FCR Agent va rejoindre la réunion pour lancer l’enregistrement.",
+        "description": "Le bot va rejoindre la réunion dans la liste des participants. Veuillez patienter quelques instants."
+      },
+      "bot-connection-failed": {
+        "title": "Une erreur est survenue",
+        "description": "Un problème technique est survenu. Veuillez réessayer.",
+        "retry-button": "Réessayer"
+      },
+      "recording": {
+        "confirm-modal": {
+          "title": "Êtes-vous sûr de vouloir terminer l'enregistrement\u00a0?",
+          "button": "Terminer l'enregistrement"
+        },
+        "confirm-quit": {
+          "title": "Êtes-vous sûr de vouloir quitter la page\u00a0?",
+          "description": "Cela mettra fin à l'enregistrement.",
+          "button": "Quitter"
+        },
+        "status": {
+          "in-progress": "Enregistrement en cours",
+          "paused": "Enregistrement en pause"
+        },
+        "actions": {
+          "pause": "Mettre en pause",
+          "resume": "Reprendre",
+          "stop": "Terminer"
+        }
+      },
+      "transcription-failed": {
+        "title": "Une erreur est survenue",
+        "description": "Un problème technique est survenu. Veuillez réessayer.",
+        "button": "Réessayer"
+      },
+      "import-failed": {
+        "text": "Une erreur est survenue",
+        "description": "Une erreur est survenue lors de l’import du fichier. Veuillez réessayer.",
+        "button": "@:meetings.table.actions.add-import"
+      },
+      "upload": "Envoyer la transcription modifiée",
+      "upload-success": "Transcription envoyée avec succès",
+      "format-accepted": "Format accepté : .docx",
+      "modal-stop": {
+        "title": "Êtes vous sûr de vouloir terminer la transcription\u00a0?"
+      },
+      "modal-start": {
+        "title": "Avez-vous informé les participants de l'utilisation de l'outil FCR pour cette réunion\u00a0?"
+      },
+      "tab": {
+        "transcription": "Transcription",
+        "report": "Compte rendu",
+        "members": "Participants"
+      }
+    },
+    "report": {
+      "generate": "Générer le compte rendu",
+      "download": "Télécharger le compte rendu",
+      "disclaimer": {
+        "title": "Choisissez le format",
+        "description": "L'outil FCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
+      },
+      "type": {
+        "cr1": "Relevé de décisions",
+        "cr2": "Format à venir",
+        "cr3": "@:meeting.report.type.cr2"
+      },
+      "report-pending": {
+        "title": "L'écriture du compte-rendu est en cours...",
+        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte rendu sera disponible au téléchargement une fois terminé."
+      },
+      "error": {
+        "no-transcription": {
+          "title": "La transcription n'est pas terminée",
+          "description": "Vous pourrez générer un compte rendu lorsque la transcription de la réunion aura été générée."
+        }
+      }
+    },
+    "members": {
+      "add": "Appliquer la sélection",
+      "add-to-directory": "Intégrer un participant à l'annuaire",
+      "see-only-selected": "Afficher uniquement les participants",
+      "hint": "Sélectionnez les participants présents lors de la réunion",
+      "table": {
+        "columns": {
+          "participate": "Participe"
+        }
+      }
+    }
+  },
+  "members": {
+    "title": "Annuaire",
+    "subtitle": "Gérez la liste de participants susceptibles d'assister aux réunions. Si le participant n'existe pas, vous pouvez l'ajouter en cliquant sur @:members.table.add",
+    "table": {
+      "title": "Annuaire",
+      "add": "Ajouter un participant",
+      "columns": {
+        "first-name": "Prénom",
+        "last-name": "Nom",
+        "job-title": "Fonction",
+        "title": "Titre",
+        "department": "Département",
+        "actions": "Actions"
+      }
+    },
+    "modal": {
+      "add-title": "Ajouter un participant",
+      "edit-title": "Éditer un participant"
+    },
+    "form": {
+      "fields": {
+        "first-name": "Prénom",
+        "last-name": "Nom",
+        "job-title": "Fonction",
+        "title": "Titre",
+        "department": "Département"
+      },
+      "submit": "Créer",
+      "update": "Mettre à jour"
+    }
+  },
+  "users": {
+    "table": {
+      "title": "Liste des utilisateurs",
+      "add": "Ajouter un utilisateur",
+      "columns": {
+        "name": "Prénom",
+        "lastname": "Nom",
+        "email": "Email",
+        "entity-name": "Entité",
+        "role": {
+          "title": "Rôle",
+          "values": {
+            "ADMIN": "Administrateur",
+            "USER": "Utilisateur"
+          }
+        },
+        "actions": "Actions"
+      }
+    },
+    "modal": {
+      "add-title": "Ajouter un utilisateur",
+      "edit-title": "Éditer un utilisateur"
+    },
+    "form": {
+      "fields": {
+        "first-name": "Prénom",
+        "last-name": "Nom",
+        "entity-name": "Entité",
+        "email": "Email",
+        "role": "Rôle",
+        "password": "Mot de passe"
+      },
+      "submit": "Créer",
+      "update": "Mettre à jour"
+    }
+  },
+  "not-found": {
+    "title": "Page non trouvée",
+    "error": "Erreur 404",
+    "subtitle": "La page que vous cherchez est introuvable. Excusez-nous pour la gène occasionnée.",
+    "description": "Si vous avez tapé l'adresse web dans le navigateur, vérifiez qu'elle est correcte. La page n'est peut-être plus disponible. \nDans ce cas, pour continuer votre visite vous pouvez consulter notre page d'accueil. \nSinon contactez-nous pour que l'on puisse vous rediriger vers la bonne information.",
+    "home": "Page d'accueil"
+  },
+  "not-tester": {
+    "title": "Accès non autorisé",
+    "description": "L'outil France Compte Rendu est en cours de développement. Son accès est pour le moment réservé à un échantillon de beta-testeurs dont vous ne faites pas partie.",
+    "help": {
+      "text": "Si vous souhaitez recevoir une alerte lors de la mise en ligne officielle de l'application, veuillez vous inscrire sur cette {url}.",
+      "text-url": "liste"
+    }
+  },
+  "login-error": {
+    "title": "Une erreur est survenue",
+    "description": "Un problème technique est survenu. Veuillez réessayer plus tard."
+  },
+  "form": {
+    "error": {
+      "must_be_email": "Ce champ doit être un email",
+      "invalid": "Champ invalide",
+      "required": "Champ requis"
+    }
+  },
+  "error": {
+    "default": "Une erreur est survenue",
+    "meetings-loading": "Erreur lors du chargement des réunions",
+    "meeting-creation": "Erreur lors de la création de la réunion",
+    "audio-capture": "Erreur lors de la captation audio de la visioconférence",
+    "report-generation": "Erreur lors de la génération du compte rendu. Veuillez réessayer.",
+    "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer."
+  }
+}

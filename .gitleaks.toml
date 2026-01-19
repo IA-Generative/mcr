@@ -1,0 +1,10 @@
+[allowlist]
+description = "Ignore test files and notebooks"
+
+paths = [
+  "^tests/",
+  "^mcr_generation/notebook/",
+  "^mcr_generation/app/.*\\.ipynb$",
+  "^test\\.ipynb$",
+  "^src/server-mock/",
+]

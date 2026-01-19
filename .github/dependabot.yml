@@ -1,0 +1,91 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/mcr-core"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        update-types:
+          - "major"
+
+  - package-ecosystem: "pip"
+    directory: "/mcr-capture-worker"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        update-types:
+          - "major"
+
+  - package-ecosystem: "pip"
+    directory: "/mcr-gateway"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        update-types:
+          - "major"
+
+  - package-ecosystem: "pip"
+    directory: "/mcr-generation"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+    labels:
+      - "dependencies"
+      - "python"
+    groups:
+      python-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      python-major:
+        update-types:
+          - "major"
+
+  - package-ecosystem: "npm"
+    directory: "/mcr-frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+    labels:
+      - "dependencies"
+      - "javascript"
+    groups:
+      javascript-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
+      javascript-major:
+        update-types:
+          - "major"

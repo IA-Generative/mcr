@@ -1,0 +1,42 @@
+[project]
+name = "mcr-capture-worker"
+version = "0.1.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.11.0"
+
+dependencies = [
+    "sqlalchemy==2.0.43",
+    "psycopg2-binary==2.9.10",
+    "selenium==4.36.0",
+    "webdriver-manager==4.0.2",
+    "playwright==1.55.0",
+    "pydantic==2.11.10",
+    "pydantic-settings==2.11.0",
+    "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "boto3>=1.35.0",
+    "mypy_boto3_s3>=1.40.26",
+    "sentry-sdk>=2.34.1",
+]
+
+[dependency-groups]
+dev = ["ruff", "mypy","boto3-stubs[s3]>=1.35.0"]
+test = [
+    "pytest",
+    "pytest-dotenv",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-mock",
+]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.ruff.lint]
+# T20:  flake8-print -> No print statements
+# I:    isort -> Sorted imports
+# G:    flake8-logging-format -> logging format
+extend-select = ["T20", "I", "G"]
+logger-objects = ["loguru.logger"]

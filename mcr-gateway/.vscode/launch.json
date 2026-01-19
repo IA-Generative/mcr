@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "MCR Gateway - Docker",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "localhost",
+                "port": 5678
+            },
+            "pathMappings": [
+                {
+                    "localRoot": "${workspaceFolder}/mcr_gateway",
+                    "remoteRoot": "/app/mcr_gateway"
+                }
+            ]
+          }
+    ]
+}

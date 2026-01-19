@@ -1,0 +1,39 @@
+[project]
+name = "mcr-gateway"
+version = "0.1.0"
+readme = "README.md"
+requires-python = "~=3.12.0"
+
+
+dependencies = [
+    "fastapi[standard]==0.118.0",
+    "starlette",
+    "httpx==0.28.1",
+    "uvicorn==0.37.0",
+    "pydantic[email]==2.11.10",
+    "pydantic-settings==2.11.0",
+    "python-keycloak==5.8.1",
+    "loguru>=0.7.3",
+]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.ruff.lint]
+# T20:  flake8-print -> No print statements
+# I:    isort -> Sorted imports
+# G:    flake8-logging-format -> logging format
+extend-select = ["T20", "I", "G"]
+logger-objects = ["loguru.logger"]
+[dependency-groups]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-dotenv",
+    "pytest-httpx",
+    "pytest-cov",
+]
+dev = ["ruff", "debugpy"]
+typing = ["mypy"]
+tools = ["deptry"]

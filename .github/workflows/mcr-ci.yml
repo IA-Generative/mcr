@@ -1,0 +1,274 @@
+name: MCR CI Pipeline
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - "main"
+      - "dev"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  filter-out-unmodified-services:
+    runs-on: actions-runner-controller
+    outputs:
+      mcr-gateway: ${{ steps.filter-out-unmodified-services.outputs.mcr-gateway }}
+      mcr-generation: ${{ steps.filter-out-unmodified-services.outputs.mcr-generation }}
+      mcr-core: ${{ steps.filter-out-unmodified-services.outputs.mcr-core }}
+      mcr-frontend: ${{ steps.filter-out-unmodified-services.outputs.mcr-frontend }}
+      mcr-capture-worker: ${{ steps.filter-out-unmodified-services.outputs.mcr-capture-worker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v2
+        id: filter-out-unmodified-services
+        with:
+          filters: |
+            mcr-gateway:
+              - 'mcr-gateway/**'
+            mcr-generation:
+              - 'mcr-generation/**'
+            mcr-core:
+              - 'mcr-core/**'
+            mcr-frontend:
+              - 'mcr-frontend/**'
+            mcr-capture-worker:
+              - 'mcr-capture-worker/**'
+
+  gitleaks:
+    name: Gitleaks scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+  mcr-gateway-ci:
+    needs: filter-out-unmodified-services
+    if: ${{ needs.filter-out-unmodified-services.outputs.mcr-gateway == 'true' }}
+    runs-on: actions-runner-controller
+    env:
+      CORE_SERVICE_BASE_URL: ${{ vars.CORE_SERVICE_BASE_URL }}
+      MEETING_SERVICE_URL: ${{ vars.MEETING_SERVICE_URL }}
+      USER_SERVICE_URL: ${{ vars.USER_SERVICE_URL }}
+      MEMBER_SERVICE_URL: ${{ vars.MEMBER_SERVICE_URL }}
+      KEYCLOAK_URL: ${{ vars.KEYCLOAK_URL }}
+      KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM }}
+      KEYCLOAK_CLIENT_ID: ${{ vars.KEYCLOAK_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        working-directory: mcr-gateway
+        run: |
+          uv venv --python=3.11
+          uv sync --all-extras
+
+      - name: Run Ruff format check
+        working-directory: mcr-gateway
+        run: make format
+
+      - name: Run Ruff lint
+        working-directory: mcr-gateway
+        run: make lint
+
+      - name: Run Deps checker
+        working-directory: mcr-gateway
+        run: make deps-check
+
+      - name: Run Type checker
+        working-directory: mcr-gateway
+        run: make type-check
+
+      - name: Run Tests
+        working-directory: mcr-gateway
+        run: make test
+
+  mcr-generation-ci:
+    needs: filter-out-unmodified-services
+    if: ${{ needs.filter-out-unmodified-services.outputs.mcr-generation == 'true' }}
+    runs-on: actions-runner-controller
+    env:
+      MEETING_SERVICE_URL: ${{ vars.MEETING_SERVICE_URL }}
+      USER_SERVICE_URL: ${{ vars.USER_SERVICE_URL }}
+      MEMBER_SERVICE_URL: ${{ vars.MEMBER_SERVICE_URL }}
+      LLM_API_URL: ${{ vars.LLM_API_URL }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      LLM_HUB_API_URL: ${{ vars.LLM_HUB_API_URL }}
+      LLM_HUB_API_KEY: ${{ secrets.LLM_HUB_API_KEY }}
+      LLM_MODEL_NAME: ${{ vars.LLM_MODEL_NAME }}
+      LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+      LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+      LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
+      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+      S3_EXTERNAL_ENDPOINT: ${{ vars.S3_EXTERNAL_ENDPOINT }}
+      S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+      S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      S3_REGION: ${{ vars.S3_REGION }}
+      CORE_SERVICE_BASE_URL: ${{ vars.CORE_SERVICE_BASE_URL }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        working-directory: mcr-generation
+        run: |
+          uv venv --python=3.11
+          uv sync --all-extras
+      - name: Run Ruff format check
+        working-directory: mcr-generation
+        run: |
+          uv run ruff format --check .
+      - name: Run Ruff lint
+        working-directory: mcr-generation
+        run: |
+          uv run ruff check .
+      - name: Run tests
+        working-directory: mcr-generation
+        run: |
+          uv run pytest
+
+  mcr-core-ci:
+    needs: filter-out-unmodified-services
+    if: ${{ needs.filter-out-unmodified-services.outputs.mcr-core == 'true' }}
+    runs-on: actions-runner-controller
+    env:
+      GENERATION_API: ${{ vars.GENERATION_API }}
+      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+      S3_EXTERNAL_ENDPOINT: ${{ vars.S3_EXTERNAL_ENDPOINT }}
+      S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+      S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      S3_REGION: ${{ vars.S3_REGION }}
+      REDIS_HOST: ${{ vars.REDIS_HOST }}
+      REDIS_PORT: ${{ vars.REDIS_PORT }}
+      CELERY_BACKEND_URL: ${{ vars.CELERY_BACKEND_URL }}
+      MCR_FRONTEND_URL: ${{ vars.MCR_FRONTEND_URL }}
+      SENTRY_CORE_DSN: ${{ secrets.SENTRY_CORE_DSN }}
+      SENTRY_TRANSCRIPTION_DSN: ${{ secrets.SENTRY_TRANSCRIPTION_DSN }}
+      UNLEASH_URL: ${{ vars.UNLEASH_URL }}
+      UNLEASH_INSTANCE_ID: ${{ secrets.UNLEASH_INSTANCE_ID }}
+      ENV_MODE: ${{ vars.ENV_MODE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        working-directory: mcr-core
+        run: |
+          uv venv --python=3.11
+          uv sync --all-extras
+
+      - name: Run Ruff format check
+        working-directory: mcr-core
+        run: make format
+
+      - name: Run Ruff lint
+        working-directory: mcr-core
+        run: make lint
+
+      - name: Run Deps checker
+        working-directory: mcr-core
+        run: make deps-check
+
+      - name: Run Type checker
+        working-directory: mcr-core
+        run: make type-check
+
+      - name: Run Tests
+        working-directory: mcr-core
+        run: make test
+
+  mcr-frontend-ci:
+    needs: filter-out-unmodified-services
+    if: ${{ needs.filter-out-unmodified-services.outputs.mcr-frontend == 'true' }}
+    runs-on: actions-runner-controller
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install dependencies
+        working-directory: mcr-frontend
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+      - name: Run ESLint
+        working-directory: mcr-frontend
+        run: pnpm run lint
+      - name: Run Prettier check
+        working-directory: mcr-frontend
+        run: pnpm run format:check
+      - name: Run TypeScript check
+        working-directory: mcr-frontend
+        run: pnpm run type-check
+      - name: Run tests
+        working-directory: mcr-frontend
+        run: pnpm run test:unit
+
+  mcr-capture-worker-ci:
+    needs: filter-out-unmodified-services
+    if: ${{ needs.filter-out-unmodified-services.outputs.mcr-capture-worker == 'true' }}
+    runs-on: actions-runner-controller
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+      S3_ENDPOINT: ${{ vars.S3_ENDPOINT }}
+      S3_EXTERNAL_ENDPOINT: ${{ vars.S3_EXTERNAL_ENDPOINT }}
+      S3_ACCESS_KEY: ${{ secrets.S3_ACCESS_KEY }}
+      S3_SECRET_KEY: ${{ secrets.S3_SECRET_KEY }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      S3_REGION: ${{ vars.S3_REGION }}
+      CORE_SERVICE_BASE_URL: ${{ vars.CORE_SERVICE_BASE_URL}}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install dependencies
+        working-directory: mcr-capture-worker
+        run: |
+          uv venv --python=3.11
+          uv sync --all-extras
+
+      - name: Run Ruff format check
+        working-directory: mcr-capture-worker
+        run: make format
+
+      - name: Run Ruff lint
+        working-directory: mcr-capture-worker
+        run: make lint
+
+      - name: Run Type checker
+        working-directory: mcr-capture-worker
+        run: make type-check
+
+      - name: Run Tests
+        working-directory: mcr-capture-worker
+        run: make test

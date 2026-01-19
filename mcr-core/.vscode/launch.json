@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MCR Core - Docker",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 7001
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/mcr_meeting",
+          "remoteRoot": "/app/mcr_meeting"
+        }
+      ]
+    },
+    {
+      "name": "MCR Transcription - Docker",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 7002
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/mcr_meeting",
+          "remoteRoot": "/app/mcr_meeting"
+        }
+      ]
+    }
+  ]
+}

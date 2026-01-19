@@ -1,0 +1,302 @@
+# When pushing to dev or data-dev, we need to build new images.
+# Else, we can promote already built images to the next env
+.is-build-mode: &is-build-mode '$CI_COMMIT_BRANCH == "data-dev" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
+.is-mep-tag: &is-mep-tag $CI_COMMIT_TAG =~ /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}$/
+
+workflow:
+  # Trigger pipeline on push to long running branches or on prod version tag (x.y.z)
+  rules:
+    - if: *is-mep-tag
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "data-dev" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
+      when: always
+      changes:
+        - mcr-frontend/**/*
+        - mcr-core/**/*
+        - mcr-gateway/**/*
+        - mcr-generation/**/*
+        - mcr-capture-worker/**/*
+
+include:
+  - project: $CATALOG_PATH
+    file: vault-ci.yml
+    ref: main
+  - project: $CATALOG_PATH
+    file: kaniko-ci.yml
+    ref: main
+
+default:
+  image: alpine:3.22.1
+
+variables:
+  REGISTRY_URL: "${REGISTRY_HOST}/${PROJECT_PATH}"
+
+stages:
+  - read-secret
+  - get-image-tag
+  - docker-build
+  - filter-modules
+  - rollout-infra
+
+# Reusable kaniko build job template with workspace preservation (using --ignore-path=/workspace) because on a multi-stage build kaniko deletes the workspace which prevented after_script from being executed.
+# See: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/30769
+.kaniko-build-with-workspace:
+  image:
+    name: ghcr.io/kaniko-build/dist/chainguard-dev-kaniko/executor:v1.25.1-debug
+    entrypoint: [""]
+  script:
+    # CA
+    - if [ ! -z $CA_BUNDLE ]; then cat $CA_BUNDLE >> /kaniko/ssl/certs/additional-ca-cert-bundle.crt; fi
+    # Proxy
+    - export BUILD_ARGS=""
+    - |
+      if [ ! -z "$http_proxy" ]; then
+        export BUILD_ARGS="$BUILD_ARGS --build-arg http_proxy=$http_proxy"
+        sed -i "0,/^RUN /s|^RUN |RUN echo \"proxy=$http_proxy\" >> /etc/dnf/dnf.conf && \
+      echo \"proxy=$http_proxy\" >> /etc/yum.conf && \
+      echo 'Acquire::http::Proxy \\\"$http_proxy\\\";' >> /etc/apt/apt.conf.d/01proxy && \
+      echo \"http_proxy=$http_proxy\" >> /etc/environment && \
+      |" "$CI_PROJECT_DIR/$DOCKERFILE"
+      fi
+    - |
+      if [ ! -z "$https_proxy" ]; then
+        export BUILD_ARGS="$BUILD_ARGS --build-arg https_proxy=$https_proxy"
+        sed -i "0,/^RUN /s|^RUN |RUN echo \"proxy=$https_proxy\" >> /etc/dnf/dnf.conf && \
+      echo \"proxy=$https_proxy\" >> /etc/yum.conf && \
+      echo 'Acquire::https::Proxy \\\"$https_proxy\\\";' >> /etc/apt/apt.conf.d/01proxy && \
+      echo \"https_proxy=$https_proxy\" >> /etc/environment && \
+      |" "$CI_PROJECT_DIR/$DOCKERFILE"
+      fi
+    - if [ ! -z $no_proxy ]; then export BUILD_ARGS="$BUILD_ARGS --build-arg no_proxy=$no_proxy"; fi
+    # Destinations
+    - export ALL_DESTINATIONS=""
+    - for I in $IMAGE_NAMES; do export ALL_DESTINATIONS="$ALL_DESTINATIONS --destination $REGISTRY_URL/$(echo $I | tr \/ '-')"; done
+    - mkdir -p /kaniko/.docker
+    - echo "$DOCKER_AUTH" > /kaniko/.docker/config.json
+    - /kaniko/executor
+      --skip-unused-stages
+      --digest-file=digest.txt
+      --single-snapshot
+      --context="$CI_PROJECT_DIR/$WORKING_DIR"
+      --dockerfile="$CI_PROJECT_DIR/$DOCKERFILE"
+      $BUILD_ARGS $EXTRA_BUILD_ARGS
+      $EXTRA_KANIKO_ARGS
+      --ignore-path=/workspace
+      $ALL_DESTINATIONS
+
+read_secret:
+  stage: read-secret
+  extends:
+    - .vault:read_secret
+
+get-image-tag:
+  stage: get-image-tag
+  script:
+    - |
+      set -eux
+
+      if [[ "${CI_COMMIT_BRANCH:-}" == "dev" ]]; then
+        TARGET_ENV="staging"
+      elif [[ "${CI_COMMIT_BRANCH:-}" == "data-dev" ]]; then
+        TARGET_ENV="data"
+      elif [[ "${CI_COMMIT_BRANCH:-}" == "main" ]]; then
+        TARGET_ENV="preprod"
+      else
+        # Default prefix for branches that are not dev, data-dev, or main
+        # This is useful only when doing test on the ci
+        TARGET_ENV="test"
+      fi
+
+      if [[ -n "${CI_COMMIT_TAG:-}" ]]; then
+        IMAGE_TAG="$CI_COMMIT_TAG"
+        TARGET_ENV="prod"
+      else
+        IMAGE_TAG="${TARGET_ENV}-${CI_COMMIT_SHORT_SHA}"
+      fi
+
+      echo "IMAGE_TAG=$IMAGE_TAG" >> vault.env
+      echo "TARGET_ENV=$TARGET_ENV" >> vault.env
+  artifacts:
+    reports:
+      dotenv: vault.env
+    expire_in: 60 min
+
+docker-build-frontend:
+  variables:
+    WORKING_DIR: mcr-frontend
+    IMAGE_NAMES: ${CI_PROJECT_NAME}-frontend:${IMAGE_TAG}
+    DOCKERFILE: "mcr-frontend/Dockerfile"
+    EXTRA_BUILD_ARGS: "--target=production"
+  stage: docker-build
+  rules:
+    - if: *is-build-mode
+      changes:
+        - mcr-frontend/**/*
+  extends:
+    - .kaniko-build-with-workspace
+  after_script:
+    - |
+      set -x
+      echo "Built frontend with image tag - ${IMAGE_TAG}"
+      echo "FRONTEND_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env
+    expire_in: 30 min
+
+docker-build-core:
+  variables:
+    WORKING_DIR: mcr-core
+    IMAGE_NAMES: ${CI_PROJECT_NAME}-core:${IMAGE_TAG}
+    DOCKERFILE: "mcr-core/Dockerfile"
+    EXTRA_BUILD_ARGS: "--target=api"
+  rules:
+    - if: *is-build-mode
+      changes:
+        - mcr-core/**/*
+  stage: docker-build
+  extends:
+    - .kaniko-build-with-workspace
+  after_script:
+    - |
+      set -x
+      echo "Built core with image tag - ${IMAGE_TAG}"
+      echo "CORE_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env
+    expire_in: 30 min
+
+docker-build-transcription-worker:
+  variables:
+    WORKING_DIR: mcr-core
+    IMAGE_NAMES: ${CI_PROJECT_NAME}-transcription-worker:${IMAGE_TAG}
+    DOCKERFILE: "mcr-core/Dockerfile"
+    EXTRA_BUILD_ARGS: "--target=worker"
+  rules:
+    - if: *is-build-mode
+      changes:
+        - mcr-core/**/*
+  stage: docker-build
+  extends:
+    - .kaniko-build-with-workspace
+  after_script:
+    - |
+      set -x 
+      echo "Built transcription-worker with image tag - ${IMAGE_TAG}"
+      echo "TR_WORKER_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env
+    expire_in: 30 min
+
+docker-build-gateway:
+  variables:
+    WORKING_DIR: mcr-gateway
+    IMAGE_NAMES: ${CI_PROJECT_NAME}-orchestrator:${IMAGE_TAG}
+    DOCKERFILE: "mcr-gateway/Dockerfile"
+    EXTRA_BUILD_ARGS: "--target=production"
+  rules:
+    - if: *is-build-mode
+      changes:
+        - mcr-gateway/**/*
+  stage: docker-build
+  extends:
+    - .kaniko-build-with-workspace
+  after_script:
+    - |
+      set -x 
+      echo "Built gateway with image tag - ${IMAGE_TAG}"
+      echo "GATEWAY_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env
+    expire_in: 30 min
+
+docker-build-generation:
+  variables:
+    WORKING_DIR: mcr-generation
+    IMAGE_NAMES: ${CI_PROJECT_NAME}-generation:${IMAGE_TAG}
+    DOCKERFILE: "mcr-generation/Dockerfile"
+    EXTRA_BUILD_ARGS: "--target=production"
+  rules:
+    - if: *is-build-mode
+      changes:
+        - mcr-generation/**/*
+  stage: docker-build
+  extends:
+    - .kaniko-build-with-workspace
+  after_script:
+    - |
+      set -x 
+      echo "Built generaion with image tag - ${IMAGE_TAG}"
+      echo "GENERATION_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env
+    expire_in: 30 min
+
+docker-build-capture-worker:
+  variables:
+    WORKING_DIR: mcr-capture-worker
+    IMAGE_NAMES: ${CI_PROJECT_NAME}-capture-worker:${IMAGE_TAG}
+    DOCKERFILE: "mcr-capture-worker/Dockerfile"
+    EXTRA_BUILD_ARGS: ""
+  rules:
+    - if: *is-build-mode
+      changes:
+        - mcr-capture-worker/**/*
+  stage: docker-build
+  extends:
+    - .kaniko-build-with-workspace
+  after_script:
+    - |
+      set -x 
+      echo "Built capture-worker with image tag - ${IMAGE_TAG}"
+      echo "CP_WORKER_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
+  artifacts:
+    reports:
+      dotenv: digest.env
+    expire_in: 30 min
+
+rollout-infra:
+  stage: rollout-infra
+  before_script:
+    - apk add --no-cache curl
+  script:
+    - |
+      set -x
+
+      # Use a case statement instead of arrays
+      case "$TARGET_ENV" in
+        staging|data|preprod|prod)
+          deploy_images_automatically=true
+          ;;
+        *)
+          deploy_images_automatically=false
+          ;;
+      esac
+
+      if [ "$deploy_images_automatically" = "false" ]; then
+        echo "Couldn't find an env to deploy to. Aborting..." >&2
+        exit 0
+      fi
+
+      curl -L --fail \
+        -X POST \
+        -H "Accept: application/vnd.github+json" \
+        -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+        https://api.github.com/repos/IA-Generative/mirai-values/actions/workflows/mcr-update-values.yaml/dispatches \
+        -d "{
+          \"ref\": \"main\",
+          \"inputs\": {
+            \"TARGET_ENV\": \"${TARGET_ENV}\",
+            \"IMAGE_TAG\": \"${IMAGE_TAG}\",
+            \"CORE_IMAGE_SHA\": \"${CORE_IMAGE_SHA}\",
+            \"FRONTEND_IMAGE_SHA\": \"${FRONTEND_IMAGE_SHA}\",
+            \"TR_WORKER_IMAGE_SHA\": \"${TR_WORKER_IMAGE_SHA}\",
+            \"GATEWAY_IMAGE_SHA\": \"${GATEWAY_IMAGE_SHA}\",
+            \"GENERATION_IMAGE_SHA\": \"${GENERATION_IMAGE_SHA}\",
+            \"CP_WORKER_IMAGE_SHA\": \"${CP_WORKER_IMAGE_SHA}\"
+          }
+        }"

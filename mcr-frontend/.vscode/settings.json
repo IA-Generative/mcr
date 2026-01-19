@@ -1,0 +1,41 @@
+{
+  "emmet.includeLanguages": {
+    "postcss": "css"
+  },
+  "npm-intellisense.importES6": true,
+  "npm-intellisense.importQuotes": "'",
+  "npm-intellisense.importLinebreak": "\n",
+  "npm-intellisense.importDeclarationType": "const",
+  "stylelint.enable": true,
+  "stylelint.validate": [
+    "css",
+    "html",
+    "less",
+    "markdown",
+    "postcss",
+    "sass",
+    "scss",
+    "source.css.styled",
+    "source.markdown.math",
+    "sugarss",
+    "vue",
+    "vue-html",
+    "vue-postcss",
+    "xml",
+    "xsl"
+  ],
+  "css.validate": false,
+  "scss.validate": false,
+  "[css]": { "editor.defaultFormatter": "stylelint.vscode-stylelint" },
+  "css.styleSheets": ["node_modules/@gouvfr/dsfr/dist/dsfr.main.css", "src/**/*.css"],
+  "cssVariables.lookupFiles": [
+    "**/*.css",
+    "**/*.scss",
+    "**/*.sass",
+    "**/*.less",
+    "node_modules/@gouvfr/dsfr/dist/dsfr.main.css"
+  ],
+  "i18n-ally.localesPaths": [
+    "src/locales"
+  ]
+}

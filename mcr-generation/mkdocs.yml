@@ -1,0 +1,13 @@
+site_name: MCR-Génération
+nav:
+  - Description: index.md
+  - Howto: howto.md
+  - Settings: settings.md
+  - Prompt Service: prompt_service.md
+  - Report Service: report_service.md
+  - Theme Service: theme_service.md
+
+
+theme: readthedocs
+plugins:
+  - mkdocstrings
