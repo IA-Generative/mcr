@@ -69,8 +69,8 @@ Ces outils permettent de visualiser et d’explorer le contenu de la base de don
 Clonez le repository et lancez le projet à l’aide de la commande `make` :
 
 ```bash
-git clone git@github.com:IA-Generative/mcr-v2.git
-cd mcr-v2
+git clone git@github.com:IA-Generative/mcr.git
+cd mcr
 make start
 ```
 
