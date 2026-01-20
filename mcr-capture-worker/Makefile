@@ -16,7 +16,7 @@ help:
 
 # Clean the folder from build/test related folders
 reload: 
-	docker build -t mcr-v2-capture_worker .
+	docker build -t mcr-capture_worker .
 	docker-compose up -d
 
 type-check:
