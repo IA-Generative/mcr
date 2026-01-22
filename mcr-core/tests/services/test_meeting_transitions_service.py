@@ -1,5 +1,6 @@
 # type: ignore[explicit-any]
 
+from datetime import datetime
 from typing import Any, Dict
 from unittest.mock import MagicMock, Mock
 from uuid import UUID
@@ -31,6 +32,9 @@ class DummyMeeting:
         self.id = id
         self.name = "Dummy Meeting"
         self.transcription_filename = "titre.docx"
+
+        self.start_date: datetime
+        self.end_date: datetime
 
         self.owner = MagicMock()
         self.owner.keycloak_uuid = UUID("00000000-0000-0000-0000-000000000001")
@@ -115,6 +119,26 @@ def _mock_db(monkeypatch: Any, meeting_store: Dict[int, DummyMeeting]) -> MagicM
         mts,
         "get_meeting_service",
         mock_get_meeting_service,
+    )
+
+    def mock_update_meeting_start_date(
+        meeting: DummyMeeting, start_date: MeetingStatus
+    ) -> DummyMeeting:
+        meeting.start_date = start_date
+        return meeting
+
+    monkeypatch.setattr(
+        meeting_actions, "update_meeting_start_date", mock_update_meeting_start_date
+    )
+
+    def mock_update_meeting_end_date(
+        meeting: DummyMeeting, end_date: MeetingStatus
+    ) -> DummyMeeting:
+        meeting.end_date = end_date
+        return meeting
+
+    monkeypatch.setattr(
+        meeting_actions, "update_meeting_end_date", mock_update_meeting_end_date
     )
 
     return db_mock

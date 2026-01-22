@@ -57,6 +57,10 @@ async def create_meeting_service(
     try:
         meeting_data_dict = meeting_data.model_dump()
         meeting_data_dict["creation_date"] = meeting_data.creation_date.isoformat()
+        if meeting_data.start_date is not None:
+            meeting_data_dict["start_date"] = meeting_data.start_date.isoformat()
+        if meeting_data.end_date is not None:
+            meeting_data_dict["end_date"] = meeting_data.end_date.isoformat()
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             # TODO: This would be clearer with the slash not included in the base url
             # To make that change, one would need to change all of the services urls
@@ -91,6 +95,10 @@ async def create_meeting_with_presigned_url_service(
     try:
         meeting_data_dict = meeting_data.model_dump()
         meeting_data_dict["creation_date"] = meeting_data.creation_date.isoformat()
+        if meeting_data.start_date is not None:
+            meeting_data_dict["start_date"] = meeting_data.start_date.isoformat()
+        if meeting_data.end_date is not None:
+            meeting_data_dict["end_date"] = meeting_data.end_date.isoformat()
 
         payload = {
             "meeting_data": meeting_data_dict,

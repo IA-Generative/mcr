@@ -1,5 +1,3 @@
-from urllib.parse import quote
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -35,6 +33,7 @@ from mcr_meeting.app.services.send_email_service import (
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
+from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
 
 api_settings = ApiSettings()
@@ -66,10 +65,7 @@ async def retrieve_or_create_formatted_meeting_transcription(
         meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
 
-    url_encoded_filename = quote(result.filename)
-    headers = {
-        "Content-Disposition": f"attachment; filename*=UTF-8''{url_encoded_filename}"
-    }
+    headers = create_safe_filename_header(result.filename)
 
     return StreamingResponse(
         result.buffer,

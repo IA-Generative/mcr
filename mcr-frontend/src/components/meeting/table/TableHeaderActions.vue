@@ -71,7 +71,7 @@ const toaster = useToaster();
 const { importMeetingMutation, addMeetingMutation, startTranscriptionMutation } = useMeetings();
 const { uploadFile } = useMultipart();
 const { mutate: importMeeting, isPending: isImportMeetingPending } = importMeetingMutation();
-const { mutate: createMeeting } = addMeetingMutation();
+const { mutate: createMeeting, mutateAsync: createMeetingAsync } = addMeetingMutation();
 const { mutate: startTranscription } = startTranscriptionMutation();
 
 const isMultipartUploadEnabled = useFeatureFlag('multipart-file');
@@ -140,31 +140,32 @@ async function importMeetingStartTranscriptionAndRedirect({
     lastModified: file.lastModified,
   });
 
+  const dtoWithDates = await updateDtoWithDates(dto, file);
+
   if (isMultipartUploadEnabled.value) {
-    isMultipartUploadPending.value = true;
     try {
-      await uploadFileWithMultipart(dto, renamedFile);
+      isMultipartUploadPending.value = true;
+      await uploadFileWithMultipart(dtoWithDates, renamedFile);
     } catch (error) {
       console.error(error);
       toaster.addErrorMessage(t('error.file-upload')!);
+    } finally {
+      isMultipartUploadPending.value = false;
     }
-    isMultipartUploadPending.value = false;
   } else {
-    uploadAllFileAtOnce({ dto: dto, file: renamedFile });
+    uploadAllFileAtOnce({ dto: dtoWithDates, file: renamedFile });
   }
 }
 
 async function uploadFileWithMultipart(dto: AddImportMeetingDto, file: File): Promise<void> {
-  createMeeting(dto, {
-    onSuccess: async (data) => {
-      await uploadFile({ meetingId: data.id, file: file });
-      closeImportModal();
-      startTranscriptionAndRedirect(data.id);
-    },
-    onError: () => {
-      toaster.addErrorMessage(t('error.meeting-creation')!);
-    },
-  });
+  try {
+    const meeting = await createMeetingAsync(dto);
+    await uploadFile({ meetingId: meeting.id, file });
+    closeImportModal();
+    startTranscriptionAndRedirect(meeting.id);
+  } catch (e) {
+    toaster.addErrorMessage(t('error.meeting-creation')!);
+  }
 }
 
 async function uploadAllFileAtOnce(payload: {
@@ -184,5 +185,22 @@ async function uploadAllFileAtOnce(payload: {
       }
     },
   });
+}
+
+async function updateDtoWithDates(
+  dto: AddImportMeetingDto,
+  file: File,
+): Promise<AddImportMeetingDto> {
+  const audio = new Audio();
+  audio.src = URL.createObjectURL(file);
+  await new Promise((resolve) => (audio.onloadedmetadata = resolve));
+  const duration = audio.duration;
+
+  const endDate = new Date(Date.now());
+  const startDate = new Date(endDate.getTime() - duration * 1000);
+  dto.start_date = startDate.toISOString();
+  dto.end_date = endDate.toISOString();
+
+  return dto;
 }
 </script>

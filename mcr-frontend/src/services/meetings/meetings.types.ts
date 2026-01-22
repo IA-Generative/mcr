@@ -37,8 +37,8 @@ type MeetingDtoBase = {
   name_platform: AllMeetingPlatforms;
   status: MeetingStatus;
   creation_date: string;
-  start_date: string;
-  end_date: string;
+  start_date?: string;
+  end_date?: string;
 };
 
 export interface OnlineMeetingDto extends MeetingDtoBase {
@@ -62,10 +62,7 @@ export type AddOnlineMeetingDto = Omit<
   OnlineMeetingDto,
   'id' | 'status' | 'start_date' | 'end_date'
 >;
-export type AddImportMeetingDto = Omit<
-  ImportMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date'
->;
+export type AddImportMeetingDto = Omit<ImportMeetingDto, 'id' | 'status'>;
 export type AddRecordMeetingDto = Omit<
   RecordMeetingDto,
   'id' | 'status' | 'start_date' | 'end_date'

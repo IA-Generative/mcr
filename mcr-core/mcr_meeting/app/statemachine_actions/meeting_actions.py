@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from loguru import logger
 
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
@@ -6,6 +8,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     TaskCreationException,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus
+from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     MCRTranscriptionTasks,
@@ -14,7 +17,11 @@ from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
 from mcr_meeting.app.services.docx_report_generation_service import (
     generate_docx_decisions_reports_from_template,
 )
-from mcr_meeting.app.services.meeting_service import update_meeting_status
+from mcr_meeting.app.services.meeting_service import (
+    update_meeting_end_date,
+    update_meeting_start_date,
+    update_meeting_status,
+)
 from mcr_meeting.app.services.meeting_transition_record_service import (
     create_transcription_transition_record_with_estimation,
     create_transition_record_service,
@@ -30,10 +37,29 @@ from mcr_meeting.app.services.transcription_waiting_time_service import (
 from mcr_meeting.app.utils.celery_producer import celery_producer_app
 
 
+def after_start_capture_bot_handler(
+    meeting: Meeting, next_status: MeetingStatus
+) -> None:
+    with UnitOfWork():
+        update_meeting_status(meeting, next_status)
+        update_meeting_start_date(meeting, datetime.now(timezone.utc))
+
+
+def after_complete_capture_handler(
+    meeting: Meeting, next_status: MeetingStatus
+) -> None:
+    with UnitOfWork():
+        update_meeting_status(meeting, next_status)
+        update_meeting_end_date(meeting, datetime.now(timezone.utc))
+
+
 def after_init_transcription_handler(
     meeting: Meeting, next_status: MeetingStatus
 ) -> None:
     with UnitOfWork():
+        if meeting.name_platform == MeetingPlatforms.MCR_RECORD:
+            update_meeting_end_date(meeting, datetime.now(timezone.utc))
+
         update_meeting_status(meeting, next_status)
         celery_producer_app.send_task(
             MCRTranscriptionTasks.TRANSCRIBE, args=[meeting.id]
