@@ -44,18 +44,62 @@ def display_metrics_charts(df: pd.DataFrame) -> None:
     )
     st.plotly_chart(fig, use_container_width=True)
 
-    # Box plot for comparisons if needed
-    fig_box = px.box(
-        df,
-        y=metric_to_plot,
-        points="all",
-        title=f"Box Plot of {metric_to_plot.upper()}",
-        template="plotly_white",
-    )
-    st.plotly_chart(fig_box, use_container_width=True)
-
 
 def display_results_table(df: pd.DataFrame) -> None:
     """Display the raw results in a table."""
     st.subheader("Detailed Results")
     st.dataframe(df, use_container_width=True)
+
+
+def display_baseline_comparison(df: pd.DataFrame, baseline_df: pd.DataFrame) -> None:
+    """Display comparison between current data and baseline."""
+    st.subheader("Baseline Comparison")
+
+    # Metrics comparison
+    col1, col2, col3 = st.columns(3)
+
+    metrics = {
+        "WER": "wer",
+        "CER": "cer",
+        "DER": "diarization_error_rate",
+    }
+
+    for col, (label, col_name) in zip([col1, col2, col3], metrics.items()):
+        current_val = df[col_name].mean()
+        baseline_val = baseline_df[col_name].mean()
+        delta = current_val - baseline_val
+        # Lower is better for error rates
+        col.metric(
+            label, f"{current_val:.4f}", delta=f"{delta:.4f}", delta_color="inverse"
+        )
+
+    # Comparison Plot
+    st.write("### Side-by-side Comparison")
+    metric_to_compare = st.selectbox(
+        "Select metric to compare",
+        list(metrics.values()),
+        key="comparison_metric_select",
+    )
+
+    # Prepare data for Plotly
+    df_plot = df[[metric_to_compare]].copy()
+    df_plot["Type"] = "Selected"
+
+    baseline_plot = baseline_df[[metric_to_compare]].copy()
+    baseline_plot["Type"] = "Baseline"
+
+    combined_df = pd.concat([df_plot, baseline_plot], axis=0)
+
+    fig = px.histogram(
+        combined_df,
+        x=metric_to_compare,
+        color="Type",
+        barmode="overlay",
+        marginal="box",  # Keeps a small box plot on top for distribution summary
+        title=f"Comparison of {metric_to_compare.upper()}",
+        template="plotly_white",
+        color_discrete_map={"Selected": "#636EFA", "Baseline": "#EF553B"},
+        opacity=0.75,
+        nbins=20,
+    )
+    st.plotly_chart(fig, use_container_width=True)

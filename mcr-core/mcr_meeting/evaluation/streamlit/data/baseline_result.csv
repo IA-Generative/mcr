@@ -1,0 +1,6 @@
+uid,wer,cer,diarization_error_rate,diarization_coverage,diarization_completeness
+ca_acphfmi-02-00-to-03-15,0.6567,0.458,0.541,1.0,1.0
+ca_acphfmi-00-00-to-01-45,0.3471,0.2043,0.061,1.0,1.0
+canicule-01-45-to-03-30,0.0984,0.073,0.205,0.961,0.822
+meeting_401_from_01_29_25,0.0839,0.0321,0.01,1.0,1.0
+alf_ray,0.2254,0.1319,0.515,0.783,0.019

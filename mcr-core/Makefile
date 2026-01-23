@@ -6,13 +6,15 @@ MODEL    ?= tiny
 ENV_FILE := ../.env
 LOCAL_ENV_FILE := ../.env.local.docker
 
-ifneq ("$(wildcard $(ENV_FILE))","")
-  include $(ENV_FILE)
-  export
-endif
+
 
 ifneq ("$(wildcard $(LOCAL_ENV_FILE))","")
   include $(LOCAL_ENV_FILE)
+  export
+endif
+
+ifneq ("$(wildcard $(ENV_FILE))","")
+  include $(ENV_FILE)
   export
 endif
 

@@ -1,6 +1,8 @@
+import pandas as pd
 import streamlit as st
 
 from mcr_meeting.evaluation.streamlit.components.metrics_view import (
+    display_baseline_comparison,
     display_metrics_charts,
     display_metrics_summary,
     display_results_table,
@@ -55,6 +57,15 @@ def main() -> None:
             # Interactive charts
             display_metrics_charts(df)
             st.markdown("---")
+
+            # Baseline Comparison
+            baseline_path = "/Users/titouanmendiharat/Desktop/Projets/mcr/mcr-core/mcr_meeting/evaluation/streamlit/data/baseline_result.csv"
+            try:
+                baseline_df = pd.read_csv(baseline_path)
+                display_baseline_comparison(df, baseline_df)
+                st.markdown("---")
+            except Exception as e:
+                st.error(f"Error loading baseline data: {e}")
 
             # Raw data table
             display_results_table(df)
