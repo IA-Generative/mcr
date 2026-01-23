@@ -10,6 +10,7 @@ from pydantic import UUID4
 from mcr_gateway.app.configs.config import settings
 from mcr_gateway.app.schemas.meeting_schema import (
     Meeting,
+    MeetingBase,
     MeetingCreate,
     MeetingUpdate,
     MeetingWithPresignedUrl,
@@ -55,12 +56,9 @@ async def create_meeting_service(
         Meeting: The newly created meeting object.
     """
     try:
-        meeting_data_dict = meeting_data.model_dump()
-        meeting_data_dict["creation_date"] = meeting_data.creation_date.isoformat()
-        if meeting_data.start_date is not None:
-            meeting_data_dict["start_date"] = meeting_data.start_date.isoformat()
-        if meeting_data.end_date is not None:
-            meeting_data_dict["end_date"] = meeting_data.end_date.isoformat()
+        meeting_data_dict = update_dict_with_iso_dates(
+            meeting_data.model_dump(), meeting_data
+        )
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             # TODO: This would be clearer with the slash not included in the base url
             # To make that change, one would need to change all of the services urls
@@ -93,12 +91,9 @@ async def create_meeting_with_presigned_url_service(
         Meeting: The newly created meeting object with a presigned URL for the transcription file.
     """
     try:
-        meeting_data_dict = meeting_data.model_dump()
-        meeting_data_dict["creation_date"] = meeting_data.creation_date.isoformat()
-        if meeting_data.start_date is not None:
-            meeting_data_dict["start_date"] = meeting_data.start_date.isoformat()
-        if meeting_data.end_date is not None:
-            meeting_data_dict["end_date"] = meeting_data.end_date.isoformat()
+        meeting_data_dict = update_dict_with_iso_dates(
+            meeting_data.model_dump(), meeting_data
+        )
 
         payload = {
             "meeting_data": meeting_data_dict,
@@ -184,8 +179,9 @@ async def update_meeting_service(
         Meeting: The updated meeting object.
     """
     try:
-        meeting_update_dict = meeting_update.model_dump(exclude_unset=True)
-        meeting_update_dict["creation_date"] = meeting_update.creation_date.isoformat()
+        meeting_update_dict = update_dict_with_iso_dates(
+            meeting_update.model_dump(exclude_unset=True), meeting_update
+        )
 
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             response = await client.put(f"{meeting_id}", json=meeting_update_dict)
@@ -456,3 +452,15 @@ async def generate_report(
             status_code=500,
             detail="An unexpected error occurred while getting the report.",
         )
+
+
+def update_dict_with_iso_dates(
+    meeting_dict: dict[str, Any], meeting: MeetingBase
+) -> dict[str, Any]:
+    meeting_dict["creation_date"] = meeting.creation_date.isoformat()
+    if meeting.start_date is not None:
+        meeting_dict["start_date"] = meeting.start_date.isoformat()
+    if meeting.end_date is not None:
+        meeting_dict["end_date"] = meeting.end_date.isoformat()
+
+    return meeting_dict
