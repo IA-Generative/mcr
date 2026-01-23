@@ -76,6 +76,10 @@ typing = [
 ]
 tools = ["mypy-clean-slate", "deptry"]
 provisioning = ["python-keycloak"]
+streamlit = [
+    "streamlit>=1.42.0",
+    "plotly>=6.0.0",
+]
 
 [tool.mypy]
 # disallow_any_unimported = true

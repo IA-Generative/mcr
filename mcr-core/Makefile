@@ -4,9 +4,15 @@ EVALUATION_OUTPUT_DIR  ?= $(EVALUATION_DATA_DIR)/outputs
 MODEL    ?= tiny
 
 ENV_FILE := ../.env
+LOCAL_ENV_FILE := ../.env.local.docker
 
 ifneq ("$(wildcard $(ENV_FILE))","")
   include $(ENV_FILE)
+  export
+endif
+
+ifneq ("$(wildcard $(LOCAL_ENV_FILE))","")
+  include $(LOCAL_ENV_FILE)
   export
 endif
 
@@ -102,3 +108,12 @@ generate-graphs:
 	@uv sync --inexact --group dev >/dev/null 2>&1 || true
 	@uv run python scripts/generate_state_machine_graph.py
 	@echo "Graphs generated successfully in mcr_meeting/app/state_machine/graph/"
+streamlit:
+	@echo "Starting Streamlit Dashboard..."
+	@uv sync --group streamlit --inexact >/dev/null 2>&1 || true
+	@uv run streamlit run mcr_meeting/evaluation/streamlit/app.py
+
+streamlit-local:
+	@echo "Starting Streamlit Dashboard (local)..."
+	@uv sync --group streamlit --inexact >/dev/null 2>&1 || true
+	@PYTHONPATH=. uv run streamlit run mcr_meeting/evaluation/streamlit/app.py
