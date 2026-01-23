@@ -22,3 +22,14 @@ export function formatDurationMinutes(durationMinutes: number | undefined): stri
     formattedTime,
   });
 }
+
+export function formatRoundedDurationMinutes(durationMinutes: number | undefined): string {
+  const roundedDuration =
+    durationMinutes !== undefined ? roundUpToNearestTen(durationMinutes) : undefined;
+
+  return formatDurationMinutes(roundedDuration);
+}
+
+function roundUpToNearestTen(durationMinutes: number): number {
+  return Math.ceil(durationMinutes / 10) * 10;
+}
