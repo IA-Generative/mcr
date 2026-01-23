@@ -145,6 +145,7 @@ class Speech2TextSettings(BaseSettings):
         default="pyannote/speaker-diarization-3.1",
         description="model name for speaker diarization.",
     )
+    NOISE_FILTERS: str = "highpass=f=80,afftdn=nf=-25,agate=threshold=0.015:ratio=2,equalizer=f=250:width_type=h:width=200:g=-2,equalizer=f=3500:width_type=h:width=2500:g=3,acompressor=threshold=-18dB:ratio=2.5:attack=15:release=200:makeup=1,loudnorm=I=-18:LRA=6:TP=-1.5"  # TODO: Change noise filter
 
 
 class TranscriptionWaitingTimeSettings(BaseSettings):

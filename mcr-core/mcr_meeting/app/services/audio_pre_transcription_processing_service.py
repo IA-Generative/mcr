@@ -1,69 +1,19 @@
 from io import BytesIO
-from pathlib import Path
-from tempfile import NamedTemporaryFile
-from typing import IO, Iterator, Union
+from typing import Iterator, Optional
 
 import ffmpeg
 from loguru import logger
 
-from mcr_meeting.app.configs.base import AudioSettings
+from mcr_meeting.app.configs.base import AudioSettings, Speech2TextSettings
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.S3_types import S3Object
+from mcr_meeting.app.services.feature_flag_service import FeatureFlagClient
 from mcr_meeting.app.services.s3_service import get_file_from_s3
 
+s2t_settings = Speech2TextSettings()
 audio_settings = AudioSettings()
 sample_rate = audio_settings.SAMPLE_RATE
 nb_channels = audio_settings.NB_AUDIO_CHANNELS
-PathLike = Union[str, Path]
-
-
-def _ffmpeg_normalize_file_to_wav_file(input_path: str, output_path: str) -> None:
-    """
-    Decode & Re-encode to a single, normalized WAV. Decodes all concatenated segments and
-    writes one continuous PCM stream (fixed sample rate/channels), eliminating per-chunk
-    timestamp resets (e.g., 0–30s then back to 0) that come from simply appending
-    containerized segments.
-
-    This ensures compatibility with speech-to-text (STT) processing by converting the audio
-    to a standard format (16 KHz sample rate, single channel).
-
-    Args:
-        input_path (str): Path to the input audio file.
-        output_path (str): Path to save the re-encoded WAV file.
-
-    Returns:
-        None
-    """
-    ffmpeg.input(input_path).output(  # type: ignore[attr-defined]
-        output_path,  # type: ignore[arg-type]
-        format="wav",  # type: ignore[call-arg]
-        ar=sample_rate,
-        ac=nb_channels,
-    ).overwrite_output().global_args("-loglevel", "warning").run()  # type: ignore[misc]
-
-
-def normalize_audio_file_to_wav_bytes(
-    input_path: PathLike,
-) -> BytesIO:
-    """
-    Convenience: file→normalized WAV bytes.
-
-    Args:
-        input_path (PathLike): Path to the input audio file.
-    Returns:
-        bytes: Normalized WAV bytes.
-    """
-
-    logger.info(
-        "Normalizing audio (file→bytes) | sr={} ch={}",
-        sample_rate,
-        nb_channels,
-    )
-
-    with NamedTemporaryFile(suffix=".wav") as out_tmp:
-        _ffmpeg_normalize_file_to_wav_file(str(input_path), out_tmp.name)
-        out_tmp.seek(0)
-        return BytesIO(out_tmp.read())
 
 
 def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
@@ -82,58 +32,133 @@ def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
         nb_channels,
     )
 
-    input = ffmpeg.input("pipe:0", err_detect="ignore_err")
+    # pipe:0 = read from stdin, pipe:1 = write to stdout
+    stream = ffmpeg.input("pipe:0", err_detect="ignore_err")
+    stream = (
+        stream.output(
+            "pipe:1",
+            format="wav",  # Specify WAV container format
+            ar=sample_rate,  # Audio rate (sample rate)
+            ac=nb_channels,  # Audio channels (mono/stereo)
+        )
+        .overwrite_output()
+        .global_args("-loglevel", "error")
+    )
+
+    # Log the generated FFmpeg command for debugging
+    try:
+        cmd = stream.compile()
+        logger.debug("FFmpeg command: %s", " ".join(cmd))
+    except Exception:
+        pass  # Don't fail if compile fails
 
     try:
-        output, error = (
-            input.output(
-                "pipe:1",
-                format="wav",
-                ar=sample_rate,
-                ac=nb_channels,
-            )
-            .overwrite_output()
-            .global_args("-loglevel", "error")
-            .run(
-                input=input_bytes.getvalue(),
-                capture_stdout=True,
-                capture_stderr=True,
-            )
+        output, error = stream.run(
+            input=input_bytes.getvalue(),
+            capture_stdout=True,
+            capture_stderr=True,
         )
         if error:
             logger.error(
                 "FFmpeg stderr (bytes→bytes): {}", error.decode(errors="ignore")
             )
             raise InvalidAudioFileError(
-                f"FFmpeg normalization (bytes→bytes) failed: {error}"
+                f"FFmpeg normalization (bytes→bytes) failed: {error.decode(errors='ignore')}"
             )
         return BytesIO(output)
+    except InvalidAudioFileError:
+        # Re-raise our own exceptions without wrapping them
+        raise
     except Exception as e:
         logger.error("Unexpected error during normalization: {}", e)
-        raise InvalidAudioFileError(f"Unexpected error during normalization: {e}")
+        raise InvalidAudioFileError(
+            f"Unexpected error during normalization: {e}"
+        ) from e
 
 
-def download_and_concatenate_s3_audio_chunks_into_file(
-    obj_iterator: Iterator[S3Object],
-    file: IO[bytes],
-) -> None:
+def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
     """
-    Concatenates audio chunks from an S3 object iterator into a single temporary file.
+    Apply noise reduction and audio enhancement filters to audio bytes.
+
+    Applies FFmpeg audio filters based on the provided filter string.
+
+    Args:
+        input_bytes (BytesIO): Raw audio bytes to be filtered.
+        filters (str): FFmpeg audio filter string to apply.
+    Returns:
+        BytesIO: Filtered audio bytes.
+    """
+    s2t_settings = Speech2TextSettings()
+    filters = s2t_settings.NOISE_FILTERS
+
+    logger.info("Applying noise reduction filters: {}", filters)
+
+    # Input is already normalized WAV, no need to re-specify format
+    stream = ffmpeg.input("pipe:0", err_detect="ignore_err")
+
+    try:
+        # Apply audio filters - format already WAV from previous step
+        stream = stream.output(
+            "pipe:1",
+            af=filters,  # Audio filter string
+        )
+
+        stream = stream.overwrite_output().global_args("-loglevel", "error")
+
+        # Log the generated FFmpeg command for debugging
+        try:
+            cmd = stream.compile()
+            logger.debug("FFmpeg command: %s", " ".join(cmd))
+        except Exception:
+            pass
+
+        output, error = stream.run(
+            input=input_bytes.getvalue(),
+            capture_stdout=True,
+            capture_stderr=True,
+        )
+        if error:
+            logger.error(
+                "FFmpeg stderr (noise filtering): {}", error.decode(errors="ignore")
+            )
+            raise InvalidAudioFileError(
+                f"FFmpeg noise filtering failed: {error.decode(errors='ignore')}"
+            )
+        return BytesIO(output)
+    except InvalidAudioFileError:
+        # Re-raise our own exceptions without wrapping them
+        raise
+    except Exception as e:
+        logger.error("Unexpected error during noise filtering: {}", e)
+        raise InvalidAudioFileError(
+            f"Unexpected error during noise filtering: {e}"
+        ) from e
+
+
+def download_and_concatenate_s3_audio_chunks_into_bytes(
+    obj_iterator: Iterator[S3Object],
+) -> BytesIO:
+    """
+    Concatenates audio chunks from an S3 object iterator into a BytesIO object.
 
     Args:
         obj_iterator (Iterator[S3Object]): An iterator over S3 objects containing audio chunks.
-        file (IO[bytes]): A writable file-like object to store the concatenated audio data.
 
     Returns:
-        None
+        BytesIO: A BytesIO object containing the concatenated audio data.
 
     Raises:
-        InvalidAudioFileError: If no audio chunks are found or S3 download fails
+        ValueError: If no audio chunks are found
+        InvalidAudioFileError: If S3 download fails
     """
+    audio_buffer = BytesIO()
+    chunk_count = 0
+
     for obj_info in obj_iterator:
+        chunk_count += 1
         try:
             audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
-            file.write(audio_chunk_data.getvalue())
+            audio_buffer.write(audio_chunk_data.read())
         except Exception as chunk_error:
             logger.error(
                 "Failed to download audio chunk {}: {}",
@@ -144,29 +169,41 @@ def download_and_concatenate_s3_audio_chunks_into_file(
                 f"Failed to download audio chunk {obj_info.object_name}: {chunk_error}"
             )
 
-    file.flush()
-    file.seek(0)
+    if chunk_count == 0:
+        raise ValueError("No audio chunks found in iterator")
+
+    audio_buffer.seek(0)
+    return audio_buffer
 
 
 def assemble_normalized_wav_from_s3_chunks(
-    obj_iterator: Iterator[S3Object], input_extension: str
+    obj_iterator: Iterator[S3Object],
+    feature_flag_client: Optional[FeatureFlagClient] = None,
 ) -> BytesIO:
     """
-    Assemble and normalize audio chunks from S3 into a single WAV bytes object.
+    Assemble and normalize audio chunks from S3 into a single bytes object.
 
     Args:
         obj_iterator: Iterator of S3 objects containing audio chunks
-        input_extension: File extension of the audio chunks
+        feature_flag_client: Optional feature flag client for checking noise filtering flag
 
     Returns:
         bytes: Normalized WAV audio bytes ready for transcription
-
-    Raises:
-        InvalidAudioFileError: If audio processing fails
     """
 
-    with NamedTemporaryFile(suffix=f".{input_extension}") as tmp_input_file:
-        download_and_concatenate_s3_audio_chunks_into_file(obj_iterator, tmp_input_file)
-        normalized_audio_bytes = normalize_audio_file_to_wav_bytes(tmp_input_file.name)
+    concatenated_audio_bytes = download_and_concatenate_s3_audio_chunks_into_bytes(
+        obj_iterator
+    )
+    normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(
+        concatenated_audio_bytes
+    )
 
-        return normalized_audio_bytes
+    # Apply noise filtering only if feature flag is enabled
+    if feature_flag_client and feature_flag_client.is_enabled("audio_noise_filtering"):
+        logger.info("Noise filtering enabled")
+        processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
+    else:
+        logger.info("Noise filtering disabled, skipping filtering step")
+        processed_bytes = normalized_audio_bytes
+
+    return processed_bytes
