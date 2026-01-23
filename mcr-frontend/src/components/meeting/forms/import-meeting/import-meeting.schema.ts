@@ -6,7 +6,10 @@ import {
 import { t } from '@/plugins/i18n';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 
-type AddImportMeetingFields = Omit<AddImportMeetingDto, 'name_platform' | 'creation_date'> & {
+type AddImportMeetingFields = Omit<
+  AddImportMeetingDto,
+  'name_platform' | 'creation_date' | 'start_date' | 'end_date'
+> & {
   file: File;
 };
 

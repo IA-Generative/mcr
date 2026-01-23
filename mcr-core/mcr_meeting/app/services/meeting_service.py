@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
@@ -46,6 +47,7 @@ def create_meeting_service(
             meeting_data.status = MeetingStatus.IMPORT_PENDING
         case "MCR_RECORD":
             meeting_data.status = MeetingStatus.CAPTURE_IN_PROGRESS
+            meeting_data.start_date = meeting_data.creation_date
         case _:
             meeting_data.status = MeetingStatus.NONE
 
@@ -179,3 +181,13 @@ def set_meeting_report_filename(meeting_id: int, filename: str) -> None:
     meeting = get_meeting_by_id(meeting_id=meeting_id)
     meeting.report_filename = filename
     update_meeting(meeting)
+
+
+def update_meeting_start_date(meeting: Meeting, start_date: datetime) -> Meeting:
+    meeting.start_date = start_date
+    return update_meeting(meeting)
+
+
+def update_meeting_end_date(meeting: Meeting, end_date: datetime) -> Meeting:
+    meeting.end_date = end_date
+    return update_meeting(meeting)

@@ -14,6 +14,7 @@ from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
 from mcr_meeting.app.services.report_task_service import (
     get_formatted_report_from_s3,
 )
+from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
 
 api_settings = ApiSettings()
@@ -45,13 +46,13 @@ async def get_meeting_report(
     )
 
     docx_buffer = get_formatted_report_from_s3(meeting)
+    filename = f"compte_rendu_{meeting.name}.docx"
+    headers = create_safe_filename_header(filename)
 
     return StreamingResponse(
         docx_buffer,
         media_type=DOCX_MIME_TYPE,
-        headers={
-            "Content-Disposition": f"attachment; filename={meeting.name}_transcription.docx"
-        },
+        headers=headers,
     )
 
 

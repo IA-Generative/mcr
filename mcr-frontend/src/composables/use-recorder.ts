@@ -38,6 +38,7 @@ async function getUserPermission() {
 function _preventSendingAudio() {
   if (!mediaRecorder.value) return;
   mediaRecorder.value.ondataavailable = null;
+  mediaRecorder.value.onstop = null;
 }
 
 function _initMediaRecorderEvents(options: RecordingOptions) {
