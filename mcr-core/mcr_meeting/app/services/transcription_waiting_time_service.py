@@ -62,7 +62,7 @@ class TranscriptionQueueEstimationService:
         return remaining_minutes
 
     @classmethod
-    def get_queue_estimated_waiting_time_minutes(cls) -> int:
+    def estimate_current_wait_time_minutes(cls) -> int:
         """
         Get the estimated waiting time for new meetings joining the transcription queue.
         Based on the total number of pending meetings and average processing time.
