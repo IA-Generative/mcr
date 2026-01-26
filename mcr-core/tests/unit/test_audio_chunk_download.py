@@ -1,17 +1,17 @@
 from io import BytesIO
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
-    download_and_concatenate_s3_audio_chunks_into_file,
+    download_and_concatenate_s3_audio_chunks_into_bytes,
 )
 
 
 class TestDownloadAndConcatenateS3AudioChunks:
-    """Tests pour la fonction download_and_concatenate_s3_audio_chunks_into_file."""
+    """Tests pour la fonction download_and_concatenate_s3_audio_chunks_into_bytes."""
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
@@ -29,19 +29,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
                 last_modified="2023-01-01T00:00:00Z",
             )
         ]
-        mock_file = Mock()
 
         with pytest.raises(InvalidAudioFileError) as exc_info:
-            download_and_concatenate_s3_audio_chunks_into_file(
-                iter(s3_objects), mock_file
-            )
+            download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
 
         assert "Failed to download audio chunk 123/audio_chunk_1.weba" in str(
             exc_info.value
         )
         assert "S3 connection timeout" in str(exc_info.value)
-
-        mock_file.write.assert_not_called()
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
@@ -71,16 +66,12 @@ class TestDownloadAndConcatenateS3AudioChunks:
                 last_modified="2023-01-01T00:02:00Z",
             ),
         ]
-        mock_file = Mock()
 
-        download_and_concatenate_s3_audio_chunks_into_file(iter(s3_objects), mock_file)
+        result = download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
 
-        assert mock_file.write.call_count == 3
-        mock_file.write.assert_any_call(b"audio_data_1")
-        mock_file.write.assert_any_call(b"audio_data_2")
-        mock_file.write.assert_any_call(b"audio_data_3")
-        mock_file.flush.assert_called_once()
-        mock_file.seek.assert_called_once_with(0)
+        assert isinstance(result, BytesIO)
+        assert result.getvalue() == b"audio_data_1audio_data_2audio_data_3"
+        assert result.tell() == 0
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
@@ -109,15 +100,10 @@ class TestDownloadAndConcatenateS3AudioChunks:
                 last_modified="2023-01-01T00:02:00Z",
             ),
         ]
-        mock_file = Mock()
 
-        download_and_concatenate_s3_audio_chunks_into_file(iter(s3_objects), mock_file)
-        assert mock_file.write.call_count == 3
-        mock_file.write.assert_any_call(b"")
-        mock_file.write.assert_any_call(b"valid_data")
-        mock_file.write.assert_any_call(b"")
-        mock_file.flush.assert_called_once()
-        mock_file.seek.assert_called_once_with(0)
+        result = download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
+        assert result.getvalue() == b"valid_data"
+        assert result.tell() == 0
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
@@ -133,13 +119,11 @@ class TestDownloadAndConcatenateS3AudioChunks:
                 last_modified="2023-01-01T00:00:00Z",
             )
         ]
-        mock_file = Mock()
 
-        download_and_concatenate_s3_audio_chunks_into_file(iter(s3_objects), mock_file)
+        result = download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
 
-        mock_file.write.assert_called_once_with(b"single_audio_data")
-        mock_file.flush.assert_called_once()
-        mock_file.seek.assert_called_once_with(0)
+        assert result.getvalue() == b"single_audio_data"
+        assert result.tell() == 0
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
@@ -159,13 +143,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
             )
             for i in range(num_chunks)
         ]
-        mock_file = Mock()
 
-        download_and_concatenate_s3_audio_chunks_into_file(iter(s3_objects), mock_file)
+        result = download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
 
-        assert mock_file.write.call_count == num_chunks
-        mock_file.flush.assert_called_once()
-        mock_file.seek.assert_called_once_with(0)
+        expected_data = b"".join(
+            [f"chunk_data_{i}".encode() for i in range(num_chunks)]
+        )
+        assert result.getvalue() == expected_data
+        assert result.tell() == 0
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
@@ -189,12 +174,9 @@ class TestDownloadAndConcatenateS3AudioChunks:
                     last_modified="2023-01-01T00:00:00Z",
                 )
             ]
-            mock_file = Mock()
 
             with pytest.raises(InvalidAudioFileError) as exc_info:
-                download_and_concatenate_s3_audio_chunks_into_file(
-                    iter(s3_objects), mock_file
-                )
+                download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
 
             assert expected_message in str(exc_info.value)
             assert "Failed to download audio chunk 123/test_chunk.weba" in str(
@@ -204,8 +186,8 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_work_with_real_file_object(self, mock_get_file_from_s3):
-        """Test avec un vrai objet fichier BytesIO."""
+    def test_should_return_buffer_at_beginning(self, mock_get_file_from_s3):
+        """Test que l'objet BytesIO renvoyé est positionné au début."""
         mock_get_file_from_s3.side_effect = [BytesIO(b"chunk1"), BytesIO(b"chunk2")]
 
         s3_objects = [
@@ -221,11 +203,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
             ),
         ]
 
-        with BytesIO() as real_file:
-            download_and_concatenate_s3_audio_chunks_into_file(
-                iter(s3_objects), real_file
-            )
+        result = download_and_concatenate_s3_audio_chunks_into_bytes(iter(s3_objects))
 
-            real_file.seek(0)
-            content = real_file.read()
-            assert content == b"chunk1chunk2"
+        assert result.tell() == 0
+        assert result.read() == b"chunk1chunk2"
