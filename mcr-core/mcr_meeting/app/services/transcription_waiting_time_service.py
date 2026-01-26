@@ -1,8 +1,11 @@
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from mcr_meeting.app.configs.base import TranscriptionWaitingTimeSettings
-from mcr_meeting.app.db.meeting_repository import count_pending_meetings
+from mcr_meeting.app.db.meeting_repository import (
+    count_pending_meetings,
+    get_meeting_by_id,
+)
 from mcr_meeting.app.db.meeting_transition_record_repository import (
     find_transition_record_by_meeting_and_status,
 )
@@ -21,8 +24,8 @@ class TranscriptionQueueEstimationService:
     - The average transcription time per meeting (12 minutes)
     """
 
-    @classmethod
-    def get_meeting_remaining_waiting_time_minutes(cls, meeting_id: int) -> int:
+    @staticmethod
+    def get_meeting_remaining_waiting_time_minutes(meeting_id: int) -> int:
         """
         Get the remaining waiting time for a specific meeting in minutes.
         Based on the meeting's estimated end date minus current time.
@@ -61,8 +64,8 @@ class TranscriptionQueueEstimationService:
 
         return remaining_minutes
 
-    @classmethod
-    def estimate_current_wait_time_minutes(cls) -> int:
+    @staticmethod
+    def estimate_current_wait_time_minutes() -> int:
         """
         Get the estimated waiting time for new meetings joining the transcription queue.
         Based on the total number of pending meetings and average processing time.
@@ -87,11 +90,20 @@ class TranscriptionQueueEstimationService:
         return current_waiting_time_minutes
 
     @classmethod
-    def get_predicted_transcription_end_date(cls) -> datetime:
-        current_date = datetime.now(timezone.utc)
-        predicted_transcription_end_date = current_date + timedelta(
-            minutes=transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS
-            * 60
+    def estimate_transcription_duration_minutes(cls, meeting_id: int) -> int:
+        meeting = get_meeting_by_id(meeting_id=meeting_id)
+
+        if meeting.duration_minutes is not None:
+            duration = meeting.duration_minutes
+        else:
+            duration = cls.estimate_default_meeting_duration()
+
+        return (
+            duration // transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_SPEED
         )
 
-        return predicted_transcription_end_date
+    def estimate_default_meeting_duration() -> int:
+        duration_hour = int(
+            transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS
+        )
+        return duration_hour * 60

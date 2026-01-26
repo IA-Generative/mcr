@@ -70,7 +70,28 @@ def after_init_transcription_handler(
     )
 
     create_transcription_transition_record_with_estimation(
-        meeting_id=meeting.id, waiting_time_minutes=current_wait_time_minutes
+        meeting_id=meeting.id,
+        meeting_status=next_status,
+        waiting_time_minutes=current_wait_time_minutes,
+    )
+
+
+def after_start_transcription_handler(
+    meeting: Meeting, next_status: MeetingStatus
+) -> None:
+    with UnitOfWork():
+        update_meeting_status(meeting, next_status)
+
+    waiting_time_minutes = (
+        TranscriptionQueueEstimationService.estimate_transcription_duration_minutes(
+            meeting.id
+        )
+    )
+
+    create_transcription_transition_record_with_estimation(
+        meeting_id=meeting.id,
+        meeting_status=next_status,
+        waiting_time_minutes=waiting_time_minutes,
     )
 
 

@@ -9,7 +9,7 @@ from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRe
 
 
 def create_transcription_transition_record_with_estimation(
-    meeting_id: int, waiting_time_minutes: int
+    meeting_id: int, meeting_status: MeetingStatus, waiting_time_minutes: int
 ) -> MeetingTransitionRecord:
     """
     Create a transition record for the transcription with an estimated end time.
@@ -31,7 +31,7 @@ def create_transcription_transition_record_with_estimation(
         meeting_id=meeting_id,
         timestamp=current_time,
         predicted_date_of_next_transition=predicted_date_of_next_transition,
-        status=MeetingStatus.TRANSCRIPTION_PENDING,
+        status=meeting_status,
     )
     with UnitOfWork():
         saved_record = save_meeting_transition_record(transition_record)
@@ -42,7 +42,12 @@ def create_transition_record_service(
     meeting_id: int,
     next_status: MeetingStatus,
 ) -> None:
-    if next_status == MeetingStatus.TRANSCRIPTION_PENDING:
+    status_with_special_transition_record_handlers = [
+        MeetingStatus.TRANSCRIPTION_PENDING,
+        MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+    ]
+
+    if next_status in status_with_special_transition_record_handlers:
         return
 
     current_time = datetime.now(timezone.utc)
