@@ -1,5 +1,5 @@
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -11,15 +11,20 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
 
 
 class TestDownloadAndConcatenateS3AudioChunks:
-    """Tests pour la fonction download_and_concatenate_s3_audio_chunks_into_bytes."""
+    """Tests for the function download_and_concatenate_s3_audio_chunks_into_bytes."""
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
     def test_should_raise_invalid_audio_file_error_when_s3_download_fails(
-        self, mock_get_file_from_s3
-    ):
-        """Test que la fonction gère les échecs de téléchargement S3."""
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """
+        Checks that the function handles S3 download failures.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         mock_get_file_from_s3.side_effect = ConnectionError("S3 connection timeout")
 
         s3_objects = [
@@ -41,8 +46,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_process_successfully_when_valid_chunks(self, mock_get_file_from_s3):
-        """Test le traitement réussi de chunks audio valides."""
+    def test_should_process_successfully_when_valid_chunks(
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """Checks successful processing of valid audio chunks.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         mock_get_file_from_s3.side_effect = [
             BytesIO(b"audio_data_1"),
             BytesIO(b"audio_data_2"),
@@ -76,13 +87,19 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_handle_empty_chunks_gracefully(self, mock_get_file_from_s3):
-        """Test la gestion des chunks vides."""
+    def test_should_handle_empty_chunks_gracefully(
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """Checks handling of empty chunks.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         mock_get_file_from_s3.side_effect = [
             BytesIO(b""),
             BytesIO(b"valid_data"),
             BytesIO(b""),
-        ]  # Chunks vides mélangés
+        ]
         s3_objects = [
             S3Object(
                 bucket_name="test",
@@ -108,8 +125,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_handle_single_chunk_successfully(self, mock_get_file_from_s3):
-        """Test le traitement réussi d'un seul chunk."""
+    def test_should_handle_single_chunk_successfully(
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """Checks successful handling of a single chunk.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         mock_get_file_from_s3.return_value = BytesIO(b"single_audio_data")
 
         s3_objects = [
@@ -128,8 +151,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_handle_large_number_of_chunks(self, mock_get_file_from_s3):
-        """Test le traitement d'un grand nombre de chunks."""
+    def test_should_handle_large_number_of_chunks(
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """Checks handling of a large number of chunks.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         num_chunks = 50
         mock_get_file_from_s3.side_effect = [
             BytesIO(f"chunk_data_{i}".encode()) for i in range(num_chunks)
@@ -155,8 +184,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_handle_different_s3_error_types(self, mock_get_file_from_s3):
-        """Test la gestion de différents types d'erreurs S3."""
+    def test_should_handle_different_s3_error_types(
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """Checks handling of different S3 error types.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         error_test_cases = [
             (ConnectionError("Connection timeout"), "Connection timeout"),
             (TimeoutError("Request timeout"), "Request timeout"),
@@ -186,8 +221,14 @@ class TestDownloadAndConcatenateS3AudioChunks:
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
     )
-    def test_should_return_buffer_at_beginning(self, mock_get_file_from_s3):
-        """Test que l'objet BytesIO renvoyé est positionné au début."""
+    def test_should_return_buffer_at_beginning(
+        self, mock_get_file_from_s3: MagicMock
+    ) -> None:
+        """Checks that the returned BytesIO object is positioned at the beginning.
+
+        Args:
+            mock_get_file_from_s3: Mock for the get_file_from_s3 function.
+        """
         mock_get_file_from_s3.side_effect = [BytesIO(b"chunk1"), BytesIO(b"chunk2")]
 
         s3_objects = [

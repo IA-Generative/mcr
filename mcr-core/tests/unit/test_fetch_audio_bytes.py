@@ -28,7 +28,7 @@ class TestFetchAudioBytes:
     def test_should_raise_invalid_audio_file_error_when_no_audio_files_found(
         self, mock_get_ff_client: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes lève ValueError quand aucun fichier audio n'est trouvé."""
+        """Checks that fetch_audio_bytes raises ValueError when no audio files are found."""
         mock_get_objects_list.return_value = iter([])
         mock_ff_client = Mock()
         mock_get_ff_client.return_value = mock_ff_client
@@ -50,7 +50,7 @@ class TestFetchAudioBytes:
     def test_should_raise_invalid_audio_file_error_when_audio_processing_fails(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes lève Exception quand le traitement audio échoue."""
+        """Checks that fetch_audio_bytes raises Exception when audio processing fails."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = InvalidAudioFileError("Processing failed")
         mock_ff_client = Mock()
@@ -71,7 +71,7 @@ class TestFetchAudioBytes:
     def test_should_raise_invalid_audio_file_error_when_extension_extraction_fails(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes lève ValueError quand l'extraction d'extension échoue."""
+        """Checks that fetch_audio_bytes raises ValueError when extension extraction fails."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = ValueError(
             "No audio files found for the specified meeting"
@@ -94,7 +94,7 @@ class TestFetchAudioBytes:
     def test_should_raise_invalid_audio_file_error_when_unexpected_error_occurs(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes lève Exception pour toute erreur inattendue."""
+        """Checks that fetch_audio_bytes raises Exception for any unexpected error."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = RuntimeError("Unexpected error")
         mock_ff_client = Mock()
@@ -117,7 +117,7 @@ class TestFetchAudioBytes:
     def test_should_return_audio_bytes_when_successful(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes retourne les bytes audio en cas de succès."""
+        """Checks that fetch_audio_bytes returns audio bytes when successful."""
 
         expected_audio_bytes = BytesIO(b"audio_data_normalized_12345")
 
@@ -144,7 +144,7 @@ class TestFetchAudioBytes:
     def test_should_handle_different_meeting_ids(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes gère correctement différents IDs de meeting."""
+        """Checks that fetch_audio_bytes handles different meeting IDs correctly."""
 
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.return_value = BytesIO(b"audio_data")
@@ -170,7 +170,7 @@ class TestFetchAudioBytes:
     def test_should_handle_different_audio_extensions(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes gère correctement différentes extensions audio."""
+        """Checks that fetch_audio_bytes handles different audio extensions correctly."""
 
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.return_value = BytesIO(b"audio_data")
@@ -193,7 +193,7 @@ class TestFetchAudioBytes:
     def test_should_handle_different_error_types_from_assemble(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes gère correctement différents types d'erreurs depuis assemble_normalized_wav_from_s3_chunks."""
+        """Checks that fetch_audio_bytes handles different error types from assemble_normalized_wav_from_s3_chunks correctly."""
         mock_get_objects_list.return_value = iter([Mock()])
 
         error_test_cases = [
@@ -220,7 +220,7 @@ class TestFetchAudioBytes:
     def test_should_handle_empty_audio_bytes(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes gère correctement les bytes audio vides."""
+        """Checks that fetch_audio_bytes handles empty audio bytes correctly."""
 
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.return_value = BytesIO(b"")
@@ -241,7 +241,7 @@ class TestFetchAudioBytes:
     def test_should_handle_large_audio_files(
         self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que fetch_audio_bytes gère correctement les gros fichiers audio."""
+        """Checks that fetch_audio_bytes handles large audio files correctly."""
 
         mock_get_objects_list.return_value = iter([Mock()])
 
@@ -262,7 +262,7 @@ class TestFetchAudioBytes:
     def test_should_call_get_objects_list_with_correct_prefix_format(
         self, mock_get_ff_client: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Test que get_objects_list_from_prefix est appelé avec le bon format de préfixe."""
+        """Checks that get_objects_list_from_prefix is called with the correct prefix format."""
         mock_get_objects_list.return_value = iter([])
 
         meeting_id = 42

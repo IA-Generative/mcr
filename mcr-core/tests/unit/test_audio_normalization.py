@@ -10,7 +10,7 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
 
 
 class TestAssembleNormalizedWavFromS3Chunks:
-    """Tests pour la fonction assemble_normalized_wav_from_s3_chunks."""
+    """Tests for the function assemble_normalized_wav_from_s3_chunks."""
 
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.normalize_audio_bytes_to_wav_bytes"
@@ -21,7 +21,7 @@ class TestAssembleNormalizedWavFromS3Chunks:
     def test_should_raise_invalid_audio_file_error_when_download_fails(
         self, mock_download: Mock, mock_normalize: Mock
     ) -> None:
-        """Test que la fonction gère les échecs de téléchargement."""
+        """Checks that the function handles download failures."""
         mock_download.side_effect = InvalidAudioFileError(
             "No audio chunks found to process"
         )
@@ -47,7 +47,7 @@ class TestAssembleNormalizedWavFromS3Chunks:
     def test_should_return_normalized_audio_bytes_when_successful_with_filtering(
         self, mock_download: Mock, mock_normalize: Mock, mock_filter: Mock
     ) -> None:
-        """Test le succès de l'assemblage avec filtrage activé."""
+        """Checks successful assembly with filtering enabled."""
 
         mock_download.return_value = BytesIO(b"raw_audio")
         normalized_audio = BytesIO(b"normalized_audio")
@@ -80,7 +80,7 @@ class TestAssembleNormalizedWavFromS3Chunks:
     def test_should_skip_filtering_when_feature_flag_disabled(
         self, mock_download: Mock, mock_normalize: Mock
     ) -> None:
-        """Test que le filtrage est ignoré quand le feature flag est désactivé."""
+        """Checks that filtering is skipped when the feature flag is disabled."""
 
         mock_download.return_value = BytesIO(b"raw_audio")
         normalized_audio = BytesIO(b"normalized_audio")
@@ -112,7 +112,7 @@ class TestAssembleNormalizedWavFromS3Chunks:
     def test_should_skip_filtering_when_no_feature_flag_client(
         self, mock_download: Mock, mock_normalize: Mock
     ) -> None:
-        """Test que le filtrage est ignoré quand aucun client n'est fourni."""
+        """Checks that filtering is skipped when no feature flag client is provided."""
 
         mock_download.return_value = BytesIO(b"raw_audio")
         normalized_audio = BytesIO(b"normalized_audio")
