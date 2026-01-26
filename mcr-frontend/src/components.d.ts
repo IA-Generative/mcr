@@ -81,6 +81,7 @@ declare module 'vue' {
     TranscriptionNone: typeof import('./components/meeting/transcription/states/TranscriptionNone.vue')['default']
     TranscriptionNotReady: typeof import('./components/meeting/report/TranscriptionNotReady.vue')['default']
     TranscriptionPending: typeof import('./components/meeting/transcription/states/TranscriptionPending.vue')['default']
+    TranscriptionWaitTime: typeof import('./components/meeting/transcription/TranscriptionWaitTime.vue')['default']
     VIcon: typeof import('@gouvminint/vue-dsfr')['VIcon']
   }
 }

@@ -185,17 +185,15 @@
       "download": "Télécharger la transcription",
       "transcription-in-progress": {
         "title": "Votre transcription est en cours de génération",
-        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
-        "estimation": "Temps d’attente restant estimé : ",
-        "reachement-deadline": "La transcription prend plus de temps que prévu.",
-        "less-than-1-hour": "Moins d'une heure",
-        "less-than-5-minutes": "Moins de 5 minutes"
+        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible."
       },
       "transcription-pending": {
         "title": "Votre transcription est dans la file d’attente",
-        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
-        "estimation": "Temps d’attente restant estimé : ",
-        "reachement-deadline": "La transcription prend plus de temps que prévu.",
+        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible."
+      },
+      "wait-time": {
+        "estimation": "Temps d'attente restant estimé : ",
+        "reached-deadline": "La transcription prend plus de temps que prévu.",
         "computing-estimation": "Calcul en cours...",
         "duration": {
           "less-than": "Moins de {formattedTime}",

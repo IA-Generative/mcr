@@ -19,32 +19,11 @@
       </p>
     </div>
 
-    <div
-      v-if="!is_waiting_time_data_reached_deadline"
-      class="fr-alert fr-alert--info fr-alert--sm pr-2"
-    >
-      <p>
-        {{ $t('meeting.transcription.transcription-in-progress.estimation') }}
-        <span class="font-bold">
-          {{ formatRoundedDurationMinutes(waiting_time_data?.estimation_duration_minutes) }}
-        </span>
-      </p>
-    </div>
-    <div
-      v-else
-      class="fr-alert fr-alert--warning fr-alert--sm pr-2"
-    >
-      <p>
-        <span class="font-bold">
-          {{ $t('meeting.transcription.transcription-in-progress.reachement-deadline') }}
-        </span>
-      </p>
-    </div>
+    <TranscriptionWaitTime :waiting-time-minutes="waiting_time_data?.estimation_duration_minutes" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { formatRoundedDurationMinutes } from '@/utils/timeFormatting';
 import { useMeetings } from '@/services/meetings/use-meeting';
 
 const props = defineProps<{
@@ -53,8 +32,4 @@ const props = defineProps<{
 
 const { getMeetingTranscriptionWaitTime } = useMeetings();
 const { data: waiting_time_data } = getMeetingTranscriptionWaitTime(props.meetingId);
-
-const is_waiting_time_data_reached_deadline = computed(() => {
-  return waiting_time_data.value && waiting_time_data.value.estimation_duration_minutes <= 0;
-});
 </script>
