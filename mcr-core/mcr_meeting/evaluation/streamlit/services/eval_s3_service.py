@@ -32,7 +32,7 @@ class EvalS3Service:
             files.sort(reverse=True)
             return files
         except Exception as e:
-            logger.error(f"Error listing evaluation results from S3: {e}")
+            logger.error("Error listing evaluation results from S3: {}", e)
             return []
 
     def download_csv_as_df(
@@ -45,5 +45,5 @@ class EvalS3Service:
             df = pd.read_csv(BytesIO(csv_content))
             return df
         except Exception as e:
-            logger.error(f"Error downloading {object_key} from S3: {e}")
+            logger.error("Error downloading {} from S3: {}", object_key, e)
             return None

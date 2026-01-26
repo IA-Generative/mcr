@@ -110,6 +110,7 @@ module = [
     "pyannote.*",
     "soundfile",
     "docxtpl.*",
+    "plotly.*",
 ]
 ignore_missing_imports = true
 
