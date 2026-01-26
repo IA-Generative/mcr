@@ -13,8 +13,10 @@ from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     assemble_normalized_wav_from_s3_chunks,
 )
+from mcr_meeting.app.services.feature_flag_service import (
+    get_feature_flag_client,
+)
 from mcr_meeting.app.services.s3_service import (
-    get_extension_from_object_list,
     get_objects_list_from_prefix,
 )
 from mcr_meeting.app.services.transcription_engine_service import (
@@ -57,7 +59,9 @@ def merge_consecutive_segments_per_speaker(
     return merged_transcriptions
 
 
-def fetch_audio_bytes(meeting_id: int) -> BytesIO:
+def fetch_audio_bytes(
+    meeting_id: int,
+) -> BytesIO:
     """
     Fetch audio bytes from normalized S3 audio chunks for a given meeting ID.
 
@@ -74,13 +78,11 @@ def fetch_audio_bytes(meeting_id: int) -> BytesIO:
     logger.info("Fetching audio bytes for meeting ID: {}", meeting_id)
 
     try:
+        feature_flag_client = get_feature_flag_client()
         s3_chunk_iterator = get_objects_list_from_prefix(prefix=f"{meeting_id}/")
-        s3_chunk_iterator, file_extension = get_extension_from_object_list(
-            s3_chunk_iterator
-        )
 
         audio_bytes = assemble_normalized_wav_from_s3_chunks(
-            s3_chunk_iterator, file_extension
+            s3_chunk_iterator, feature_flag_client
         )
         return audio_bytes
 

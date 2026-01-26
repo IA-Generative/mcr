@@ -14,7 +14,12 @@ from pyannote.metrics.diarization import (
 
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
+    filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
+)
+from mcr_meeting.app.services.feature_flag_service import (
+    FeatureFlagClient,
+    get_feature_flag_client,
 )
 from mcr_meeting.app.services.meeting_to_transcription_service import (
     merge_consecutive_segments_per_speaker,
@@ -38,18 +43,36 @@ from mcr_meeting.evaluation.eval_types import (
 class AudioFileProcessor:
     """Handles audio file processing and transcription"""
 
-    def __init__(self, model: Optional[object] = None):
-        """Initialize with an optional ASR model"""
+    def __init__(
+        self,
+        model: Optional[object] = None,
+        feature_flag_client: Optional[FeatureFlagClient] = None,
+    ):
+        """Initialize with an optional ASR model and feature flag client"""
         self.is_model_specified = False
         if model is not None:
             logger.info("Using specified model for transcription: {}", model)
             self.model = model
             self.is_model_specified = True
+        self.feature_flag_client = feature_flag_client
 
     def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionResult:
         """Process a single audio file and return transcription result"""
 
-        processed_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
+        normalized_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
+
+        feature_flag_client = get_feature_flag_client()
+
+        # Apply noise filtering only if feature flag is enabled
+        if feature_flag_client and feature_flag_client.is_enabled(
+            "audio_noise_filtering"
+        ):
+            logger.info("Noise filtering enabled")
+            processed_bytes = filter_noise_from_audio_bytes(normalized_bytes)
+        else:
+            logger.info("Noise filtering disabled, skipping filtering step")
+            processed_bytes = normalized_bytes
+
         raw_transcription = (
             speech_to_text_transcription(audio_bytes=processed_bytes, model=self.model)
             if self.is_model_specified
