@@ -201,7 +201,11 @@
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
         "estimation": "Temps d’attente restant estimé : ",
         "reachement-deadline": "La transcription prend plus de temps que prévu.",
-        "computing-estimation": "Calcul en cours..."
+        "computing-estimation": "Calcul en cours...",
+        "duration": {
+          "less-than": "Moins de {formattedTime}",
+          "more-than-24h": "Plus de 24h"
+        }
       },
       "bot-connecting": {
         "title": "Connexion en cours...",

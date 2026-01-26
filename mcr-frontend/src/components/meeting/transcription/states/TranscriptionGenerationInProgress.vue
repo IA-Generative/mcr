@@ -25,17 +25,8 @@
     >
       <p>
         {{ $t('meeting.transcription.transcription-generation-in-progress.estimation') }}
-        <span
-          v-if="is_waiting_time_data_less_than_5_minutes"
-          class="font-bold"
-        >
-          {{ $t('meeting.transcription.transcription-generation-in-progress.less-than-5-minutes') }}
-        </span>
-        <span
-          v-else
-          class="font-bold"
-        >
-          {{ formatDurationMinutes(waiting_time_data?.estimation_duration_minutes) }}
+        <span class="font-bold">
+          {{ formatRoundedDurationMinutes(waiting_time_data?.estimation_duration_minutes) }}
         </span>
       </p>
     </div>
@@ -57,20 +48,12 @@ import { computed } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import { getTranscriptionWaitingTime } from '@/services/meetings/meetings.service';
 import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
-import { formatDurationMinutes } from '@/utils/timeFormatting';
+import { formatRoundedDurationMinutes } from '@/utils/timeFormatting';
 
 const props = defineProps<{
   meetingId: number;
   meetingName?: string;
 }>();
-
-const is_waiting_time_data_less_than_5_minutes = computed(() => {
-  return (
-    waiting_time_data.value &&
-    waiting_time_data.value.estimation_duration_minutes < 5 &&
-    waiting_time_data.value.estimation_duration_minutes > 0
-  );
-});
 
 const is_waiting_time_data_reached_deadline = computed(() => {
   return waiting_time_data.value && waiting_time_data.value.estimation_duration_minutes <= 0;
