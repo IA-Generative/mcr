@@ -102,6 +102,7 @@ class TranscriptionQueueEstimationService:
             duration // transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_SPEED
         )
 
+    @staticmethod
     def estimate_default_meeting_duration() -> int:
         duration_hour = int(
             transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS

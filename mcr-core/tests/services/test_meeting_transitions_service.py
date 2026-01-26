@@ -1,15 +1,17 @@
-# type: ignore[explicit-any]
-
-from datetime import datetime
-from typing import Any, Dict
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, Optional
 from unittest.mock import MagicMock, Mock
 from uuid import UUID
 
 import pytest
 
+from mcr_meeting.app.configs.base import TranscriptionWaitingTimeSettings
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms, MeetingStatus
 from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mts
 from mcr_meeting.app.services import s3_service as s3s
+from mcr_meeting.app.services import (
+    transcription_waiting_time_service,
+)
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -38,6 +40,14 @@ class DummyMeeting:
 
         self.owner = MagicMock()
         self.owner.keycloak_uuid = UUID("00000000-0000-0000-0000-000000000001")
+
+    @property
+    def duration_minutes(self) -> Optional[int]:
+        if self.start_date is None or self.end_date is None:
+            return None
+
+        meeting_duration_seconds = (self.end_date - self.start_date).total_seconds()
+        return int(meeting_duration_seconds // 60)
 
 
 # ---------------------------------------------------------------------------
@@ -141,6 +151,15 @@ def _mock_db(monkeypatch: Any, meeting_store: Dict[int, DummyMeeting]) -> MagicM
         meeting_actions, "update_meeting_end_date", mock_update_meeting_end_date
     )
 
+    def mock_get_meeting_by_id(meeting_id: int, **_: Any) -> DummyMeeting:
+        return meeting_store[meeting_id]
+
+    monkeypatch.setattr(
+        transcription_waiting_time_service,
+        "get_meeting_by_id",
+        mock_get_meeting_by_id,
+    )
+
     return db_mock
 
 
@@ -181,6 +200,19 @@ def _mock_save_formatted_report(monkeypatch: Any) -> MagicMock:
     )
 
     return save_formatted_report_mock
+
+
+@pytest.fixture
+def _mock_transition_record_creation(monkeypatch: Any) -> MagicMock:
+    transition_record_mock = MagicMock()
+
+    monkeypatch.setattr(
+        meeting_actions,
+        "create_transcription_transition_record_with_estimation",
+        transition_record_mock,
+    )
+
+    return transition_record_mock
 
 
 # ---------------------------------------------------------------------------
@@ -301,10 +333,60 @@ def test_init_transcription(
 
 def test_start_transcription(_mock_db: MagicMock, import_meeting: DummyMeeting) -> None:
     import_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
+    import_meeting.start_date = None
+    import_meeting.end_date = None
 
     result = mts.start_transcription(meeting_id=import_meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
+
+
+def test_start_transcription_creates_log_with_prediction(
+    _mock_db: MagicMock,
+    _mock_transition_record_creation: MagicMock,
+    import_meeting: DummyMeeting,
+) -> None:
+    """Test that start_transcription creates exactly one transition log with prediction."""
+
+    # Arrange
+    import_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
+    import_meeting.start_date = datetime.now(timezone.utc)
+    import_meeting.end_date = datetime.now(timezone.utc) + timedelta(hours=2)
+
+    # Act
+    result = mts.start_transcription(meeting_id=import_meeting.id)
+
+    # Assert
+    assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
+    assert _mock_transition_record_creation.call_count == 1
+
+
+def test_start_transcription_missing_start_date_uses_default_prediction(
+    _mock_db: MagicMock,
+    _mock_transition_record_creation: MagicMock,
+    import_meeting: DummyMeeting,
+) -> None:
+    """Test that start_transcription uses 1h default prediction when start_date is missing."""
+
+    # Arrange
+    import_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
+    import_meeting.start_date = None
+    import_meeting.end_date = datetime.now(timezone.utc)
+
+    transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
+
+    default_meeting_processing_time = (
+        int(transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS * 60)
+        // transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_SPEED
+    )
+
+    # Act
+    _ = mts.start_transcription(meeting_id=import_meeting.id)
+
+    # Assert
+    call_args = _mock_transition_record_creation.call_args
+    assert "waiting_time_minutes" in call_args[1]
+    assert call_args[1]["waiting_time_minutes"] == default_meeting_processing_time
 
 
 def test_fail_transcription(_mock_db: MagicMock, visio_meeting: DummyMeeting) -> None:
