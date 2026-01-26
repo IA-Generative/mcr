@@ -2,10 +2,7 @@ import math
 from datetime import datetime, timedelta, timezone
 
 from mcr_meeting.app.configs.base import TranscriptionWaitingTimeSettings
-from mcr_meeting.app.db.meeting_repository import (
-    count_pending_meetings,
-    get_meeting_by_id,
-)
+from mcr_meeting.app.db.meeting_repository import count_pending_meetings
 from mcr_meeting.app.db.meeting_transition_record_repository import (
     find_transition_record_by_meeting_and_status,
 )
@@ -23,51 +20,6 @@ class TranscriptionQueueEstimationService:
     - The number of transcription pods in parallel (14)
     - The average transcription time per meeting (12 minutes)
     """
-
-    @classmethod
-    def _calculate_waiting_time_from_count(cls, pending_meetings_count: int) -> int:
-        """
-        Calculate the waiting time based on the number of meetings in pending.
-
-        Formula : Floor(N / parallel_pods_count) * average_transcription_time
-
-        Args:
-            pending_meetings_count: Number of meetings in pending
-
-        Returns:
-            The waiting time in minutes
-        """
-        slots_needed = (
-            pending_meetings_count
-            / transcription_waiting_time_settings.PARALLEL_PODS_COUNT
-        )
-
-        waiting_time_minutes = (
-            math.floor(slots_needed)
-            * transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_TIME_MINUTES
-        ) + int(transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS * 60)
-
-        return waiting_time_minutes
-
-    @classmethod
-    def get_meeting_transcription_waiting_time_minutes(cls, meeting_id: int) -> int:
-        """
-        Utility function to get the waiting time for a meeting.
-
-        Args:
-            meeting_id: The ID of the meeting
-
-        Returns:
-            The estimated waiting time in minutes
-        """
-        current_meeting = get_meeting_by_id(meeting_id)
-        if not current_meeting:
-            raise ValueError("Meeting with ID {} not found".format(meeting_id))
-
-        if not current_meeting.creation_date:
-            raise ValueError("Meeting {} has no creation_date".format(meeting_id))
-
-        return cls.get_queue_estimated_waiting_time_minutes()
 
     @classmethod
     def get_meeting_remaining_waiting_time_minutes(cls, meeting_id: int) -> int:
@@ -114,12 +66,23 @@ class TranscriptionQueueEstimationService:
         """
         Get the estimated waiting time for new meetings joining the transcription queue.
         Based on the total number of pending meetings and average processing time.
+
+        Formula : Floor(N / parallel_pods_count) * average_transcription_time
+
+        Returns:
+            The waiting time in minutes
         """
         total_pending_meetings_count = count_pending_meetings()
 
-        current_waiting_time_minutes = cls._calculate_waiting_time_from_count(
+        slots_needed = math.floor(
             total_pending_meetings_count
+            / transcription_waiting_time_settings.PARALLEL_PODS_COUNT
         )
+
+        current_waiting_time_minutes = (
+            slots_needed
+            * transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_TIME_MINUTES
+        ) + int(transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS * 60)
 
         return current_waiting_time_minutes
 

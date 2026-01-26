@@ -65,12 +65,12 @@ def after_init_transcription_handler(
             MCRTranscriptionTasks.TRANSCRIBE, args=[meeting.id]
         )
 
-    waiting_time_minutes = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-        meeting.id
+    current_wait_time_minutes = (
+        TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
     )
 
     create_transcription_transition_record_with_estimation(
-        meeting_id=meeting.id, waiting_time_minutes=waiting_time_minutes
+        meeting_id=meeting.id, waiting_time_minutes=current_wait_time_minutes
     )
 
 
