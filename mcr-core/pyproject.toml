@@ -49,6 +49,10 @@ worker = [
     "sentry-sdk[celery]>=2.34.1",
     "faster-whisper>=1.2.0",
 ]
+streamlit = [
+    "streamlit>=1.42.0",
+    "plotly>=6.0.0",
+]
 
 [dependency-groups]
 test = [
@@ -76,10 +80,6 @@ typing = [
 ]
 tools = ["mypy-clean-slate", "deptry"]
 provisioning = ["python-keycloak"]
-streamlit = [
-    "streamlit>=1.42.0",
-    "plotly>=6.0.0",
-]
 
 [tool.mypy]
 # disallow_any_unimported = true
@@ -132,6 +132,9 @@ extend_exclude = ["scripts/**", "notebooks/**"]
 
 [tool.deptry.package_module_name_map]
 "ffmpeg-python" = ["ffmpeg"]
+"python-docx" = ["docx"]
+"pyannote-audio" = ["pyannote"]
+"pyannote-metrics" = ["pyannote"]
 
 [tool.deptry.per_rule_ignores]
 # These dependencies are used by whisper_timestamped but are never imported in the code

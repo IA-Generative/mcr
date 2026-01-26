@@ -1598,6 +1598,10 @@ api = [
     { name = "starlette" },
     { name = "uvicorn" },
 ]
+streamlit = [
+    { name = "plotly" },
+    { name = "streamlit" },
+]
 worker = [
     { name = "faster-whisper" },
     { name = "ffmpeg-python" },
@@ -1631,10 +1635,6 @@ dev = [
 ]
 provisioning = [
     { name = "python-keycloak" },
-]
-streamlit = [
-    { name = "plotly" },
-    { name = "streamlit" },
 ]
 test = [
     { name = "pytest" },
@@ -1675,6 +1675,7 @@ requires-dist = [
     { name = "onnxruntime", marker = "extra == 'worker'", specifier = "==1.21.0" },
     { name = "openai-whisper", marker = "extra == 'worker'", specifier = "==20240927" },
     { name = "pandas", marker = "extra == 'worker'", specifier = ">=2.3.1" },
+    { name = "plotly", marker = "extra == 'streamlit'", specifier = ">=6.0.0" },
     { name = "pyannote-audio", marker = "extra == 'worker'" },
     { name = "pyannote-metrics", marker = "extra == 'worker'" },
     { name = "pydantic", extras = ["email"], specifier = "==2.12.0" },
@@ -1687,13 +1688,14 @@ requires-dist = [
     { name = "soundfile", specifier = ">=0.12.1" },
     { name = "sqlalchemy", extras = ["postgresql-psycopg2binary"], specifier = "==2.0.32" },
     { name = "starlette", marker = "extra == 'api'" },
+    { name = "streamlit", marker = "extra == 'streamlit'", specifier = ">=1.42.0" },
     { name = "torch", marker = "extra == 'worker'", specifier = "==2.7.1" },
     { name = "torchaudio", marker = "extra == 'worker'", specifier = "==2.7.1" },
     { name = "transformers", marker = "extra == 'worker'", specifier = "==4.52.4" },
     { name = "unleashclient", specifier = ">=6.3.0" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = "==0.30.6" },
 ]
-provides-extras = ["api", "worker"]
+provides-extras = ["api", "worker", "streamlit"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -1707,10 +1709,6 @@ dev = [
     { name = "watchdog", extras = ["watchmedo"], specifier = ">=6.0.0" },
 ]
 provisioning = [{ name = "python-keycloak" }]
-streamlit = [
-    { name = "plotly", specifier = ">=6.0.0" },
-    { name = "streamlit", specifier = ">=1.42.0" },
-]
 test = [
     { name = "pytest" },
     { name = "pytest-asyncio" },

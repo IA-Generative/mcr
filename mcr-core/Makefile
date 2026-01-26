@@ -105,5 +105,5 @@ generate-graphs:
 
 streamlit:
 	@echo "Starting Streamlit Dashboard (local)..."
-	@uv sync --group streamlit --inexact >/dev/null 2>&1 || true
+	@uv sync --extra streamlit --inexact >/dev/null 2>&1 || true
 	@PYTHONPATH=. uv run streamlit run mcr_meeting/evaluation/streamlit/app.py
