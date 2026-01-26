@@ -145,12 +145,12 @@ def _mock_db(monkeypatch: Any, meeting_store: Dict[int, DummyMeeting]) -> MagicM
 
 
 @pytest.fixture
-def _mock_waiting_time(monkeypatch: Any) -> MagicMock:
+def _mock_wait_time(monkeypatch: Any) -> MagicMock:
     waiting_time_mock = MagicMock()
 
     monkeypatch.setattr(
         TranscriptionQueueEstimationService,
-        "get_meeting_transcription_waiting_time_minutes",
+        "estimate_current_wait_time_minutes",
         lambda *_: 59,
     )
 
@@ -285,7 +285,7 @@ def test_fail_capture(
 def test_init_transcription(
     _mock_db: MagicMock,
     mock_celery_producer_app: Mock,
-    _mock_waiting_time: MagicMock,
+    _mock_wait_time: MagicMock,
     import_meeting: DummyMeeting,
     user_keycloak_uuid: UUID,
 ) -> None:

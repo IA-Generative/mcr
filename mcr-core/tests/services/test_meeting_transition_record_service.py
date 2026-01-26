@@ -20,7 +20,9 @@ class TestMeetingTransitionRecordService:
         """Test that a transition record is saved successfully."""
         # Act
         result = create_transcription_transition_record_with_estimation(
-            meeting_id=meeting_fixture.id, waiting_time_minutes=24
+            meeting_id=meeting_fixture.id,
+            meeting_status=MeetingStatus.TRANSCRIPTION_PENDING,
+            waiting_time_minutes=24,
         )
 
         # Assert

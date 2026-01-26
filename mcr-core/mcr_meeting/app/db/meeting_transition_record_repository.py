@@ -1,9 +1,4 @@
-from datetime import datetime
-
-from sqlalchemy.exc import SQLAlchemyError
-
 from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.exceptions.exceptions import NotSavedException
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
