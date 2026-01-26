@@ -73,12 +73,6 @@ def after_init_transcription_handler(
         meeting_id=meeting.id, waiting_time_minutes=waiting_time_minutes
     )
 
-    logger.info(
-        "Transcription task created for meeting ID: {} with estimated waiting time: {} minutes",
-        meeting.id,
-        waiting_time_minutes,
-    )
-
 
 def after_start_report_handler(meeting: Meeting, next_status: MeetingStatus) -> None:
     try:
