@@ -4,14 +4,10 @@ from loguru import logger
 
 from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
-    update_meeting_transition_record_predicted_date_of_next_transition,
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
-from mcr_meeting.app.services.transcription_waiting_time_service import (
-    TranscriptionQueueEstimationService,
-)
 
 
 def create_transcription_transition_record_with_estimation(
@@ -57,20 +53,6 @@ def create_transcription_transition_record_with_estimation(
             e,
         )
         raise e
-
-
-def update_meeting_transition_record_predicted_end_date_service(
-    meeting_id: int,
-) -> None:
-    estimated_transcription_end_time = (
-        TranscriptionQueueEstimationService.get_predicted_transcription_end_date()
-    )
-
-    with UnitOfWork():
-        update_meeting_transition_record_predicted_date_of_next_transition(
-            meeting_id=meeting_id,
-            predicted_date_of_next_transition=estimated_transcription_end_time,
-        )
 
 
 def create_transition_record_service(
