@@ -12,10 +12,10 @@
     <!-- Titre et sous-titre -->
     <div class="text-center max-w-2xl">
       <h3 class="text-xl font-bold mb-4 text-[var(--blue-france-sun-113-625)]">
-        {{ $t('meeting.transcription.transcription-in-queue.title') }}
+        {{ $t('meeting.transcription.transcription-pending.title') }}
       </h3>
       <p class="text-lg text-[var(--default-text-grey)]">
-        {{ $t('meeting.transcription.transcription-in-queue.description') }}
+        {{ $t('meeting.transcription.transcription-pending.description') }}
       </p>
     </div>
 
@@ -24,7 +24,7 @@
       class="fr-alert fr-alert--info fr-alert--sm pr-2"
     >
       <p>
-        {{ $t('meeting.transcription.transcription-in-queue.estimation') }}
+        {{ $t('meeting.transcription.transcription-pending.estimation') }}
         <span class="font-bold">
           {{ formatRoundedDurationMinutes(waiting_time_data?.estimation_duration_minutes) }}
         </span>
@@ -36,7 +36,7 @@
     >
       <p>
         <span class="font-bold">
-          {{ $t('meeting.transcription.transcription-in-queue.reachement-deadline') }}
+          {{ $t('meeting.transcription.transcription-pending.reachement-deadline') }}
         </span>
       </p>
     </div>

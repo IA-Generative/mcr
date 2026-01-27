@@ -183,7 +183,7 @@
       "start": "Démarrer l'enregistrement",
       "stop": "Arrêter l'enregistrement",
       "download": "Télécharger la transcription",
-      "transcription-generation-in-progress": {
+      "transcription-in-progress": {
         "title": "Votre transcription est en cours de génération",
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
         "estimation": "Temps d’attente restant estimé : ",
@@ -191,7 +191,7 @@
         "less-than-1-hour": "Moins d'une heure",
         "less-than-5-minutes": "Moins de 5 minutes"
       },
-      "transcription-in-queue": {
+      "transcription-pending": {
         "title": "Votre transcription est dans la file d’attente",
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
         "estimation": "Temps d’attente restant estimé : ",

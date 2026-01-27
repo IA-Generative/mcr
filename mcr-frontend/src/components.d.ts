@@ -8,8 +8,6 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AddMeetingForm: typeof import('./components/meeting/AddMeetingForm.vue')['default']
-    AddMemberForm: typeof import('./components/member/AddMemberForm.vue')['default']
-    AddUserForm: typeof import('./components/users/AddUserForm.vue')['default']
     AppFooter: typeof import('./components/core/AppFooter.vue')['default']
     AppHeader: typeof import('./components/core/AppHeader.vue')['default']
     AppToaster: typeof import('./components/core/AppToaster.vue')['default']
@@ -19,6 +17,7 @@ declare module 'vue' {
     BotConnecting: typeof import('./components/meeting/transcription/states/BotConnecting.vue')['default']
     BotConnectionFailed: typeof import('./components/meeting/transcription/states/BotConnectionFailed.vue')['default']
     BotDisconnecting: typeof import('./components/meeting/transcription/states/BotDisconnecting.vue')['default']
+    CaptureVisioInProgress: typeof import('./components/meeting/transcription/states/CaptureVisioInProgress.vue')['default']
     CreateMeetingModal: typeof import('./components/meeting/modals/CreateMeetingModal.vue')['default']
     DeleteMeetingModal: typeof import('./components/meeting/modals/DeleteMeetingModal.vue')['default']
     DsfrAlert: typeof import('@gouvminint/vue-dsfr')['DsfrAlert']
@@ -50,9 +49,7 @@ declare module 'vue' {
     ImportMeetingModal: typeof import('./components/meeting/modals/ImportMeetingModal.vue')['default']
     ImportMeetingProgressBar: typeof import('./components/meeting/ImportMeetingProgressBar.vue')['default']
     ImportPending: typeof import('./components/meeting/transcription/states/ImportPending.vue')['default']
-    InformationPictogram: typeof import('./components/pictograms/InformationPictogram.vue')['default']
     MeetingFrontMatter: typeof import('./components/meeting/MeetingFrontMatter.vue')['default']
-    MeetingMembersView: typeof import('./components/meeting/members/MeetingMembersView.vue')['default']
     PageFrontMatter: typeof import('./components/core/PageFrontMatter.vue')['default']
     ProgressBar: typeof import('./components/core/ProgressBar.vue')['default']
     RecordingInProgress: typeof import('./components/meeting/transcription/states/RecordingInProgress.vue')['default']
@@ -78,13 +75,10 @@ declare module 'vue' {
     TranscriptionContainer: typeof import('./components/meeting/transcription/TranscriptionContainer.vue')['default']
     TranscriptionDone: typeof import('./components/meeting/transcription/states/TranscriptionDone.vue')['default']
     TranscriptionFailed: typeof import('./components/meeting/transcription/states/TranscriptionFailed.vue')['default']
-    TranscriptionGenerationInProgress: typeof import('./components/meeting/transcription/states/TranscriptionGenerationInProgress.vue')['default']
     TranscriptionInProgress: typeof import('./components/meeting/transcription/states/TranscriptionInProgress.vue')['default']
-    TranscriptionInQueue: typeof import('./components/meeting/transcription/states/TranscriptionInQueue.vue')['default']
     TranscriptionNone: typeof import('./components/meeting/transcription/states/TranscriptionNone.vue')['default']
     TranscriptionNotReady: typeof import('./components/meeting/report/TranscriptionNotReady.vue')['default']
     TranscriptionPending: typeof import('./components/meeting/transcription/states/TranscriptionPending.vue')['default']
     VIcon: typeof import('@gouvminint/vue-dsfr')['VIcon']
-    WarningPictogram: typeof import('./components/pictograms/WarningPictogram.vue')['default']
   }
 }

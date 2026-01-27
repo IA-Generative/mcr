@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import TranscriptionInProgress from '@/components/meeting/transcription/states/TranscriptionInProgress.vue';
+import CaptureVisioInProgress from '@/components/meeting/transcription/states/CaptureVisioInProgress.vue';
 import { renderWithPlugins } from '@/vitest.setup';
 
 // Mock du composable useToaster
@@ -28,7 +28,7 @@ vi.mock('vue-final-modal', () => ({
   }),
 }));
 
-describe('TranscriptionInProgress', () => {
+describe('C', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -41,7 +41,7 @@ describe('TranscriptionInProgress', () => {
     });
 
     // Act
-    renderWithPlugins(TranscriptionInProgress, {
+    renderWithPlugins(CaptureVisioInProgress, {
       props: {
         meetingId: 1,
       },
@@ -68,7 +68,7 @@ describe('TranscriptionInProgress', () => {
     });
 
     // Act
-    renderWithPlugins(TranscriptionInProgress, {
+    renderWithPlugins(CaptureVisioInProgress, {
       props: {
         meetingId: 1,
       },
