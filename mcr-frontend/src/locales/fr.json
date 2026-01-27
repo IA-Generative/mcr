@@ -212,6 +212,11 @@
         "subtitle": "Le bot FCR Agent va rejoindre la réunion pour lancer l’enregistrement.",
         "description": "Le bot va rejoindre la réunion dans la liste des participants. Veuillez patienter quelques instants."
       },
+      "bot-disconnecting": {
+        "title": "Déconnexion en cours...",
+        "subtitle": "Le bot FCR Agent va se déconnecter de la réunion pour lancer la transcription.",
+        "description": "Le bot est en train de se déconnecter de la réunion, veuillez patienter quelques instants"
+      },
       "bot-connection-failed": {
         "title": "Une erreur est survenue",
         "description": "Un problème technique est survenu. Veuillez réessayer.",
