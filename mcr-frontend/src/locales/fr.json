@@ -185,11 +185,13 @@
       "download": "Télécharger la transcription",
       "transcription-in-progress": {
         "title": "Votre transcription est en cours de génération",
-        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible."
+        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
+        "wait-message": "Temps de traitement estimé"
       },
       "transcription-pending": {
-        "title": "Votre transcription est dans la file d’attente",
-        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible."
+        "title": "Votre transcription est dans la file d'attente :",
+        "description": "En raison d'une forte affluence sur la plateforme, votre transcription est actuellement en file d'attente. Nous vous avertirons par mail lorsque celle-ci sera disponible.",
+        "wait-message": "Temps d'attente avant le début de votre transcription :"
       },
       "wait-time": {
         "estimation": "Temps d'attente restant estimé : ",

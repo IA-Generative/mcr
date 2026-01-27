@@ -19,7 +19,10 @@
       </p>
     </div>
 
-    <TranscriptionWaitTime :waiting-time-minutes="waiting_time_data?.estimation_duration_minutes" />
+    <TranscriptionWaitTime
+      :message="$t('meeting.transcription.transcription-in-progress.wait-message')"
+      :waiting-time-minutes="waiting_time_data?.estimation_duration_minutes"
+    />
   </div>
 </template>
 

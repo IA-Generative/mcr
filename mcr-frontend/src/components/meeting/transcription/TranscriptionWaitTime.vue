@@ -4,7 +4,7 @@
     class="fr-alert fr-alert--info fr-alert--sm pr-2"
   >
     <p>
-      {{ $t('meeting.transcription.wait-time.estimation') }}
+      {{ props.message }}
       <span class="font-bold">
         {{ formatRoundedDurationMinutes(waitingTimeMinutes) }}
       </span>
@@ -26,10 +26,11 @@
 import { formatRoundedDurationMinutes } from '@/utils/timeFormatting';
 
 const props = defineProps<{
-  waitingTimeMinutes: number | undefined;
+  waitingTimeMinutes?: number;
+  message: string;
 }>();
 
 const hasWaitingTimeReachedDeadline = computed(() => {
-  return props.waitingTimeMinutes && props.waitingTimeMinutes <= 0;
+  return props.waitingTimeMinutes !== undefined && props.waitingTimeMinutes <= 0;
 });
 </script>
