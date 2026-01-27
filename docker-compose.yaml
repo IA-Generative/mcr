@@ -66,8 +66,15 @@ services:
       - "5672:5672"
       # Debugging port
       - "7002:7002"
-    volumes:
-      - ./mcr-core/mcr_meeting:/app/mcr_meeting
+    develop:
+      watch:
+        - action: rebuild
+          path: ./mcr-core/pyproject.toml
+        - action: sync
+          path: ./mcr-core
+          target: /app
+          ignore:
+            - .venv/
     networks:
       - mcr-network
 
@@ -95,8 +102,15 @@ services:
       - "8000:8000"
       # Debugging port
       - "5678:5678"
-    volumes:
-      - ./mcr-gateway/mcr_gateway:/app/mcr_gateway
+    develop:
+      watch:
+        - action: rebuild
+          path: ./mcr-gateway/pyproject.toml
+        - action: sync
+          path: ./mcr-gateway
+          target: /app
+          ignore:
+            - .venv/
     networks:
       - mcr-network
     environment:
@@ -119,8 +133,15 @@ services:
       - postgres
     networks:
       - mcr-network
-    volumes:
-      - ./mcr-core/mcr_meeting:/app/mcr_meeting
+    develop:
+      watch:
+        - action: rebuild
+          path: ./mcr-core/pyproject.toml
+        - action: sync
+          path: ./mcr-core
+          target: /app
+          ignore:
+            - .venv/
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -183,8 +204,15 @@ services:
       - "8003:8003"
       # Debugging port
       - "7003:7003"
-    volumes:
-      - ./mcr-generation/mcr_generation:/app/mcr_generation
+    develop:
+      watch:
+        - action: rebuild
+          path: ./mcr-generation/pyproject.toml
+        - action: sync
+          path: ./mcr-generation
+          target: /app
+          ignore:
+            - .venv/
     networks:
       - mcr-network
 
@@ -195,9 +223,15 @@ services:
     container_name: mcr-frontend
     ports:
       - "8881:5173"
-    volumes:
-      - ./mcr-frontend:/app
-      - frontend_node_modules:/app/node_modules
+    develop:
+      watch:
+        - action: rebuild
+          path: ./mcr-frontend/package.json
+        - action: sync
+          path: ./mcr-frontend
+          target: /app
+          ignore:
+            - node_modules/
     environment:
       - ENV_MODE=${ENV_MODE}
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
@@ -214,6 +248,15 @@ services:
     build:
       context: ./mcr-capture-worker
     container_name: mcr-capture-worker
+    develop:
+      watch:
+        - action: rebuild
+          path: ./mcr-capture-worker/pyproject.toml
+        - action: sync+restart
+          path: ./mcr-capture-worker
+          target: /app
+          ignore:
+            - .venv/
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -260,6 +303,7 @@ services:
       - DEV_POSTGRES_HOST=${DEV_POSTGRES_HOST}
       - GENERATION_API=${GENERATION_API}
       - ENV_MODE=${ENV_MODE}
+
   minio:
     image: minio/minio:latest
     container_name: mcr-minio
@@ -349,5 +393,4 @@ networks:
 volumes:
   postgres_data:
   minio_data:
-  frontend_node_modules:
   redis_data:
