@@ -1,5 +1,8 @@
+from sqlalchemy import select
+
 from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.models.meeting_model import MeetingStatus
+from mcr_meeting.app.exceptions.exceptions import NotFoundException
+from mcr_meeting.app.models.meeting_model import Meeting
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
 
@@ -23,19 +26,30 @@ def save_meeting_transition_record(
     return transition_record
 
 
-def find_transition_record_by_meeting_and_status(
+def find_transition_record_with_estimation_by_meeting(
     meeting_id: int,
-    status: MeetingStatus,
-) -> MeetingTransitionRecord | None:
+) -> MeetingTransitionRecord:
     """
-    Get a meeting transition record by meeting ID and status.
+    Get the last meeting transition record for the meeting with if meeting_id and status.
     """
     db = get_db_session_ctx()
-    return (
+
+    current_meeting_status = (
+        select(Meeting.status).where(Meeting.id == meeting_id).scalar_subquery()
+    )
+
+    meeting_transition_record = (
         db.query(MeetingTransitionRecord)
         .filter(
             MeetingTransitionRecord.meeting_id == meeting_id,
-            MeetingTransitionRecord.status == status,
+            MeetingTransitionRecord.status == current_meeting_status,
         )
+        .order_by(MeetingTransitionRecord.id.desc())
         .first()
     )
+
+    if not meeting_transition_record:
+        raise NotFoundException(
+            "Meeting transition record with ID {} not found".format(meeting_id)
+        )
+    return meeting_transition_record

@@ -7,9 +7,9 @@ from mcr_meeting.app.db.meeting_repository import (
     get_meeting_by_id,
 )
 from mcr_meeting.app.db.meeting_transition_record_repository import (
-    find_transition_record_by_meeting_and_status,
+    find_transition_record_with_estimation_by_meeting,
 )
-from mcr_meeting.app.models.meeting_model import MeetingStatus
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
 transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
 
@@ -24,45 +24,21 @@ class TranscriptionQueueEstimationService:
     - The average transcription time per meeting (12 minutes)
     """
 
-    @staticmethod
-    def get_meeting_remaining_waiting_time_minutes(meeting_id: int) -> int:
+    @classmethod
+    def get_meeting_remaining_waiting_time_minutes(cls, meeting_id: int) -> int:
         """
         Get the remaining waiting time for a specific meeting in minutes.
         Based on the meeting's estimated end date minus current time.
         """
-        meeting_transition_record = find_transition_record_by_meeting_and_status(
-            meeting_id,
-            MeetingStatus.TRANSCRIPTION_PENDING,
+        meeting_transition_record = find_transition_record_with_estimation_by_meeting(
+            meeting_id
         )
-        if not meeting_transition_record:
-            raise ValueError(
-                "Meeting transition record with ID {} not found".format(meeting_id)
-            )
 
-        predicted_date_of_next_transition = (
-            meeting_transition_record.predicted_date_of_next_transition
+        predicted_wait_time_minutes = cls.calculate_wait_time_from_transition_record(
+            meeting_transition_record=meeting_transition_record
         )
-        if not predicted_date_of_next_transition:
-            raise ValueError(
-                "Estimated end date is None for meeting {}".format(meeting_id)
-            )
 
-        if predicted_date_of_next_transition.tzinfo is None:
-            predicted_date_of_next_transition = (
-                predicted_date_of_next_transition.replace(tzinfo=timezone.utc)
-            )
-        else:
-            predicted_date_of_next_transition = (
-                predicted_date_of_next_transition.astimezone(timezone.utc)
-            )
-
-        current_utc_time = datetime.now(timezone.utc)
-        delta_seconds = (
-            predicted_date_of_next_transition - current_utc_time
-        ).total_seconds()
-        remaining_minutes = max(0, int(delta_seconds // 60))
-
-        return remaining_minutes
+        return predicted_wait_time_minutes
 
     @staticmethod
     def estimate_current_wait_time_minutes() -> int:
@@ -108,3 +84,27 @@ class TranscriptionQueueEstimationService:
             transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS
         )
         return duration_hour * 60
+
+    @staticmethod
+    def calculate_wait_time_from_transition_record(
+        meeting_transition_record: MeetingTransitionRecord,
+    ) -> int:
+        predicted_date = meeting_transition_record.predicted_date_of_next_transition
+
+        if predicted_date is None:
+            raise ValueError(
+                "Estimated end date is None for meeting {}".format(
+                    meeting_transition_record.meeting_id
+                )
+            )
+
+        if predicted_date.tzinfo is None:
+            predicted_date = predicted_date.replace(tzinfo=timezone.utc)
+        else:
+            predicted_date = predicted_date.astimezone(timezone.utc)
+
+        current_utc_time = datetime.now(timezone.utc)
+        delta_seconds = (predicted_date - current_utc_time).total_seconds()
+        predicted_wait_time_minutes = max(0, int(delta_seconds // 60))
+
+        return predicted_wait_time_minutes
