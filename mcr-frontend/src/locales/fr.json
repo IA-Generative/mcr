@@ -183,11 +183,6 @@
       "start": "Démarrer l'enregistrement",
       "stop": "Arrêter l'enregistrement",
       "download": "Télécharger la transcription",
-
-      "transcription-pending": {
-        "title": "La génération de la transcription est en cours...",
-        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre transcription sera disponible au téléchargement une fois terminée."
-      },
       "transcription-generation-in-progress": {
         "title": "Votre transcription est en cours de génération",
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
