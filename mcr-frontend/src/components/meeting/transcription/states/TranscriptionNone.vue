@@ -33,6 +33,7 @@ const { open: openStartCaptureModal } = useModal({
   component: BaseModal,
   attrs: {
     title: t('meeting.transcription.modal-start.title'),
+    text: t('meeting.transcription.modal-start.description'),
     isAlert: true,
     onSuccess: () => startCapture(props.meetingId),
   },
