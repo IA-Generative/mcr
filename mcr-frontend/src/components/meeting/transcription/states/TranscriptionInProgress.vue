@@ -44,25 +44,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useQuery } from '@tanstack/vue-query';
-import { getTranscriptionWaitingTime } from '@/services/meetings/meetings.service';
-import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
 import { formatRoundedDurationMinutes } from '@/utils/timeFormatting';
+import { useMeetings } from '@/services/meetings/use-meeting';
 
 const props = defineProps<{
   meetingId: number;
-  meetingName?: string;
 }>();
+
+const { getMeetingTranscriptionWaitTime } = useMeetings();
+const { data: waiting_time_data } = getMeetingTranscriptionWaitTime(props.meetingId);
 
 const is_waiting_time_data_reached_deadline = computed(() => {
   return waiting_time_data.value && waiting_time_data.value.estimation_duration_minutes <= 0;
-});
-
-// Récupération du temps d'attente estimé depuis l'API
-const { data: waiting_time_data } = useQuery({
-  queryKey: ['transcription-wait-time', props.meetingId],
-  queryFn: () => getTranscriptionWaitingTime(props.meetingId),
-  refetchInterval: TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL,
 });
 </script>
