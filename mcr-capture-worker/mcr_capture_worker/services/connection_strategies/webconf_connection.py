@@ -14,6 +14,8 @@ capture_settings = CaptureSettings()
 
 
 class WebConfConnectionStrategy(ConnectionStrategy):
+    CONNECTION_TIMEOUT = 300000 # 5 minutes in milliseconds
+
     async def connect_to_meeting(self, page: Page, meeting: Meeting) -> None:
         if not is_meeting_with_url(meeting):
             raise ValueError("WebConf meeting doesn't have a valid url")
@@ -22,7 +24,7 @@ class WebConfConnectionStrategy(ConnectionStrategy):
 
     async def set_bot_name(self, page: Page, meeting: Meeting) -> None:
         await page.wait_for_selector(
-            "#premeeting-name-input", state="visible", timeout=30000
+        "#premeeting-name-input", state="visible", timeout=self.CONNECTION_TIMEOUT
         )
         await page.fill(
             "#premeeting-name-input",

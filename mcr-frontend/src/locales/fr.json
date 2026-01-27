@@ -259,7 +259,8 @@
         "title": "Êtes vous sûr de vouloir terminer la transcription\u00a0?"
       },
       "modal-start": {
-        "title": "Avez-vous informé les participants de l'utilisation de l'outil FCR pour cette réunion\u00a0?"
+        "title": "Avez-vous informé les participants de l'utilisation de l'outil FCR pour cette réunion\u00a0?",
+        "description": "Assurez-vous que l'organisateur a démarré la visioconférence avant de lancer l'enregistrement."
       },
       "tab": {
         "transcription": "Transcription",
