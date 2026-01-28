@@ -7,7 +7,7 @@ from mcr_meeting.app.db.meeting_repository import (
     get_meeting_by_id,
 )
 from mcr_meeting.app.db.meeting_transition_record_repository import (
-    find_transition_record_with_estimation_by_meeting,
+    find_current_transition_record_for_meeting,
 )
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
@@ -30,7 +30,7 @@ class TranscriptionQueueEstimationService:
         Get the remaining wait time for a specific meeting in minutes.
         Based on the meeting's estimated end date minus current time.
         """
-        meeting_transition_record = find_transition_record_with_estimation_by_meeting(
+        meeting_transition_record = find_current_transition_record_for_meeting(
             meeting_id
         )
 

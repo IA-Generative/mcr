@@ -26,7 +26,7 @@ def save_meeting_transition_record(
     return transition_record
 
 
-def find_transition_record_with_estimation_by_meeting(
+def find_current_transition_record_for_meeting(
     meeting_id: int,
 ) -> MeetingTransitionRecord:
     """
