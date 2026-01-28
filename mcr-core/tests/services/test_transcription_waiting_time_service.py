@@ -164,8 +164,10 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
+                meeting_id
+            )
         )
 
         # Assert
@@ -189,8 +191,10 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
+                meeting_id
+            )
         )
 
         # Assert
@@ -211,7 +215,7 @@ class TestTranscriptionQueueEstimationService:
         with pytest.raises(
             ValueError, match="Meeting transition record with ID 1 not found"
         ):
-            TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
                 meeting_id
             )
 
@@ -233,6 +237,6 @@ class TestTranscriptionQueueEstimationService:
         with pytest.raises(
             ValueError, match="Estimated end date is None for meeting 1"
         ):
-            TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
                 meeting_id
             )

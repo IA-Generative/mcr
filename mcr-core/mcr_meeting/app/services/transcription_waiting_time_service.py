@@ -11,31 +11,33 @@ from mcr_meeting.app.db.meeting_transition_record_repository import (
 )
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
-transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
+transcription_wait_time_settings = TranscriptionWaitingTimeSettings()
 
 
 class TranscriptionQueueEstimationService:
     """
-    Service to calculate the estimated waiting time for a meeting in the transcription queue.
+    Service to calculate the estimated wait time for a meeting in the transcription queue.
 
-    Calculate the waiting time based on:
+    Calculate the wait time based on:
     - The number of meetings in TRANSCRIPTION_PENDING scheduled before the current meeting
     - The number of transcription pods in parallel (14)
     - The average transcription time per meeting (12 minutes)
     """
 
     @classmethod
-    def get_meeting_remaining_waiting_time_minutes(cls, meeting_id: int) -> int:
+    def get_meeting_remaining_wait_time_minutes(cls, meeting_id: int) -> int:
         """
-        Get the remaining waiting time for a specific meeting in minutes.
+        Get the remaining wait time for a specific meeting in minutes.
         Based on the meeting's estimated end date minus current time.
         """
         meeting_transition_record = find_transition_record_with_estimation_by_meeting(
             meeting_id
         )
 
-        predicted_wait_time_minutes = cls.calculate_wait_time_from_transition_record(
-            meeting_transition_record=meeting_transition_record
+        predicted_wait_time_minutes = (
+            cls.calculate_remaining_wait_time_from_transition_record(
+                meeting_transition_record=meeting_transition_record
+            )
         )
 
         return predicted_wait_time_minutes
@@ -43,27 +45,27 @@ class TranscriptionQueueEstimationService:
     @staticmethod
     def estimate_current_wait_time_minutes() -> int:
         """
-        Get the estimated waiting time for new meetings joining the transcription queue.
+        Get the estimated wait time for new meetings joining the transcription queue.
         Based on the total number of pending meetings and average processing time.
 
         Formula : Floor(N / parallel_pods_count) * average_transcription_time
 
         Returns:
-            The waiting time in minutes
+            The wait time in minutes
         """
         total_pending_meetings_count = count_pending_meetings()
 
         slots_needed = math.floor(
             total_pending_meetings_count
-            / transcription_waiting_time_settings.PARALLEL_PODS_COUNT
+            / transcription_wait_time_settings.PARALLEL_PODS_COUNT
         )
 
-        current_waiting_time_minutes = (
+        current_wait_time_minutes = (
             slots_needed
-            * transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_TIME_MINUTES
-        ) + int(transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS * 60)
+            * transcription_wait_time_settings.AVERAGE_TRANSCRIPTION_TIME_MINUTES
+        )
 
-        return current_waiting_time_minutes
+        return current_wait_time_minutes
 
     @classmethod
     def estimate_transcription_duration_minutes(cls, meeting_id: int) -> int:
@@ -74,19 +76,17 @@ class TranscriptionQueueEstimationService:
         else:
             duration = cls.estimate_default_meeting_duration()
 
-        return (
-            duration // transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_SPEED
-        )
+        return duration // transcription_wait_time_settings.AVERAGE_TRANSCRIPTION_SPEED
 
     @staticmethod
     def estimate_default_meeting_duration() -> int:
         duration_hour = int(
-            transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS
+            transcription_wait_time_settings.AVERAGE_MEETING_DURATION_HOURS
         )
         return duration_hour * 60
 
     @staticmethod
-    def calculate_wait_time_from_transition_record(
+    def calculate_remaining_wait_time_from_transition_record(
         meeting_transition_record: MeetingTransitionRecord,
     ) -> int:
         predicted_date = meeting_transition_record.predicted_date_of_next_transition
