@@ -8,7 +8,7 @@ from mcr_meeting.app.db.db import router_db_session_context_manager
 from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_report,
-    start_report,
+    start_report, fail_report,
 )
 from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
 from mcr_meeting.app.services.report_task_service import (
@@ -86,4 +86,4 @@ async def generate_meeting_report_success(
 async def generate_meeting_report_failure(
     meeting_id: int,
 ) -> None:
-    logger.error("Generation failure for meeting {}", meeting_id)
+    fail_report(meeting_id=meeting_id)

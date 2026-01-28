@@ -361,6 +361,17 @@ def test_complete_report(
 
     assert result.status == MeetingStatus.REPORT_DONE
 
+def test_fail_report(
+    _mock_db: MagicMock,
+    visio_meeting: DummyMeeting,
+) -> None:
+    visio_meeting.status = MeetingStatus.REPORT_PENDING
+
+    result = mts.fail_report(
+        meeting_id=visio_meeting.id
+    )
+
+    assert result.status == MeetingStatus.REPORT_FAILED
 
 # ---------------------------------------------------------------------------
 # Error case
