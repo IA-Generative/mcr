@@ -15,6 +15,13 @@ from mcr_meeting.app.models import Meeting, MeetingPlatforms, MeetingStatus, Use
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.meeting_schema import MeetingCreate
 from mcr_meeting.app.services.meeting_service import create_meeting_service
+from tests.factories.user_factory import UserFactory
+
+
+@pytest.fixture
+def user_fixture() -> User:
+    user = UserFactory.create()
+    return user
 
 
 class TestCreateMeetingService:
