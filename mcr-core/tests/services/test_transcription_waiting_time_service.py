@@ -121,6 +121,34 @@ class TestTranscriptionQueueEstimationService:
         expected_wait_time = pending_count // 14 * 12
         assert result == expected_wait_time
 
+    def test_get_meeting_transcription_wait_time_minutes_should_not_be_impacted_by_other_meetings(
+        self,
+    ) -> None:
+        """Test that count_pending_meetings only counts meetings with TRANSCRIPTION_PENDING status."""
+        # Arrange
+        MeetingFactory.create_batch(
+            13,
+            status=MeetingStatus.TRANSCRIPTION_PENDING,
+        )  # Should count
+        MeetingFactory.create_batch(
+            2,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+        )  # Should NOT count (wrong status)
+        MeetingFactory.create_batch(
+            2,
+            status=MeetingStatus.CAPTURE_IN_PROGRESS,
+        )  # Should NOT count (wrong status)
+
+        # Act
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
+        )
+
+        # Assert
+        # Should count only 13 meetings (only meetings with TRANSCRIPTION_PENDING status)
+        # So a slot is still free => wait_time is 0
+        assert result == 0
+
     def test_get_meeting_remaining_wait_time_minutes_should_return_correct_remaining_time(
         self,
     ) -> None:
