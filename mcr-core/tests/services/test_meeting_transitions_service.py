@@ -1,54 +1,25 @@
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from datetime import datetime, timezone
+from typing import Any
 from unittest.mock import MagicMock, Mock
 from uuid import UUID
 
 import pytest
+from sqlalchemy.orm import Session
 
 from mcr_meeting.app.configs.base import TranscriptionWaitingTimeSettings
-from mcr_meeting.app.models.meeting_model import MeetingPlatforms, MeetingStatus
+from mcr_meeting.app.models.meeting_model import (
+    Meeting,
+    MeetingPlatforms,
+    MeetingStatus,
+)
+from mcr_meeting.app.models.user_model import User
 from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mts
 from mcr_meeting.app.services import s3_service as s3s
-from mcr_meeting.app.services import (
-    transcription_waiting_time_service,
-)
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
 from mcr_meeting.app.statemachine_actions import meeting_actions
-
-# ---------------------------------------------------------------------------
-# Dummy model
-# ---------------------------------------------------------------------------
-
-
-class DummyMeeting:
-    def __init__(
-        self,
-        status: MeetingStatus,
-        name_platform: MeetingPlatforms,
-        id: int,
-    ) -> None:
-        self.status = status
-        self.name_platform = name_platform
-        self.id = id
-        self.name = "Dummy Meeting"
-        self.transcription_filename = "titre.docx"
-
-        self.start_date: datetime
-        self.end_date: datetime
-
-        self.owner = MagicMock()
-        self.owner.keycloak_uuid = UUID("00000000-0000-0000-0000-000000000001")
-
-    @property
-    def duration_minutes(self) -> Optional[int]:
-        if self.start_date is None or self.end_date is None:
-            return None
-
-        meeting_duration_seconds = (self.end_date - self.start_date).total_seconds()
-        return int(meeting_duration_seconds // 60)
-
+from tests.factories import MeetingFactory
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -56,111 +27,9 @@ class DummyMeeting:
 
 
 @pytest.fixture
-def user_keycloak_uuid() -> UUID:
-    return UUID("00000000-0000-0000-0000-000000000001")
-
-
-@pytest.fixture
-def visio_meeting() -> DummyMeeting:
-    return DummyMeeting(
-        status=MeetingStatus.NONE,
-        name_platform=MeetingPlatforms.COMU,
-        id=1,
-    )
-
-
-@pytest.fixture
-def import_meeting() -> DummyMeeting:
-    return DummyMeeting(
-        status=MeetingStatus.IMPORT_PENDING,
-        name_platform=MeetingPlatforms.MCR_IMPORT,
-        id=2,
-    )
-
-
-@pytest.fixture
-def record_meeting() -> DummyMeeting:
-    return DummyMeeting(
-        status=MeetingStatus.CAPTURE_IN_PROGRESS,
-        name_platform=MeetingPlatforms.MCR_RECORD,
-        id=3,
-    )
-
-
-@pytest.fixture
-def meeting_store(
-    visio_meeting: DummyMeeting,
-    import_meeting: DummyMeeting,
-    record_meeting: DummyMeeting,
-    user_keycloak_uuid: UUID,
-) -> Dict[int, DummyMeeting]:
-    for meeting in (visio_meeting, import_meeting, record_meeting):
-        meeting.owner = MagicMock()
-        meeting.owner.keycloak_uuid = user_keycloak_uuid
-
-    return {
-        visio_meeting.id: visio_meeting,
-        import_meeting.id: import_meeting,
-        record_meeting.id: record_meeting,
-    }
-
-
-@pytest.fixture
-def _mock_db(monkeypatch: Any, meeting_store: Dict[int, DummyMeeting]) -> MagicMock:
-    db_mock = MagicMock()
-
-    def mock_update_meeting_status(
-        meeting: DummyMeeting,
-        meeting_status: MeetingStatus,
-    ) -> DummyMeeting:
-        meeting.status = meeting_status
-        return meeting
-
-    monkeypatch.setattr(
-        meeting_actions,
-        "update_meeting_status",
-        mock_update_meeting_status,
-    )
-
-    def mock_get_meeting_service(*, meeting_id: int, **_: Any) -> DummyMeeting:
-        return meeting_store[meeting_id]
-
-    monkeypatch.setattr(
-        mts,
-        "get_meeting_service",
-        mock_get_meeting_service,
-    )
-
-    def mock_update_meeting_start_date(
-        meeting: DummyMeeting, start_date: MeetingStatus
-    ) -> DummyMeeting:
-        meeting.start_date = start_date
-        return meeting
-
-    monkeypatch.setattr(
-        meeting_actions, "update_meeting_start_date", mock_update_meeting_start_date
-    )
-
-    def mock_update_meeting_end_date(
-        meeting: DummyMeeting, end_date: MeetingStatus
-    ) -> DummyMeeting:
-        meeting.end_date = end_date
-        return meeting
-
-    monkeypatch.setattr(
-        meeting_actions, "update_meeting_end_date", mock_update_meeting_end_date
-    )
-
-    def mock_get_meeting_by_id(meeting_id: int, **_: Any) -> DummyMeeting:
-        return meeting_store[meeting_id]
-
-    monkeypatch.setattr(
-        transcription_waiting_time_service,
-        "get_meeting_by_id",
-        mock_get_meeting_by_id,
-    )
-
-    return db_mock
+def user_keycloak_uuid(orchestrator_user: User) -> UUID:
+    """Use the keycloak_uuid from the orchestrator_user fixture."""
+    return orchestrator_user.keycloak_uuid
 
 
 @pytest.fixture
@@ -221,12 +90,10 @@ def _mock_transition_record_creation(monkeypatch: Any) -> MagicMock:
 
 
 def test_init_capture(
-    _mock_db: MagicMock,
-    visio_meeting: DummyMeeting,
+    visio_meeting: Meeting,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.NONE
-
+    """Test initializing capture transitions meeting to CAPTURE_PENDING."""
     result = mts.init_capture(
         meeting_id=visio_meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
@@ -236,14 +103,18 @@ def test_init_capture(
 
 
 def test_start_capture(
-    _mock_db: MagicMock,
-    visio_meeting: DummyMeeting,
+    orchestrator_user: User,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.CAPTURE_PENDING
+    """Test starting capture transitions meeting to CAPTURE_BOT_IS_CONNECTING."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.CAPTURE_PENDING,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
     result = mts.start_capture(
-        meeting_id=visio_meeting.id,
+        meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
     )
 
@@ -251,28 +122,37 @@ def test_start_capture(
 
 
 def test_complete_capture(
-    _mock_db: MagicMock,
-    visio_meeting: DummyMeeting,
+    orchestrator_user: User,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.CAPTURE_IN_PROGRESS
+    """Test completing capture transitions meeting to CAPTURE_DONE."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.CAPTURE_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
     result = mts.complete_capture(
-        meeting_id=visio_meeting.id,
+        meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
     )
+
     assert result.status == MeetingStatus.CAPTURE_DONE
 
 
 def test_start_capture_bot(
-    _mock_db: MagicMock,
-    visio_meeting: DummyMeeting,
+    orchestrator_user: User,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.CAPTURE_BOT_IS_CONNECTING
+    """Test bot connection success transitions to CAPTURE_IN_PROGRESS."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.CAPTURE_BOT_IS_CONNECTING,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
     result = mts.start_capture_bot(
-        meeting_id=visio_meeting.id,
+        meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
     )
 
@@ -280,14 +160,18 @@ def test_start_capture_bot(
 
 
 def test_fail_capture_bot(
-    _mock_db: MagicMock,
-    visio_meeting: DummyMeeting,
+    orchestrator_user: User,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.CAPTURE_BOT_IS_CONNECTING
+    """Test bot connection failure transitions to CAPTURE_BOT_CONNECTION_FAILED."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.CAPTURE_BOT_IS_CONNECTING,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
     result = mts.fail_capture_bot(
-        meeting_id=visio_meeting.id,
+        meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
     )
 
@@ -295,14 +179,18 @@ def test_fail_capture_bot(
 
 
 def test_fail_capture(
-    _mock_db: MagicMock,
-    visio_meeting: DummyMeeting,
+    orchestrator_user: User,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.CAPTURE_IN_PROGRESS
+    """Test capture failure transitions to CAPTURE_FAILED."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.CAPTURE_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
     result = mts.fail_capture(
-        meeting_id=visio_meeting.id,
+        meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
     )
 
@@ -315,14 +203,12 @@ def test_fail_capture(
 
 
 def test_init_transcription(
-    _mock_db: MagicMock,
     mock_celery_producer_app: Mock,
     _mock_wait_time: MagicMock,
-    import_meeting: DummyMeeting,
+    import_meeting: Meeting,
     user_keycloak_uuid: UUID,
 ) -> None:
-    import_meeting.status = MeetingStatus.IMPORT_PENDING
-
+    """Test initializing transcription transitions to TRANSCRIPTION_PENDING."""
     result = mts.init_transcription(
         meeting_id=import_meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
@@ -331,30 +217,29 @@ def test_init_transcription(
     assert result.status == MeetingStatus.TRANSCRIPTION_PENDING
 
 
-def test_start_transcription(_mock_db: MagicMock, import_meeting: DummyMeeting) -> None:
-    import_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
-    import_meeting.start_date = None
-    import_meeting.end_date = None
+def test_start_transcription(db_session: Session) -> None:
+    """Test starting transcription transitions to TRANSCRIPTION_IN_PROGRESS."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_PENDING,
+        name_platform=MeetingPlatforms.MCR_IMPORT,
+    )
 
-    result = mts.start_transcription(meeting_id=import_meeting.id)
+    result = mts.start_transcription(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
 
 
 def test_start_transcription_creates_log_with_prediction(
-    _mock_db: MagicMock,
     _mock_transition_record_creation: MagicMock,
-    import_meeting: DummyMeeting,
 ) -> None:
     """Test that start_transcription creates exactly one transition log with prediction."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_PENDING,
+        name_platform=MeetingPlatforms.MCR_IMPORT,
+        with_dates=True,
+    )
 
-    # Arrange
-    import_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
-    import_meeting.start_date = datetime.now(timezone.utc)
-    import_meeting.end_date = datetime.now(timezone.utc) + timedelta(hours=2)
-
-    # Act
-    result = mts.start_transcription(meeting_id=import_meeting.id)
+    result = mts.start_transcription(meeting_id=meeting.id)
 
     # Assert
     assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
@@ -362,16 +247,15 @@ def test_start_transcription_creates_log_with_prediction(
 
 
 def test_start_transcription_missing_start_date_uses_default_prediction(
-    _mock_db: MagicMock,
     _mock_transition_record_creation: MagicMock,
-    import_meeting: DummyMeeting,
 ) -> None:
     """Test that start_transcription uses 1h default prediction when start_date is missing."""
-
-    # Arrange
-    import_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
-    import_meeting.start_date = None
-    import_meeting.end_date = datetime.now(timezone.utc)
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_PENDING,
+        name_platform=MeetingPlatforms.MCR_IMPORT,
+        start_date=None,
+        end_date=datetime.now(timezone.utc),
+    )
 
     transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
 
@@ -381,7 +265,7 @@ def test_start_transcription_missing_start_date_uses_default_prediction(
     )
 
     # Act
-    _ = mts.start_transcription(meeting_id=import_meeting.id)
+    _ = mts.start_transcription(meeting_id=meeting.id)
 
     # Assert
     call_args = _mock_transition_record_creation.call_args
@@ -389,20 +273,26 @@ def test_start_transcription_missing_start_date_uses_default_prediction(
     assert call_args[1]["waiting_time_minutes"] == default_meeting_processing_time
 
 
-def test_fail_transcription(_mock_db: MagicMock, visio_meeting: DummyMeeting) -> None:
-    visio_meeting.status = MeetingStatus.TRANSCRIPTION_PENDING
+def test_fail_transcription() -> None:
+    """Test transcription failure transitions to TRANSCRIPTION_FAILED."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_PENDING,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
-    result = mts.fail_transcription(meeting_id=visio_meeting.id)
+    result = mts.fail_transcription(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_FAILED
 
 
-def test_complete_transcription(
-    _mock_db: MagicMock, visio_meeting: DummyMeeting
-) -> None:
-    visio_meeting.status = MeetingStatus.TRANSCRIPTION_IN_PROGRESS
+def test_complete_transcription() -> None:
+    """Test completing transcription transitions to TRANSCRIPTION_DONE."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
-    result = mts.complete_transcription(meeting_id=visio_meeting.id)
+    result = mts.complete_transcription(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_DONE
 
@@ -413,33 +303,36 @@ def test_complete_transcription(
 
 
 def test_start_report(
-    _mock_db: MagicMock,
+    orchestrator_user: User,
     _mock_transcription_object_name: MagicMock,
     mock_celery_producer_app: Mock,
-    visio_meeting: DummyMeeting,
     user_keycloak_uuid: UUID,
 ) -> None:
-    visio_meeting.status = MeetingStatus.TRANSCRIPTION_DONE
+    """Test starting report transitions to REPORT_PENDING."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+        transcription_filename="titre.docx",
+    )
 
     result = mts.start_report(
-        meeting_id=visio_meeting.id,
+        meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
     )
 
     assert result.status == MeetingStatus.REPORT_PENDING
 
 
-def test_complete_report(
-    _mock_db: MagicMock,
-    _mock_save_formatted_report: MagicMock,
-    visio_meeting: DummyMeeting,
-) -> None:
-    visio_meeting.status = MeetingStatus.REPORT_PENDING
+def test_complete_report(_mock_save_formatted_report: MagicMock) -> None:
+    """Test completing report transitions to REPORT_DONE."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.REPORT_PENDING,
+        name_platform=MeetingPlatforms.COMU,
+    )
     report_response = MagicMock()
 
-    result = mts.complete_report(
-        meeting_id=visio_meeting.id, report_response=report_response
-    )
+    result = mts.complete_report(meeting_id=meeting.id, report_response=report_response)
 
     assert result.status == MeetingStatus.REPORT_DONE
 
@@ -449,15 +342,15 @@ def test_complete_report(
 # ---------------------------------------------------------------------------
 
 
-def test_init_capture_bad_status(
-    visio_meeting: DummyMeeting,
-    user_keycloak_uuid: UUID,
-    _mock_db: MagicMock,
-) -> None:
-    visio_meeting.status = MeetingStatus.REPORT_DONE
+def test_init_capture_bad_status(user_keycloak_uuid: UUID) -> None:
+    """Test that init_capture raises exception when meeting is in wrong status."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.REPORT_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
 
     with pytest.raises(Exception):
         mts.init_capture(
-            meeting_id=visio_meeting.id,
+            meeting_id=meeting.id,
             user_keycloak_uuid=user_keycloak_uuid,
         )
