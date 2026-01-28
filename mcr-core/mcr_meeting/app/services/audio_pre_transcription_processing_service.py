@@ -1,3 +1,5 @@
+import os
+import tempfile
 from io import BytesIO
 from typing import Iterator, Optional
 
@@ -32,29 +34,35 @@ def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
         nb_channels,
     )
 
-    # pipe:0 = read from stdin, pipe:1 = write to stdout
-    stream = ffmpeg.input("pipe:0", err_detect="ignore_err")
-    stream = (
-        stream.output(
-            "pipe:1",
-            format="wav",  # Specify WAV container format
-            ar=sample_rate,  # Audio rate (sample rate)
-            ac=nb_channels,  # Audio channels (mono/stereo)
+    # Use a temporary file for input because FFmpeg cannot seek on stdin
+    # This is critical for formats like m4a/mp4 where metadata might be at the end
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_input:
+        tmp_input.write(input_bytes.getvalue())
+        tmp_input_path = tmp_input.name
+
+    try:
+        # pipe:1 = write to stdout
+        stream = ffmpeg.input(tmp_input_path, err_detect="ignore_err")
+        stream = (
+            stream.output(
+                "pipe:1",
+                format="wav",  # Specify WAV container format
+                ar=sample_rate,  # Audio rate (sample rate)
+                ac=nb_channels,  # Audio channels (mono/stereo)
+            )
+            .overwrite_output()
+            .global_args("-loglevel", "error")
         )
-        .overwrite_output()
-        .global_args("-loglevel", "error")
-    )
 
-    # Log the generated FFmpeg command for debugging
-    try:
-        cmd = stream.compile()
-        logger.debug("FFmpeg command: %s", " ".join(cmd))
-    except Exception:
-        pass  # Don't fail if compile fails
+        # Log the generated FFmpeg command for debugging
+        try:
+            cmd = stream.compile()
+            logger.debug("FFmpeg command: %s", " ".join(cmd))
+        except Exception:
+            logger.warning("Failed to compile FFmpeg command.")
+            pass  # Don't fail if compile fails
 
-    try:
         output, error = stream.run(
-            input=input_bytes.getvalue(),
             capture_stdout=True,
             capture_stderr=True,
         )
@@ -67,13 +75,17 @@ def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
             )
         return BytesIO(output)
     except InvalidAudioFileError:
-        # Re-raise our own exceptions without wrapping them
+        # Re-raise our own exceptions
         raise
     except Exception as e:
         logger.error("Unexpected error during normalization: {}", e)
         raise InvalidAudioFileError(
             f"Unexpected error during normalization: {e}"
         ) from e
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(tmp_input_path):
+            os.remove(tmp_input_path)
 
 
 def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
