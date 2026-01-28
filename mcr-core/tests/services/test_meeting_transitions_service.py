@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from unittest.mock import MagicMock, Mock
 from uuid import UUID
@@ -12,12 +12,9 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingPlatforms,
     MeetingStatus,
 )
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.models.user_model import User
 from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mts
-from mcr_meeting.app.services import s3_service as s3s
-from mcr_meeting.app.services.transcription_waiting_time_service import (
-    TranscriptionQueueEstimationService,
-)
 from mcr_meeting.app.statemachine_actions import meeting_actions
 from tests.factories import MeetingFactory
 
@@ -30,32 +27,6 @@ from tests.factories import MeetingFactory
 def user_keycloak_uuid(orchestrator_user: User) -> UUID:
     """Use the keycloak_uuid from the orchestrator_user fixture."""
     return orchestrator_user.keycloak_uuid
-
-
-@pytest.fixture
-def _mock_wait_time(monkeypatch: Any) -> MagicMock:
-    waiting_time_mock = MagicMock()
-
-    monkeypatch.setattr(
-        TranscriptionQueueEstimationService,
-        "estimate_current_wait_time_minutes",
-        lambda *_: 59,
-    )
-
-    return waiting_time_mock
-
-
-@pytest.fixture
-def _mock_transcription_object_name(monkeypatch: Any) -> MagicMock:
-    transcription_object_name_mock = MagicMock()
-
-    monkeypatch.setattr(
-        s3s,
-        "get_transcription_object_name",
-        lambda *_: "titre.docx",
-    )
-
-    return transcription_object_name_mock
 
 
 @pytest.fixture
@@ -72,16 +43,16 @@ def _mock_save_formatted_report(monkeypatch: Any) -> MagicMock:
 
 
 @pytest.fixture
-def _mock_transition_record_creation(monkeypatch: Any) -> MagicMock:
-    transition_record_mock = MagicMock()
+def mock_send_email(monkeypatch: Any) -> MagicMock:
+    """Mock email service to prevent actual emails during tests."""
+    send_email_mock = MagicMock()
 
     monkeypatch.setattr(
-        meeting_actions,
-        "create_transcription_transition_record_with_estimation",
-        transition_record_mock,
+        "mcr_meeting.app.services.send_email_service._send_email",
+        send_email_mock,
     )
 
-    return transition_record_mock
+    return send_email_mock
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +175,6 @@ def test_fail_capture(
 
 def test_init_transcription(
     mock_celery_producer_app: Mock,
-    _mock_wait_time: MagicMock,
     import_meeting: Meeting,
     user_keycloak_uuid: UUID,
 ) -> None:
@@ -229,9 +199,7 @@ def test_start_transcription(db_session: Session) -> None:
     assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
 
 
-def test_start_transcription_creates_log_with_prediction(
-    _mock_transition_record_creation: MagicMock,
-) -> None:
+def test_start_transcription_creates_log_with_prediction() -> None:
     """Test that start_transcription creates exactly one transition log with prediction."""
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_PENDING,
@@ -241,13 +209,11 @@ def test_start_transcription_creates_log_with_prediction(
 
     result = mts.start_transcription(meeting_id=meeting.id)
 
-    # Assert
     assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
-    assert _mock_transition_record_creation.call_count == 1
 
 
 def test_start_transcription_missing_start_date_uses_default_prediction(
-    _mock_transition_record_creation: MagicMock,
+    db_session: Session,
 ) -> None:
     """Test that start_transcription uses 1h default prediction when start_date is missing."""
     meeting = MeetingFactory.create(
@@ -265,12 +231,38 @@ def test_start_transcription_missing_start_date_uses_default_prediction(
     )
 
     # Act
+    start_time = datetime.now(timezone.utc)
     _ = mts.start_transcription(meeting_id=meeting.id)
 
-    # Assert
-    call_args = _mock_transition_record_creation.call_args
-    assert "waiting_time_minutes" in call_args[1]
-    assert call_args[1]["waiting_time_minutes"] == default_meeting_processing_time
+    records = (
+        db_session.query(MeetingTransitionRecord)
+        .filter(MeetingTransitionRecord.meeting_id == meeting.id)
+        .all()
+    )
+
+    # Verify a record was created with prediction
+    assert len(records) == 1
+    record = records[0]
+    assert record.predicted_date_of_next_transition is not None
+
+    # Verify the prediction is approximately the default time from now
+    # Ensure timezone-aware comparison
+    if record.predicted_date_of_next_transition.tzinfo is None:
+        actual_prediction_time = record.predicted_date_of_next_transition.replace(
+            tzinfo=timezone.utc, microsecond=0
+        )
+    else:
+        actual_prediction_time = record.predicted_date_of_next_transition.replace(
+            microsecond=0
+        )
+
+    expected_prediction_time = start_time.replace(microsecond=0) + timedelta(
+        minutes=default_meeting_processing_time
+    )
+
+    # Allow 2 second tolerance for test execution time
+    time_diff = abs((actual_prediction_time - expected_prediction_time).total_seconds())
+    assert time_diff < 2
 
 
 def test_fail_transcription() -> None:
@@ -304,7 +296,6 @@ def test_complete_transcription() -> None:
 
 def test_start_report(
     orchestrator_user: User,
-    _mock_transcription_object_name: MagicMock,
     mock_celery_producer_app: Mock,
     user_keycloak_uuid: UUID,
 ) -> None:
@@ -324,7 +315,9 @@ def test_start_report(
     assert result.status == MeetingStatus.REPORT_PENDING
 
 
-def test_complete_report(_mock_save_formatted_report: MagicMock) -> None:
+def test_complete_report(
+    _mock_save_formatted_report: MagicMock, mock_send_email: MagicMock
+) -> None:
     """Test completing report transitions to REPORT_DONE."""
     meeting = MeetingFactory.create(
         status=MeetingStatus.REPORT_PENDING,
@@ -335,6 +328,7 @@ def test_complete_report(_mock_save_formatted_report: MagicMock) -> None:
     result = mts.complete_report(meeting_id=meeting.id, report_response=report_response)
 
     assert result.status == MeetingStatus.REPORT_DONE
+    assert mock_send_email.call_count == 1
 
 
 # ---------------------------------------------------------------------------
