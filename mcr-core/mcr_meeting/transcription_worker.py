@@ -31,9 +31,6 @@ from mcr_meeting.app.models import (  # noqa: F401
 )
 from mcr_meeting.app.schemas.celery_types import CelerySignalArgs, MCRTranscriptionTasks
 from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
-from mcr_meeting.app.services.meeting_transition_record_service import (
-    update_meeting_transition_record_predicted_end_date_service,
-)
 from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
     get_gpu_name,
@@ -157,8 +154,6 @@ def set_meeting_in_progress_status(
 
         asyncio.run(client.start_transcription(meeting_id))
         logger.info("Starting transcription for meeting ID: {}", meeting_id)
-
-        update_meeting_transition_record_predicted_end_date_service(meeting_id)
 
 
 @task_success.connect(sender=transcribe)

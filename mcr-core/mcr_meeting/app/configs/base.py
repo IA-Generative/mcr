@@ -164,6 +164,11 @@ class TranscriptionWaitingTimeSettings(BaseSettings):
         description="The average transcription time in minutes.",
     )
 
+    AVERAGE_TRANSCRIPTION_SPEED: int = Field(
+        default=5,
+        description="The average ratio between real audio time to transcription time.",
+    )
+
     AVERAGE_MEETING_DURATION_HOURS: float = Field(
         default=1,
         description="The average meeting duration in hours.",

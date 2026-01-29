@@ -4,7 +4,6 @@ from unittest.mock import Mock
 import pytest
 from pytest_mock import MockerFixture
 
-from mcr_meeting.app.models.meeting_model import Meeting
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -18,22 +17,14 @@ class TestTranscriptionQueueEstimationService:
     ) -> None:
         """Test that waiting time is base duration when there are no pending meetings."""
         # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc)
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
-        )
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=0,
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
         )
 
         # Assert
@@ -45,22 +36,14 @@ class TestTranscriptionQueueEstimationService:
     ) -> None:
         """Test calculation for meetings that fit in one slot (< 14 meetings)."""
         # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc)
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
-        )
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=5,
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
         )
 
         # Assert
@@ -74,22 +57,14 @@ class TestTranscriptionQueueEstimationService:
     ) -> None:
         """Test calculation for an exact multiple of parallel pods count."""
         # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc)
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
-        )
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=28,  # 2 * 14
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
         )
 
         # Assert
@@ -103,22 +78,14 @@ class TestTranscriptionQueueEstimationService:
     ) -> None:
         """Test that calculation adds an extra slot when there's a remainder."""
         # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc)
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
-        )
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=15,  # 1 * 14 + 1
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
         )
 
         # Assert
@@ -132,22 +99,14 @@ class TestTranscriptionQueueEstimationService:
     ) -> None:
         """Test calculation with a large number of pending meetings."""
         # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc)
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
-        )
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=100,
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
         )
 
         # Assert
@@ -155,60 +114,15 @@ class TestTranscriptionQueueEstimationService:
         expected_waiting_time = 144  # 7 slots * 12 minutes + 60 minutes (base meeting duration) = 144 minutes
         assert result == expected_waiting_time
 
-    def test_get_meeting_transcription_waiting_time_minutes_should_raise_exception_when_meeting_not_found(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test that waiting time raises ValueError when meeting is not found."""
-        # Arrange
-        meeting_id = 999
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=None,
-        )
-
-        # Act & Assert
-        with pytest.raises(ValueError, match="Meeting with ID 999 not found"):
-            TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-                meeting_id
-            )
-
-    def test_get_meeting_transcription_waiting_time_minutes_should_raise_exception_when_no_creation_date(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test that waiting time raises ValueError when meeting has no creation_date."""
-        # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = None
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
-        )
-
-        # Act & Assert
-        with pytest.raises(ValueError, match="Meeting 1 has no creation_date"):
-            TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-                meeting_id
-            )
-
     def test_get_meeting_transcription_waiting_time_minutes_should_calculate_correctly_with_pending_meetings(
         self, mocker: MockerFixture
     ) -> None:
         """Test correct calculation when there are pending meetings."""
         # Arrange
-        meeting_id = 1
-        mock_meeting = Mock(spec=Meeting)
-        mock_meeting.creation_date = datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc)
 
         pending_count = 20
         expected_waiting_time = (
             72  # 1 slot * 12 minutes + 60 minutes (base meeting duration) = 72 minutes
-        )
-
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            return_value=mock_meeting,
         )
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
@@ -216,54 +130,12 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
         )
 
         # Assert
         assert result == expected_waiting_time
-
-    def test_get_meeting_transcription_waiting_time_minutes_should_raise_exception_on_error(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test that exceptions are raised properly."""
-        # Arrange
-        meeting_id = 1
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.get_meeting_by_id",
-            side_effect=Exception("Database error"),
-        )
-
-        # Act & Assert
-        with pytest.raises(Exception, match="Database error"):
-            TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-                meeting_id
-            )
-
-    def test_get_meeting_transcription_waiting_time_minutes_should_call_service_correctly(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test that the utility function calls the service correctly."""
-        # Arrange
-        meeting_id = 1
-        expected_result = 24
-
-        mock_calculate = mocker.patch.object(
-            TranscriptionQueueEstimationService,
-            "get_meeting_transcription_waiting_time_minutes",
-            return_value=expected_result,
-        )
-
-        # Act
-        from mcr_meeting.app.services.transcription_waiting_time_service import (
-            TranscriptionQueueEstimationService as Service,
-        )
-
-        result = Service.get_meeting_transcription_waiting_time_minutes(meeting_id)
-
-        # Assert
-        mock_calculate.assert_called_once_with(meeting_id)
-        assert result == expected_result
 
     def test_get_meeting_remaining_waiting_time_minutes_should_return_correct_remaining_time(
         self, mocker: MockerFixture

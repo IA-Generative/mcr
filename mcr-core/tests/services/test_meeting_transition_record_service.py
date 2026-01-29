@@ -1,18 +1,13 @@
 from datetime import datetime, timedelta, timezone
 
-from pytest_mock import MockerFixture
 from sqlalchemy.orm import Session
 
-from mcr_meeting.app.configs.base import TranscriptionWaitingTimeSettings
 from mcr_meeting.app.db.meeting_repository import (
     count_pending_meetings,
 )
 from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
 from mcr_meeting.app.services.meeting_transition_record_service import (
     create_transcription_transition_record_with_estimation,
-)
-from mcr_meeting.app.services.transcription_waiting_time_service import (
-    TranscriptionQueueEstimationService,
 )
 
 
@@ -25,7 +20,9 @@ class TestMeetingTransitionRecordService:
         """Test that a transition record is saved successfully."""
         # Act
         result = create_transcription_transition_record_with_estimation(
-            meeting_id=meeting_fixture.id, waiting_time_minutes=24
+            meeting_id=meeting_fixture.id,
+            meeting_status=MeetingStatus.TRANSCRIPTION_PENDING,
+            waiting_time_minutes=24,
         )
 
         # Assert
@@ -91,28 +88,3 @@ class TestMeetingTransitionRecordService:
 
         # Assert
         assert count == 0
-
-
-def test_get_meeting_transcription_waiting_time_minutes_happy_path(
-    meeting_fixture: Meeting,
-    mocker: MockerFixture,
-) -> None:
-    settings = TranscriptionWaitingTimeSettings()
-
-    # Mock count_pending_meetings call
-    mocker.patch(
-        "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
-        return_value=28,
-    )
-
-    expected_minutes = (2 * settings.AVERAGE_TRANSCRIPTION_TIME_MINUTES) + int(
-        settings.AVERAGE_MEETING_DURATION_HOURS * 60
-    )
-
-    # Act
-    result = TranscriptionQueueEstimationService.get_meeting_transcription_waiting_time_minutes(
-        meeting_fixture.id
-    )
-
-    # Assert
-    assert result == expected_minutes
