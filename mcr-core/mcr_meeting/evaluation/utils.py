@@ -12,7 +12,10 @@ from pyannote.metrics.diarization import (
     DiarizationErrorRate,
 )
 
-from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
+from mcr_meeting.app.schemas.transcription_schema import (
+    SpeakerTranscription,
+    TranscriptionSegment,
+)
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
@@ -36,7 +39,6 @@ from mcr_meeting.evaluation.eval_types import (
     EvaluationSummary,
     TranscriptionMetrics,
     TranscriptionResult,
-    TranscriptionSegment,
 )
 
 
