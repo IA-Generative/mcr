@@ -17,7 +17,7 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
 
 @pytest.mark.parametrize("feature_flag_enabled", [True, False])
 @pytest.mark.parametrize("audio_format", ["mp3", "mp4", "m4a", "wav", "mov"])
-def test_pre_process_should_work_normally(
+def test_integration_pre_process(
     create_audio_buffer,
     create_mock_feature_flag_client,
     feature_flag_enabled: bool,

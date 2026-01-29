@@ -35,17 +35,19 @@ def create_audio_buffer():
         audio_buffer = BytesIO()
 
         # Set format-specific parameters
-        if audio_format == "mp3":
-            sine_wave.export(audio_buffer, format="mp3", bitrate="128k")
-        elif audio_format == "mp4":
-            sine_wave.export(audio_buffer, format="mp4", codec="aac")
-        elif audio_format == "m4a":
-            sine_wave.export(audio_buffer, format="ipod", codec="aac")
-        elif audio_format == "mov":
-            sine_wave.export(audio_buffer, format="mov", codec="aac")
-        else:
-            # For wav - use default settings
-            sine_wave.export(audio_buffer, format=audio_format)
+        match audio_format:
+            case "mp3":
+                sine_wave.export(audio_buffer, format="mp3", bitrate="128k")
+            case "mp4":
+                sine_wave.export(audio_buffer, format="mp4", codec="aac")
+            case "m4a":
+                sine_wave.export(audio_buffer, format="ipod", codec="aac")
+            case "mov":
+                sine_wave.export(audio_buffer, format="mov", codec="aac")
+            case "wav":
+                sine_wave.export(audio_buffer, format=audio_format)
+            case _:
+                raise ValueError(f"Unsupported audio format: {audio_format}")
 
         audio_buffer.seek(0)
         return audio_buffer
