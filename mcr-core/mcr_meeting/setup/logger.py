@@ -116,7 +116,7 @@ def get_log_format() -> str:
     return log_format
 
 
-def log_ffmpeg_command(stream: Any) -> None:
+def log_ffmpeg_command(stream: Any) -> None:  # type: ignore[explicit-any]
     try:
         cmd = stream.compile()
         logger.debug("FFmpeg command: %s", " ".join(cmd))
