@@ -11,6 +11,7 @@ from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.feature_flag_service import FeatureFlagClient
 from mcr_meeting.app.services.s3_service import get_file_from_s3
+from mcr_meeting.setup.logger import log_ffmpeg_command
 
 s2t_settings = Speech2TextSettings()
 audio_settings = AudioSettings()
@@ -54,13 +55,7 @@ def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
             .global_args("-loglevel", "error")
         )
 
-        # Log the generated FFmpeg command for debugging
-        try:
-            cmd = stream.compile()
-            logger.debug("FFmpeg command: %s", " ".join(cmd))
-        except Exception:
-            logger.warning("Failed to compile FFmpeg command.")
-            pass  # Don't fail if compile fails
+        log_ffmpeg_command(stream)
 
         output, error = stream.run(
             capture_stdout=True,
