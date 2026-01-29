@@ -14,6 +14,11 @@ from mcr_meeting.app.configs.base import (
     WhisperTranscriptionSettings,
 )
 from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
+from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
+    filter_noise_from_audio_bytes,
+    normalize_audio_bytes_to_wav_bytes,
+)
+from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
     convert_to_french_speaker,
@@ -33,6 +38,31 @@ class SpeechToTextPipeline:
 
     def __init__(self) -> None:
         self.dev = os.environ.get("ENV_MODE") == "DEV"
+
+    def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
+        """Pre-process audio bytes before transcription and diarization.
+
+        This includes normalizing the audio to WAV format and applying noise filtering if enabled.
+
+        Args:
+            audio_bytes (BytesIO): The input audio bytes.
+
+        Returns:
+            BytesIO: The pre-processed audio bytes.
+        """
+        feature_flag_client = get_feature_flag_client()
+        normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
+        # Apply noise filtering only if feature flag is enabled
+        if feature_flag_client and feature_flag_client.is_enabled(
+            "audio_noise_filtering"
+        ):
+            logger.info("Noise filtering enabled")
+            pre_processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
+        else:
+            logger.info("Noise filtering disabled, skipping filtering step")
+            pre_processed_bytes = normalized_audio_bytes
+
+        return pre_processed_bytes
 
     def transcribe(  # type: ignore[explicit-any]
         self,
@@ -124,10 +154,14 @@ class SpeechToTextPipeline:
     ) -> List[TranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
+        logger.info("Starting speech-to-text pipeline with pre-processing.")
+
+        pre_processed_audio_bytes = self.pre_process(audio_bytes)
+
         logger.info("Running diarization with {}", diarization_settings)
 
         diarization_result = self.diarize(
-            audio_bytes,
+            pre_processed_audio_bytes,
         )
 
         if not diarization_result:
@@ -138,7 +172,9 @@ class SpeechToTextPipeline:
             diarization_result
         )
 
-        vad_transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
+        vad_transcription_inputs = split_audio_on_timestamps(
+            pre_processed_audio_bytes, vad_spans
+        )
 
         vad_transcription_segments: List[TranscriptionSegment] = []
 

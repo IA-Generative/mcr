@@ -7,31 +7,17 @@ from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.services.meeting_to_transcription_service import fetch_audio_bytes
 
 
-@pytest.fixture(autouse=True)
-def mock_ff_singleton():
-    """Mock FeatureFlagSingleton to prevent Unleash initialization during tests."""
-    with patch(
-        "mcr_meeting.app.services.feature_flag_service.FeatureFlagSingleton"
-    ) as mock:
-        yield mock
-
-
 class TestFetchAudioBytes:
     """Tests pour la fonction fetch_audio_bytes."""
 
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_raise_invalid_audio_file_error_when_no_audio_files_found(
-        self, mock_get_ff_client: Mock, mock_get_objects_list: Mock
+        self, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes raises ValueError when no audio files are found."""
         mock_get_objects_list.return_value = iter([])
-        mock_ff_client = Mock()
-        mock_get_ff_client.return_value = mock_ff_client
 
         with pytest.raises(ValueError, match="No audio files found for meeting 123"):
             fetch_audio_bytes(meeting_id=123)
@@ -44,17 +30,12 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_raise_invalid_audio_file_error_when_audio_processing_fails(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes raises Exception when audio processing fails."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = InvalidAudioFileError("Processing failed")
-        mock_ff_client = Mock()
-        mock_get_ff_client.return_value = mock_ff_client
 
         with pytest.raises(Exception, match="Audio processing failed for meeting 123"):
             fetch_audio_bytes(meeting_id=123)
@@ -65,19 +46,14 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_raise_invalid_audio_file_error_when_extension_extraction_fails(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes raises ValueError when extension extraction fails."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = ValueError(
             "No audio files found for the specified meeting"
         )
-        mock_ff_client = Mock()
-        mock_get_ff_client.return_value = mock_ff_client
 
         with pytest.raises(ValueError, match="No audio files found for meeting 123"):
             fetch_audio_bytes(meeting_id=123)
@@ -88,17 +64,12 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_raise_invalid_audio_file_error_when_unexpected_error_occurs(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes raises Exception for any unexpected error."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = RuntimeError("Unexpected error")
-        mock_ff_client = Mock()
-        mock_get_ff_client.return_value = mock_ff_client
 
         with pytest.raises(
             Exception, match="Failed to fetch audio bytes for meeting 123"
@@ -111,11 +82,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_return_audio_bytes_when_successful(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes returns audio bytes when successful."""
 
@@ -123,8 +91,6 @@ class TestFetchAudioBytes:
 
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.return_value = expected_audio_bytes
-        mock_ff_client = Mock()
-        mock_get_ff_client.return_value = mock_ff_client
 
         result = fetch_audio_bytes(meeting_id=123)
 
@@ -138,11 +104,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_handle_different_meeting_ids(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes handles different meeting IDs correctly."""
 
@@ -164,11 +127,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_handle_different_audio_extensions(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes handles different audio extensions correctly."""
 
@@ -187,11 +147,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_handle_different_error_types_from_assemble(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes handles different error types from assemble_normalized_wav_from_s3_chunks correctly."""
         mock_get_objects_list.return_value = iter([Mock()])
@@ -214,11 +171,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_handle_empty_audio_bytes(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes handles empty audio bytes correctly."""
 
@@ -235,11 +189,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.assemble_normalized_wav_from_s3_chunks"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_handle_large_audio_files(
-        self, mock_get_ff_client: Mock, mock_assemble: Mock, mock_get_objects_list: Mock
+        self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
         """Checks that fetch_audio_bytes handles large audio files correctly."""
 
@@ -256,11 +207,8 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
     )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_feature_flag_client"
-    )
     def test_should_call_get_objects_list_with_correct_prefix_format(
-        self, mock_get_ff_client: Mock, mock_get_objects_list: Mock
+        self, mock_get_objects_list: Mock
     ) -> None:
         """Checks that get_objects_list_from_prefix is called with the correct prefix format."""
         mock_get_objects_list.return_value = iter([])

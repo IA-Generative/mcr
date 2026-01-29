@@ -1,15 +1,13 @@
 """Test integration for the pre_process step."""
 
 from io import BytesIO
+from unittest.mock import patch
 
 import pytest
 import soundfile as sf
 
 from mcr_meeting.app.configs.base import AudioSettings
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
-    filter_noise_from_audio_bytes,
-    normalize_audio_bytes_to_wav_bytes,
-)
+from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
 # Note: Fixtures mock_feature_flag_client and create_audio_buffer
 # are automatically imported from conftest.py in this directory
@@ -17,7 +15,9 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
 
 @pytest.mark.parametrize("feature_flag_enabled", [True, False])
 @pytest.mark.parametrize("audio_format", ["mp3", "mp4", "m4a", "wav", "mov"])
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
 def test_integration_pre_process(
+    mock_get_feature_flag_client,
     create_audio_buffer,
     create_mock_feature_flag_client,
     feature_flag_enabled: bool,
@@ -40,29 +40,29 @@ def test_integration_pre_process(
         "audio_noise_filtering", enabled=feature_flag_enabled
     )
 
+    # Make get_feature_flag_client return the mock
+    mock_get_feature_flag_client.return_value = mock_feature_flag_client
+
     # Create audio buffer in the specified format
     audio_buffer = create_audio_buffer(audio_format)
 
     ### ===== HERE IS THE PRE-PROCESSING FLOW ===== ###
 
-    # Normalize audio to WAV
-    normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(audio_buffer)
+    speech_to_text_pipeline = SpeechToTextPipeline()
 
-    # Apply noise filtering only if feature flag is enabled
-    if mock_feature_flag_client and mock_feature_flag_client.is_enabled(
-        "audio_noise_filtering"
-    ):
-        processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
-        assert feature_flag_enabled is True
-    else:
-        processed_bytes = normalized_audio_bytes
-        assert feature_flag_enabled is False
+    processed_bytes = speech_to_text_pipeline.pre_process(audio_buffer)
 
     ### ===== END OF PRE-PROCESSING FLOW ===== ###
 
     # Verify the feature flag was checked
     mock_feature_flag_client.is_enabled.assert_called_once_with("audio_noise_filtering")
-    # assert feature_flag_client.is_enabled.call_count == 0
+
+    if mock_feature_flag_client and mock_feature_flag_client.is_enabled(
+        "audio_noise_filtering"
+    ):
+        assert feature_flag_enabled is True
+    else:
+        assert feature_flag_enabled is False
 
     # Verify the result is a BytesIO object
     assert isinstance(processed_bytes, BytesIO)

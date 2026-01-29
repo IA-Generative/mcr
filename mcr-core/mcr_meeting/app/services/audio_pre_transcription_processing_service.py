@@ -1,7 +1,7 @@
 import os
 import tempfile
 from io import BytesIO
-from typing import Iterator, Optional
+from typing import Iterator
 
 import ffmpeg
 from loguru import logger
@@ -9,7 +9,6 @@ from loguru import logger
 from mcr_meeting.app.configs.base import AudioSettings, Speech2TextSettings
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.feature_flag_service import FeatureFlagClient
 from mcr_meeting.app.services.s3_service import get_file_from_s3
 from mcr_meeting.setup.logger import log_ffmpeg_command
 
@@ -188,14 +187,12 @@ def download_and_concatenate_s3_audio_chunks_into_bytes(
 
 def assemble_normalized_wav_from_s3_chunks(
     obj_iterator: Iterator[S3Object],
-    feature_flag_client: Optional[FeatureFlagClient] = None,
 ) -> BytesIO:
     """
-    Assemble and normalize audio chunks from S3 into a single bytes object.
+    Assemble audio chunks from S3 into a single bytes object.
 
     Args:
-        obj_iterator: Iterator of S3 objects containing audio chunks
-        feature_flag_client: Optional feature flag client for checking noise filtering flag
+        obj_iterator: Iterator of S3 objects containing audio chunks.
 
     Returns:
         bytes: Normalized WAV audio bytes ready for transcription
@@ -204,16 +201,5 @@ def assemble_normalized_wav_from_s3_chunks(
     concatenated_audio_bytes = download_and_concatenate_s3_audio_chunks_into_bytes(
         obj_iterator
     )
-    normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(
-        concatenated_audio_bytes
-    )
 
-    # Apply noise filtering only if feature flag is enabled
-    if feature_flag_client and feature_flag_client.is_enabled("audio_noise_filtering"):
-        logger.info("Noise filtering enabled")
-        processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
-    else:
-        logger.info("Noise filtering disabled, skipping filtering step")
-        processed_bytes = normalized_audio_bytes
-
-    return processed_bytes
+    return concatenated_audio_bytes

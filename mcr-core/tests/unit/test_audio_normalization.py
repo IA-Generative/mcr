@@ -36,92 +36,51 @@ class TestAssembleNormalizedWavFromS3Chunks:
         mock_normalize.assert_not_called()
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.filter_noise_from_audio_bytes"
-    )
-    @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.normalize_audio_bytes_to_wav_bytes"
-    )
-    @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_return_normalized_audio_bytes_when_successful_with_filtering(
-        self, mock_download: Mock, mock_normalize: Mock, mock_filter: Mock
+        self, mock_download: Mock
     ) -> None:
-        """Checks successful assembly with filtering enabled."""
+        """Checks successful assembly returns the concatenated audio bytes."""
 
-        mock_download.return_value = BytesIO(b"raw_audio")
-        normalized_audio = BytesIO(b"normalized_audio")
-        mock_normalize.return_value = normalized_audio
-        expected_audio_bytes = BytesIO(b"filtered_audio")
-        mock_filter.return_value = expected_audio_bytes
-
-        # Mock feature flag client that enables filtering
-        mock_ff_client = Mock()
-        mock_ff_client.is_enabled.return_value = True
+        expected_audio_bytes = BytesIO(b"raw_audio")
+        mock_download.return_value = expected_audio_bytes
 
         s3_objects = [Mock()]
 
-        result = assemble_normalized_wav_from_s3_chunks(
-            iter(s3_objects), mock_ff_client
-        )
+        result = assemble_normalized_wav_from_s3_chunks(iter(s3_objects))
 
         assert result == expected_audio_bytes
         mock_download.assert_called_once()
-        mock_normalize.assert_called_once()
-        mock_filter.assert_called_once_with(normalized_audio)
-        mock_ff_client.is_enabled.assert_called_once_with("audio_noise_filtering")
 
-    @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.normalize_audio_bytes_to_wav_bytes"
-    )
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
-    def test_should_skip_filtering_when_feature_flag_disabled(
-        self, mock_download: Mock, mock_normalize: Mock
-    ) -> None:
-        """Checks that filtering is skipped when the feature flag is disabled."""
+    def test_should_handle_multiple_s3_objects(self, mock_download: Mock) -> None:
+        """Checks that the function handles multiple S3 objects correctly."""
 
-        mock_download.return_value = BytesIO(b"raw_audio")
-        normalized_audio = BytesIO(b"normalized_audio")
-        mock_normalize.return_value = normalized_audio
+        expected_audio = BytesIO(b"concatenated_audio")
+        mock_download.return_value = expected_audio
 
-        # Mock feature flag client that disables filtering
-        mock_ff_client = Mock()
-        mock_ff_client.is_enabled.return_value = False
+        s3_objects = [Mock(), Mock(), Mock()]
 
-        s3_objects = [Mock()]
+        result = assemble_normalized_wav_from_s3_chunks(iter(s3_objects))
 
-        result = assemble_normalized_wav_from_s3_chunks(
-            iter(s3_objects), mock_ff_client
-        )
-
-        assert result == normalized_audio
+        assert result == expected_audio
         mock_download.assert_called_once()
-        mock_normalize.assert_called_once()
-        mock_ff_client.is_enabled.assert_called_once_with("audio_noise_filtering")
-        # get_variant should not be called when disabled
-        mock_ff_client.get_variant.assert_not_called()
 
-    @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.normalize_audio_bytes_to_wav_bytes"
-    )
     @patch(
         "mcr_meeting.app.services.audio_pre_transcription_processing_service.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
-    def test_should_skip_filtering_when_no_feature_flag_client(
-        self, mock_download: Mock, mock_normalize: Mock
-    ) -> None:
-        """Checks that filtering is skipped when no feature flag client is provided."""
+    def test_should_return_audio_bytes_directly(self, mock_download: Mock) -> None:
+        """Checks that the function returns audio bytes directly from download."""
 
-        mock_download.return_value = BytesIO(b"raw_audio")
-        normalized_audio = BytesIO(b"normalized_audio")
-        mock_normalize.return_value = normalized_audio
+        audio_bytes = BytesIO(b"audio_data")
+        mock_download.return_value = audio_bytes
 
         s3_objects = [Mock()]
 
-        result = assemble_normalized_wav_from_s3_chunks(iter(s3_objects), None)
+        result = assemble_normalized_wav_from_s3_chunks(iter(s3_objects))
 
-        assert result == normalized_audio
+        assert result == audio_bytes
         mock_download.assert_called_once()
-        mock_normalize.assert_called_once()
