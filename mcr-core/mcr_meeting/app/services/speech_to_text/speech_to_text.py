@@ -13,7 +13,10 @@ from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
     WhisperTranscriptionSettings,
 )
-from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
+    TranscriptionSegment,
+)
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
@@ -149,7 +152,7 @@ class SpeechToTextPipeline:
         self,
         audio_bytes: BytesIO,
         model: Optional[Any] = None,
-    ) -> List[TranscriptionSegment]:
+    ) -> List[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
         logger.debug("Starting speech-to-text pipeline with pre-processing.")

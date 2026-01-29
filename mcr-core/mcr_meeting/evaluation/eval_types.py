@@ -4,12 +4,12 @@ from typing import List, Optional
 
 from pydantic import BaseModel
 
-from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
+from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 
 
 class TranscriptionResult(BaseModel):
     text: str
-    segments: List[TranscriptionSegment]
+    segments: List[DiarizedTranscriptionSegment]
 
 
 class EvaluationMetrics(BaseModel):

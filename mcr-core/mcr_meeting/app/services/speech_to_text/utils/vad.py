@@ -6,7 +6,10 @@ from typing import List, Optional, Tuple
 from loguru import logger
 
 from mcr_meeting.app.configs.base import VADSettings
-from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
+    TranscriptionSegment,
+)
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
@@ -89,18 +92,18 @@ def transcription_span_outside_diarization_range(
 def diarize_vad_transcription_segments(
     vad_transcription_segments: List[TranscriptionSegment],
     diarization_result: List[DiarizationSegment],
-) -> List[TranscriptionSegment]:
+) -> List[DiarizedTranscriptionSegment]:
     """Align VAD transcription segments with diarization results to assign speaker labels.
 
     This implementation uses the TimeSpan helper to make overlap/containment
     reasoning concise and self-documenting.
     """
-    aligned_segments: List[TranscriptionSegment] = []
+    aligned_segments: List[DiarizedTranscriptionSegment] = []
 
     if not diarization_result:
         logger.warning("Diarization result is empty, returning empty speakers.")
         empty_speaker_transcription_segments = [
-            TranscriptionSegment(
+            DiarizedTranscriptionSegment(
                 id=segment.id,
                 start=segment.start,
                 end=segment.end,
@@ -137,13 +140,17 @@ def diarize_vad_transcription_segments(
         )
 
         if best_matching_diarization and max_overlap_seconds > 0:
+            if best_matching_diarization.speaker:
+                speaker = best_matching_diarization.speaker
+            else:
+                speaker = f"INCONNU_{transcription_segment.id}"
             aligned_segments.append(
-                TranscriptionSegment(
+                DiarizedTranscriptionSegment(
                     id=transcription_segment.id,
                     start=transcription_segment.start,
                     end=transcription_segment.end,
                     text=transcription_segment.text,
-                    speaker=best_matching_diarization.speaker,
+                    speaker=speaker,
                 )
             )
         else:

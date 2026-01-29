@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -27,7 +26,10 @@ class TranscriptionSegment(BaseModel):
     start: float
     end: float
     text: str
-    speaker: Optional[str] = None
+
+
+class DiarizedTranscriptionSegment(TranscriptionSegment):
+    speaker: str
 
 
 class TranscriptionDocxResult(BaseModel):
