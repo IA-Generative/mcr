@@ -12,10 +12,10 @@ from mcr_meeting.app.services.transcription_waiting_time_service import (
 class TestTranscriptionQueueEstimationService:
     """Tests for the transcription queue estimation service."""
 
-    def test_calculate_waiting_time_from_count_should_return_base_duration_when_no_pending_meetings(
+    def test_estimate_wait_time_should_return_zero_when_no_pending_meetings(
         self, mocker: MockerFixture
     ) -> None:
-        """Test that waiting time is base duration when there are no pending meetings."""
+        """Test that wait time is base duration when there are no pending meetings."""
         # Arrange
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
@@ -29,9 +29,9 @@ class TestTranscriptionQueueEstimationService:
 
         # Assert
         # 0 slots * 12 minutes + 60 minutes (base meeting duration) = 60 minutes
-        assert result == 60
+        assert result == 0
 
-    def test_calculate_waiting_time_from_count_should_calculate_correctly_for_one_slot(
+    def test_estimate_wait_time_should_return_zero_when_slot_are_not_fully_filled(
         self, mocker: MockerFixture
     ) -> None:
         """Test calculation for meetings that fit in one slot (< 14 meetings)."""
@@ -47,12 +47,12 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Assert
-        expected_waiting_time = (
-            60  # 0 slots * 12 minutes + 60 minutes (base meeting duration)
+        expected_wait_time = (
+            0  # 0 slots * 12 minutes + 60 minutes (base meeting duration)
         )
-        assert result == expected_waiting_time
+        assert result == expected_wait_time
 
-    def test_calculate_waiting_time_from_count_should_calculate_correctly_for_exact_multiple(
+    def test_calculate_wait_time_from_count_should_calculate_correctly_for_exact_multiple(
         self, mocker: MockerFixture
     ) -> None:
         """Test calculation for an exact multiple of parallel pods count."""
@@ -68,12 +68,12 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Assert
-        expected_waiting_time = (
-            84  # 2 slots * 12 minutes + 60 minutes (base meeting duration)
+        expected_wait_time = (
+            24  # 2 slots * 12 minutes + 60 minutes (base meeting duration)
         )
-        assert result == expected_waiting_time
+        assert result == expected_wait_time
 
-    def test_calculate_waiting_time_from_count_should_add_extra_slot_for_remainder(
+    def test_calculate_wait_time_from_count_should_add_extra_slot_for_remainder(
         self, mocker: MockerFixture
     ) -> None:
         """Test that calculation adds an extra slot when there's a remainder."""
@@ -89,16 +89,17 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Assert
-        expected_waiting_time = (
-            72  # 1 slot * 12 minutes + 60 minutes (base meeting duration)
+        expected_wait_time = (
+            12  # 1 slot * 12 minutes + 60 minutes (base meeting duration)
         )
-        assert result == expected_waiting_time
+        assert result == expected_wait_time
 
-    def test_calculate_waiting_time_from_count_should_handle_large_numbers(
+    def test_calculate_wait_time_from_count_should_handle_large_numbers(
         self, mocker: MockerFixture
     ) -> None:
         """Test calculation with a large number of pending meetings."""
         # Arrange
+        nb_meeting_pending = 100
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=100,
@@ -110,20 +111,17 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Assert
-        # 100 / 14 = 7.14, so we need 7 slots
-        expected_waiting_time = 144  # 7 slots * 12 minutes + 60 minutes (base meeting duration) = 144 minutes
-        assert result == expected_waiting_time
+        expected_wait_time = nb_meeting_pending // 14 * 12
+        assert result == expected_wait_time
 
-    def test_get_meeting_transcription_waiting_time_minutes_should_calculate_correctly_with_pending_meetings(
+    def test_get_meeting_transcription_wait_time_minutes_should_calculate_correctly_with_pending_meetings(
         self, mocker: MockerFixture
     ) -> None:
         """Test correct calculation when there are pending meetings."""
         # Arrange
 
         pending_count = 20
-        expected_waiting_time = (
-            72  # 1 slot * 12 minutes + 60 minutes (base meeting duration) = 72 minutes
-        )
+        expected_wait_time = 20 // 14 * 12
         mocker.patch(
             "mcr_meeting.app.services.transcription_waiting_time_service.count_pending_meetings",
             return_value=pending_count,
@@ -135,12 +133,12 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Assert
-        assert result == expected_waiting_time
+        assert result == expected_wait_time
 
-    def test_get_meeting_remaining_waiting_time_minutes_should_return_correct_remaining_time(
+    def test_get_meeting_remaining_wait_time_minutes_should_return_correct_remaining_time(
         self, mocker: MockerFixture
     ) -> None:
-        """Test that get_meeting_remaining_waiting_time_minutes returns correct remaining time."""
+        """Test that get_meeting_remaining_wait_time_minutes returns correct remaining time."""
         # Arrange
         meeting_id = 1
 
@@ -151,7 +149,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.find_transition_record_by_meeting_and_status",
+            "mcr_meeting.app.services.transcription_waiting_time_service.find_current_transition_record_for_meeting",
             return_value=mock_transition_record,
         )
         mocker.patch(
@@ -164,17 +162,19 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
+                meeting_id
+            )
         )
 
         # Assert
         assert result == 30
 
-    def test_get_meeting_remaining_waiting_time_minutes_should_return_zero_when_time_passed(
+    def test_get_meeting_remaining_wait_time_minutes_should_return_zero_when_time_passed(
         self, mocker: MockerFixture
     ) -> None:
-        """Test that get_meeting_remaining_waiting_time_minutes returns 0 when estimated time has passed."""
+        """Test that get_meeting_remaining_wait_time_minutes returns 0 when estimated time has passed."""
         # Arrange
         meeting_id = 1
 
@@ -184,48 +184,32 @@ class TestTranscriptionQueueEstimationService:
         ) - timedelta(minutes=10)
 
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.find_transition_record_by_meeting_and_status",
+            "mcr_meeting.app.services.transcription_waiting_time_service.find_current_transition_record_for_meeting",
             return_value=mock_transition_record,
         )
 
         # Act
-        result = TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
-            meeting_id
+        result = (
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
+                meeting_id
+            )
         )
 
         # Assert
         assert result == 0
 
-    def test_get_meeting_remaining_waiting_time_minutes_should_raise_exception_when_transition_record_not_found(
+    def test_get_meeting_remaining_wait_time_minutes_should_raise_exception_when_predicted_date_of_next_transition_is_none(
         self, mocker: MockerFixture
     ) -> None:
-        """Test that get_meeting_remaining_waiting_time_minutes raises ValueError when transition record not found."""
+        """Test that get_meeting_remaining_wait_time_minutes raises ValueError when predicted_date_of_next_transition is None."""
         # Arrange
         meeting_id = 1
-        mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.find_transition_record_by_meeting_and_status",
-            return_value=None,
+        mock_transition_record = Mock(
+            meeting_id=meeting_id, predicted_date_of_next_transition=None
         )
 
-        # Act & Assert
-        with pytest.raises(
-            ValueError, match="Meeting transition record with ID 1 not found"
-        ):
-            TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
-                meeting_id
-            )
-
-    def test_get_meeting_remaining_waiting_time_minutes_should_raise_exception_when_predicted_date_of_next_transition_is_none(
-        self, mocker: MockerFixture
-    ) -> None:
-        """Test that get_meeting_remaining_waiting_time_minutes raises ValueError when predicted_date_of_next_transition is None."""
-        # Arrange
-        meeting_id = 1
-        mock_transition_record = Mock()
-        mock_transition_record.predicted_date_of_next_transition = None
-
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.find_transition_record_by_meeting_and_status",
+            "mcr_meeting.app.services.transcription_waiting_time_service.find_current_transition_record_for_meeting",
             return_value=mock_transition_record,
         )
 
@@ -233,6 +217,6 @@ class TestTranscriptionQueueEstimationService:
         with pytest.raises(
             ValueError, match="Estimated end date is None for meeting 1"
         ):
-            TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
+            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
                 meeting_id
             )

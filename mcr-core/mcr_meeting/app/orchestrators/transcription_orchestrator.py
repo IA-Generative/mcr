@@ -71,7 +71,7 @@ def get_transcription_waiting_time(
     )
 
     waiting_time_minutes = (
-        TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes(
+        TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
             meeting_id
         )
     )
