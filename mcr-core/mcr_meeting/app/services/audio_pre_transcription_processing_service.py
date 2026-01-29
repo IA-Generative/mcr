@@ -183,23 +183,3 @@ def download_and_concatenate_s3_audio_chunks_into_bytes(
 
     audio_buffer.seek(0)
     return audio_buffer
-
-
-def assemble_normalized_wav_from_s3_chunks(
-    obj_iterator: Iterator[S3Object],
-) -> BytesIO:
-    """
-    Assemble audio chunks from S3 into a single bytes object.
-
-    Args:
-        obj_iterator: Iterator of S3 objects containing audio chunks.
-
-    Returns:
-        bytes: Normalized WAV audio bytes ready for transcription
-    """
-
-    concatenated_audio_bytes = download_and_concatenate_s3_audio_chunks_into_bytes(
-        obj_iterator
-    )
-
-    return concatenated_audio_bytes

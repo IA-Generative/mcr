@@ -11,7 +11,7 @@ from loguru import logger
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
-    assemble_normalized_wav_from_s3_chunks,
+    download_and_concatenate_s3_audio_chunks_into_bytes,
 )
 from mcr_meeting.app.services.s3_service import (
     get_objects_list_from_prefix,
@@ -77,7 +77,9 @@ def fetch_audio_bytes(
     try:
         s3_chunk_iterator = get_objects_list_from_prefix(prefix=f"{meeting_id}/")
 
-        audio_bytes = assemble_normalized_wav_from_s3_chunks(s3_chunk_iterator)
+        audio_bytes = download_and_concatenate_s3_audio_chunks_into_bytes(
+            s3_chunk_iterator
+        )
         return audio_bytes
 
     except ValueError as no_files_error:
