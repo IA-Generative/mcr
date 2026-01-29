@@ -25,14 +25,14 @@ endef
 # example: make start service=mcr-frontend
 start:
 	touch .env
-	docker compose --env-file .env.local.docker --env-file .env up $(service) -d
+	docker compose --env-file .env.local.docker --env-file .env up $(service) --watch
 
 stop:
 	docker compose down $(service)
 
 restart:
 	docker compose down $(service)
-	docker compose --env-file .env.local.docker --env-file .env up -d $(service)
+	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
 
 rebuild:
 	docker compose down $(service)
@@ -40,7 +40,7 @@ rebuild:
 		docker volume rm mcr_frontend_node_modules; \
 	fi
 	docker compose build $(service)
-	docker compose --env-file .env.local.docker --env-file .env up -d $(service)
+	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
 
 type-check: 
 	$(call CALL_TARGET_CMD_ON_ALL_PKGS, type-check)

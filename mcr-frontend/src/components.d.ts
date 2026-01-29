@@ -18,6 +18,7 @@ declare module 'vue' {
     BaseTable: typeof import('./components/table/BaseTable.vue')['default']
     BotConnecting: typeof import('./components/meeting/transcription/states/BotConnecting.vue')['default']
     BotConnectionFailed: typeof import('./components/meeting/transcription/states/BotConnectionFailed.vue')['default']
+    BotDisconnecting: typeof import('./components/meeting/transcription/states/BotDisconnecting.vue')['default']
     CreateMeetingModal: typeof import('./components/meeting/modals/CreateMeetingModal.vue')['default']
     DeleteMeetingModal: typeof import('./components/meeting/modals/DeleteMeetingModal.vue')['default']
     DsfrAlert: typeof import('@gouvminint/vue-dsfr')['DsfrAlert']

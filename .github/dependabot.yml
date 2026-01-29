@@ -2,6 +2,7 @@ version: 2
 updates:
   - package-ecosystem: "pip"
     directory: "/mcr-core"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -20,6 +21,7 @@ updates:
 
   - package-ecosystem: "pip"
     directory: "/mcr-capture-worker"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -38,6 +40,7 @@ updates:
 
   - package-ecosystem: "pip"
     directory: "/mcr-gateway"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -56,6 +59,7 @@ updates:
 
   - package-ecosystem: "pip"
     directory: "/mcr-generation"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -74,6 +78,7 @@ updates:
 
   - package-ecosystem: "npm"
     directory: "/mcr-frontend"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"

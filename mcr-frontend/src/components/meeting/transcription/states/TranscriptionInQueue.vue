@@ -25,9 +25,8 @@
     >
       <p>
         {{ $t('meeting.transcription.transcription-in-queue.estimation') }}
-
         <span class="font-bold">
-          {{ formatDurationMinutes(waiting_time_data?.estimation_duration_minutes) }}
+          {{ formatRoundedDurationMinutes(waiting_time_data?.estimation_duration_minutes) }}
         </span>
       </p>
     </div>
@@ -49,7 +48,7 @@ import { computed } from 'vue';
 import { useQuery } from '@tanstack/vue-query';
 import { getTranscriptionWaitingTime } from '@/services/meetings/meetings.service';
 import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
-import { formatDurationMinutes } from '@/utils/timeFormatting';
+import { formatRoundedDurationMinutes } from '@/utils/timeFormatting';
 
 const is_waiting_time_data_reached_deadline = computed(() => {
   return waiting_time_data.value && waiting_time_data.value.estimation_duration_minutes <= 0;

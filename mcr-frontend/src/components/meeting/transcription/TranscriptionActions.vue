@@ -20,6 +20,7 @@ import BotConnectingStateComponent from './states/BotConnecting.vue';
 import BotConnectionFailedStateComponent from './states/BotConnectionFailed.vue';
 import TranscriptionInQueueStateComponent from './states/TranscriptionInQueue.vue';
 import TranscriptionGenerationInProgressStateComponent from './states/TranscriptionGenerationInProgress.vue';
+import BotDisconnectingComponent from '@/components/meeting/transcription/states/BotDisconnecting.vue';
 
 const props = defineProps<{
   meeting: MeetingDto;
@@ -50,6 +51,7 @@ function getStateComponent(status: MeetingStatus, name_platform: string) {
       }
       return InProgressStateComponent;
     case 'CAPTURE_DONE':
+      return BotDisconnectingComponent;
     case 'TRANSCRIPTION_PENDING':
       return TranscriptionInQueueStateComponent;
     case 'TRANSCRIPTION_IN_PROGRESS':

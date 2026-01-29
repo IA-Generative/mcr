@@ -201,12 +201,21 @@
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
         "estimation": "Temps d’attente restant estimé : ",
         "reachement-deadline": "La transcription prend plus de temps que prévu.",
-        "computing-estimation": "Calcul en cours..."
+        "computing-estimation": "Calcul en cours...",
+        "duration": {
+          "less-than": "Moins de {formattedTime}",
+          "more-than-24h": "Plus de 24h"
+        }
       },
       "bot-connecting": {
         "title": "Connexion en cours...",
         "subtitle": "Le bot FCR Agent va rejoindre la réunion pour lancer l’enregistrement.",
         "description": "Le bot va rejoindre la réunion dans la liste des participants. Veuillez patienter quelques instants."
+      },
+      "bot-disconnecting": {
+        "title": "Déconnexion en cours...",
+        "subtitle": "Le bot FCR Agent va se déconnecter de la réunion pour lancer la transcription.",
+        "description": "Le bot est en train de se déconnecter de la réunion, veuillez patienter quelques instants"
       },
       "bot-connection-failed": {
         "title": "Une erreur est survenue",
@@ -250,7 +259,8 @@
         "title": "Êtes vous sûr de vouloir terminer la transcription\u00a0?"
       },
       "modal-start": {
-        "title": "Avez-vous informé les participants de l'utilisation de l'outil FCR pour cette réunion\u00a0?"
+        "title": "Avez-vous informé les participants de l'utilisation de l'outil FCR pour cette réunion\u00a0?",
+        "description": "Assurez-vous que l'organisateur a démarré la visioconférence avant de lancer l'enregistrement."
       },
       "tab": {
         "transcription": "Transcription",

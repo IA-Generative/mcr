@@ -154,7 +154,7 @@ function stopCaptureMutation() {
     },
     onSuccess: (_, id) => {
       queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDto) =>
-        updateMeetingStatus(old, 'TRANSCRIPTION_PENDING'),
+        updateMeetingStatus(old, 'CAPTURE_DONE'),
       );
     },
     onError: (err: unknown) => {
