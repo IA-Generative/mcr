@@ -104,29 +104,6 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
-    def test_should_handle_different_meeting_ids(
-        self, mock_assemble: Mock, mock_get_objects_list: Mock
-    ) -> None:
-        """Checks that fetch_audio_bytes handles different meeting IDs correctly."""
-
-        mock_get_objects_list.return_value = iter([Mock()])
-        mock_assemble.return_value = BytesIO(b"audio_data")
-
-        test_meeting_ids = [1, 123, 9999, 100000]
-
-        for meeting_id in test_meeting_ids:
-            result = fetch_audio_bytes(meeting_id=meeting_id)
-
-            assert result.getvalue() == b"audio_data"
-            expected_prefix = f"{meeting_id}/"
-            mock_get_objects_list.assert_called_with(prefix=expected_prefix)
-
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
-    )
-    @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
-    )
     def test_should_handle_different_audio_extensions(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:

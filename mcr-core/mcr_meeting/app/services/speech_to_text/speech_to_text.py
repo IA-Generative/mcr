@@ -56,10 +56,10 @@ class SpeechToTextPipeline:
         if feature_flag_client and feature_flag_client.is_enabled(
             "audio_noise_filtering"
         ):
-            logger.info("Noise filtering enabled")
+            logger.debug("Noise filtering enabled")
             pre_processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
         else:
-            logger.info("Noise filtering disabled, skipping filtering step")
+            logger.debug("Noise filtering disabled, skipping filtering step")
             pre_processed_bytes = normalized_audio_bytes
 
         return pre_processed_bytes
@@ -154,7 +154,7 @@ class SpeechToTextPipeline:
     ) -> List[TranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
-        logger.info("Starting speech-to-text pipeline with pre-processing.")
+        logger.debug("Starting speech-to-text pipeline with pre-processing.")
 
         pre_processed_audio_bytes = self.pre_process(audio_bytes)
 

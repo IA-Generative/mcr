@@ -34,25 +34,14 @@ def test_integration_pre_process(
     - feature_flag_enabled: True, False
     - audio_format: mp3, mp4, m4a, wav, mov
     """
-
-    # Create mock feature flag client with the parametrized value
     mock_feature_flag_client = create_mock_feature_flag_client(
         "audio_noise_filtering", enabled=feature_flag_enabled
     )
-
-    # Make get_feature_flag_client return the mock
     mock_get_feature_flag_client.return_value = mock_feature_flag_client
-
-    # Create audio buffer in the specified format
     audio_buffer = create_audio_buffer(audio_format)
 
-    ### ===== HERE IS THE PRE-PROCESSING FLOW ===== ###
-
     speech_to_text_pipeline = SpeechToTextPipeline()
-
     processed_bytes = speech_to_text_pipeline.pre_process(audio_buffer)
-
-    ### ===== END OF PRE-PROCESSING FLOW ===== ###
 
     # Verify the feature flag was checked
     mock_feature_flag_client.is_enabled.assert_called_once_with("audio_noise_filtering")
