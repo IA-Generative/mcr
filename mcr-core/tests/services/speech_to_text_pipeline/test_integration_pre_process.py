@@ -1,9 +1,9 @@
 """Test integration for the pre_process step."""
 
-import wave
 from io import BytesIO
 
 import pytest
+import soundfile as sf
 
 from mcr_meeting.app.configs.base import AudioSettings
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
@@ -77,12 +77,11 @@ def test_integration_pre_process(
 
     # Verify the audio has the correct sample rate and number of channels
     audio_settings = AudioSettings()
-    with wave.open(BytesIO(result_data), "rb") as wav_file:
-        assert wav_file.getnchannels() == audio_settings.NB_AUDIO_CHANNELS, (
-            f"Expected {audio_settings.NB_AUDIO_CHANNELS} channel(s), "
-            f"got {wav_file.getnchannels()}"
-        )
-        assert wav_file.getframerate() == audio_settings.SAMPLE_RATE, (
-            f"Expected sample rate of {audio_settings.SAMPLE_RATE} Hz, "
-            f"got {wav_file.getframerate()} Hz"
-        )
+    info = sf.info(BytesIO(result_data))
+    assert info.channels == audio_settings.NB_AUDIO_CHANNELS, (
+        f"Expected {audio_settings.NB_AUDIO_CHANNELS} channel(s), got {info.channels}"
+    )
+    assert info.samplerate == audio_settings.SAMPLE_RATE, (
+        f"Expected sample rate of {audio_settings.SAMPLE_RATE} Hz, "
+        f"got {info.samplerate} Hz"
+    )
