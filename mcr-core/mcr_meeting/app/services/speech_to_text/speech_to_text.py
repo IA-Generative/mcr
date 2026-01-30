@@ -53,9 +53,7 @@ class SpeechToTextPipeline:
         feature_flag_client = get_feature_flag_client()
         normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
         # Apply noise filtering only if feature flag is enabled
-        if feature_flag_client and feature_flag_client.is_enabled(
-            "audio_noise_filtering"
-        ):
+        if feature_flag_client.is_enabled("audio_noise_filtering"):
             logger.debug("Noise filtering enabled")
             pre_processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
         else:

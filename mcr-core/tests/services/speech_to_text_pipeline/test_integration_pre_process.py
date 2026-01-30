@@ -46,9 +46,7 @@ def test_integration_pre_process(
     # Verify the feature flag was checked
     mock_feature_flag_client.is_enabled.assert_called_once_with("audio_noise_filtering")
 
-    if mock_feature_flag_client and mock_feature_flag_client.is_enabled(
-        "audio_noise_filtering"
-    ):
+    if mock_feature_flag_client.is_enabled("audio_noise_filtering"):
         assert feature_flag_enabled is True
     else:
         assert feature_flag_enabled is False
