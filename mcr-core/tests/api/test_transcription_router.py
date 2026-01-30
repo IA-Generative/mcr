@@ -75,7 +75,7 @@ class TestCreateTranscriptionTask:
         expected_waiting_time = 24
 
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes",
+            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes",
             return_value=expected_waiting_time,
         )
 
@@ -154,7 +154,7 @@ class TestCreateTranscriptionTask:
         meeting_id = meeting_fixture.id
 
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes",
+            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes",
             return_value=0,
         )
 
@@ -182,7 +182,7 @@ class TestCreateTranscriptionTask:
         expected_waiting_time = 36
 
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes",
+            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes",
             return_value=expected_waiting_time,
         )
 
@@ -209,7 +209,7 @@ class TestCreateTranscriptionTask:
         meeting_id = meeting_fixture.id
 
         mocker.patch(
-            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_waiting_time_minutes",
+            "mcr_meeting.app.services.transcription_waiting_time_service.TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes",
             return_value=12,
         )
 

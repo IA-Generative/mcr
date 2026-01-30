@@ -124,3 +124,11 @@ class Meeting(Base):
         cascade="all, delete",
         order_by="Transcription.transcription_index.asc()",
     )
+
+    @property
+    def duration_minutes(self) -> Optional[int]:
+        if self.start_date is None or self.end_date is None:
+            return None
+
+        meeting_duration_seconds = (self.end_date - self.start_date).total_seconds()
+        return int(meeting_duration_seconds // 60)

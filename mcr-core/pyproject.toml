@@ -57,6 +57,7 @@ test = [
     "pytest-cov",
     "pytest-asyncio",
     "pytest-mock",
+    "pydub>=0.25.1",
 ]
 dev = [
     "ruff",

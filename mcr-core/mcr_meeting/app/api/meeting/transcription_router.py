@@ -165,5 +165,5 @@ async def get_queue_estimated_waiting_time() -> TranscriptionQueueStatusResponse
     Calculate the estimated time based on the total number of pending meetings and average processing time.
     """
     return TranscriptionQueueStatusResponse(
-        estimation_duration_minutes=TranscriptionQueueEstimationService.get_queue_estimated_waiting_time_minutes()
+        estimation_duration_minutes=TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
     )

@@ -2,14 +2,14 @@ import { t } from '@/plugins/i18n';
 
 export function formatDurationMinutes(durationMinutes: number | undefined): string {
   if (durationMinutes === undefined) {
-    return t('meeting.transcription.transcription-in-queue.computing-estimation');
+    return t('meeting.transcription.wait-time.computing-estimation');
   }
 
   const hours = Math.floor(durationMinutes / 60);
   const minutes = durationMinutes % 60;
 
   if (hours >= 24) {
-    return t('meeting.transcription.transcription-in-queue.duration.more-than-24h');
+    return t('meeting.transcription.wait-time.duration.more-than-24h');
   }
 
   const parts: string[] = [];
@@ -18,7 +18,7 @@ export function formatDurationMinutes(durationMinutes: number | undefined): stri
 
   const formattedTime = parts.join(' ');
 
-  return t('meeting.transcription.transcription-in-queue.duration.less-than', {
+  return t('meeting.transcription.wait-time.duration.less-than', {
     formattedTime,
   });
 }

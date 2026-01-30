@@ -100,13 +100,16 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
 
     logger.info("Applying noise reduction filters: {}", filters)
 
-    # Input is already normalized WAV, no need to re-specify format
-    stream = ffmpeg.input("pipe:0", err_detect="ignore_err")
+    # Input is already normalized WAV, specify format explicitly
+    stream = ffmpeg.input("pipe:0", format="wav", err_detect="ignore_err")
 
     try:
-        # Apply audio filters - format already WAV from previous step
+        # Apply audio filters - maintain WAV format with correct sample rate and channels
         stream = stream.output(
             "pipe:1",
+            format="wav",
+            ar=sample_rate,  # Maintain audio sample rate
+            ac=nb_channels,  # Maintain audio channels
             af=filters,  # Audio filter string
         )
 

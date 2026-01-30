@@ -8,6 +8,7 @@ import {
   getAll,
   getOne,
   getReport,
+  getTranscriptionWaitingTime,
   initCapture,
   removeOne,
   startTranscription,
@@ -31,6 +32,7 @@ import { t } from '@/plugins/i18n';
 import { lookupComu } from '../lookup/lookup.service';
 import throttle from 'lodash.throttle';
 import { BASE_BACKOFF_MS, MAX_DELAY, MAX_RETRIES } from '@/config/meeting';
+import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
 
 const POLLING_INTERVAL = 10 * 1000; // 10 seconds
 const THROTTLING_INTERVAL = 200; // 200 milliseconds
@@ -262,6 +264,14 @@ function lookupMeetingUrlMutation(options?: ExtraMutationOptions<typeof lookupCo
   });
 }
 
+function getMeetingTranscriptionWaitTime(id: number) {
+  return useQuery({
+    queryKey: [QUERY_KEYS.TRANSCRIPTION_WAIT_TIME, id],
+    queryFn: () => getTranscriptionWaitingTime(id),
+    refetchInterval: TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL,
+  });
+}
+
 export function useMeetings() {
   return {
     getMeetingQuery,
@@ -279,5 +289,6 @@ export function useMeetings() {
     getReportMutation,
     generateReportMutation,
     lookupMeetingUrlMutation,
+    getMeetingTranscriptionWaitTime,
   };
 }

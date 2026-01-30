@@ -280,13 +280,34 @@ def mock_celery_producer_app(
 
 
 @pytest.fixture
-def mock_feature_flag_client(mocker: MockerFixture) -> Generator[Mock, None, None]:
-    """Mock the feature flag client for testing."""
-    mock_feature_flag_client = Mock()
+def create_mock_feature_flag_client(mocker: MockerFixture):
+    """Mock the feature flag client factory for testing.
 
-    app.dependency_overrides[get_feature_flag_client] = lambda: mock_feature_flag_client
+    Returns a factory function that creates mock feature flag clients
+    with configurable enabled/disabled states for specific flags.
 
-    yield mock_feature_flag_client
+    Usage:
+        def test_something(create_mock_feature_flag_client):
+            mock_feature_flag_client = create_mock_feature_flag_client("audio_noise_filtering", enabled=True)
+            # Will return True only for "audio_noise_filtering", False for other flags
+            assert mock_feature_flag_client.is_enabled("audio_noise_filtering") == True
+            assert mock_feature_flag_client.is_enabled("other_flag") == False
+            # Can also verify the flag was called
+            mock_feature_flag_client.is_enabled.assert_called_with("audio_noise_filtering")
+    """
+
+    def _create_mock(flag_name: str, enabled: bool) -> Mock:
+        mock_client = Mock()
+
+        # Create a side_effect that returns enabled only for the specified flag
+        def is_enabled_side_effect(name: str) -> bool:
+            return enabled if name == flag_name else False
+
+        mock_client.is_enabled.side_effect = is_enabled_side_effect
+        app.dependency_overrides[get_feature_flag_client] = lambda: mock_client
+        return mock_client
+
+    yield _create_mock
 
     # Clean up dependency override
     app.dependency_overrides.clear()

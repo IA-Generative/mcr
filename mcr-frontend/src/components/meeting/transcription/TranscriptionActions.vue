@@ -12,14 +12,14 @@ import { type MeetingDto, type MeetingStatus } from '@/services/meetings/meeting
 
 import NoneStateComponent from './states/TranscriptionNone.vue';
 import RecordingInProgressStateComponent from './states/RecordingInProgress.vue';
-import InProgressStateComponent from './states/TranscriptionInProgress.vue';
+import CaptureVisioInProgressStateComponent from './states/CaptureVisioInProgress.vue';
 import DoneStateComponent from './states/TranscriptionDone.vue';
 import FailedStateComponent from './states/TranscriptionFailed.vue';
 import ImportPendingStateComponent from './states/ImportPending.vue';
 import BotConnectingStateComponent from './states/BotConnecting.vue';
 import BotConnectionFailedStateComponent from './states/BotConnectionFailed.vue';
-import TranscriptionInQueueStateComponent from './states/TranscriptionInQueue.vue';
-import TranscriptionGenerationInProgressStateComponent from './states/TranscriptionGenerationInProgress.vue';
+import TranscriptionInQueueStateComponent from './states/TranscriptionPending.vue';
+import TranscriptionInProgressStateComponent from './states/TranscriptionInProgress.vue';
 import BotDisconnectingComponent from '@/components/meeting/transcription/states/BotDisconnecting.vue';
 
 const props = defineProps<{
@@ -49,13 +49,13 @@ function getStateComponent(status: MeetingStatus, name_platform: string) {
       if (name_platform === 'MCR_RECORD') {
         return RecordingInProgressStateComponent;
       }
-      return InProgressStateComponent;
+      return CaptureVisioInProgressStateComponent;
     case 'CAPTURE_DONE':
       return BotDisconnectingComponent;
     case 'TRANSCRIPTION_PENDING':
       return TranscriptionInQueueStateComponent;
     case 'TRANSCRIPTION_IN_PROGRESS':
-      return TranscriptionGenerationInProgressStateComponent;
+      return TranscriptionInProgressStateComponent;
     case 'TRANSCRIPTION_DONE':
     case 'REPORT_PENDING':
     case 'REPORT_DONE':
