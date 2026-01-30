@@ -1,16 +1,18 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
-import os
 import tempfile
 from io import BytesIO
 from typing import Any, List, Optional
 
+import httpx
 import numpy as np
 from loguru import logger
 from numpy.typing import NDArray
+from openai import OpenAI
 
 from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
+    TranscriptionApiSettings,
     WhisperTranscriptionSettings,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
@@ -21,7 +23,10 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
 )
-from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
+from mcr_meeting.app.services.feature_flag_service import (
+    FeatureFlag,
+    get_feature_flag_client,
+)
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
     convert_to_french_speaker,
@@ -40,7 +45,55 @@ class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        self.dev = os.environ.get("ENV_MODE") == "DEV"
+        self._api_settings: Optional[TranscriptionApiSettings] = None
+        self._openai_client: Optional[OpenAI] = None
+        self._http_client: Optional[httpx.Client] = None
+
+    def _get_api_settings(self) -> TranscriptionApiSettings:
+        """Lazy load API settings"""
+        if self._api_settings is None:
+            self._api_settings = TranscriptionApiSettings()
+        return self._api_settings
+
+    def _get_openai_client(self) -> OpenAI:
+        """Lazy load OpenAI client"""
+        if self._openai_client is None:
+            settings = self._get_api_settings()
+            self._openai_client = OpenAI(
+                api_key=settings.TRANSCRIPTION_API_KEY,
+                base_url=settings.TRANSCRIPTION_API_BASE_URL,
+            )
+        return self._openai_client
+
+    def _get_http_client(self) -> httpx.Client:
+        """Lazy load HTTP client"""
+        if self._http_client is None:
+            settings = self._get_api_settings()
+            self._http_client = httpx.Client(timeout=settings.API_TIMEOUT)
+        return self._http_client
+
+    def _is_api_transcription_enabled(self) -> bool:
+        """Check if API-based transcription is enabled via feature flag"""
+        try:
+            feature_flag_client = get_feature_flag_client()
+            return feature_flag_client.is_enabled(FeatureFlag.API_BASED_TRANSCRIPTION)
+        except Exception as e:
+            logger.warning(
+                "Failed to check transcription feature flag, defaulting to local mode: {}",
+                e,
+            )
+            return False
+
+    def _is_api_diarization_enabled(self) -> bool:
+        """Check if API-based diarization is enabled via feature flag"""
+        try:
+            feature_flag_client = get_feature_flag_client()
+            return feature_flag_client.is_enabled(FeatureFlag.API_BASED_DIARIZATION)
+        except Exception as e:
+            logger.warning(
+                "Failed to check diarization feature flag, defaulting to local mode: {}",
+                e,
+            )
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
@@ -68,20 +121,29 @@ class SpeechToTextPipeline:
     def transcribe(  # type: ignore[explicit-any]
         self,
         audio: NDArray[np.float32],
-        transcription_settings: WhisperTranscriptionSettings,
         model: Optional[Any] = None,
     ) -> List[TranscriptionSegment]:
         """Transcribe audio bytes to text with speaker diarization
 
         Args:
-            audio_bytes (bytes): The input audio bytes.
+            audio (NDArray): The input audio array.
             transcription_settings (TranscriptionSettings): Settings for the transcription process.
             model (Optional[Any], optional): Pre-loaded transcription model. Defaults to None.
 
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
         """
+        if self._is_api_transcription_enabled():
+            return self._transcribe_api(audio)
+        else:
+            return self._transcribe_local(audio, model)
 
+    def _transcribe_local(
+        self,
+        audio: NDArray[np.float32],
+        model: Optional[Any] = None,
+    ) -> List[TranscriptionSegment]:
+        """Transcribe using local faster-whisper model"""
         model = set_model(model)
 
         audio = audio.astype(np.float32, copy=False)
@@ -114,6 +176,50 @@ class SpeechToTextPipeline:
 
         return transcription_segments
 
+    def _transcribe_api(
+        self,
+        audio: NDArray[np.float32],
+    ) -> List[TranscriptionSegment]:
+        """Transcribe using external API (OpenAI-compatible)"""
+        # Convert numpy array to audio bytes
+        import soundfile as sf
+
+        audio_bytes = BytesIO()
+        sf.write(audio_bytes, audio, 16000, format="WAV")
+        audio_bytes.seek(0)
+
+        try:
+            api_settings = self._get_api_settings()
+            client = self._get_openai_client()
+
+            response = client.audio.transcriptions.create(
+                model=api_settings.TRANSCRIPTION_API_MODEL,
+                file=("audio.wav", audio_bytes, "audio/wav"),
+                language=api_settings.API_LANGUAGE,
+                response_format="verbose_json",
+                timestamp_granularities=["segment"],
+            )
+
+            # Convert API response to TranscriptionSegment format
+            segments = []
+            if hasattr(response, "segments") and response.segments:
+                for idx, segment in enumerate(response.segments):
+                    segments.append(
+                        TranscriptionSegment(
+                            id=idx,
+                            start=segment.start,
+                            end=segment.end,
+                            text=segment.text,
+                        )
+                    )
+
+            logger.info("API transcription returned {} segments", len(segments))
+            return segments
+
+        except Exception as e:
+            logger.error("Error calling transcription API: {}", str(e))
+            raise
+
     def diarize(
         self,
         audio_bytes: BytesIO,
@@ -124,9 +230,15 @@ class SpeechToTextPipeline:
             audio_bytes (BytesIO): The input audio bytes.
 
         Returns:
-            Any: The diarization result from the pyannote pipeline.
+            List[DiarizationSegment]: The diarization result with speaker segments.
         """
+        if self._is_api_diarization_enabled():
+            return self._diarize_api(audio_bytes)
+        else:
+            return self._diarize_local(audio_bytes)
 
+    def _diarize_local(self, audio_bytes: BytesIO) -> List[DiarizationSegment]:
+        """Diarize using local pyannote model"""
         diarization_pipeline = set_diarization_pipeline()
 
         with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
@@ -147,6 +259,58 @@ class SpeechToTextPipeline:
             ]
 
             return diarization
+
+    def _diarize_api(self, audio_bytes: BytesIO) -> List[DiarizationSegment]:
+        """Diarize using external API"""
+        try:
+            settings = self._get_api_settings()
+            client = self._get_http_client()
+
+            response = client.post(
+                f"{settings.DIARIZATION_API_BASE_URL}/diarize",
+                files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+                headers={"Authorization": f"Bearer {settings.DIARIZATION_API_KEY}"},
+            )
+
+            audio_bytes.seek(0)
+
+            response.raise_for_status()
+            data = response.json()
+
+            logger.debug("Raw diarization API response: {}", data)
+
+            # Parse response to DiarizationSegment format
+            segments = []
+            if "segments" in data:
+                for segment_data in data["segments"]:
+                    # Convert speaker labels to French format
+                    speaker = convert_to_french_speaker(segment_data["speaker"])
+                    segments.append(
+                        DiarizationSegment(
+                            start=segment_data["start"],
+                            end=segment_data["end"],
+                            speaker=speaker,
+                        )
+                    )
+
+            logger.info("API diarization returned {} segments", len(segments))
+            if segments:
+                logger.debug(
+                    "First 3 diarization segments: {}",
+                    [(s.start, s.end, s.speaker) for s in segments[:3]],
+                )
+            return segments
+
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                "HTTP error from diarization API: {} - {}",
+                e.response.status_code,
+                e.response.text,
+            )
+            raise
+        except Exception as e:
+            logger.error("Error calling diarization API: {}", str(e))
+            raise
 
     def run(  # type: ignore[explicit-any]
         self,
@@ -187,9 +351,7 @@ class SpeechToTextPipeline:
                 chunk.diarization.start,
                 chunk.diarization.end,
             )
-            chunk_transcription_segments = self.transcribe(
-                chunk.audio, transcription_settings, model=model
-            )
+            chunk_transcription_segments = self.transcribe(chunk.audio, model=model)
             if not chunk_transcription_segments:
                 logger.info(
                     "No transcription for this chunk: start: {} - end: {}.",
@@ -218,3 +380,8 @@ class SpeechToTextPipeline:
 
         logger.debug("Final transcription segments: {}", transcription_segments)
         return transcription_segments
+
+    def __del__(self):
+        """Clean up HTTP client on deletion"""
+        if self._http_client is not None:
+            self._http_client.close()
