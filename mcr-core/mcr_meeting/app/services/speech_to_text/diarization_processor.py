@@ -3,9 +3,15 @@ from io import BytesIO
 from typing import List
 
 import httpx
+from loguru import logger
 
 from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
+)
+from mcr_meeting.app.exceptions.exceptions import DiarizationError
+from mcr_meeting.app.services.feature_flag_service import (
+    FeatureFlag,
+    get_feature_flag_client,
 )
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
@@ -27,6 +33,17 @@ class DiarizationProcessor:
             self._http_client = httpx.Client(timeout=api_settings.API_TIMEOUT)
         return self._http_client
 
+    def _is_api_diarization_enabled(self) -> bool:
+        try:
+            feature_flag_client = get_feature_flag_client()
+            return feature_flag_client.is_enabled(FeatureFlag.API_BASED_DIARIZATION)
+        except Exception as e:
+            logger.warning(
+                "Failed to check diarization feature flag, defaulting to local mode: {}",
+                e,
+            )
+            return False
+
     def diarize(
         self,
         audio_bytes: BytesIO,
@@ -39,7 +56,10 @@ class DiarizationProcessor:
         Returns:
             List[DiarizationSegment]: The diarization result with speaker segments.
         """
-        return self._diarize_local(audio_bytes)
+        if self._is_api_diarization_enabled():
+            return self._diarize_api(audio_bytes)
+        else:
+            return self._diarize_local(audio_bytes)
 
     def _diarize_local(self, audio_bytes: BytesIO) -> List[DiarizationSegment]:
         """Diarize using local pyannote model"""
@@ -63,6 +83,49 @@ class DiarizationProcessor:
             ]
 
             return diarization_segments
+
+    def _diarize_api(self, audio_bytes: BytesIO) -> List[DiarizationSegment]:
+        """Diarize using external API"""
+        try:
+            client = self._get_http_client()
+
+            response = client.post(
+                f"{api_settings.DIARIZATION_API_BASE_URL}/diarize",
+                files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+                headers={"Authorization": f"Bearer {api_settings.DIARIZATION_API_KEY}"},
+            )
+
+            audio_bytes.seek(0)
+
+            response.raise_for_status()
+            data = response.json()
+
+            logger.debug("Raw diarization API response: {}", data)
+
+            # Parse response to DiarizationSegment format
+            segments = []
+            if "segments" in data:
+                for segment_data in data["segments"]:
+                    # Convert speaker labels to French format
+                    speaker = convert_to_french_speaker(segment_data["speaker"])
+                    segments.append(
+                        DiarizationSegment(
+                            start=segment_data["start"],
+                            end=segment_data["end"],
+                            speaker=speaker,
+                        )
+                    )
+
+            logger.info("API diarization returned {} segments", len(segments))
+            if segments:
+                logger.debug(
+                    "First 3 diarization segments: {}",
+                    [(s.start, s.end, s.speaker) for s in segments[:3]],
+                )
+            return segments
+
+        except Exception as e:
+            raise DiarizationError("Error calling diarization API: {}", str(e))
 
     def __del__(self) -> None:
         """Clean up HTTP client on deletion"""
