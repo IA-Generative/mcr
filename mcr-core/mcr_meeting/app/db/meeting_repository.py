@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from sqlalchemy.orm import joinedload
@@ -150,16 +151,18 @@ def get_meeting_with_transcriptions(
 
 def count_pending_meetings() -> int:
     """
-    Count the number of meetings in TRANSCRIPTION_PENDING.
+    Count the number of meetings in TRANSCRIPTION_PENDING that are less than 24 hours old.
 
     Returns:
         int: The number of pending meetings
     """
     db = get_db_session_ctx()
+    staleness_threshold = datetime.now() - timedelta(hours=24)
     return (
         db.query(Meeting)
         .filter(
             Meeting.status == MeetingStatus.TRANSCRIPTION_PENDING,
+            Meeting.creation_date > staleness_threshold,
         )
         .count()
     )
