@@ -1,17 +1,10 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
-import tempfile
 from io import BytesIO
 from typing import List
 
-import numpy as np
-from faster_whisper import WhisperModel
 from loguru import logger
-from numpy.typing import NDArray
 
-from mcr_meeting.app.configs.base import (
-    WhisperTranscriptionSettings,
-)
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
@@ -21,30 +14,31 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
 )
-from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
+from mcr_meeting.app.services.feature_flag_service import (
+    get_feature_flag_client,
+)
+from mcr_meeting.app.services.speech_to_text.diarization_processor import (
+    DiarizationProcessor,
+)
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
 )
+from mcr_meeting.app.services.speech_to_text.transcription_processor import (
+    TranscriptionProcessor,
+)
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
-    convert_to_french_speaker,
     diarize_vad_transcription_segments,
     get_vad_segments_from_diarization,
-    split_audio_on_timestamps,
 )
-from mcr_meeting.app.services.speech_to_text.utils.models import (
-    get_diarization_pipeline,
-    get_transcription_model,
-)
-
-transcription_settings = WhisperTranscriptionSettings()
 
 
 class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        pass
+        self.transcription_processor = TranscriptionProcessor()
+        self.diarization_processor = DiarizationProcessor()
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
@@ -91,49 +85,6 @@ class SpeechToTextPipeline:
         )
         return merged_segments
 
-    def transcribe_audio_chunk(
-        self,
-        audio: NDArray[np.float32],
-        transcription_model: WhisperModel,
-    ) -> List[TranscriptionSegment]:
-        """Transcribe audio array:q to text with speaker diarization
-
-        Args:
-            audio (NDArray): The input audio array.
-            transcription_model (WhisperModel): The transcription model.
-
-        Returns:
-            List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
-        """
-        logger.debug("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
-
-        segments, info = transcription_model.transcribe(
-            audio,
-            language=transcription_settings.language,
-            word_timestamps=transcription_settings.word_timestamps,
-            initial_prompt="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
-        )
-
-        result = list(segments)
-
-        logger.debug("Transcription info: {}", info)
-
-        if not result:
-            logger.debug("No segments found in transcription result.")
-            return []
-
-        transcription_segments = [
-            TranscriptionSegment(
-                id=seg.id,
-                start=seg.start,
-                end=seg.end,
-                text=seg.text,
-            )
-            for seg in result
-        ]
-
-        return transcription_segments
-
     def transcribe_audio(
         self,
         audio_bytes: BytesIO,
@@ -148,45 +99,9 @@ class SpeechToTextPipeline:
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
         """
-        transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
-
-        logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
-
-        transcription_model = get_transcription_model()
-        transcription_segments: List[TranscriptionSegment] = []
-
-        for idx, chunk in enumerate(transcription_inputs):
-            logger.debug(
-                "Transcribing vad chunk: start={}, end={}",
-                chunk.diarization.start,
-                chunk.diarization.end,
-            )
-            chunk_transcription_segments = self.transcribe_audio_chunk(
-                chunk.audio, transcription_model
-            )
-            if not chunk_transcription_segments:
-                logger.debug(
-                    "No transcription for this chunk: start: {} - end: {}.",
-                    chunk.diarization.start,
-                    chunk.diarization.end,
-                )
-                continue
-            logger.debug(
-                "Number of transcription segments in one chunk: {}",
-                len(chunk_transcription_segments),
-            )
-
-            for segment in chunk_transcription_segments:
-                transcription_segments.append(
-                    TranscriptionSegment(
-                        id=idx,
-                        start=segment.start + chunk.diarization.start,
-                        end=segment.end + chunk.diarization.start,
-                        text=segment.text,
-                    )
-                )
-
-        return transcription_segments
+        return self.transcription_processor.transcribe(
+            audio_bytes=audio_bytes, vad_spans=vad_spans
+        )
 
     def diarize_audio(
         self,
@@ -198,28 +113,9 @@ class SpeechToTextPipeline:
             audio_bytes (BytesIO): The input audio bytes.
 
         Returns:
-            Any: The diarization result from the pyannote pipeline.
+            List[DiarizationSegment]: The diarization result with speaker segments.
         """
-        diarization_pipeline = get_diarization_pipeline()
-
-        with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
-            tmp_audio.write(audio_bytes.getvalue())
-            tmp_audio_path = tmp_audio.name
-
-            pyannote_diarization = diarization_pipeline(tmp_audio_path)
-
-            diarization_segments = [
-                DiarizationSegment(
-                    start=segment.start,
-                    end=segment.end,
-                    speaker=convert_to_french_speaker(speaker),
-                )
-                for segment, _, speaker in pyannote_diarization.itertracks(
-                    yield_label=True
-                )
-            ]
-
-            return diarization_segments
+        return self.diarization_processor.diarize(audio_bytes=audio_bytes)
 
     def run(
         self,
