@@ -5,10 +5,10 @@ from ..conftest import PrefixedTestClient
 
 def test_get_feature_flag_status_enabled(
     feature_flag_client: PrefixedTestClient,
-    mock_feature_flag_client: Mock,
+    create_mock_feature_flag_client: Mock,
 ) -> None:
     # Arrange
-    mock_feature_flag_client.is_enabled.return_value = True
+    mock_feature_flag_client = create_mock_feature_flag_client("my_flag", enabled=True)
 
     # Act
     response = feature_flag_client.get("/my_flag")
@@ -21,10 +21,12 @@ def test_get_feature_flag_status_enabled(
 
 def test_get_feature_flag_status_disabled(
     feature_flag_client: PrefixedTestClient,
-    mock_feature_flag_client: Mock,
+    create_mock_feature_flag_client: Mock,
 ) -> None:
     # Arrange
-    mock_feature_flag_client.is_enabled.return_value = False
+    mock_feature_flag_client = create_mock_feature_flag_client(
+        "other_flag", enabled=False
+    )
 
     # Act
     response = feature_flag_client.get("/other_flag")
