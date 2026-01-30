@@ -35,9 +35,11 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
     ],
 )
 @patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.transcription_processor.get_transcription_model"
+)
+@patch(
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_full_process(
     mock_get_diarization_pipeline,
@@ -159,7 +161,7 @@ def test_integration_full_process(
 
 @patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_full_process_empty_diarization(
     mock_get_diarization_pipeline,

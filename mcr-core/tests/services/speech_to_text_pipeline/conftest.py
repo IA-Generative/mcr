@@ -1,6 +1,7 @@
 """Fixtures for speech-to-text pipeline integration tests."""
 
 from io import BytesIO
+from typing import Callable
 
 import pytest
 from pydub.generators import Sine
@@ -73,13 +74,13 @@ def mock_transcription_segments_with_empty() -> list[list[TranscriptionSegment]]
 
 
 @pytest.fixture
-def pre_processed_audio_bytes(create_audio_buffer) -> BytesIO:
+def pre_processed_audio_bytes(create_audio_buffer: Callable[[str], BytesIO]) -> BytesIO:
     """Create pre-processed audio bytes for testing."""
     return create_audio_buffer("wav")
 
 
 @pytest.fixture
-def create_audio_buffer():
+def create_audio_buffer() -> Callable[[str], BytesIO]:
     """Factory fixture to create audio buffers in different formats.
 
     This fixture returns a factory function that creates audio test files
