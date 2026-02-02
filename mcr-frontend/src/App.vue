@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { provide, onMounted, onUnmounted, watch } from 'vue';
 import useToaster from './composables/use-toaster';
 import { VueQueryDevtools } from '@tanstack/vue-query-devtools';
 import AppToaster from '@/components/core/AppToaster.vue';
@@ -6,12 +7,39 @@ import AppHeader from './components/core/AppHeader.vue';
 import AppFooter from './components/core/AppFooter.vue';
 import { useAuth } from './components/sign-in/use-auth';
 import { ModalsContainer } from 'vue-final-modal';
-
-useScheme({ scheme: 'light' });
+import { useNotifications } from '@/composables/use-notifications';
+import { useKeycloak } from '@dsb-norge/vue-keycloak-js';
 
 const toaster = useToaster();
 const auth = useAuth();
+const { keycloak } = useKeycloak();
+const notifications = useNotifications();
+
 provide('auth', auth);
+
+// Request browser notification permission
+onMounted(() => {
+  notifications.requestBrowserNotificationPermission();
+});
+
+// Connect WebSocket when authenticated
+watch(
+  () => keycloak?.authenticated,
+  async (isAuthenticated) => {
+    if (isAuthenticated && keycloak?.token) {
+      await notifications.loadNotifications();
+      notifications.connectWebSocket(keycloak.token);
+    } else {
+      notifications.disconnectWebSocket();
+    }
+  },
+  { immediate: true },
+);
+
+// Cleanup on unmount
+onUnmounted(() => {
+  notifications.disconnectWebSocket();
+});
 
 onMounted(async () => {
   await auth.currentUserQuery.refetch();
