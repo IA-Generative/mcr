@@ -6,11 +6,19 @@ throughout the application using dependency injection.
 """
 
 from abc import ABC, abstractmethod
+from enum import StrEnum
 from typing import Optional
 
 from UnleashClient import UnleashClient
 
 from mcr_meeting.app.configs.base import Settings, UnleashSettings
+
+
+class FeatureFlag(StrEnum):
+    """Centralized enum for all feature flag names in the application."""
+
+    AUDIO_NOISE_FILTERING = "audio_noise_filtering"
+    API_BASED_TRANSCRIPTION = "api_based_transcription"
 
 
 class FeatureFlagClient(ABC):
