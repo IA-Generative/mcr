@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     def MEMBER_SERVICE_URL(self) -> str:
         return f"{self.CORE_SERVICE_BASE_URL}/api/members/"
 
+    @property
+    def NOTIFICATION_SERVICE_URL(self) -> str:
+        return f"{self.CORE_SERVICE_BASE_URL}/api/notifications/"
+
     COMU_LOOKUP_URL: str = Field(default="https://webconf.comu.gouv.fr/api/lookup")
     KEYCLOAK_URL: str
     KEYCLOAK_REALM: str
