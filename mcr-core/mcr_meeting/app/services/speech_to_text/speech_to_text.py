@@ -94,6 +94,7 @@ class SpeechToTextPipeline:
                 "Failed to check diarization feature flag, defaulting to local mode: {}",
                 e,
             )
+            return False
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.

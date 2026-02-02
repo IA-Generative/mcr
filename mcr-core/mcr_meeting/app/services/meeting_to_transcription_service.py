@@ -163,4 +163,4 @@ def transcribe_meeting(
         )
         raise InvalidAudioFileError(
             f"Transcription failed for meeting {meeting_id}: {transcription_error}"
-        )
+        ) from transcription_error
