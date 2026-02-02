@@ -78,7 +78,8 @@ const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
   }
 });
 
-const URL_FORM_FEEDBACK = 'https://grist.numerique.gouv.fr/o/miraigrist/forms/vvANEpRC3y67QtutV6JnJC/223';
+const URL_FORM_FEEDBACK =
+  'https://grist.numerique.gouv.fr/o/miraigrist/forms/vvANEpRC3y67QtutV6JnJC/223';
 </script>
 
 <style scoped>
