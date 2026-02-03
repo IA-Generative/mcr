@@ -14,7 +14,7 @@ dependencies = [
     "langchain-community == 0.3.27",
     "instructor==1.9.0",
     "loguru>=0.7.3",
-    "unstructured==0.18.11",
+    "unstructured==0.18.18",
     "celery[redis]==5.5.3",
     "boto3>=1.35.0",
     "httpx>=0.28.1",
