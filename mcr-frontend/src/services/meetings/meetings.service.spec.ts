@@ -27,7 +27,7 @@ vi.mock('../http/http.service', () => ({
 }));
 
 describe('initMultipartUploadService', () => {
-  it('envoie les bons paramètres à HttpService.post', async () => {
+  it('HttpService.post called with correct attributes', async () => {
     await initMultipartUploadService(1, 'audio.wav', 'audio/wav');
     expect(HttpService.post).toHaveBeenLastCalledWith('meetings/1/multipart/init', {
       filename: 'audio.wav',
@@ -35,21 +35,21 @@ describe('initMultipartUploadService', () => {
     });
   });
 
-  it('retourne la réponse attendue', async () => {
+  it('returns the expected value', async () => {
     await initMultipartUploadService(1, 'audio.wav', 'audio/wav');
     expect(HttpService.post).toHaveLastResolvedWith({
       data: { upload_id: 'u1', object_key: 'k1' },
     });
   });
 
-  it('gère les erreurs de l’API', async () => {
+  it('handles API errors', async () => {
     (HttpService.post as any).mockRejectedValueOnce(new Error('API error'));
     await expect(initMultipartUploadService(1, 'audio.wav', 'audio/wav')).rejects.toThrow(
       'API error',
     );
   });
 
-  it('supporte contentType optionnel', async () => {
+  it('handles optional contentType', async () => {
     await initMultipartUploadService(1, 'audio.wav');
     expect(HttpService.post).toHaveBeenLastCalledWith('meetings/1/multipart/init', {
       filename: 'audio.wav',
@@ -59,7 +59,7 @@ describe('initMultipartUploadService', () => {
 });
 
 describe('signMultipartUploadService', () => {
-  it('envoie les bons paramètres à HttpService.post', async () => {
+  it('HttpService.post called with correct attributes', async () => {
     await signMultipartPartService({
       meetingId: 1,
       uploadId: 'u1',
@@ -73,7 +73,7 @@ describe('signMultipartUploadService', () => {
     });
   });
 
-  it('retourne la réponse attendue', async () => {
+  it('returns the expected value', async () => {
     await signMultipartPartService({
       meetingId: 1,
       uploadId: 'u1',
@@ -83,7 +83,7 @@ describe('signMultipartUploadService', () => {
     expect(HttpService.post).toHaveLastResolvedWith({ data: { url: 'http://www.example.com' } });
   });
 
-  it('gère les erreurs de l’API', async () => {
+  it('handles API errors', async () => {
     (HttpService.post as any).mockRejectedValueOnce(new Error('API error'));
     await expect(
       signMultipartPartService({
@@ -97,7 +97,7 @@ describe('signMultipartUploadService', () => {
 });
 
 describe('completeMultipartUploadService', () => {
-  it('envoie les bons paramètres à HttpService.post', async () => {
+  it('HttpService.post called with correct attributes', async () => {
     await completeMultipartUploadService({
       meetingId: 1,
       uploadId: 'u1',
@@ -111,7 +111,7 @@ describe('completeMultipartUploadService', () => {
     });
   });
 
-  it('retourne la réponse attendue', async () => {
+  it('returns the expected value', async () => {
     await completeMultipartUploadService({
       meetingId: 1,
       uploadId: 'u1',
@@ -121,7 +121,7 @@ describe('completeMultipartUploadService', () => {
     expect(HttpService.post).toHaveLastResolvedWith(undefined);
   });
 
-  it('gère les erreurs de l’API', async () => {
+  it('handles API errors', async () => {
     (HttpService.post as any).mockRejectedValueOnce(new Error('API error'));
     await expect(
       completeMultipartUploadService({
@@ -135,7 +135,7 @@ describe('completeMultipartUploadService', () => {
 });
 
 describe('abortMultipartUploadService', () => {
-  it('envoie les bons paramètres à HttpService.post', async () => {
+  it('HttpService.post called with correct attributes', async () => {
     await abortMultipartUploadService({
       meetingId: 1,
       uploadId: 'u1',
@@ -147,7 +147,7 @@ describe('abortMultipartUploadService', () => {
     });
   });
 
-  it('retourne la réponse attendue', async () => {
+  it('returns the expected value', async () => {
     await abortMultipartUploadService({
       meetingId: 1,
       uploadId: 'u1',
@@ -156,7 +156,7 @@ describe('abortMultipartUploadService', () => {
     expect(HttpService.post).toHaveLastResolvedWith(undefined);
   });
 
-  it('gère les erreurs de l’API', async () => {
+  it('handles API errors', async () => {
     (HttpService.post as any).mockRejectedValueOnce(new Error('API error'));
     await expect(
       abortMultipartUploadService({
