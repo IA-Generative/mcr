@@ -14,7 +14,6 @@ from pyannote.metrics.diarization import (
 
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
-    SpeakerTranscription,
 )
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     filter_noise_from_audio_bytes,
@@ -81,32 +80,10 @@ class AudioFileProcessor:
             else speech_to_text_transcription(audio_bytes=processed_bytes)
         )
 
-        raw_segments = [
-            SpeakerTranscription(
-                meeting_id=0,
-                transcription_index=segment.id,
-                speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
-                transcription=segment.text,
-                start=segment.start,
-                end=segment.end,
-            )
-            for segment in raw_transcription
-        ]
+        transcription = merge_consecutive_segments_per_speaker(raw_transcription)
 
-        transcription = merge_consecutive_segments_per_speaker(raw_segments)
-
-        segments = [
-            DiarizedTranscriptionSegment(
-                id=seg.transcription_index,
-                start=seg.start,
-                end=seg.end,
-                text=seg.transcription,
-                speaker=seg.speaker,
-            )
-            for seg in transcription
-        ]
-        text = " ".join(seg.text for seg in segments)
-        return TranscriptionResult(text=text, segments=segments)
+        text = " ".join(seg.text for seg in transcription)
+        return TranscriptionResult(text=text, segments=transcription)
 
 
 def extract_reference_text(ref_data: TranscriptionResult) -> str:
