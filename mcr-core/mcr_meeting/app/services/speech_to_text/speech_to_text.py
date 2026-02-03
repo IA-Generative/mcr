@@ -3,7 +3,7 @@
 import os
 import tempfile
 from io import BytesIO
-from typing import Any, List, Optional
+from typing import List
 
 import numpy as np
 from loguru import logger
@@ -95,7 +95,6 @@ class SpeechToTextPipeline:
         self,
         audio: NDArray[np.float32],
         transcription_settings: WhisperTranscriptionSettings,
-        model: Optional[Any] = None,
     ) -> List[TranscriptionSegment]:
         """Transcribe audio bytes to text with speaker diarization
 
@@ -107,8 +106,7 @@ class SpeechToTextPipeline:
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
         """
-
-        model = set_model(model)
+        model = set_model()
 
         audio = audio.astype(np.float32, copy=False)
         logger.info("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
@@ -152,7 +150,6 @@ class SpeechToTextPipeline:
         Returns:
             Any: The diarization result from the pyannote pipeline.
         """
-
         diarization_pipeline = set_diarization_pipeline()
 
         with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
@@ -177,7 +174,6 @@ class SpeechToTextPipeline:
     def run(  # type: ignore[explicit-any]
         self,
         audio_bytes: BytesIO,
-        model: Optional[Any] = None,
     ) -> List[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
@@ -214,7 +210,7 @@ class SpeechToTextPipeline:
                 chunk.diarization.end,
             )
             chunk_transcription_segments = self.transcribe(
-                chunk.audio, transcription_settings, model=model
+                chunk.audio, transcription_settings
             )
             if not chunk_transcription_segments:
                 logger.info(
