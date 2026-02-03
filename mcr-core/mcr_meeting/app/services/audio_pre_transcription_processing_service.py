@@ -51,26 +51,26 @@ def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
                 ac=nb_channels,  # Audio channels (mono/stereo)
             )
             .overwrite_output()
-            .global_args("-loglevel", "error")
+            .global_args("-loglevel", "warning")
         )
 
         log_ffmpeg_command(stream)
 
-        output, error = stream.run(
+        output, stderr_output = stream.run(
             capture_stdout=True,
             capture_stderr=True,
         )
-        if error:
-            logger.error(
-                "FFmpeg stderr (bytes→bytes): {}", error.decode(errors="ignore")
-            )
-            raise InvalidAudioFileError(
-                f"FFmpeg normalization (bytes→bytes) failed: {error.decode(errors='ignore')}"
+        if stderr_output:
+            logger.warning(
+                "FFmpeg stderr (bytes→bytes): {}", stderr_output.decode(errors="ignore")
             )
         return BytesIO(output)
-    except InvalidAudioFileError:
-        # Re-raise our own exceptions
-        raise
+
+    except ffmpeg.Error as e:
+        stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
+        raise InvalidAudioFileError(
+            f"FFmpeg normalization failed: {stderr_text}"
+        ) from e
     except Exception as e:
         logger.error("Unexpected error during normalization: {}", e)
         raise InvalidAudioFileError(
@@ -112,31 +112,25 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
             af=filters,  # Audio filter string
         )
 
-        stream = stream.overwrite_output().global_args("-loglevel", "error")
+        stream = stream.overwrite_output().global_args("-loglevel", "warning")
+        log_ffmpeg_command(stream)
 
-        # Log the generated FFmpeg command for debugging
-        try:
-            cmd = stream.compile()
-            logger.debug("FFmpeg command: %s", " ".join(cmd))
-        except Exception:
-            pass
-
-        output, error = stream.run(
+        output, stderr_output = stream.run(
             input=input_bytes.getvalue(),
             capture_stdout=True,
             capture_stderr=True,
         )
-        if error:
-            logger.error(
-                "FFmpeg stderr (noise filtering): {}", error.decode(errors="ignore")
-            )
-            raise InvalidAudioFileError(
-                f"FFmpeg noise filtering failed: {error.decode(errors='ignore')}"
+        if stderr_output:
+            logger.warning(
+                "FFmpeg stderr (noise filtering): {}",
+                stderr_output.decode(errors="ignore"),
             )
         return BytesIO(output)
-    except InvalidAudioFileError:
-        # Re-raise our own exceptions without wrapping them
-        raise
+    except ffmpeg.Error as e:
+        stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
+        raise InvalidAudioFileError(
+            f"FFmpeg noise filtering failed: {stderr_text}"
+        ) from e
     except Exception as e:
         logger.error("Unexpected error during noise filtering: {}", e)
         raise InvalidAudioFileError(
