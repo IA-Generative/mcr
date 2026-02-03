@@ -24,11 +24,11 @@ from mcr_meeting.app.services.feature_flag_service import (
     get_feature_flag_client,
 )
 from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
+from mcr_meeting.app.services.speech_to_text.speech_to_text import (
+    SpeechToTextPipeline,
+)
 from mcr_meeting.app.services.speech_to_text.transcription_utils import (
     merge_consecutive_segments_per_speaker,
-)
-from mcr_meeting.app.services.transcription_engine_service import (
-    speech_to_text_transcription,
 )
 from mcr_meeting.evaluation.eval_types import (
     DiarizationMetrics,
@@ -56,6 +56,7 @@ class AudioFileProcessor:
             self.model = model
             self.is_model_specified = True
         self.feature_flag_client = feature_flag_client
+        self.speech_to_text_pipeline = SpeechToTextPipeline()
 
     def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionResult:
         """Process a single audio file and return transcription result"""
@@ -74,11 +75,7 @@ class AudioFileProcessor:
             logger.info("Noise filtering disabled, skipping filtering step")
             processed_bytes = normalized_bytes
 
-        raw_transcription = (
-            speech_to_text_transcription(audio_bytes=processed_bytes, model=self.model)
-            if self.is_model_specified
-            else speech_to_text_transcription(audio_bytes=processed_bytes)
-        )
+        raw_transcription = self.speech_to_text_pipeline.run(processed_bytes)
 
         transcription = merge_consecutive_segments_per_speaker(raw_transcription)
 
