@@ -5,8 +5,8 @@ from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
     SpeakerTranscription,
-    TranscriptionSegment,
 )
 from mcr_meeting.app.services.meeting_to_transcription_service import (
     merge_consecutive_segments_per_speaker,
@@ -17,24 +17,24 @@ from mcr_meeting.app.services.meeting_to_transcription_service import (
 
 
 @pytest.fixture
-def diarized_transcription_segments_simple() -> list[TranscriptionSegment]:
+def diarized_transcription_segments_simple() -> list[DiarizedTranscriptionSegment]:
     """Simple case with 3 consecutive segments from different speakers."""
     return [
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=0,
             speaker="SPEAKER_00",
             text="Hello everyone.",
             start=0.0,
             end=2.0,
         ),
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=1,
             speaker="SPEAKER_01",
             text="Hi there.",
             start=2.0,
             end=3.5,
         ),
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=2,
             speaker="SPEAKER_00",
             text="How are you?",
@@ -48,28 +48,28 @@ def diarized_transcription_segments_simple() -> list[TranscriptionSegment]:
 def diarized_transcription_segments_consecutive():
     """Case with consecutive segments from same speaker to test merging."""
     return [
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=0,
             speaker="SPEAKER_00",
             text="Hello",
             start=0.0,
             end=1.0,
         ),
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=1,
             speaker="SPEAKER_00",
             text="everyone.",
             start=1.0,
             end=2.0,
         ),
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=2,
             speaker="SPEAKER_01",
             text="Hi",
             start=2.0,
             end=2.5,
         ),
-        TranscriptionSegment(
+        DiarizedTranscriptionSegment(
             id=3,
             speaker="SPEAKER_01",
             text="there.",

@@ -8,7 +8,7 @@ whisper segments which can be considered "non speech" according to its speech pr
 from io import BytesIO
 from typing import Any, List, Optional
 
-from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
+from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
 speech_to_text_pipeline = SpeechToTextPipeline()
@@ -17,7 +17,7 @@ speech_to_text_pipeline = SpeechToTextPipeline()
 def speech_to_text_transcription(  # type: ignore[explicit-any]
     audio_bytes: BytesIO,
     model: Optional[Any] = None,
-) -> List[TranscriptionSegment]:
+) -> List[DiarizedTranscriptionSegment]:
     """
     Transcribe an uploaded audio file into text using whisper_timestamped framework.
 
@@ -26,7 +26,7 @@ def speech_to_text_transcription(  # type: ignore[explicit-any]
         model (str, optional): The name of the transcription model to be used. This is an optional parameter.
 
     Returns:
-        List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results.
+        List[DiarizedTranscriptionSegment]: A list of DiarizedTranscriptionSegment objects containing the transcription results.
     """
 
     segments_with_speakers = speech_to_text_pipeline.run(audio_bytes, model)
