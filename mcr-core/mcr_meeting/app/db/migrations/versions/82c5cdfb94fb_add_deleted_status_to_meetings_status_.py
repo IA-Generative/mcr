@@ -36,7 +36,8 @@ old_options = (
 new_status = "DELETED"
 
 enum_name = "meetingstatus"
-table_name = "meeting"
+meeting_table_name = "meeting"
+meeting_transition_record_table_name = "meeting_transition_record"
 column_name = "status"
 default_value_on_downgrade = "TRANSCRIPTION_FAILED"
 
@@ -47,38 +48,59 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # delete all entries that had the status 'DELETED'
+    # delete all entries that had the status 'DELETED' from meeting and meeting_transition_record
     op.execute(
         sa.text(
-            f"DELETE FROM {table_name} "
+            f"DELETE FROM {meeting_table_name} "
+            f"WHERE {column_name} = :removed_value"
+        ).bindparams(removed_value=new_status)
+    )
+    op.execute(
+        sa.text(
+            f"DELETE FROM {meeting_transition_record_table_name} "
             f"WHERE {column_name} = :removed_value"
         ).bindparams(removed_value=new_status)
     )
 
-    # temporarily drop the column default to avoid DatatypeMismatch
-    op.alter_column(table_name, column_name, server_default=None)
+    # temporarily drop column defaults to avoid DatatypeMismatch from meeting and meeting_transition_record
+    op.alter_column(meeting_table_name, column_name, server_default=None)
+    op.alter_column(meeting_transition_record_table_name, column_name, server_default=None)
 
-    # recreate old enum
+    # recreate old enum without the removed value
     tmp_enum = sa.Enum(*old_options, name=f"{enum_name}_old")
     tmp_enum.create(op.get_bind(), checkfirst=True)
 
-    # convert column back to old enum using text casting
+    # convert meeting.status back to old enum using text casting
     op.alter_column(
-        table_name,
+        meeting_table_name,
         column_name,
         type_=tmp_enum,
         postgresql_using=f"{column_name}::text::{enum_name}_old",
     )
 
-    # drop the new enum type
+    # convert meeting_transition_record.status back to old enum using text casting
+    op.alter_column(
+        meeting_transition_record_table_name,
+        column_name,
+        type_=tmp_enum,
+        postgresql_using=f"{column_name}::text::{enum_name}_old",
+    )
+
+    # restore column defaults while the old enum type is still present for meeting and meeting_transition_record
+    op.alter_column(
+        meeting_table_name,
+        column_name,
+        server_default=sa.text(f"'{default_value_on_downgrade}'"),
+    )
+    op.alter_column(
+        meeting_transition_record_table_name,
+        column_name,
+        server_default=sa.text(f"'{default_value_on_downgrade}'"),
+    )
+
+    # drop the new enum type (no remaining dependencies)
     op.execute(sa.text(f"DROP TYPE {enum_name}"))
 
     # rename the old enum back to the original name
     op.execute(sa.text(f"ALTER TYPE {enum_name}_old RENAME TO {enum_name}"))
-
-    # restore the original default
-    op.alter_column(
-        table_name,
-        column_name,
-        server_default=sa.text(f"'{default_value_on_downgrade}'"),
-    )
+    pass
