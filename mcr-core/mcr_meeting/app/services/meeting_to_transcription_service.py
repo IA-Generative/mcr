@@ -3,14 +3,12 @@ This module provide function to implement diarisation pipeline
 """
 
 from io import BytesIO
-from itertools import groupby
 from typing import List
 
 from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
-    DiarizedTranscriptionSegment,
     SpeakerTranscription,
 )
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
@@ -22,40 +20,6 @@ from mcr_meeting.app.services.s3_service import (
 from mcr_meeting.app.services.transcription_engine_service import (
     speech_to_text_transcription,
 )
-
-
-def merge_consecutive_segments_per_speaker(
-    transcriptions: List[DiarizedTranscriptionSegment],
-) -> List[DiarizedTranscriptionSegment]:
-    """
-    Merge consecutive speaker segments into a single segment for each speaker.
-
-    Args:
-        transcriptions (List[DiarizedTranscriptionSegment]): A list of DiarizedTranscriptionSegment objects
-            representing the transcriptions to be merged.
-
-    Returns:
-        List[DiarizedTranscriptionSegment]: A new list of DiarizedTranscriptionSegment objects with merged
-            transcriptions for consecutive speakers.
-    """
-    logger.info("Merging consecutive speaker segments...")
-    merged_transcriptions: List[DiarizedTranscriptionSegment] = []
-
-    for i, (speaker, group) in enumerate(
-        groupby(transcriptions, key=lambda x: x.speaker)
-    ):
-        group_list = list(group)
-        merged_transcriptions.append(
-            DiarizedTranscriptionSegment(
-                id=i,
-                speaker=speaker,
-                text=" ".join(item.text for item in group_list),
-                start=group_list[0].start,
-                end=group_list[-1].end,
-            )
-        )
-
-    return merged_transcriptions
 
 
 def fetch_audio_bytes(
@@ -133,17 +97,7 @@ def transcribe_meeting(
                 f"Could not fetch audio bytes for meeting {meeting_id}"
             )
 
-        transcription_with_speech = speech_to_text_transcription(full_audio_bytes)
-
-        if not transcription_with_speech:
-            logger.warning("No transcription segments found for meeting {}", meeting_id)
-            raise InvalidAudioFileError(
-                f"No transcription segments found for meeting {meeting_id}"
-            )
-
-        merged_segments = merge_consecutive_segments_per_speaker(
-            transcription_with_speech
-        )
+        diarized_transcription_segments = speech_to_text_transcription(full_audio_bytes)
 
         # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
         speaker_transcription_segments = [
@@ -155,7 +109,7 @@ def transcribe_meeting(
                 start=segment.start,
                 end=segment.end,
             )
-            for segment in merged_segments
+            for segment in diarized_transcription_segments
         ]
 
         return speaker_transcription_segments

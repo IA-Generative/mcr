@@ -23,10 +23,10 @@ from mcr_meeting.app.services.feature_flag_service import (
     FeatureFlagClient,
     get_feature_flag_client,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import (
+from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
+from mcr_meeting.app.services.speech_to_text.transcription_utils import (
     merge_consecutive_segments_per_speaker,
 )
-from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
 from mcr_meeting.app.services.transcription_engine_service import (
     speech_to_text_transcription,
 )

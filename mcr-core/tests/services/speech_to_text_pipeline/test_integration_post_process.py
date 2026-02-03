@@ -1,16 +1,13 @@
 """Test integration for the post process step."""
 
 import pytest
-from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     SpeakerTranscription,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import (
-    merge_consecutive_segments_per_speaker,
-)
+from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
 # Note: Fixtures mock_feature_flag_client and create_audio_buffer
 # are automatically imported from conftest.py in this directory
@@ -118,15 +115,12 @@ def test_integration_post_process(
 
     transcription_with_speech = request.getfixturevalue(fixture_name)
     meeting_id = 1
+    speech_to_text_pipeline = SpeechToTextPipeline()
 
     ### ===== POST PROCESS FLOW ===== ###
-    if not transcription_with_speech:
-        logger.warning("No transcription segments found for meeting {}", meeting_id)
-        raise InvalidAudioFileError(
-            f"No transcription segments found for meeting {meeting_id}"
-        )
-
-    merged_segments = merge_consecutive_segments_per_speaker(transcription_with_speech)
+    merged_segments = speech_to_text_pipeline.post_process(
+        transcription_with_speech,
+    )
 
     # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
     speaker_transcription_segments = [
@@ -184,17 +178,12 @@ def test_integration_post_process_empty_segments():
 
     transcription_with_speech = []
     meeting_id = 1
+    speech_to_text_pipeline = SpeechToTextPipeline()
 
     with pytest.raises(InvalidAudioFileError) as exc_info:
         ### ===== POST PROCESS FLOW ===== ###
-        if not transcription_with_speech:
-            logger.warning("No transcription segments found for meeting {}", meeting_id)
-            raise InvalidAudioFileError(
-                f"No transcription segments found for meeting {meeting_id}"
-            )
-
-        merged_segments = merge_consecutive_segments_per_speaker(
-            transcription_with_speech
+        merged_segments = speech_to_text_pipeline.post_process(
+            transcription_with_speech,
         )
 
         # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
@@ -212,6 +201,4 @@ def test_integration_post_process_empty_segments():
         ### ===== END POST PROCESS FLOW ===== ###
 
     # Verify the exception message
-    assert f"No transcription segments found for meeting {meeting_id}" in str(
-        exc_info.value
-    )
+    assert "No transcription segments found" in str(exc_info.value)

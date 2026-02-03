@@ -13,6 +13,7 @@ from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
     WhisperTranscriptionSettings,
 )
+from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
@@ -22,6 +23,9 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     normalize_audio_bytes_to_wav_bytes,
 )
 from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
+from mcr_meeting.app.services.speech_to_text.transcription_utils import (
+    merge_consecutive_segments_per_speaker,
+)
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
     convert_to_french_speaker,
@@ -64,6 +68,28 @@ class SpeechToTextPipeline:
             pre_processed_bytes = normalized_audio_bytes
 
         return pre_processed_bytes
+
+    def post_process(
+        self,
+        diarized_transcription_segments: List[DiarizedTranscriptionSegment],
+    ) -> List[DiarizedTranscriptionSegment]:
+        """Post-process diarized transcription segments.
+
+        This includes merging consecutive segments from the same speaker.
+
+        Args:
+            diarized_transcription_segments (List[DiarizedTranscriptionSegment]): The diarized transcription segments.
+
+        Returns:
+            List[DiarizedTranscriptionSegment]: The post-processed diarized transcription segments.
+        """
+        if not diarized_transcription_segments:
+            logger.warning("No transcription segments found")
+            raise InvalidAudioFileError("No transcription segments found")
+        merged_segments = merge_consecutive_segments_per_speaker(
+            diarized_transcription_segments
+        )
+        return merged_segments
 
     def transcribe(  # type: ignore[explicit-any]
         self,
@@ -212,9 +238,12 @@ class SpeechToTextPipeline:
                     )
                 )
 
-        transcription_segments = diarize_vad_transcription_segments(
+        diarized_transcription_segments = diarize_vad_transcription_segments(
             vad_transcription_segments, diarization_result
         )
 
-        logger.debug("Final transcription segments: {}", transcription_segments)
-        return transcription_segments
+        merged_segments = self.post_process(diarized_transcription_segments)
+
+        logger.debug("Final transcription segments: {}", merged_segments)
+
+        return merged_segments
