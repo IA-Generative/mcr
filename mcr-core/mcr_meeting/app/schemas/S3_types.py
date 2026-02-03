@@ -3,18 +3,27 @@ from typing import Optional, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from mcr_meeting.app.configs.base import S3Settings
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
 )
 from mcr_meeting.app.utils.files_mime_types import guess_mime_type
 
+s3_settings = S3Settings()
+
 
 class S3Object(BaseModel):
-    bucket_name: str
-    object_name: str
-    last_modified: Optional[datetime]
+    bucket_name: str = s3_settings.S3_BUCKET
+    object_name: str = Field(alias="Key")
+    last_modified: Optional[datetime] = Field(alias="LastModified")
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+
+class S3ListObjectsPage(BaseModel):
+    contents: list[S3Object] = Field(default_factory=list, alias="Contents")
+
+    model_config = ConfigDict(extra="allow", populate_by_name=True)
 
 
 class S3EventNotificationDto(BaseModel):
