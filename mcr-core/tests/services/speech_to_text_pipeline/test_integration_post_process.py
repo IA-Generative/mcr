@@ -126,55 +126,54 @@ def test_integration_post_process(
             f"No transcription segments found for meeting {meeting_id}"
         )
 
+    merged_segments = merge_consecutive_segments_per_speaker(transcription_with_speech)
+
+    # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
     speaker_transcription_segments = [
         SpeakerTranscription(
             meeting_id=meeting_id,
             transcription_index=segment.id,
-            speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
+            speaker=segment.speaker,
             transcription=segment.text,
             start=segment.start,
             end=segment.end,
         )
-        for segment in transcription_with_speech
+        for segment in merged_segments
     ]
-
-    merged_segments = merge_consecutive_segments_per_speaker(
-        speaker_transcription_segments
-    )
     ### ===== END POST PROCESS FLOW ===== ###
 
     # Verify the result is a list
-    assert isinstance(merged_segments, list)
+    assert isinstance(speaker_transcription_segments, list)
 
     # Verify the result contains the expected number of segments
-    assert len(merged_segments) == expected_count, (
-        f"Expected {expected_count} merged segments, got {len(merged_segments)}"
+    assert len(speaker_transcription_segments) == expected_count, (
+        f"Expected {expected_count} merged segments, got {len(speaker_transcription_segments)}"
     )
 
     # Verify all items are SpeakerTranscription objects
-    for segment in merged_segments:
+    for segment in speaker_transcription_segments:
         assert isinstance(segment, SpeakerTranscription)
 
     # Verify the first speaker is correct
-    assert merged_segments[0].speaker == expected_first_speaker, (
+    assert speaker_transcription_segments[0].speaker == expected_first_speaker, (
         f"Expected first speaker to be {expected_first_speaker}, "
-        f"got {merged_segments[0].speaker}"
+        f"got {speaker_transcription_segments[0].speaker}"
     )
 
     # Verify the first transcription text is correctly merged
-    assert merged_segments[0].transcription == expected_merged_text, (
+    assert speaker_transcription_segments[0].transcription == expected_merged_text, (
         f"Expected first transcription to be '{expected_merged_text}', "
-        f"got '{merged_segments[0].transcription}'"
+        f"got '{speaker_transcription_segments[0].transcription}'"
     )
 
     # Verify transcription_index is sequential
-    for i, segment in enumerate(merged_segments):
+    for i, segment in enumerate(speaker_transcription_segments):
         assert segment.transcription_index == i, (
             f"Expected transcription_index {i}, got {segment.transcription_index}"
         )
 
     # Verify meeting_id is preserved
-    for segment in merged_segments:
+    for segment in speaker_transcription_segments:
         assert segment.meeting_id == meeting_id, (
             f"Expected meeting_id {meeting_id}, got {segment.meeting_id}"
         )
@@ -194,21 +193,22 @@ def test_integration_post_process_empty_segments():
                 f"No transcription segments found for meeting {meeting_id}"
             )
 
-        speaker_transcription_segments = [
+        merged_segments = merge_consecutive_segments_per_speaker(
+            transcription_with_speech
+        )
+
+        # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
+        _speaker_transcription_segments = [
             SpeakerTranscription(
                 meeting_id=meeting_id,
                 transcription_index=segment.id,
-                speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
+                speaker=segment.speaker,
                 transcription=segment.text,
                 start=segment.start,
                 end=segment.end,
             )
-            for segment in transcription_with_speech
+            for segment in merged_segments
         ]
-
-        _merged_segments = merge_consecutive_segments_per_speaker(
-            speaker_transcription_segments
-        )
         ### ===== END POST PROCESS FLOW ===== ###
 
     # Verify the exception message

@@ -9,7 +9,10 @@ from typing import List
 from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
-from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
+    SpeakerTranscription,
+)
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     download_and_concatenate_s3_audio_chunks_into_bytes,
 )
@@ -22,32 +25,31 @@ from mcr_meeting.app.services.transcription_engine_service import (
 
 
 def merge_consecutive_segments_per_speaker(
-    transcriptions: List[SpeakerTranscription],
-) -> List[SpeakerTranscription]:
+    transcriptions: List[DiarizedTranscriptionSegment],
+) -> List[DiarizedTranscriptionSegment]:
     """
     Merge consecutive speaker segments into a single segment for each speaker.
 
     Args:
-        transcriptions (List[SpeakerTranscription]): A list of SpeakerTranscription objects
+        transcriptions (List[DiarizedTranscriptionSegment]): A list of DiarizedTranscriptionSegment objects
             representing the transcriptions to be merged.
 
     Returns:
-        List[SpeakerTranscription]: A new list of SpeakerTranscription objects with merged
+        List[DiarizedTranscriptionSegment]: A new list of DiarizedTranscriptionSegment objects with merged
             transcriptions for consecutive speakers.
     """
     logger.info("Merging consecutive speaker segments...")
-    merged_transcriptions: List[SpeakerTranscription] = []
+    merged_transcriptions: List[DiarizedTranscriptionSegment] = []
 
     for i, (speaker, group) in enumerate(
         groupby(transcriptions, key=lambda x: x.speaker)
     ):
         group_list = list(group)
         merged_transcriptions.append(
-            SpeakerTranscription(
-                meeting_id=group_list[0].meeting_id,
-                transcription_index=i,
+            DiarizedTranscriptionSegment(
+                id=i,
                 speaker=speaker,
-                transcription=" ".join(item.transcription for item in group_list),
+                text=" ".join(item.text for item in group_list),
                 start=group_list[0].start,
                 end=group_list[-1].end,
             )
@@ -139,28 +141,29 @@ def transcribe_meeting(
                 f"No transcription segments found for meeting {meeting_id}"
             )
 
+        merged_segments = merge_consecutive_segments_per_speaker(
+            transcription_with_speech
+        )
+
+        # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
         speaker_transcription_segments = [
             SpeakerTranscription(
                 meeting_id=meeting_id,
                 transcription_index=segment.id,
-                speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
+                speaker=segment.speaker,
                 transcription=segment.text,
                 start=segment.start,
                 end=segment.end,
             )
-            for segment in transcription_with_speech
+            for segment in merged_segments
         ]
 
-        merged_segments = merge_consecutive_segments_per_speaker(
-            speaker_transcription_segments
-        )
-
-        return merged_segments
+        return speaker_transcription_segments
 
     except Exception as transcription_error:
         logger.exception(
             "Transcription failed for meeting {}: {}", meeting_id, transcription_error
         )
         raise InvalidAudioFileError(
-            f"Transcription failed for meeting {meeting_id}: {transcription_error}"
-        )
+            f"Transcription failed for meeting {meeting_id}"
+        ) from transcription_error
