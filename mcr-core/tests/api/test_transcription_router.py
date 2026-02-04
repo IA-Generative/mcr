@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
 from mcr_meeting.app.models.user_model import User
 
-from ..conftest import PrefixedTestClient
+from .conftest import PrefixedTestClient
 
 
 class TestCreateTranscriptionTask:
