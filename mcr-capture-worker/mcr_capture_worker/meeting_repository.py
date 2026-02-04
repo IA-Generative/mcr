@@ -40,7 +40,7 @@ def get_meeting(meeting_id: int) -> Meeting:
         meeting = db.get(Meeting, meeting_id)
 
     if meeting is None:
-        raise ValueError("Meeting not found: id={meeting_id}")
+        raise ValueError(f"Meeting not found: id={meeting_id}")
 
     return meeting
 
@@ -55,6 +55,6 @@ def get_meeting_with_owner(meeting_id: int) -> Meeting:
         )
 
     if meeting is None:
-        raise ValueError("Meeting not found: id={meeting_id}")
+        raise ValueError(f"Meeting not found: id={meeting_id}")
 
     return meeting

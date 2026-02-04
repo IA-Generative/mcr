@@ -54,7 +54,7 @@ def get_meeting_by_id(meeting_id: int) -> Meeting:
 )
 
     if meeting is None:
-        raise NotFoundException("Meeting not found: id={meeting_id}")
+        raise NotFoundException(f"Meeting not found: id={meeting_id}")
 
     return meeting
 
@@ -153,7 +153,7 @@ def get_meeting_with_transcriptions(
         .first()
     )
     if not meeting:
-        raise NotFoundException("Meeting not found: id={meeting_id}")
+        raise NotFoundException(f"Meeting not found: id={meeting_id}")
     return meeting
 
 
