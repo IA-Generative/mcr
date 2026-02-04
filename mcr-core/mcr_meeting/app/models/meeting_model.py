@@ -37,6 +37,7 @@ class MeetingStatus(StrEnum):
     - TRANSCRIPTION_FAILED: Transcription encountered an issue and failed.
     - REPORT_PENDING: Report has but requested
     - REPORT_DONE: Report is available
+    - DELETED: Report was deleted
     """
 
     NONE = "NONE"
@@ -53,6 +54,7 @@ class MeetingStatus(StrEnum):
     REPORT_PENDING = "REPORT_PENDING"
     REPORT_DONE = "REPORT_DONE"
     CAPTURE_FAILED = "CAPTURE_FAILED"
+    DELETED = "DELETED"
 
 
 class MeetingEvent(StrEnum):
