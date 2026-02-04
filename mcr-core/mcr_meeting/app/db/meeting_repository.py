@@ -87,7 +87,8 @@ def delete_meeting(meeting_id: int) -> None:
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise NotFoundException(f"Meeting not found with id {meeting_id}")
-    db.delete(meeting)
+    meeting.status = MeetingStatus.DELETED
+    db.commit()
 
 
 def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
