@@ -76,21 +76,6 @@ def update_meeting(updated_meeting: Meeting) -> Meeting:
     return updated_meeting
 
 
-def delete_meeting(meeting_id: int) -> None:
-    """
-    Delete a meeting from the database by its ID.
-
-    Args:
-        meeting_id (int): The ID of the meeting to delete.
-    """
-    db = get_db_session_ctx()
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise NotFoundException(f"Meeting not found with id {meeting_id}")
-    meeting.status = MeetingStatus.DELETED
-    db.commit()
-
-
 def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
     """
     Récupère une liste de réunions filtrées depuis la base de données.
