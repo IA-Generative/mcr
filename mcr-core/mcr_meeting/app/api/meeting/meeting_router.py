@@ -18,8 +18,8 @@ from mcr_meeting.app.orchestrators.meeting_orchestrator import (
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     create_meeting_with_presigned_url as create_meeting_with_presigned_url_orchestrator,
 )
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    delete_meeting as delete_meeting_orchestrator,
+from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
+    delete as delete_meeting_orchestrator,
 )
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     generate_presigned_audio_upload_url as generate_presigned_audio_upload_url_orchestrator,
