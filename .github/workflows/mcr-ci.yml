@@ -186,7 +186,7 @@ jobs:
         working-directory: mcr-core
         run: |
           uv venv --python=3.11
-          uv sync --all-extras
+          uv sync --group test --all-extras
 
       - name: Run Ruff format check
         working-directory: mcr-core
@@ -204,9 +204,16 @@ jobs:
         working-directory: mcr-core
         run: make type-check
 
-      - name: Run Tests
+      - name: Coverage (mcr-core)
         working-directory: mcr-core
-        run: make test
+        run: make test-coverage-ci
+
+      - name: Upload coverage.xml
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcr-core-coverage
+          path: mcr-core/coverage.xml
 
   mcr-frontend-ci:
     needs: filter-out-unmodified-services
