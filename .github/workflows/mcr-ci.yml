@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   filter-out-unmodified-services:
@@ -214,6 +214,15 @@ jobs:
         with:
           name: mcr-core-coverage
           path: mcr-core/coverage.xml
+
+      - name: Post coverage comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-xml-coverage-path: mcr-core/coverage.xml
+          title: mcr-core coverage
+          hide-report: true
+          report-only-changed-files: true
 
   mcr-frontend-ci:
     needs: filter-out-unmodified-services
