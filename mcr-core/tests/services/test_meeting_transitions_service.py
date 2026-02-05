@@ -48,7 +48,7 @@ def mock_send_email(monkeypatch: Any) -> MagicMock:
     send_email_mock = MagicMock()
 
     monkeypatch.setattr(
-        "mcr_meeting.app.services.send_email_service._send_email",
+        "mcr_meeting.app.services.email.email_service.send_email",
         send_email_mock,
     )
 
