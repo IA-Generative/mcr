@@ -7,8 +7,9 @@ Create Date: 2026-02-02 17:57:02.322409
 """
 
 from typing import Sequence, Union
-from alembic import op
+
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "82c5cdfb94fb"
@@ -51,8 +52,7 @@ def downgrade() -> None:
     # delete all entries that had the status 'DELETED' from meeting and meeting_transition_record
     op.execute(
         sa.text(
-            f"DELETE FROM {meeting_table_name} "
-            f"WHERE {column_name} = :removed_value"
+            f"DELETE FROM {meeting_table_name} WHERE {column_name} = :removed_value"
         ).bindparams(removed_value=new_status)
     )
     op.execute(
@@ -64,7 +64,9 @@ def downgrade() -> None:
 
     # temporarily drop column defaults to avoid DatatypeMismatch from meeting and meeting_transition_record
     op.alter_column(meeting_table_name, column_name, server_default=None)
-    op.alter_column(meeting_transition_record_table_name, column_name, server_default=None)
+    op.alter_column(
+        meeting_transition_record_table_name, column_name, server_default=None
+    )
 
     # recreate old enum without the removed value
     tmp_enum = sa.Enum(*old_options, name=f"{enum_name}_old")
