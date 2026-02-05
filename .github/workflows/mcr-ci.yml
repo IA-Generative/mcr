@@ -204,7 +204,7 @@ jobs:
         working-directory: mcr-core
         run: make type-check
 
-      - name: Coverage (mcr-core)
+      - name: Run Test + Coverage
         working-directory: mcr-core
         run: make test-coverage-ci
 
