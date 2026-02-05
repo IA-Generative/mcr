@@ -40,28 +40,28 @@ def run_the_code_to_test(
         List of diarized transcription segments with speaker assignments
     """
     ### ===== CENTER PROCESS FLOW ===== ###
-    diarization_result = pipeline.diarize(
+    diarization_result = pipeline.diarize_audio(
         pre_processed_audio_bytes,
     )
 
     if not diarization_result:
-        logger.info("No diarization result. Returning empty transcription.")
+        logger.debug("No diarization result. Returning empty transcription.")
         return []
 
     vad_spans: List[DiarizationSegment] = get_vad_segments_from_diarization(
         diarization_result
     )
 
-    vad_transcription_segments = pipeline.transcribe_audio(
-        pre_processed_audio_bytes, vad_spans
+    transcription_segments = pipeline.transcribe_audio(
+        pre_processed_audio_bytes, vad_spans, None
     )
 
-    transcription_segments = diarize_vad_transcription_segments(
-        vad_transcription_segments, diarization_result
+    diarized_transcription_segments = diarize_vad_transcription_segments(
+        transcription_segments, diarization_result
     )
     ### ===== END CENTER PROCESS FLOW ===== ###
 
-    return transcription_segments
+    return diarized_transcription_segments
 
 
 # Note: Fixtures diarization_result_multiple_speakers, diarization_result_single_speaker,
