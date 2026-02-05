@@ -53,6 +53,11 @@ const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
     target: '_blank',
   },
   {
+    label: t('header.links.useful-tips'),
+    to: 'https://mirai.interieur.gouv.fr/outils-mirai/compte-rendu/bonnes-pratiques-fcr/',
+    target: '_blank',
+  },
+  {
     label: t('header.links.sign-out'),
     icon: 'ri-logout-box-line',
     to: '/',
