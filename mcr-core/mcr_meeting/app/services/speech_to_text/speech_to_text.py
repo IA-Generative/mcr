@@ -135,6 +135,61 @@ class SpeechToTextPipeline:
 
         return transcription_segments
 
+    def transcribe_audio(  # type: ignore[explicit-any]
+        self,
+        audio_bytes: BytesIO,
+        vad_spans: List[DiarizationSegment],
+        model: Optional[Any] = None,
+    ) -> List[TranscriptionSegment]:
+        """Transcribe full audio bytes to text.
+
+        Args:
+            audio_bytes (BytesIO): The input audio bytes.
+            vad_spans (List[DiarizationSegment]): The VAD segments to split the audio into for transcription.
+            model (WhisperModel, optional): Pre-loaded transcription model. If not provided, it will be loaded within the function.
+
+        Returns:
+            List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
+        """
+        vad_transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
+
+        vad_transcription_segments: List[TranscriptionSegment] = []
+
+        logger.info("Number of transcription inputs: {}", len(vad_transcription_inputs))
+
+        for idx, chunk in enumerate(vad_transcription_inputs):
+            logger.info(
+                "Transcribing vad chunk: start={}, end={}",
+                chunk.diarization.start,
+                chunk.diarization.end,
+            )
+            chunk_transcription_segments = self.transcribe(
+                chunk.audio, transcription_settings, model=model
+            )
+            if not chunk_transcription_segments:
+                logger.info(
+                    "No transcription for this chunk: start: {} - end: {}.",
+                    chunk.diarization.start,
+                    chunk.diarization.end,
+                )
+                continue
+            logger.info(
+                "Number of transcription segments in one chunk: {}",
+                len(chunk_transcription_segments),
+            )
+
+            for segment in chunk_transcription_segments:
+                vad_transcription_segments.append(
+                    TranscriptionSegment(
+                        id=idx,
+                        start=segment.start + chunk.diarization.start,
+                        end=segment.end + chunk.diarization.start,
+                        text=segment.text,
+                    )
+                )
+
+        return vad_transcription_segments
+
     def diarize(
         self,
         audio_bytes: BytesIO,
@@ -190,44 +245,9 @@ class SpeechToTextPipeline:
             diarization_result
         )
 
-        vad_transcription_inputs = split_audio_on_timestamps(
+        vad_transcription_segments = self.transcribe_audio(
             pre_processed_audio_bytes, vad_spans
         )
-
-        vad_transcription_segments: List[TranscriptionSegment] = []
-
-        logger.info("Number of diarization chunks: {}", len(diarization_result))
-
-        for idx, chunk in enumerate(vad_transcription_inputs):
-            logger.info(
-                "Transcribing vad chunk: start={}, end={}",
-                chunk.diarization.start,
-                chunk.diarization.end,
-            )
-            chunk_transcription_segments = self.transcribe(
-                chunk.audio,
-            )
-            if not chunk_transcription_segments:
-                logger.info(
-                    "No transcription for this chunk: start: {} - end: {}.",
-                    chunk.diarization.start,
-                    chunk.diarization.end,
-                )
-                continue
-            logger.info(
-                "Number of transcription segments in one chunk: {}",
-                len(chunk_transcription_segments),
-            )
-
-            for segment in chunk_transcription_segments:
-                vad_transcription_segments.append(
-                    TranscriptionSegment(
-                        id=idx,
-                        start=segment.start + chunk.diarization.start,
-                        end=segment.end + chunk.diarization.start,
-                        text=segment.text,
-                    )
-                )
 
         diarized_transcription_segments = diarize_vad_transcription_segments(
             vad_transcription_segments, diarization_result
