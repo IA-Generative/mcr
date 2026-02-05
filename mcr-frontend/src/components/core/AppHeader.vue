@@ -6,6 +6,29 @@
     :quick-links
     :show-beta="true"
   >
+    <template #before-quick-links>
+      <DsfrDropdown
+        :main-button="{
+          label: $t('header.links.mirai-services.main-button'),
+          size: 'sm',
+        }"
+        class="max-sm:self-end"
+        :buttons="[
+          {
+            label: $t('header.links.mirai-services.chat'),
+            onClick: () => redirectTo('https://chat.mirai.interieur.gouv.fr/'),
+          },
+          {
+            label: $t('header.links.mirai-services.resumer'),
+            onClick: () => redirectTo('https://resume.mirai.interieur.gouv.fr/'),
+          },
+          {
+            label: $t('header.links.mirai-services.ocr'),
+            onClick: () => redirectTo('https://ocr.mirai.interieur.gouv.fr/'),
+          },
+        ]"
+      />
+    </template>
   </DsfrHeader>
   <DsfrNotice
     v-if="isBetaEnabled"
@@ -76,6 +99,10 @@ const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
     return whenNotLoggedLinks;
   }
 });
+
+function redirectTo(url: string): void {
+  window.open(url, '_blank', 'noopener, noreferrer');
+}
 
 const URL_FORM_FEEDBACK =
   'https://grist.numerique.gouv.fr/o/miraigrist/forms/vvANEpRC3y67QtutV6JnJC/223';
