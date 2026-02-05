@@ -5,7 +5,7 @@ from loguru import logger
 from pyannote.audio import Pipeline
 
 from mcr_meeting.app.configs.base import Speech2TextSettings
-from mcr_meeting.app.utils.compute_devices import ComputeDevice, is_gpu_available
+from mcr_meeting.app.utils.compute_devices import ComputeDevice
 
 s2t_settings = Speech2TextSettings()
 
@@ -32,8 +32,11 @@ def load_whisper_model(device: ComputeDevice) -> WhisperModel:
     return model
 
 
-def load_diarization_pipeline() -> Pipeline:
+def load_diarization_pipeline(device: ComputeDevice) -> Pipeline:
     """Load speaker diarization pipeline.
+
+    Args:
+        device: The compute device to use (CPU or GPU)
 
     Returns:
         Pipeline: The configured diarization pipeline
@@ -45,7 +48,7 @@ def load_diarization_pipeline() -> Pipeline:
         use_auth_token=s2t_settings.HUGGINGFACE_API_KEY,
     )
 
-    if is_gpu_available():
+    if device == ComputeDevice.GPU:
         logger.info("Using GPU for diarization")
         from mcr_meeting.app.utils.compute_devices import get_default_gpu_device
 
