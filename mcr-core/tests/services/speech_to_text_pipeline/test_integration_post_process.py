@@ -114,62 +114,40 @@ def test_integration_post_process(
     """
 
     transcription_with_speech = request.getfixturevalue(fixture_name)
-    meeting_id = 1
     speech_to_text_pipeline = SpeechToTextPipeline()
 
-    ### ===== POST PROCESS FLOW ===== ###
     merged_segments = speech_to_text_pipeline.post_process(
         transcription_with_speech,
     )
 
-    # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
-    speaker_transcription_segments = [
-        SpeakerTranscription(
-            meeting_id=meeting_id,
-            transcription_index=segment.id,
-            speaker=segment.speaker,
-            transcription=segment.text,
-            start=segment.start,
-            end=segment.end,
-        )
-        for segment in merged_segments
-    ]
-    ### ===== END POST PROCESS FLOW ===== ###
-
     # Verify the result is a list
-    assert isinstance(speaker_transcription_segments, list)
+    assert isinstance(merged_segments, list)
 
     # Verify the result contains the expected number of segments
-    assert len(speaker_transcription_segments) == expected_count, (
-        f"Expected {expected_count} merged segments, got {len(speaker_transcription_segments)}"
+    assert len(merged_segments) == expected_count, (
+        f"Expected {expected_count} merged segments, got {len(merged_segments)}"
     )
 
-    # Verify all items are SpeakerTranscription objects
-    for segment in speaker_transcription_segments:
-        assert isinstance(segment, SpeakerTranscription)
+    # Verify all items are DiarizedTranscriptionSegment objects
+    for segment in merged_segments:
+        assert isinstance(segment, DiarizedTranscriptionSegment)
 
     # Verify the first speaker is correct
-    assert speaker_transcription_segments[0].speaker == expected_first_speaker, (
+    assert merged_segments[0].speaker == expected_first_speaker, (
         f"Expected first speaker to be {expected_first_speaker}, "
-        f"got {speaker_transcription_segments[0].speaker}"
+        f"got {merged_segments[0].speaker}"
     )
 
     # Verify the first transcription text is correctly merged
-    assert speaker_transcription_segments[0].transcription == expected_merged_text, (
+    assert merged_segments[0].text == expected_merged_text, (
         f"Expected first transcription to be '{expected_merged_text}', "
-        f"got '{speaker_transcription_segments[0].transcription}'"
+        f"got '{merged_segments[0].text}'"
     )
 
     # Verify transcription_index is sequential
-    for i, segment in enumerate(speaker_transcription_segments):
-        assert segment.transcription_index == i, (
-            f"Expected transcription_index {i}, got {segment.transcription_index}"
-        )
-
-    # Verify meeting_id is preserved
-    for segment in speaker_transcription_segments:
-        assert segment.meeting_id == meeting_id, (
-            f"Expected meeting_id {meeting_id}, got {segment.meeting_id}"
+    for i, segment in enumerate(merged_segments):
+        assert segment.id == i, (
+            f"Expected transcription_index {i}, got {segment.id}"
         )
 
 
@@ -177,28 +155,12 @@ def test_integration_post_process_empty_segments():
     """Test that post-processing raises an error with empty segments."""
 
     transcription_with_speech = []
-    meeting_id = 1
     speech_to_text_pipeline = SpeechToTextPipeline()
 
     with pytest.raises(InvalidAudioFileError) as exc_info:
-        ### ===== POST PROCESS FLOW ===== ###
-        merged_segments = speech_to_text_pipeline.post_process(
+        _merged_segments = speech_to_text_pipeline.post_process(
             transcription_with_speech,
         )
-
-        # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
-        _speaker_transcription_segments = [
-            SpeakerTranscription(
-                meeting_id=meeting_id,
-                transcription_index=segment.id,
-                speaker=segment.speaker,
-                transcription=segment.text,
-                start=segment.start,
-                end=segment.end,
-            )
-            for segment in merged_segments
-        ]
-        ### ===== END POST PROCESS FLOW ===== ###
 
     # Verify the exception message
     assert "No transcription segments found" in str(exc_info.value)
