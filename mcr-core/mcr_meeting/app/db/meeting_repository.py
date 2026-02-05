@@ -59,20 +59,6 @@ def get_meeting_by_id(meeting_id: int) -> Meeting:
     return meeting
 
 
-def get_meetings_by_user_id(user_id: int) -> list[Meeting]:
-    """
-    Retrieve meetings by user ID from the database.
-
-    Args:
-        user_id (int): The ID of the user whose meetings to retrieve.
-
-    Returns:
-        list[Meeting]: A list of meeting objects belonging to the specified user.
-    """
-    db = get_db_session_ctx()
-    return db.query(Meeting).filter(Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED).all()
-
-
 def update_meeting(updated_meeting: Meeting) -> Meeting:
     """
     ORM link to update a meeting in the database.
