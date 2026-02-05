@@ -1,9 +1,8 @@
 """Utility functions for Celery worker initialization."""
 
-from typing import Any
-
 from faster_whisper import WhisperModel  # type: ignore[import]
 from loguru import logger
+from pyannote.audio import Pipeline
 
 from mcr_meeting.app.configs.base import Speech2TextSettings
 from mcr_meeting.app.utils.compute_devices import ComputeDevice, is_gpu_available
@@ -33,14 +32,13 @@ def load_whisper_model(device: ComputeDevice) -> WhisperModel:
     return model
 
 
-def load_diarization_pipeline() -> Any:  # type: ignore[explicit-any]
+def load_diarization_pipeline() -> Pipeline:
     """Load speaker diarization pipeline.
 
     Returns:
         Pipeline: The configured diarization pipeline
     """
     logger.info("Loading diarization pipeline...")
-    from pyannote.audio import Pipeline  # type: ignore[import]
 
     diarization_pipeline = Pipeline.from_pretrained(
         s2t_settings.DIARIZATION_MODEL,
