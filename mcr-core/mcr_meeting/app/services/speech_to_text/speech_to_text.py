@@ -85,7 +85,7 @@ class SpeechToTextPipeline:
         model = set_model(model)
 
         audio = audio.astype(np.float32, copy=False)
-        logger.info("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
+        logger.debug("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
 
         segments, info = model.transcribe(
             audio,
@@ -99,7 +99,7 @@ class SpeechToTextPipeline:
         logger.debug("Transcription info: {}", info)
 
         if not result:
-            logger.info("No segments found in transcription result.")
+            logger.debug("No segments found in transcription result.")
             return []
 
         transcription_segments = [
@@ -134,10 +134,10 @@ class SpeechToTextPipeline:
 
         vad_transcription_segments: List[TranscriptionSegment] = []
 
-        logger.info("Number of transcription inputs: {}", len(vad_transcription_inputs))
+        logger.debug("Number of transcription inputs: {}", len(vad_transcription_inputs))
 
         for idx, chunk in enumerate(vad_transcription_inputs):
-            logger.info(
+            logger.debug(
                 "Transcribing vad chunk: start={}, end={}",
                 chunk.diarization.start,
                 chunk.diarization.end,
@@ -146,13 +146,13 @@ class SpeechToTextPipeline:
                 chunk.audio, transcription_settings, model=model
             )
             if not chunk_transcription_segments:
-                logger.info(
+                logger.debug(
                     "No transcription for this chunk: start: {} - end: {}.",
                     chunk.diarization.start,
                     chunk.diarization.end,
                 )
                 continue
-            logger.info(
+            logger.debug(
                 "Number of transcription segments in one chunk: {}",
                 len(chunk_transcription_segments),
             )
@@ -214,14 +214,14 @@ class SpeechToTextPipeline:
 
         pre_processed_audio_bytes = self.pre_process(audio_bytes)
 
-        logger.info("Running diarization with {}", diarization_settings)
+        logger.debug("Running diarization with {}", diarization_settings)
 
         diarization_result = self.diarize(
             pre_processed_audio_bytes,
         )
 
         if not diarization_result:
-            logger.info("No diarization result. Returning empty transcription.")
+            logger.debug("No diarization result. Returning empty transcription.")
             return []
 
         vad_spans: List[DiarizationSegment] = get_vad_segments_from_diarization(
