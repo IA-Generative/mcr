@@ -13,7 +13,7 @@
     <div
       :id="id"
       ref="collapse"
-      class="fr-collapse fr-dropdown-collapse w-fit px-2"
+      class="fr-collapse fr-dropdown-collapse w-full"
       :class="{
         'fr-collapse--expanded': cssExpanded,
         'fr-collapsing': collapsing,
@@ -25,7 +25,7 @@
         :buttons="buttonsDropdown"
         :size="dropdownSize"
         inline-layout-when="never"
-        class="w-fit gap-0"
+        class="gap-0"
         equisized
       />
     </div>
@@ -102,14 +102,19 @@ watch(isActive, (newValue, oldValue) => {
   & .fr-btns-group {
     display: flex;
     flex-direction: column;
+    min-width: max-content;
+
     /* Property is defined inline in Dsfr component, hence !important is necessary to override */
-    --equisized-width: 282px !important;
+    margin-bottom: 0px !important;
+    margin-left: 2px;
 
     & .fr-btn {
       margin: 0;
       padding: 1rem 1.5rem;
       justify-content: flex-start;
       text-align: start;
+      min-width: 100%;
+      max-width: 282px !important;
     }
   }
 
