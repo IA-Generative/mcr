@@ -9,7 +9,9 @@ import httpx
 import sentry_sdk
 from celery import Celery, Task
 from celery.signals import task_failure, task_prerun, task_success, worker_process_init
+from faster_whisper import WhisperModel
 from loguru import logger
+from pyannote.audio import Pipeline
 
 from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
@@ -35,10 +37,13 @@ from mcr_meeting.app.utils.compute_devices import (
     get_gpu_name,
     is_gpu_available,
 )
+from mcr_meeting.app.utils.load_speech_to_text_model import (
+    load_diarization_pipeline,
+    load_whisper_model,
+)
 from mcr_meeting.evaluation.asr_evaluation_pipeline import ASREvaluationPipeline
 from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionResult
 from mcr_meeting.setup.logger import setup_logging
-from mcr_meeting.worker_utils import load_diarization_pipeline, load_whisper_model
 
 setup_logging()
 
@@ -75,15 +80,15 @@ celery_worker.conf.task_acks_late = True
 
 class WorkerContext(TypedDict):
     device: ComputeDevice
-    model: Any  # type: ignore[explicit-any]
-    diarization_pipeline: Any  # type: ignore[explicit-any]
+    model: WhisperModel | None
+    diarization_pipeline: Pipeline | None
 
 
 context: WorkerContext = {
     "device": ComputeDevice.CPU,
     "model": None,
     "diarization_pipeline": None,
-}  # type: ignore[explicit-any]
+}
 
 
 @worker_process_init.connect
