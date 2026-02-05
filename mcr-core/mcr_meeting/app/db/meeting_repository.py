@@ -44,25 +44,19 @@ def get_meeting_by_id(meeting_id: int) -> Meeting:
     """
     db = get_db_session_ctx()
     meeting = db.get(Meeting, meeting_id)
+    meeting = (
+    db.query(Meeting)
+    .filter(
+        Meeting.id == meeting_id,
+        Meeting.status != MeetingStatus.DELETED
+    )
+    .first()
+)
 
     if meeting is None:
-        raise NotFoundException("Meeting not found: id={meeting_id}")
+        raise NotFoundException(f"Meeting not found: id={meeting_id}")
 
     return meeting
-
-
-def get_meetings_by_user_id(user_id: int) -> list[Meeting]:
-    """
-    Retrieve meetings by user ID from the database.
-
-    Args:
-        user_id (int): The ID of the user whose meetings to retrieve.
-
-    Returns:
-        list[Meeting]: A list of meeting objects belonging to the specified user.
-    """
-    db = get_db_session_ctx()
-    return db.query(Meeting).filter(Meeting.user_id == user_id).all()
 
 
 def update_meeting(updated_meeting: Meeting) -> Meeting:
@@ -108,8 +102,7 @@ def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
         List[Meeting]: Liste des réunions correspondant aux critères.
     """
     db = get_db_session_ctx()
-    query = db.query(Meeting).filter(Meeting.user_id == user_id)
-
+    query = db.query(Meeting).filter(Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED)
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(
@@ -141,11 +134,12 @@ def get_meeting_with_transcriptions(
         .join(Transcription)  # Jointure avec la table Transcription
         .filter(
             Meeting.id == meeting_id,
+            Meeting.status != MeetingStatus.DELETED,
         )
         .first()
     )
     if not meeting:
-        raise NotFoundException("Meeting not found: id={meeting_id}")
+        raise NotFoundException(f"Meeting not found: id={meeting_id}")
     return meeting
 
 
