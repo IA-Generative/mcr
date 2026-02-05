@@ -10,7 +10,6 @@ from loguru import logger
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
-    TranscriptionSegment,
 )
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 from mcr_meeting.app.services.speech_to_text.types import (
@@ -19,7 +18,6 @@ from mcr_meeting.app.services.speech_to_text.types import (
 from mcr_meeting.app.services.speech_to_text.utils import (
     diarize_vad_transcription_segments,
     get_vad_segments_from_diarization,
-    split_audio_on_timestamps,
 )
 
 transcription_settings = WhisperTranscriptionSettings()
@@ -54,44 +52,9 @@ def run_the_code_to_test(
         diarization_result
     )
 
-    vad_transcription_inputs = split_audio_on_timestamps(
+    vad_transcription_segments = pipeline.transcribe_audio(
         pre_processed_audio_bytes, vad_spans
     )
-
-    vad_transcription_segments: List[TranscriptionSegment] = []
-
-    logger.info("Number of diarization chunks: {}", len(diarization_result))
-
-    for idx, chunk in enumerate(vad_transcription_inputs):
-        logger.info(
-            "Transcribing vad chunk: start={}, end={}",
-            chunk.diarization.start,
-            chunk.diarization.end,
-        )
-        chunk_transcription_segments = pipeline.transcribe(
-            chunk.audio, transcription_settings
-        )
-        if not chunk_transcription_segments:
-            logger.info(
-                "No transcription for this chunk: start: {} - end: {}.",
-                chunk.diarization.start,
-                chunk.diarization.end,
-            )
-            continue
-        logger.info(
-            "Number of transcription segments in one chunk: {}",
-            len(chunk_transcription_segments),
-        )
-
-        for segment in chunk_transcription_segments:
-            vad_transcription_segments.append(
-                TranscriptionSegment(
-                    id=idx,
-                    start=segment.start + chunk.diarization.start,
-                    end=segment.end + chunk.diarization.start,
-                    text=segment.text,
-                )
-            )
 
     transcription_segments = diarize_vad_transcription_segments(
         vad_transcription_segments, diarization_result
