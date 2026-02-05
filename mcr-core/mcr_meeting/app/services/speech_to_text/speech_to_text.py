@@ -23,7 +23,7 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     normalize_audio_bytes_to_wav_bytes,
 )
 from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
-from mcr_meeting.app.services.speech_to_text.transcription_utils import (
+from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
 )
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment

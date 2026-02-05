@@ -27,7 +27,7 @@ from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
 from mcr_meeting.app.services.speech_to_text.speech_to_text import (
     SpeechToTextPipeline,
 )
-from mcr_meeting.app.services.speech_to_text.transcription_utils import (
+from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
 )
 from mcr_meeting.evaluation.eval_types import (
