@@ -6,6 +6,7 @@ from io import BytesIO
 from typing import List
 
 import numpy as np
+from faster_whisper import WhisperModel
 from loguru import logger
 from numpy.typing import NDArray
 
@@ -153,9 +154,12 @@ class SpeechToTextPipeline:
         """
         vad_transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
 
-        vad_transcription_segments: List[TranscriptionSegment] = []
+        logger.debug(
+            "Number of transcription inputs: {}", len(vad_transcription_inputs)
+        )
 
-        logger.debug("Number of transcription inputs: {}", len(vad_transcription_inputs))
+        model = set_model(model)
+        vad_transcription_segments: List[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(vad_transcription_inputs):
             logger.debug(
