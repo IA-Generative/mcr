@@ -33,7 +33,13 @@
     "links": {
       "user-guide": "Guide utilisateur",
       "sign-in": "Se connecter",
-      "sign-out": "Se déconnecter"
+      "sign-out": "Se déconnecter",
+      "mirai-services": {
+        "main-button": "Mes Services MIrAI",
+        "chat": "Chat",
+        "resumer": "Résumer",
+        "ocr": "OCR"
+      }
     },
     "main-menu": {
       "meetings": "Liste des réunions",
