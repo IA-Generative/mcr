@@ -111,7 +111,7 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
         context["device"] = ComputeDevice.CPU
 
     context["model"] = load_whisper_model(context["device"])
-    context["diarization_pipeline"] = load_diarization_pipeline()
+    context["diarization_pipeline"] = load_diarization_pipeline(context["device"])
 
     logger.info("======== Celery worker processes initialization done =========")
 
