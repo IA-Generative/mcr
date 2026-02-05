@@ -221,8 +221,6 @@ jobs:
         with:
           pytest-xml-coverage-path: mcr-core/coverage.xml
           title: mcr-core coverage
-          hide-report: true
-          report-only-changed-files: true
 
   mcr-frontend-ci:
     needs: filter-out-unmodified-services
