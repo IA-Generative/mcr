@@ -108,6 +108,7 @@ module = [
     "pyannote.*",
     "soundfile",
     "docxtpl.*",
+    "faster_whisper",
 ]
 ignore_missing_imports = true
 
