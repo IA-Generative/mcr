@@ -200,7 +200,7 @@
         "computing-estimation": "Calcul en cours...",
         "duration": {
           "less-than": "Moins de {formattedTime}",
-          "more-than-24h": "Plus de 24h"
+          "more-than-24h": "Plus de 24 h"
         }
       },
       "bot-connecting": {
