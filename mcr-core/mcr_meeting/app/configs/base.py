@@ -282,3 +282,35 @@ class SentrySettings(BaseSettings):
     )
     SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
     TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
+
+
+class TranscriptionApiSettings(BaseSettings):
+    """
+    Configuration settings for API-based transcription and diarization services
+    """
+
+    model_config = SettingsConfigDict(case_sensitive=True)
+
+    # Transcription API (OpenAI-compatible)
+    TRANSCRIPTION_API_BASE_URL: str = Field(
+        description="Base URL for OpenAI-compatible transcription API"
+    )
+    TRANSCRIPTION_API_KEY: str = Field(description="API key for transcription service")
+    TRANSCRIPTION_API_MODEL: str = Field(
+        default="whisper-1", description="Model name for transcription API"
+    )
+
+    # Diarization API (custom endpoint)
+    DIARIZATION_API_BASE_URL: str = Field(
+        description="Base URL for diarization API endpoint"
+    )
+    DIARIZATION_API_KEY: str = Field(description="API key for diarization service")
+
+    # Shared settings
+    API_LANGUAGE: str = Field(
+        default="fr", description="Language code for transcription"
+    )
+    API_TIMEOUT: Optional[float] = Field(
+        default=None,
+        description="API request timeout in seconds, None means no timeout",
+    )

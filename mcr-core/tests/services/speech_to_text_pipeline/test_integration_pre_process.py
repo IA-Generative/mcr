@@ -7,6 +7,7 @@ import pytest
 import soundfile as sf
 
 from mcr_meeting.app.configs.base import AudioSettings
+from mcr_meeting.app.services.feature_flag_service import FeatureFlag
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
 # Note: Fixtures mock_feature_flag_client and create_audio_buffer
@@ -35,7 +36,7 @@ def test_integration_pre_process(
     - audio_format: mp3, mp4, m4a, wav, mov
     """
     mock_feature_flag_client = create_mock_feature_flag_client(
-        "audio_noise_filtering", enabled=feature_flag_enabled
+        FeatureFlag.AUDIO_NOISE_FILTERING, enabled=feature_flag_enabled
     )
     mock_get_feature_flag_client.return_value = mock_feature_flag_client
     audio_buffer = create_audio_buffer(audio_format)
@@ -46,7 +47,7 @@ def test_integration_pre_process(
     # Verify the feature flag was checked
     mock_feature_flag_client.is_enabled.assert_called_once_with("audio_noise_filtering")
 
-    if mock_feature_flag_client.is_enabled("audio_noise_filtering"):
+    if mock_feature_flag_client.is_enabled(FeatureFlag.AUDIO_NOISE_FILTERING):
         assert feature_flag_enabled is True
     else:
         assert feature_flag_enabled is False

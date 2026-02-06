@@ -37,7 +37,11 @@ def get_vad_segments_from_diarization(
     merged_segments = [vad_segments[0]]
     for current in vad_segments[1:]:
         previous = merged_segments[-1]
-        if current.start - previous.end <= vad_settings.MAX_SILENCE_GAP:
+        # Only merge if same speaker and within silence gap (not overlapping)
+        if (
+            previous.speaker == current.speaker
+            and 0 < current.start - previous.end <= vad_settings.MAX_SILENCE_GAP
+        ):
             merged_segments[-1] = DiarizationSegment(
                 start=previous.start,
                 end=max(previous.end, current.end),
