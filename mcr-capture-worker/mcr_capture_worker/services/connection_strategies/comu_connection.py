@@ -32,16 +32,16 @@ class ComuConnectionStrategy(ConnectionStrategy):
         self, page: Page, meeting: IMeetingWithPlatformAndPassword
     ) -> None:
         await page.goto(self.BASE_URL)
-        await page.get_by_label("Meeting ID or URI").fill(
+        await page.locator('input[name="cma_join_meeting_id_uri"]').fill(
             meeting.meeting_platform_id,
         )
-        await page.get_by_label("Passcode").fill(
+        await page.locator('input[name="cma_join_meeting_passcode"]').fill(
             meeting.meeting_password,
         )
         await page.get_by_role("button", name="Join meeting").click()
 
     async def set_bot_name(self, page: Page, meeting: Meeting) -> None:
-        await page.get_by_label("Enter your name").fill(
+        await page.locator('input[name="cma_display_name_input"]').fill(
             self.get_agent_name(meeting),
         )
         await page.get_by_role("button", name="Set display name").click()
