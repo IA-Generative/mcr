@@ -187,7 +187,7 @@
       "transcription-in-progress": {
         "title": "Votre transcription est en cours de génération",
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
-        "wait-message": "Temps de traitement estimé"
+        "wait-message": "Temps de traitement estimé :"
       },
       "transcription-pending": {
         "title": "Votre transcription est dans la file d'attente :",

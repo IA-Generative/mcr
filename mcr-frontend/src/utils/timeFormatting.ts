@@ -13,8 +13,8 @@ export function formatDurationMinutes(durationMinutes: number | undefined): stri
   }
 
   const parts: string[] = [];
-  if (hours > 0) parts.push(`${hours}h`);
-  if (minutes > 0) parts.push(`${minutes}min`);
+  if (hours > 0) parts.push(`${hours} h`);
+  if (minutes > 0) parts.push(`${minutes} min`);
 
   const formattedTime = parts.join(' ');
 
