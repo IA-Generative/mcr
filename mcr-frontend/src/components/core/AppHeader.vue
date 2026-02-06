@@ -15,6 +15,10 @@
         class="max-sm:self-end"
         :buttons="[
           {
+            label: $t('header.links.mirai-services.portal'),
+            onClick: () => redirectTo('https://mirai.interieur.gouv.fr/'),
+          },
+          {
             label: $t('header.links.mirai-services.chat'),
             onClick: () => redirectTo('https://chat.mirai.interieur.gouv.fr/'),
           },
