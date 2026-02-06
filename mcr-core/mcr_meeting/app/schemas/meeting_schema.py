@@ -188,7 +188,10 @@ def validate_comu_meeting(values: MeetingBase) -> None:
     elif (values.meeting_password is not None) and (
         values.meeting_platform_id is not None
     ):
-        if not values.meeting_password.isdigit() or len(values.meeting_password) != 6:
+        if (
+                not values.meeting_password.isdigit()
+                or not 6 <= len(values.meeting_password) <= 8
+        ):
             raise ValueError(
                 f"Invalid password format for platform {values.name_platform}"
             )
