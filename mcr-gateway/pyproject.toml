@@ -14,6 +14,7 @@ dependencies = [
     "pydantic-settings==2.11.0",
     "python-keycloak==5.8.1",
     "loguru>=0.7.3",
+    "websockets>=12.0",
 ]
 
 [tool.mypy]

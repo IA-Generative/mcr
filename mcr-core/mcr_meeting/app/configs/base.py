@@ -222,6 +222,7 @@ class ApiSettings(BaseSettings):
     FEATURE_FLAG_API_PREFIX: str = "/api/feature-flag"
     MEETING_API_PREFIX: str = "/api/meetings"
     TRANSCRIPTION_API_PREFIX: str = "/api/transcription"
+    NOTIFICATION_API_PREFIX: str = "/api/notifications"
 
 
 class CelerySettings(BaseSettings):
@@ -282,3 +283,20 @@ class SentrySettings(BaseSettings):
     )
     SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
     TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
+
+
+class NATSSettings(BaseSettings):
+    """Configuration settings for NATS message broker"""
+
+    model_config = SettingsConfigDict(case_sensitive=True)
+
+    NATS_URL: str = Field(
+        default="nats://host.docker.internal:4222", description="NATS server URL"
+    )
+    NATS_SUBJECT_PREFIX: str = Field(
+        default="notifications.mcr", description="Subject prefix for notifications"
+    )
+    NATS_STREAM: str = Field(default="NOTIF", description="JetStream stream name")
+    NATS_CONSUMER: str = Field(
+        default="mcr-consumer", description="Consumer name for this application"
+    )

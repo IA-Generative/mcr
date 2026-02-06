@@ -1532,6 +1532,7 @@ api = [
     { name = "docxtpl" },
     { name = "dotenv" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "nats-py" },
     { name = "python-docx" },
     { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "starlette" },
@@ -1607,6 +1608,7 @@ requires-dist = [
     { name = "llvmlite", marker = "extra == 'worker'", specifier = ">=0.44.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "mypy-boto3-s3", specifier = ">=1.40.26" },
+    { name = "nats-py", marker = "extra == 'api'", specifier = "==2.7.2" },
     { name = "numba", marker = "extra == 'worker'", specifier = ">=0.61.0" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "onnxruntime", marker = "extra == 'worker'", specifier = "==1.21.0" },
@@ -1824,6 +1826,12 @@ sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
 ]
+
+[[package]]
+name = "nats-py"
+version = "2.7.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a4/30/16d3c830715d5b6e48e323a53db6796525a725bcf71a83b97991f8cc6866/nats-py-2.7.2.tar.gz", hash = "sha256:0c97b4a57bed0ef1ff9ae6c19bc115ec7ca8ede5ab3e001fd00a377056a547cf", size = 98698, upload-time = "2024-02-27T17:22:23.316Z" }
 
 [[package]]
 name = "nest-asyncio"

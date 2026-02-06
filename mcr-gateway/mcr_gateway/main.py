@@ -6,6 +6,7 @@ from mcr_gateway.app.api import (
     lookup_router,
     meeting_multipart_router,
     meeting_router,
+    notification_router,
     transcription_router,
 )
 from mcr_gateway.setup.logger import setup_logging
@@ -32,6 +33,7 @@ app.include_router(meeting_router.router, prefix="/api")
 app.include_router(lookup_router.router, prefix="/api")
 app.include_router(transcription_router.router, prefix="/api")
 app.include_router(meeting_multipart_router.router, prefix="/api")
+app.include_router(notification_router.router, prefix="/api")
 if __name__ == "__main__":
     import uvicorn
 

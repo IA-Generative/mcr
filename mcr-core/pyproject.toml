@@ -21,14 +21,15 @@ dependencies = [
 
 [project.optional-dependencies]
 api = [
+    "alembic==1.16.4",
     "docxtpl>=0.20.2",
-    "python-docx==1.1.2",
+    "dotenv==0.9.9",
     "fastapi[standard]==0.116.1",
+    "nats-py==2.7.2",
+    "python-docx==1.1.2",
+    "sentry-sdk[fastapi]>=2.34.1",
     "starlette",
     "uvicorn==0.30.6",
-    "sentry-sdk[fastapi]>=2.34.1",
-    "alembic==1.16.4",
-    "dotenv==0.9.9",
 ]
 worker = [
     "pandas>=2.3.1",
