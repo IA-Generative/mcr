@@ -31,6 +31,7 @@ class RecordMeetingStateMachine(StateMachine):
     TRANSCRIPTION_FAILED = State(MeetingStatus.TRANSCRIPTION_FAILED)
     REPORT_PENDING = State(MeetingStatus.REPORT_PENDING)
     REPORT_DONE = State(MeetingStatus.REPORT_DONE)
+    DELETED = State(MeetingStatus.DELETED, final=True)
 
     # -------------------------------------------------------------------------
     # TRANSITIONS / EVENTS
@@ -52,7 +53,9 @@ class RecordMeetingStateMachine(StateMachine):
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
     START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
     COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
-
+    # Ignore mypy warning: from_.any() is dynamic DSL, not typed
+    DELETE = DELETED.from_.any()  # type: ignore
+    
     # -------------------------------------------------------------------------
     # AFTER HOOKS (SIDE EFFECTS)
     # -------------------------------------------------------------------------
@@ -87,6 +90,11 @@ class RecordMeetingStateMachine(StateMachine):
         after_complete_report_handler(
             self.meeting, self.current_state_value, report_response
         )
+    
+    def after_DELETE(self) -> None:
+        if self.meeting is None:
+            return
+        update_status_handler(self.meeting, self.current_state_value)
 
     def after_transition(self) -> None:
         if self.meeting is None:
