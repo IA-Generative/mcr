@@ -17,6 +17,7 @@ dependencies = [
     "mypy_boto3_s3>=1.40.26",
     "python-statemachine>=2.5.0",
     "unleashclient>=6.3.0",
+    "jinja2>=3.1.6",
 ]
 
 [project.optional-dependencies]
