@@ -55,7 +55,7 @@ class RecordMeetingStateMachine(StateMachine):
     COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
-    
+
     # -------------------------------------------------------------------------
     # AFTER HOOKS (SIDE EFFECTS)
     # -------------------------------------------------------------------------
@@ -90,7 +90,7 @@ class RecordMeetingStateMachine(StateMachine):
         after_complete_report_handler(
             self.meeting, self.current_state_value, report_response
         )
-    
+
     def after_DELETE(self) -> None:
         if self.meeting is None:
             return

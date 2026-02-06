@@ -136,7 +136,7 @@ class VisioMeetingStateMachine(StateMachine):
         after_complete_report_handler(
             self.meeting, self.current_state_value, report_response
         )
-    
+
     def after_DELETE(self) -> None:
         if self.meeting is None:
             return

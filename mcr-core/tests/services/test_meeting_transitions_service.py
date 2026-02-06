@@ -184,8 +184,8 @@ def test_delete(
         user_keycloak_uuid=user_keycloak_uuid,
     )
     assert result.status == MeetingStatus.DELETED
-    
-    
+
+
 # ---------------------------------------------------------------------------
 # Tests – Transcription
 # ---------------------------------------------------------------------------

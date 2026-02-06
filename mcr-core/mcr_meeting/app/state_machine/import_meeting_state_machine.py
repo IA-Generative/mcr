@@ -56,7 +56,7 @@ class ImportMeetingStateMachine(StateMachine):
     COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
-    
+
     # -------------------------------------------------------------------------
     # AFTER HOOKS (SIDE EFFECTS)
     # -------------------------------------------------------------------------
