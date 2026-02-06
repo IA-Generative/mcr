@@ -13,7 +13,7 @@ from mcr_meeting.app.schemas.S3_types import (
 )
 from mcr_meeting.app.services.s3_service import get_audio_object_prefix
 
-from ..conftest import PrefixedTestClient
+from .conftest import PrefixedTestClient
 
 
 def test_init_multipart_upload(

@@ -4,7 +4,7 @@ from uuid import uuid4
 from mcr_meeting.app.models import Role, User
 from mcr_meeting.app.schemas.user_schema import UserCreate
 
-from ..conftest import PrefixedTestClient
+from .conftest import PrefixedTestClient
 
 
 def test_get_or_create_by_keycloak_get_action(

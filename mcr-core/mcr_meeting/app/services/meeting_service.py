@@ -15,7 +15,6 @@ from mcr_meeting.app.services.user_service import get_user_by_keycloak_uuid_serv
 from mcr_meeting.app.utils.db_utils import update_model
 
 from ..db.meeting_repository import (
-    delete_meeting,
     get_meeting_by_id,
     get_meeting_with_transcriptions,
     get_meetings,
@@ -109,26 +108,6 @@ def update_meeting_service(
 def update_meeting_status(meeting: Meeting, meeting_status: MeetingStatus) -> Meeting:
     meeting.status = meeting_status
     return update_meeting(meeting)
-
-
-def delete_meeting_service(
-    meeting_id: int,
-    current_user_keycloak_uuid: UUID4,
-) -> bool:
-    """
-    Service to delete a meeting by its ID.
-
-    Args:
-        meeting_id (int): The ID of the meeting to delete.
-    """
-    with UnitOfWork():
-        # Will fail if current_user ins't the owner of the meeting
-        # The presence of this comment is a sign that this check should be done elsewhere
-        get_meeting_service(
-            meeting_id=meeting_id, current_user_keycloak_uuid=current_user_keycloak_uuid
-        )
-        delete_meeting(meeting_id)
-        return True
 
 
 def get_meetings_service(

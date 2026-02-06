@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Any, Dict, List, Optional, Protocol
 
 from pydantic import BaseModel, Field
 
@@ -22,48 +21,15 @@ class SpeakerTranscription(BaseModel):
     )
 
 
-class TranscriptionWord(BaseModel):
-    text: str = Field(description="Transcribe text")
-    start: float = Field(
-        description="Relative start time (in ms) of the segment int the audio file"
-    )
-    end: float = Field(
-        description="Relative end time (in ms) of the segment int the audio file"
-    )
-    confidence: float
-
-
 class TranscriptionSegment(BaseModel):
     id: int
     start: float
     end: float
     text: str
-    speaker: Optional[str] = None
 
 
-class TranscriptionResponse(BaseModel):  # type: ignore[explicit-any]
-    text: str
-    segments: List[TranscriptionSegment]
-    language: Optional[str] = "fr"
-    speech_activity: Optional[List[Dict[str, Any]]] = None  # type: ignore[explicit-any]
-
-
-class FullTranscription(BaseModel):
-    """
-    Model use to retrieve all transcription saved in database for a specific
-    meeting and merge all consecutive transcription linked to a same speaker.
-    """
-
-    meeting_id: int = Field(description="meeting id")
-    speaker: str = Field(description="speaker id or label")
-    transcription: str = Field(description="transcription")
-
-
-class TranscriptionPipeline(Protocol):
-    def __call__(
-        self,
-        meeting_id: int,
-    ) -> Optional[List[SpeakerTranscription]]: ...
+class DiarizedTranscriptionSegment(TranscriptionSegment):
+    speaker: str
 
 
 class TranscriptionDocxResult(BaseModel):

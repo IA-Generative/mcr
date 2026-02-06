@@ -33,7 +33,8 @@
     "links": {
       "user-guide": "Guide utilisateur",
       "sign-in": "Se connecter",
-      "sign-out": "Se déconnecter"
+      "sign-out": "Se déconnecter",
+      "useful-tips": "Conseils pratiques"
     },
     "main-menu": {
       "meetings": "Liste des réunions",
@@ -186,7 +187,7 @@
       "transcription-in-progress": {
         "title": "Votre transcription est en cours de génération",
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
-        "wait-message": "Temps de traitement estimé"
+        "wait-message": "Temps de traitement estimé :"
       },
       "transcription-pending": {
         "title": "Votre transcription est dans la file d'attente :",
@@ -199,7 +200,7 @@
         "computing-estimation": "Calcul en cours...",
         "duration": {
           "less-than": "Moins de {formattedTime}",
-          "more-than-24h": "Plus de 24h"
+          "more-than-24h": "Plus de 24 h"
         }
       },
       "bot-connecting": {

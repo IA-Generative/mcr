@@ -12,7 +12,10 @@ from pyannote.metrics.diarization import (
     DiarizationErrorRate,
 )
 
-from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
+    SpeakerTranscription,
+)
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
@@ -36,7 +39,6 @@ from mcr_meeting.evaluation.eval_types import (
     EvaluationSummary,
     TranscriptionMetrics,
     TranscriptionResult,
-    TranscriptionSegment,
 )
 
 
@@ -94,7 +96,7 @@ class AudioFileProcessor:
         transcription = merge_consecutive_segments_per_speaker(raw_segments)
 
         segments = [
-            TranscriptionSegment(
+            DiarizedTranscriptionSegment(
                 id=seg.transcription_index,
                 start=seg.start,
                 end=seg.end,
@@ -131,8 +133,8 @@ class MetricsCalculator:
 
     @staticmethod
     def calculate_diarization_metrics(
-        reference_segments: List[TranscriptionSegment],
-        hypothesis_segments: List[TranscriptionSegment],
+        reference_segments: List[DiarizedTranscriptionSegment],
+        hypothesis_segments: List[DiarizedTranscriptionSegment],
     ) -> DiarizationMetrics:
         """Calculate Diarization Error Rate (DER)"""
 
