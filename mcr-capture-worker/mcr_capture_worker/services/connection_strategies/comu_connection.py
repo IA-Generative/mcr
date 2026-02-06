@@ -32,33 +32,30 @@ class ComuConnectionStrategy(ConnectionStrategy):
         self, page: Page, meeting: IMeetingWithPlatformAndPassword
     ) -> None:
         await page.goto(self.BASE_URL)
-        await page.fill(
-            "xpath=/html/body/div/main/section/form/div/input",
+        await page.get_by_label("Meeting ID or URI").fill(
             meeting.meeting_platform_id,
         )
-        await page.fill(
-            "xpath=/html/body/div/main/section/form/input[3]",
+        await page.get_by_label("Passcode").fill(
             meeting.meeting_password,
         )
-        await page.click("xpath=/html/body/div/main/section/form/button")
+        await page.get_by_role("button", name="Join meeting").click()
 
     async def set_bot_name(self, page: Page, meeting: Meeting) -> None:
-        await page.fill(
-            "xpath=/html/body/div/section/section/section[1]/form/input",
+        await page.get_by_label("Enter your name").fill(
             self.get_agent_name(meeting),
         )
-        await page.click("xpath=/html/body/div/section/section/section[1]/form/button")
+        await page.get_by_role("button", name="Set display name").click()
 
     async def join_waiting_room_and_set_devices(self, page: Page) -> None:
         await self.set_camera_and_mic_off(page)
         await self.join_waiting_room(page)
 
     async def join_waiting_room(self, page: Page) -> None:
-        await page.click("xpath=/html/body/div/section/section/section/button[1]")
+        await page.get_by_role("button", name="Join meeting").click()
 
     async def set_camera_and_mic_off(self, page: Page) -> None:
-        await page.click('//*[@id="meeting_app"]/section[1]/section/section/button[2]')
-        await page.click('//*[@id="meeting_app"]/section[1]/section/section/button[3]')
+        await page.get_by_role("button", name="Video enabled").click()
+        await page.get_by_role("button", name="Microphone enabled").click()
 
     async def load_recording_script(self, page: Page) -> None:
         await page.add_init_script(
