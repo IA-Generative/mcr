@@ -168,6 +168,24 @@ def test_fail_capture(
     assert result.status == MeetingStatus.CAPTURE_FAILED
 
 
+def test_delete(
+    orchestrator_user: User,
+    user_keycloak_uuid: UUID,
+) -> None:
+    """Test meeting status to DELETED."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.CAPTURE_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    result = mts.delete(
+        meeting_id=meeting.id,
+        user_keycloak_uuid=user_keycloak_uuid,
+    )
+    assert result.status == MeetingStatus.DELETED
+
+
 # ---------------------------------------------------------------------------
 # Tests – Transcription
 # ---------------------------------------------------------------------------

@@ -91,6 +91,13 @@ def complete_transcription(meeting_id: int) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
 
 
+def delete(meeting_id: int, user_keycloak_uuid: Optional[UUID4] = None) -> Meeting:
+    meeting = get_meeting_service(
+        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
+    )
+    return _apply_transition(meeting, MeetingEvent.DELETE)
+
+
 def start_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid

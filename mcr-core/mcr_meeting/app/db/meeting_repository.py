@@ -45,13 +45,10 @@ def get_meeting_by_id(meeting_id: int) -> Meeting:
     db = get_db_session_ctx()
     meeting = db.get(Meeting, meeting_id)
     meeting = (
-    db.query(Meeting)
-    .filter(
-        Meeting.id == meeting_id,
-        Meeting.status != MeetingStatus.DELETED
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED)
+        .first()
     )
-    .first()
-)
 
     if meeting is None:
         raise NotFoundException(f"Meeting not found: id={meeting_id}")
@@ -76,20 +73,6 @@ def update_meeting(updated_meeting: Meeting) -> Meeting:
     return updated_meeting
 
 
-def delete_meeting(meeting_id: int) -> None:
-    """
-    Delete a meeting from the database by its ID.
-
-    Args:
-        meeting_id (int): The ID of the meeting to delete.
-    """
-    db = get_db_session_ctx()
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise NotFoundException(f"Meeting not found with id {meeting_id}")
-    db.delete(meeting)
-
-
 def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
     """
     Récupère une liste de réunions filtrées depuis la base de données.
@@ -102,7 +85,9 @@ def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
         List[Meeting]: Liste des réunions correspondant aux critères.
     """
     db = get_db_session_ctx()
-    query = db.query(Meeting).filter(Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED)
+    query = db.query(Meeting).filter(
+        Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED
+    )
     if search:
         search_pattern = f"%{search}%"
         query = query.filter(

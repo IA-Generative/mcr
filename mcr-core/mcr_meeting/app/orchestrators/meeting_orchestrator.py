@@ -16,7 +16,6 @@ from mcr_meeting.app.services.audio_upload_service import (
 )
 from mcr_meeting.app.services.meeting_service import (
     create_meeting_service,
-    delete_meeting_service,
     get_meeting_service,
     get_meetings_service,
     update_meeting_service,
@@ -82,16 +81,6 @@ def update_meeting(
     return update_meeting_service(
         meeting_id=meeting_id,
         meeting_update=meeting_update,
-        current_user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-
-def delete_meeting(
-    meeting_id: int,
-    user_keycloak_uuid: UUID,
-) -> None:
-    delete_meeting_service(
-        meeting_id=meeting_id,
         current_user_keycloak_uuid=user_keycloak_uuid,
     )
 
