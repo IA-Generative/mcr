@@ -5,7 +5,6 @@ import pytest
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
-    SpeakerTranscription,
 )
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
@@ -146,9 +145,7 @@ def test_integration_post_process(
 
     # Verify transcription_index is sequential
     for i, segment in enumerate(merged_segments):
-        assert segment.id == i, (
-            f"Expected transcription_index {i}, got {segment.id}"
-        )
+        assert segment.id == i, f"Expected transcription_index {i}, got {segment.id}"
 
 
 def test_integration_post_process_empty_segments():

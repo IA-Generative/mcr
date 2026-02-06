@@ -30,6 +30,10 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import (
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
 )
+from mcr_meeting.app.services.speech_to_text.utils.models import (
+    get_diarization_pipeline_from_worker_context,
+    get_transcription_model_from_worker_context,
+)
 from mcr_meeting.evaluation.eval_types import (
     DiarizationMetrics,
     EvaluationInput,
@@ -75,7 +79,11 @@ class AudioFileProcessor:
             logger.info("Noise filtering disabled, skipping filtering step")
             processed_bytes = normalized_bytes
 
-        raw_transcription = self.speech_to_text_pipeline.run(processed_bytes)
+        transcription_model = get_transcription_model_from_worker_context()
+        diarization_pipeline = get_diarization_pipeline_from_worker_context()
+        raw_transcription = self.speech_to_text_pipeline.run(
+            processed_bytes, transcription_model, diarization_pipeline
+        )
 
         transcription = merge_consecutive_segments_per_speaker(raw_transcription)
 

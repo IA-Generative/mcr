@@ -20,6 +20,10 @@ from mcr_meeting.app.services.s3_service import (
 from mcr_meeting.app.services.speech_to_text.speech_to_text import (
     SpeechToTextPipeline,
 )
+from mcr_meeting.app.services.speech_to_text.utils.models import (
+    get_diarization_pipeline_from_worker_context,
+    get_transcription_model_from_worker_context,
+)
 
 speech_to_text_pipeline = SpeechToTextPipeline()
 
@@ -99,7 +103,13 @@ def transcribe_meeting(
                 f"Could not fetch audio bytes for meeting {meeting_id}"
             )
 
-        diarized_transcription_segments = speech_to_text_pipeline.run(full_audio_bytes)
+        diarization_pipeline = get_diarization_pipeline_from_worker_context()
+        transcription_model = get_transcription_model_from_worker_context()
+        diarized_transcription_segments = speech_to_text_pipeline.run(
+            full_audio_bytes,
+            transcription_model,
+            diarization_pipeline,
+        )
 
         # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
         speaker_transcription_segments = [

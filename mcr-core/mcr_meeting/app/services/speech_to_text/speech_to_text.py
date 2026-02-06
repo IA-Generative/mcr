@@ -6,11 +6,12 @@ from io import BytesIO
 from typing import List
 
 import numpy as np
+from faster_whisper import WhisperModel
 from loguru import logger
 from numpy.typing import NDArray
+from pyannote.audio import Pipeline
 
 from mcr_meeting.app.configs.base import (
-    PyannoteDiarizationParameters,
     WhisperTranscriptionSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
@@ -31,13 +32,10 @@ from mcr_meeting.app.services.speech_to_text.utils import (
     convert_to_french_speaker,
     diarize_vad_transcription_segments,
     get_vad_segments_from_diarization,
-    set_diarization_pipeline,
-    set_model,
     split_audio_on_timestamps,
 )
 
 transcription_settings = WhisperTranscriptionSettings()
-diarization_settings = PyannoteDiarizationParameters()
 
 
 class SpeechToTextPipeline:
@@ -94,24 +92,21 @@ class SpeechToTextPipeline:
     def transcribe(  # type: ignore[explicit-any]
         self,
         audio: NDArray[np.float32],
-        transcription_settings: WhisperTranscriptionSettings,
+        transcription_model: WhisperModel,
     ) -> List[TranscriptionSegment]:
         """Transcribe audio bytes to text with speaker diarization
 
         Args:
             audio_bytes (bytes): The input audio bytes.
-            transcription_settings (TranscriptionSettings): Settings for the transcription process.
-            model (Optional[Any], optional): Pre-loaded transcription model. Defaults to None.
+            transcription_model (WhisperModel): The loaded Whisper transcription model.
 
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
         """
-        model = set_model()
-
         audio = audio.astype(np.float32, copy=False)
         logger.info("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
 
-        segments, info = model.transcribe(
+        segments, info = transcription_model.transcribe(
             audio,
             language=transcription_settings.language,
             word_timestamps=transcription_settings.word_timestamps,
@@ -141,17 +136,17 @@ class SpeechToTextPipeline:
     def diarize(
         self,
         audio_bytes: BytesIO,
+        diarization_pipeline: Pipeline,
     ) -> List[DiarizationSegment]:
         """Perform speaker diarization on audio bytes
 
         Args:
             audio_bytes (BytesIO): The input audio bytes.
+            diarization_pipeline (Pipeline): The pyannote audio pipeline for speaker diarization.
 
         Returns:
             Any: The diarization result from the pyannote pipeline.
         """
-        diarization_pipeline = set_diarization_pipeline()
-
         with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
             tmp_audio.write(audio_bytes.getvalue())
             tmp_audio_path = tmp_audio.name
@@ -174,6 +169,8 @@ class SpeechToTextPipeline:
     def run(  # type: ignore[explicit-any]
         self,
         audio_bytes: BytesIO,
+        transcription_model: WhisperModel,
+        diarization_pipeline: Pipeline,
     ) -> List[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
@@ -181,10 +178,9 @@ class SpeechToTextPipeline:
 
         pre_processed_audio_bytes = self.pre_process(audio_bytes)
 
-        logger.info("Running diarization with {}", diarization_settings)
-
         diarization_result = self.diarize(
             pre_processed_audio_bytes,
+            diarization_pipeline,
         )
 
         if not diarization_result:
@@ -210,7 +206,8 @@ class SpeechToTextPipeline:
                 chunk.diarization.end,
             )
             chunk_transcription_segments = self.transcribe(
-                chunk.audio, transcription_settings
+                chunk.audio,
+                transcription_model,
             )
             if not chunk_transcription_segments:
                 logger.info(
