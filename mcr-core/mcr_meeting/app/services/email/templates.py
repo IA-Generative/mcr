@@ -1,25 +1,24 @@
+from pathlib import Path
+
+from jinja2 import Environment, FileSystemLoader
+
+templates_dir = Path(__file__).parent / "registry"
+templates_env = Environment(
+    loader=FileSystemLoader(templates_dir),
+)
+
+
 def get_transcription_generation_success_email_template(
     meeting_name: str,
     meeting_link: str,
 ) -> str:
-    return f"""
-            <p>Bonjour,</p>
-            <p>La transcription de votre réunion {meeting_name} est prête.</p>
-            <p><a href="{meeting_link}">Accéder à la page de la réunion</a> pour la télécharger.</p>
-            <p>Merci d'utiliser notre service.</p>
-            <p>Cordialement,</p>
-            <p>L'équipe MIrAI Compte Rendu</p>
-            """
+    template = templates_env.get_template("transcription_generation_success.html")
+    return template.render(meeting_name=meeting_name, meeting_link=meeting_link)
 
 
 def get_report_generation_success_email_template(
     meeting_name: str,
     meeting_link: str,
 ) -> str:
-    return f"""
-            <p>Bonjour,</p>
-            <p>Le relevé de décisions de votre réunion {meeting_name} est prêt.</p>
-            <p><a href="{meeting_link}">Accéder à la page de la réunion</a> pour le télécharger.</p>
-            <p>Merci d'utiliser notre service.</p>
-            <p>Cordialement,</p>
-            <p>L'équipe MIrAI Compte Rendu</p>"""
+    template = templates_env.get_template("report_generation_success.html")
+    return template.render(meeting_name=meeting_name, meeting_link=meeting_link)
