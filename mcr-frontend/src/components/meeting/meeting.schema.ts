@@ -91,7 +91,8 @@ export const AddMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup.ob
     .string()
     .nullable()
     .default(null)
-    .length(6)
+    .min(6)
+    .max(8)
     .label(t('meeting.form.fields.external-password')),
   meeting_platform_id: yup
     .string()
