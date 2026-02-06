@@ -1,16 +1,12 @@
 """Test integration for the post process step."""
 
 import pytest
-from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
-    SpeakerTranscription,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import (
-    merge_consecutive_segments_per_speaker,
-)
+from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
 # Note: Fixtures mock_feature_flag_client and create_audio_buffer
 # are automatically imported from conftest.py in this directory
@@ -117,31 +113,11 @@ def test_integration_post_process(
     """
 
     transcription_with_speech = request.getfixturevalue(fixture_name)
-    meeting_id = 1
+    speech_to_text_pipeline = SpeechToTextPipeline()
 
-    ### ===== POST PROCESS FLOW ===== ###
-    if not transcription_with_speech:
-        logger.warning("No transcription segments found for meeting {}", meeting_id)
-        raise InvalidAudioFileError(
-            f"No transcription segments found for meeting {meeting_id}"
-        )
-
-    speaker_transcription_segments = [
-        SpeakerTranscription(
-            meeting_id=meeting_id,
-            transcription_index=segment.id,
-            speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
-            transcription=segment.text,
-            start=segment.start,
-            end=segment.end,
-        )
-        for segment in transcription_with_speech
-    ]
-
-    merged_segments = merge_consecutive_segments_per_speaker(
-        speaker_transcription_segments
+    merged_segments = speech_to_text_pipeline.post_process(
+        transcription_with_speech,
     )
-    ### ===== END POST PROCESS FLOW ===== ###
 
     # Verify the result is a list
     assert isinstance(merged_segments, list)
@@ -151,9 +127,9 @@ def test_integration_post_process(
         f"Expected {expected_count} merged segments, got {len(merged_segments)}"
     )
 
-    # Verify all items are SpeakerTranscription objects
+    # Verify all items are DiarizedTranscriptionSegment objects
     for segment in merged_segments:
-        assert isinstance(segment, SpeakerTranscription)
+        assert isinstance(segment, DiarizedTranscriptionSegment)
 
     # Verify the first speaker is correct
     assert merged_segments[0].speaker == expected_first_speaker, (
@@ -162,56 +138,26 @@ def test_integration_post_process(
     )
 
     # Verify the first transcription text is correctly merged
-    assert merged_segments[0].transcription == expected_merged_text, (
+    assert merged_segments[0].text == expected_merged_text, (
         f"Expected first transcription to be '{expected_merged_text}', "
-        f"got '{merged_segments[0].transcription}'"
+        f"got '{merged_segments[0].text}'"
     )
 
     # Verify transcription_index is sequential
     for i, segment in enumerate(merged_segments):
-        assert segment.transcription_index == i, (
-            f"Expected transcription_index {i}, got {segment.transcription_index}"
-        )
-
-    # Verify meeting_id is preserved
-    for segment in merged_segments:
-        assert segment.meeting_id == meeting_id, (
-            f"Expected meeting_id {meeting_id}, got {segment.meeting_id}"
-        )
+        assert segment.id == i, f"Expected transcription_index {i}, got {segment.id}"
 
 
 def test_integration_post_process_empty_segments():
     """Test that post-processing raises an error with empty segments."""
 
     transcription_with_speech = []
-    meeting_id = 1
+    speech_to_text_pipeline = SpeechToTextPipeline()
 
     with pytest.raises(InvalidAudioFileError) as exc_info:
-        ### ===== POST PROCESS FLOW ===== ###
-        if not transcription_with_speech:
-            logger.warning("No transcription segments found for meeting {}", meeting_id)
-            raise InvalidAudioFileError(
-                f"No transcription segments found for meeting {meeting_id}"
-            )
-
-        speaker_transcription_segments = [
-            SpeakerTranscription(
-                meeting_id=meeting_id,
-                transcription_index=segment.id,
-                speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
-                transcription=segment.text,
-                start=segment.start,
-                end=segment.end,
-            )
-            for segment in transcription_with_speech
-        ]
-
-        _merged_segments = merge_consecutive_segments_per_speaker(
-            speaker_transcription_segments
+        _merged_segments = speech_to_text_pipeline.post_process(
+            transcription_with_speech,
         )
-        ### ===== END POST PROCESS FLOW ===== ###
 
     # Verify the exception message
-    assert f"No transcription segments found for meeting {meeting_id}" in str(
-        exc_info.value
-    )
+    assert "No transcription segments found" in str(exc_info.value)

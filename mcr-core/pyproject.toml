@@ -106,6 +106,7 @@ module = [
     "jiwer",
     "ffmpeg",
     "pyannote.*",
+    "faster_whisper",
     "soundfile",
     "docxtpl.*",
 ]
