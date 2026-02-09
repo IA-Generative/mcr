@@ -44,7 +44,7 @@ class Chunk(BaseModel):
 
 
 class ParticipantExtraction:
-    def __init__(self):
+    def __init__(self) -> None:
         self.settings = LLMSettings()
         self.chunk_config = ChunkingConfig()
         self.client = instructor.from_openai(
@@ -67,7 +67,7 @@ class ParticipantExtraction:
 
         return participants
 
-    def _initial_extract(self, chunk_text: str) -> List[Participant]:
+    def _initial_extract(self, chunk: Chunk) -> List[Participant]:
         # Use INITIAL_PROMPT_TEMPLATE
         return self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
@@ -75,12 +75,12 @@ class ParticipantExtraction:
             messages=[
                 {
                     "role": "user",
-                    "content": INITIAL_PROMPT_TEMPLATE.format(chunk_text=chunk_text),
+                    "content": INITIAL_PROMPT_TEMPLATE.format(chunk_text=chunk.text),
                 }
             ],
         )
 
-    def _refine(self, current: List[Participant], chunk_text: str) -> List[Participant]:
+    def _refine(self, current: List[Participant], chunk: Chunk) -> List[Participant]:
         # Use REFINE_PROMPT_TEMPLATE
         return self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
@@ -89,7 +89,7 @@ class ParticipantExtraction:
                 {
                     "role": "user",
                     "content": REFINE_PROMPT_TEMPLATE.format(
-                        current_json=current, chunk_text=chunk_text
+                        current_json=current, chunk_text=chunk.text
                     ),
                 }
             ],
