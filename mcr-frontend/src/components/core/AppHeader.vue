@@ -135,6 +135,19 @@ const URL_FORM_FEEDBACK =
   color: #0063cb;
 }
 
+:deep(.fr-accordion__btn[aria-expanded='true']) {
+  background-color: var(--background-open-blue-france);
+  color: var(--background-action-high-blue-france);
+}
+
+:deep(.fr-accordion__btn[aria-expanded='true']:hover) {
+  background-color: var(--background-open-blue-france-hover);
+}
+
+:deep(.fr-accordion__btn[aria-expanded='true']):active {
+  background-color: var(--background-open-blue-france-active);
+}
+
 /* Prevent the displaying of the icon for external links on the left of the buttons */
 :deep(.fr-btn[target='_blank']::after) {
   display: none !important; /* enlève l'icône à droite */
