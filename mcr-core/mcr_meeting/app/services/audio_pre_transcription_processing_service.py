@@ -72,7 +72,6 @@ def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
             f"FFmpeg normalization failed: {stderr_text}"
         ) from e
     except Exception as e:
-        logger.error("Unexpected error during normalization: {}", e)
         raise InvalidAudioFileError(
             f"Unexpected error during normalization: {e}"
         ) from e
@@ -132,7 +131,6 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
             f"FFmpeg noise filtering failed: {stderr_text}"
         ) from e
     except Exception as e:
-        logger.error("Unexpected error during noise filtering: {}", e)
         raise InvalidAudioFileError(
             f"Unexpected error during noise filtering: {e}"
         ) from e
@@ -163,14 +161,9 @@ def download_and_concatenate_s3_audio_chunks_into_bytes(
             audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
             audio_buffer.write(audio_chunk_data.read())
         except Exception as chunk_error:
-            logger.error(
-                "Failed to download audio chunk {}: {}",
-                obj_info.object_name,
-                chunk_error,
-            )
             raise InvalidAudioFileError(
                 f"Failed to download audio chunk {obj_info.object_name}: {chunk_error}"
-            )
+            ) from chunk_error
 
     if chunk_count == 0:
         raise ValueError("No audio chunks found in iterator")
