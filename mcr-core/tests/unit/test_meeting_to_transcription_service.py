@@ -4,7 +4,11 @@ from unittest.mock import Mock, patch
 import pytest
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
-from mcr_meeting.app.services.meeting_to_transcription_service import fetch_audio_bytes
+from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
+from mcr_meeting.app.services.meeting_to_transcription_service import (
+    fetch_audio_bytes,
+    format_segments_for_llm,
+)
 
 
 class TestFetchAudioBytes:
@@ -201,3 +205,66 @@ class TestFetchAudioBytes:
             with pytest.raises(ValueError):
                 fetch_audio_bytes(meeting_id=test_id)
             mock_get_objects_list.assert_called_once_with(prefix=f"{test_id}/")
+
+
+class TestFormatSegmentsForLLM:
+    """Tests for format_segments_for_llm function."""
+
+    def test_should_return_empty_string_when_no_segments(self) -> None:
+        """Checks that format_segments_for_llm returns an empty string when no segments are provided."""
+        segments = []
+        result = format_segments_for_llm(segments)
+        assert result == ""
+
+    def test_should_format_single_segment_correctly(self) -> None:
+        """Checks that format_segments_for_llm formats a single segment correctly."""
+        segments = [
+            SpeakerTranscription(
+                meeting_id=1,
+                speaker="Speaker A",
+                transcription_index=0,
+                transcription="Hello world",
+                start=0.0,
+                end=1.0,
+            )
+        ]
+        result = format_segments_for_llm(segments)
+        assert result == "Speaker A: Hello world"
+
+    def test_should_format_multiple_segments_correctly(self) -> None:
+        """Checks that format_segments_for_llm formats multiple segments correctly."""
+        segments = [
+            SpeakerTranscription(
+                meeting_id=1,
+                speaker="Speaker A",
+                transcription_index=0,
+                transcription="Hello",
+                start=0.0,
+                end=1.0,
+            ),
+            SpeakerTranscription(
+                meeting_id=1,
+                speaker="Speaker B",
+                transcription_index=1,
+                transcription="Hi there",
+                start=1.0,
+                end=2.0,
+            ),
+        ]
+        result = format_segments_for_llm(segments)
+        assert result == "Speaker A: Hello\nSpeaker B: Hi there"
+
+    def test_should_handle_special_characters_in_transcription(self) -> None:
+        """Checks that format_segments_for_llm handles special characters correctly."""
+        segments = [
+            SpeakerTranscription(
+                meeting_id=1,
+                speaker="Speaker A",
+                transcription_index=0,
+                transcription="Hello! How's it going? \n New line test.",
+                start=0.0,
+                end=1.0,
+            )
+        ]
+        result = format_segments_for_llm(segments)
+        assert result == "Speaker A: Hello! How's it going? \n New line test."
