@@ -17,6 +17,9 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
 from mcr_meeting.app.services.s3_service import (
     get_objects_list_from_prefix,
 )
+from mcr_meeting.app.services.speech_to_text.participants_naming import (
+    ParticipantExtraction,
+)
 from mcr_meeting.app.services.speech_to_text.speech_to_text import (
     SpeechToTextPipeline,
 )
@@ -75,6 +78,36 @@ def fetch_audio_bytes(
         )
 
 
+def format_segments_for_llm(segments: List[SpeakerTranscription]) -> str:
+    """Helper to convert segments into a dialogue string."""
+    return "\n".join([f"{seg.speaker}: {seg.transcription}" for seg in segments])
+
+
+def add_participants_to_segments(segments: List[SpeakerTranscription]) -> None:
+    try:
+        # formatting for LLM
+        dialogue_text = format_segments_for_llm(segments)
+
+        extractor = ParticipantExtraction()
+        participants = extractor.extract(dialogue_text)
+
+        logger.info("Found {} participants", len(participants))
+        if not participants:
+            logger.info("No participant found")
+        else:
+            for p in participants:
+                # Logged for this ticket, will be removed later
+                logger.info("--- Participant ---")
+                logger.info("ID: {}", p.speaker_id)
+                logger.info("Name: {}", p.name)
+                logger.info("Role: {}", p.role)
+                logger.info("Confidence: {}", p.confidence)
+                logger.info("Justification: {}", p.association_justification)
+    except Exception as e:
+        logger.warning("Failed to extract participants: {}", e)
+        pass
+
+
 def transcribe_meeting(
     meeting_id: int,
 ) -> List[SpeakerTranscription]:
@@ -113,6 +146,8 @@ def transcribe_meeting(
             )
             for segment in diarized_transcription_segments
         ]
+
+        add_participants_to_segments(speaker_transcription_segments)
 
         return speaker_transcription_segments
 
