@@ -47,19 +47,13 @@ const isBetaEnabled = useFeatureFlag('beta');
 
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
-    label: t('header.links.user-guide'),
-    icon: 'ri-question-line',
-    to: '/fcr-guide-utilisateur.pdf',
-    target: '_blank',
-  },
-  {
     label: t('header.links.useful-tips'),
     to: 'https://mirai.interieur.gouv.fr/outils-mirai/compte-rendu/bonnes-pratiques-fcr/',
     target: '_blank',
   },
   {
     label: t('header.links.sign-out'),
-    icon: 'ri-logout-box-line',
+    icon: 'ri-logout-box-r-line',
     to: '/',
     onClick: () => {
       signOut();
