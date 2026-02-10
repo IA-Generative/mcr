@@ -25,7 +25,7 @@
         :buttons="buttonsDropdown"
         :size="dropdownSize"
         inline-layout-when="never"
-        class="gap-0"
+        class="divide-y border-default-grey"
         equisized
       />
     </div>
