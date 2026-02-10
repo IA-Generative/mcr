@@ -27,7 +27,7 @@ from mcr_meeting.app.orchestrators.transcription_orchestrator import (
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
 )
-from mcr_meeting.app.services.send_email_service import (
+from mcr_meeting.app.services.email.email_service import (
     send_transcription_generation_success_email,
 )
 from mcr_meeting.app.services.transcription_waiting_time_service import (
