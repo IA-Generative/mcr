@@ -1,6 +1,5 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
-import os
 import tempfile
 from io import BytesIO
 from typing import List
@@ -45,7 +44,7 @@ class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        self.dev = os.environ.get("ENV_MODE") == "DEV"
+        pass
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
@@ -95,13 +94,13 @@ class SpeechToTextPipeline:
     def transcribe_audio_chunk(  # type: ignore[explicit-any]
         self,
         audio: NDArray[np.float32],
-        model: WhisperModel,
+        transcription_model: WhisperModel,
     ) -> List[TranscriptionSegment]:
         """Transcribe audio array:q to text with speaker diarization
 
         Args:
             audio (NDArray): The input audio array.
-            model (WhisperModel): Pre-loaded transcription model.
+            transcription_model (WhisperModel): The transcription model.
 
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
@@ -139,14 +138,12 @@ class SpeechToTextPipeline:
         self,
         audio_bytes: BytesIO,
         vad_spans: List[DiarizationSegment],
-        model: Optional[Any] = None,
     ) -> List[TranscriptionSegment]:
         """Transcribe full audio bytes to text.
 
         Args:
             audio_bytes (BytesIO): The input audio bytes.
             vad_spans (List[DiarizationSegment]): The VAD segments to split the audio into for transcription.
-            model (WhisperModel, optional): Pre-loaded transcription model. If not provided, it will be loaded within the function.
 
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
@@ -155,7 +152,7 @@ class SpeechToTextPipeline:
 
         logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
 
-        model = get_transcription_model()
+        transciription_model = get_transcription_model()
         transcription_segments: List[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(transcription_inputs):
@@ -165,7 +162,7 @@ class SpeechToTextPipeline:
                 chunk.diarization.end,
             )
             chunk_transcription_segments = self.transcribe_audio_chunk(
-                chunk.audio, model=model
+                chunk.audio, transciription_model
             )
             if not chunk_transcription_segments:
                 logger.debug(

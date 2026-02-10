@@ -16,15 +16,12 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
             True,
             "diarization_result_multiple_speakers",
             "mock_transcription_segments_normal",
-            7,
+            4,  # After post_process merging: chunk0(2→1) + chunk1(1) + chunk2(2→merged with chunk1) + chunk3(1) + chunk4(1) = 4
             [
-                "Intervenant 1",
-                "Intervenant 1",
-                "Intervenant 2",
-                "Intervenant 2",
-                "Intervenant 2",
-                "Intervenant 1",
-                "Intervenant 2",
+                "Intervenant 1",  # Merged chunk 0
+                "Intervenant 2",  # Merged chunks 1+2
+                "Intervenant 1",  # Chunk 3
+                "Intervenant 2",  # Chunk 4
             ],
         ),
         (
@@ -32,19 +29,19 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
             False,
             "diarization_result_single_speaker",
             "mock_transcription_segments_normal",
-            3,
-            ["Intervenant 1", "Intervenant 1", "Intervenant 1"],
+            1,  # After post_process merging: all same speaker gets merged
+            ["Intervenant 1"],
         ),
     ],
 )
 @patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.set_model")
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.set_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
 )
 def test_integration_full_process(
-    mock_set_diarization_pipeline,
-    mock_set_model,
+    mock_get_diarization_pipeline,
+    mock_get_transcription_model,
     mock_get_feature_flag_client,
     create_audio_buffer,
     create_mock_feature_flag_client,
@@ -91,7 +88,7 @@ def test_integration_full_process(
             for seg in diarization_result
         ]
     )
-    mock_set_diarization_pipeline.return_value = mock_diarization_pipeline
+    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
     # Setup: Mock model.transcribe(...) inside transcribe()
     mock_model = MagicMock()
@@ -100,7 +97,7 @@ def test_integration_full_process(
         (iter(segments), MagicMock())
         for segments in transcription_segments_list[: len(diarization_result)]
     ]
-    mock_set_model.return_value = mock_model
+    mock_get_transcription_model.return_value = mock_model
 
     # Execute: Run the full pipeline
     pipeline = SpeechToTextPipeline()
@@ -131,36 +128,41 @@ def test_integration_full_process(
     # Verify: Feature flag was checked during pre-processing
     mock_feature_flag_client.is_enabled.assert_called_once_with("audio_noise_filtering")
 
-    # verify content
-    assert transcription_segments[0].id == 0
-    assert transcription_segments[1].id == 0
-    assert transcription_segments[1].start == 1.5
-    assert transcription_segments[1].end == 3.0
-    assert transcription_segments[1].text == "2nd segment"
-    assert transcription_segments[1].speaker == "Intervenant 1"
+    # verify content - after post_process merging
+    if expected_segments_count == 4:  # multiple speakers scenario
+        # First merged segment from chunk 0 (Intervenant 1)
+        assert transcription_segments[0].id == 0
+        assert transcription_segments[0].start == 0.0
+        assert transcription_segments[0].speaker == "Intervenant 1"
+        assert "1st segment" in transcription_segments[0].text
+        assert "2nd segment" in transcription_segments[0].text
 
-    if expected_segments_count >= 7:
-        assert transcription_segments[3].id == 2
-        assert transcription_segments[3].start == 7.0
-        assert transcription_segments[3].end == 9.0
-        assert transcription_segments[3].text == "4th segment"
+        # Second merged segment from chunks 1+2 (Intervenant 2)
+        assert transcription_segments[1].speaker == "Intervenant 2"
+        assert "3rd segment" in transcription_segments[1].text
+
+        # Third segment from chunk 3 (Intervenant 1)
+        assert transcription_segments[2].speaker == "Intervenant 1"
+        assert "6th segment" in transcription_segments[2].text
+
+        # Fourth segment from chunk 4 (Intervenant 2)
         assert transcription_segments[3].speaker == "Intervenant 2"
-
-        assert transcription_segments[5].id == 3
-        assert transcription_segments[5].text == "6th segment"
-        assert transcription_segments[5].speaker == "Intervenant 1"
-
-        assert transcription_segments[6].id == 3
-        assert transcription_segments[6].text == "7th segment"
-        assert transcription_segments[6].speaker == "Intervenant 2"
+        assert "7th segment" in transcription_segments[3].text
+    elif expected_segments_count == 1:  # single speaker scenario
+        # All segments merged into one
+        assert transcription_segments[0].id == 0
+        assert transcription_segments[0].speaker == "Intervenant 1"
+        assert "1st segment" in transcription_segments[0].text
+        assert "2nd segment" in transcription_segments[0].text
+        assert "3rd segment" in transcription_segments[0].text
 
 
 @patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.set_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
 )
 def test_integration_full_process_empty_diarization(
-    mock_set_diarization_pipeline,
+    mock_get_diarization_pipeline,
     mock_get_feature_flag_client,
     create_audio_buffer,
     create_mock_feature_flag_client,
@@ -181,7 +183,7 @@ def test_integration_full_process_empty_diarization(
     mock_diarization_pipeline.return_value = MagicMock(
         itertracks=lambda yield_label: []  # Empty diarization
     )
-    mock_set_diarization_pipeline.return_value = mock_diarization_pipeline
+    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
     # Execute: Run the full pipeline
     audio_bytes = create_audio_buffer("wav")

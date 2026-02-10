@@ -53,7 +53,7 @@ def run_the_code_to_test(
     )
 
     transcription_segments = pipeline.transcribe_audio(
-        pre_processed_audio_bytes, vad_spans, None
+        pre_processed_audio_bytes, vad_spans
     )
 
     diarized_transcription_segments = diarize_vad_transcription_segments(
@@ -94,13 +94,13 @@ def run_the_code_to_test(
         ),
     ],
 )
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.set_model")
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.set_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
 )
 def test_integration_center_process_normal_flow(
-    mock_set_diarization_pipeline,
-    mock_set_model,
+    mock_get_diarization_pipeline,
+    mock_get_transcription_model,
     diarization_fixture: str,
     transcription_fixture: str,
     expected_segments_count: int,
@@ -128,7 +128,7 @@ def test_integration_center_process_normal_flow(
             for seg in diarization_result
         ]
     )
-    mock_set_diarization_pipeline.return_value = mock_diarization_pipeline
+    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
     # Mock model.transcribe(...) inside transcribe()
     mock_model = MagicMock()
@@ -137,7 +137,7 @@ def test_integration_center_process_normal_flow(
         (iter(segments), MagicMock())
         for segments in transcription_segments_list[: len(diarization_result)]
     ]
-    mock_set_model.return_value = mock_model
+    mock_get_transcription_model.return_value = mock_model
 
     # Create pipeline instance
     pipeline = SpeechToTextPipeline()
@@ -185,10 +185,10 @@ def test_integration_center_process_normal_flow(
 
 
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.set_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
 )
 def test_integration_center_process_empty_diarization(
-    mock_set_diarization_pipeline,
+    mock_get_diarization_pipeline,
     pre_processed_audio_bytes,
 ):
     """Test center process when diarization returns empty result.
@@ -201,7 +201,7 @@ def test_integration_center_process_empty_diarization(
     mock_diarization_pipeline.return_value = MagicMock(
         itertracks=lambda yield_label: []  # Empty diarization
     )
-    mock_set_diarization_pipeline.return_value = mock_diarization_pipeline
+    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
     # Create pipeline instance
     pipeline = SpeechToTextPipeline()
@@ -213,13 +213,13 @@ def test_integration_center_process_empty_diarization(
     assert len(transcription_segments) == 0
 
 
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.set_model")
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.set_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
 )
 def test_integration_center_process_with_empty_chunks(
-    mock_set_diarization_pipeline,
-    mock_set_model,
+    mock_get_diarization_pipeline,
+    mock_get_transcription_model,
     diarization_result_multiple_speakers,
     mock_transcription_segments_with_empty,
     pre_processed_audio_bytes,
@@ -239,7 +239,7 @@ def test_integration_center_process_with_empty_chunks(
             for seg in diarization_result
         ]
     )
-    mock_set_diarization_pipeline.return_value = mock_diarization_pipeline
+    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
     # Mock model.transcribe(...) to return empty list for middle chunk
     mock_model = MagicMock()
@@ -248,7 +248,7 @@ def test_integration_center_process_with_empty_chunks(
         (iter(segments), MagicMock())
         for segments in mock_transcription_segments_with_empty
     ]
-    mock_set_model.return_value = mock_model
+    mock_get_transcription_model.return_value = mock_model
 
     # Create pipeline instance
     pipeline = SpeechToTextPipeline()
