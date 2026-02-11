@@ -91,7 +91,7 @@ class SpeechToTextPipeline:
         )
         return merged_segments
 
-    def transcribe_audio_chunk(  # type: ignore[explicit-any]
+    def transcribe_audio_chunk(
         self,
         audio: NDArray[np.float32],
         transcription_model: WhisperModel,
@@ -134,7 +134,7 @@ class SpeechToTextPipeline:
 
         return transcription_segments
 
-    def transcribe_audio(  # type: ignore[explicit-any]
+    def transcribe_audio(
         self,
         audio_bytes: BytesIO,
         vad_spans: List[DiarizationSegment],
@@ -221,7 +221,7 @@ class SpeechToTextPipeline:
 
             return diarization_segments
 
-    def run(  # type: ignore[explicit-any]
+    def run(
         self,
         audio_bytes: BytesIO,
     ) -> List[DiarizedTranscriptionSegment]:
