@@ -28,7 +28,7 @@
     "@vee-validate/yup": "^4.13.2",
     "@vueuse/components": "^13.1.0",
     "@vueuse/core": "^13.1.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.5",
     "date-fns": "^4.1.0",
     "focus-trap": "^7.5.4",
     "focus-trap-vue": "^4.0.3",
