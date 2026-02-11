@@ -54,7 +54,10 @@ async def test_get_meetings_service_unexpected_error() -> None:
         # Act & Assert
         with pytest.raises(HTTPException) as exc_info:
             await get_meetings_service(
-                search=search, user_keycloak_uuid=user_keycloak_uuid
+                search=search,
+                page=1,
+                page_size=10,
+                user_keycloak_uuid=user_keycloak_uuid,
             )
 
         # Assert
