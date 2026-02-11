@@ -282,3 +282,50 @@ class SentrySettings(BaseSettings):
     )
     SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
     TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
+
+
+class LLMSettings(BaseSettings):
+    """
+    Settings parameters for calling an API hosted LLM
+    """
+
+    LLM_HUB_API_URL: str = Field(
+        ...,
+        description="llm hub endpoint serving the llm",
+    )
+    LLM_HUB_API_KEY: str = Field(..., description="llm hub api key")
+
+    LLM_MODEL_NAME: str = Field(
+        default="mistral-small-24b", description="large language model"
+    )
+    TEMPERATURE: float = Field(
+        default=0,
+        ge=0.0,
+        le=1.0,
+        description="LLM sampling temperature (0-1). Lower values (0) produce deterministic, focused outputs. Higher values (0.7-1) increase creativity and randomness.",
+    )
+    RETRY_MAX_ATTEMPTS: int = Field(
+        default=5, description="Maximum number of retry attempts for LLM API calls"
+    )
+    RETRY_WAIT_MULTIPLIER: int = Field(
+        default=5, description="Exponential backoff multiplier for retry wait times"
+    )
+    RETRY_MIN_WAIT_TIME: float = Field(
+        default=2, description="Minimum wait time in seconds between retries"
+    )
+    RETRY_MAX_WAIT_TIME: float = Field(
+        default=100, description="Maximum wait time in seconds between retries"
+    )
+
+
+class ChunkingConfig(BaseSettings):
+    """
+    Settings of the chunking process
+    """
+
+    CHUNK_SIZE: int = Field(
+        default=20000, description="Maximum number of character of per chunk"
+    )
+    CHUNK_OVERLAP: int = Field(
+        default=100, description="Nb of overleaping characters between chunks"
+    )

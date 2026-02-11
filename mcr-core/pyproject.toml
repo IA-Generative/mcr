@@ -49,6 +49,9 @@ worker = [
     "httpx>=0.28.1",
     "sentry-sdk[celery]>=2.34.1",
     "faster-whisper>=1.2.0",
+    "openai==1.92.2",
+    "instructor==1.9.0",
+    "langchain == 0.3.27",
 ]
 
 [dependency-groups]
