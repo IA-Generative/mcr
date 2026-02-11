@@ -34,7 +34,14 @@
       "user-guide": "Guide utilisateur",
       "sign-in": "Se connecter",
       "sign-out": "Se déconnecter",
-      "useful-tips": "Conseils pratiques"
+      "useful-tips": "Conseils pratiques",
+      "mirai-services": {
+        "main-button": "MIrAI",
+        "portal": "Portail MIrAI",
+        "chat": "MIrAI Chat",
+        "resumer": "Résumer",
+        "ocr": "OCR"
+      }
     },
     "main-menu": {
       "meetings": "Liste des réunions",
