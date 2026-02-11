@@ -89,6 +89,12 @@
       }
     }
   },
+  "meetings_v2": {
+    "hero": {
+      "title": "Faire un compte rendu",
+      "subtitle": "Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte rendu (relevé de décisions, synthèse courte ou détaillée)."
+    }
+  },
   "meeting": {
     "confirm-delete": {
       "title": "Êtes-vous sûr de vouloir supprimer la réunion\u00a0?"
