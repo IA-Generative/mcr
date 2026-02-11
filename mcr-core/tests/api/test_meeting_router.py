@@ -100,6 +100,41 @@ def test_get_meetings_search_success(
     assert_json_equal_meeting_model(json_data[0], meeting_fixture)
 
 
+def test_get_meetings_with_pagination_params(
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    meeting_2_fixture: Meeting,
+    user_fixture: User,
+) -> None:
+    # Act
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+    response = meeting_client.get(
+        "/", params={"page": 1, "page_size": 10}, headers=headers
+    )
+
+    # Assert
+    json_data = response.json()
+    assert response.status_code == status.HTTP_200_OK
+    assert len(json_data) == 2
+
+
+def test_get_meetings_with_invalid_pagination(
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    user_fixture: User,
+) -> None:
+    # Act — negative values should still return results (clamped in repository)
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+    response = meeting_client.get(
+        "/", params={"page": -1, "page_size": -1}, headers=headers
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_200_OK
+    json_data = response.json()
+    assert len(json_data) == 1  # page_size clamped to 1
+
+
 def test_get_meetings_search_no_result(
     meeting_client: PrefixedTestClient, user_fixture: User
 ) -> None:
