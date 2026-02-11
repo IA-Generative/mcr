@@ -4,7 +4,7 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_meeting.evaluation.asr_evaluation_pipeline import MetricsPipeline
-from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionResult
+from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionOutput
 
 
 def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
@@ -17,7 +17,7 @@ def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
             continue
 
         try:
-            reference = TranscriptionResult.model_validate_json(ref_path.read_text())
+            reference = TranscriptionOutput.model_validate_json(ref_path.read_text())
         except Exception as e:
             logger.warning("Error parsing reference for {}: {}, skipping.", uid, e)
             continue
@@ -46,10 +46,10 @@ def load_hypothesis_inputs(
             logger.warning("Missing hypothesis transcript for {}, skipping.", uid)
             continue
 
-        reference = TranscriptionResult.model_validate_json(
+        reference = TranscriptionOutput.model_validate_json(
             reference_transcript.read_text()
         )
-        generated = TranscriptionResult.model_validate_json(
+        generated = TranscriptionOutput.model_validate_json(
             hypothese_transcript_path.read_text()
         )
 
