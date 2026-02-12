@@ -82,7 +82,7 @@ const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   },
   {
     label: t('header.links.sign-out'),
-    icon: 'ri-logout-box-r-line',
+    icon: 'fr-icon-logout-box-r-line',
     to: '/',
     onClick: () => {
       signOut();
