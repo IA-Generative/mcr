@@ -31,6 +31,9 @@ class TranscriptionSegment(BaseModel):
 class DiarizedTranscriptionSegment(TranscriptionSegment):
     speaker: str
 
+    def __str__(self) -> str:
+        return f"{self.speaker}: {self.text}"
+
 
 class TranscriptionDocxResult(BaseModel):
     buffer: BytesIO
