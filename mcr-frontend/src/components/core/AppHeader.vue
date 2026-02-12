@@ -10,6 +10,7 @@
       <DsfrDropdown
         :main-button="{
           label: $t('header.links.mirai-services.main-button'),
+          icon: 'fr-icon-grid-fill',
           size: 'sm',
         }"
         class="max-sm:self-end"
@@ -75,12 +76,13 @@ const isBetaEnabled = useFeatureFlag('beta');
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
     label: t('header.links.useful-tips'),
+    icon: 'fr-icon-info-line',
     to: 'https://mirai.interieur.gouv.fr/outils-mirai/compte-rendu/bonnes-pratiques-fcr/',
     target: '_blank',
   },
   {
     label: t('header.links.sign-out'),
-    icon: 'ri-logout-box-r-line',
+    icon: 'fr-icon-logout-box-r-line',
     to: '/',
     onClick: () => {
       signOut();
@@ -148,23 +150,13 @@ const URL_FORM_FEEDBACK =
   background-color: var(--background-open-blue-france-active);
 }
 
+:deep(.fr-accordion__btn) {
+  display: inline-flex;
+  align-items: center;
+}
+
 /* Prevent the displaying of the icon for external links on the left of the buttons */
 :deep(.fr-btn[target='_blank']::after) {
   display: none !important; /* enlève l'icône à droite */
-}
-
-/* Recreate the icon for external links, but puts it on the right of the button */
-:deep(.fr-btn[target='_blank']::before),
-:deep(.fr-accordion__btn::before) {
-  content: '';
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  margin-right: 0.5rem;
-  flex-shrink: 0;
-
-  background-color: currentColor;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3zM5 5h6V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-6h-2v6H5V5z'/%3E%3C/svg%3E")
-    no-repeat center / contain;
 }
 </style>

@@ -4,12 +4,20 @@
     class="fr-dropdown-menu relative inline-block"
   >
     <DsfrButton
-      v-bind="mainButton"
       class="fr-accordion__btn fr-btn"
+      :size="mainButton.size"
       :aria-expanded="isActive"
       :aria-controls="id"
       @click="expand()"
-    />
+    >
+      <span
+        v-if="mainButton?.icon"
+        :class="mainButton?.icon"
+        class="fr-icon--sm fr-mr-1w"
+        aria-hidden="true"
+      ></span>
+      <span>{{ mainButton.label }}</span>
+    </DsfrButton>
     <div
       :id="id"
       ref="collapse"
