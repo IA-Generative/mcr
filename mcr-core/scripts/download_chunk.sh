@@ -77,7 +77,7 @@ EXTRA_FLAGS=()
 [[ "$NO_PROGRESS" == "true" ]] && EXTRA_FLAGS+=(--no-progress)
 
 # Exécution
-echo "→ Téléchargement de s3://${BUCKET}/${PREFIX} vers ${DEST}"
+echo "→ Téléchargement de s3://${BUCKET}/${PREFIX} vers ${DEST}/${PREFIX}"
 echo "→ Endpoint : ${ENDPOINT} | Région : ${REGION} | Profil : ${PROFILE}"
 
 if [[ ${#PASS_THROUGH[@]} -gt 0 ]]; then
@@ -90,7 +90,7 @@ fi
 
 aws --profile "$PROFILE" \
     --region "$REGION" \
-    s3 cp "s3://${BUCKET}/${PREFIX}" "$DEST" \
+    s3 cp "s3://${BUCKET}/${PREFIX}" "$DEST/${PREFIX}" \
     --recursive \
     --endpoint-url "$ENDPOINT" \
     ${EXTRA_FLAGS[@]+"${EXTRA_FLAGS[@]}"} \
