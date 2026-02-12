@@ -37,7 +37,7 @@ from mcr_meeting.evaluation.eval_types import (
     EvaluationOutput,
     EvaluationSummary,
     TranscriptionMetrics,
-    TranscriptionResult,
+    TranscriptionOutput,
 )
 
 
@@ -58,7 +58,7 @@ class AudioFileProcessor:
         self.feature_flag_client = feature_flag_client
         self.speech_to_text_pipeline = SpeechToTextPipeline()
 
-    def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionResult:
+    def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionOutput:
         """Process a single audio file and return transcription result"""
 
         normalized_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
@@ -75,21 +75,15 @@ class AudioFileProcessor:
             logger.info("Noise filtering disabled, skipping filtering step")
             processed_bytes = normalized_bytes
 
-        raw_transcription = self.speech_to_text_pipeline.run(processed_bytes)
+        raw_diarized_transcription_segments = self.speech_to_text_pipeline.run(
+            processed_bytes
+        )
 
-        transcription = merge_consecutive_segments_per_speaker(raw_transcription)
+        segments = merge_consecutive_segments_per_speaker(
+            raw_diarized_transcription_segments
+        )
 
-        text = " ".join(seg.text for seg in transcription)
-        return TranscriptionResult(text=text, segments=transcription)
-
-
-def extract_reference_text(ref_data: TranscriptionResult) -> str:
-    """Extract reference text from reference data"""
-    if ref_data.text:
-        return ref_data.text
-    if ref_data.segments:
-        return " ".join(seg.text for seg in ref_data.segments)
-    raise ValueError("No valid reference text found in reference data")
+        return TranscriptionOutput(segments=segments)
 
 
 class MetricsCalculator:
@@ -137,21 +131,22 @@ class MetricsCalculator:
     def calculate_metrics(
         self,
         sample: EvaluationInput,
-        hypothesis_transcription: TranscriptionResult,
-    ) -> Optional[EvaluationMetrics]:
+        hypothesis_transcription: TranscriptionOutput,
+    ) -> EvaluationMetrics:
         """Calculate metrics for a single file"""
         if not sample.reference_transcription:
             logger.warning(
                 "Reference transcription is empty. Cannot calculate metrics for {}",
                 sample.uid,
             )
-            return None
+            raise ValueError(
+                "Reference transcription should not be empty for metrics calculation."
+            )
 
         logger.info("Calculating metrics for {}", sample.uid)
-        reference_text = extract_reference_text(sample.reference_transcription)
-        generated_text = " ".join(seg.text for seg in hypothesis_transcription.segments)
         transcription_metrics = self.calculate_transcription_metrics(
-            reference_text, generated_text
+            reference_text=sample.reference_transcription.text,
+            hypothesis_text=hypothesis_transcription.text,
         )
 
         diarization_metrics = self.calculate_diarization_metrics(
@@ -180,7 +175,7 @@ class ResultsManager:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def save_generated_transcription(
-        self, result: TranscriptionResult, uid: str, timestamp: str
+        self, result: TranscriptionOutput, uid: str, timestamp: str
     ) -> None:
         """Save transcription result to JSON file if in dev mode"""
         if not self.dev:

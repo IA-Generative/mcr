@@ -14,6 +14,7 @@ def get_transcription_model() -> WhisperModel:
     try:
         logger.debug("loading model from celery context")
         from mcr_meeting.transcription_worker import context
+
         transcription_model = context.get("model")
         if transcription_model is None:
             logger.error("Transcription model is None in celery context")
@@ -35,6 +36,7 @@ def get_diarization_pipeline() -> Pipeline:
     try:
         logger.debug("loading diarization pipeline from celery context")
         from mcr_meeting.transcription_worker import context
+
         diarization_pipeline = context.get("diarization_pipeline")
         if diarization_pipeline is None:
             logger.error("Diarization pipeline is None in celery context")

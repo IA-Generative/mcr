@@ -42,7 +42,7 @@ from mcr_meeting.app.utils.load_speech_to_text_model import (
     load_whisper_model,
 )
 from mcr_meeting.evaluation.asr_evaluation_pipeline import ASREvaluationPipeline
-from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionResult
+from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionOutput
 from mcr_meeting.setup.logger import setup_logging
 
 setup_logging()
@@ -240,7 +240,7 @@ def evaluate(zip_data: bytes) -> None:
             ref_json_path = reference_dir / f"{uid}.json"
             if ref_json_path.exists():
                 with open(ref_json_path, "r") as f:
-                    reference_transcription = TranscriptionResult.model_validate_json(
+                    reference_transcription = TranscriptionOutput.model_validate_json(
                         f.read()
                     )
             else:
