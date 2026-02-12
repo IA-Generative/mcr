@@ -88,7 +88,7 @@ class MappedDecision(BaseModel):
         None,
         description=(
             "Liste des actions concrètes à entreprendre suite à la décision "
-            "(ex. 'envoyer le compte rendu', 'planifier une réunion de suivi'). "
+            "(ex. 'envoyer le compte-rendu', 'planifier une réunion de suivi'). "
             "Si aucune action n’est précisée, renvoyer une liste vide."
         ),
     )

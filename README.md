@@ -23,7 +23,7 @@ Les services sont les suivants :
    Worker **Celery / Redis** en charge de la transcription et de la **diarisation** des fichiers audio.
 
 6. **mcr-generation**  
-   Worker **Celery / Redis** permettant de générer le compte rendu à partir de la transcription diarisation en entrée.
+   Worker **Celery / Redis** permettant de générer le compte-rendu à partir de la transcription diarisation en entrée.
 
 ---
 
@@ -36,7 +36,7 @@ Il existe **trois manières** de fournir l’audio d’une réunion à FCR :
 Une fois l’audio fourni, FCR effectue les étapes suivantes :
 
 1. Transcription et diarisation de l’audio
-2. Génération du compte rendu (optionnel)
+2. Génération du compte-rendu (optionnel)
 
 ---
 

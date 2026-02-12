@@ -9,12 +9,12 @@ describe('MeetingListPage v2', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Faire un compte rendu',
+        name: 'Faire un compte-rendu',
       }),
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte rendu (relevé de décisions, synthèse courte ou détaillée).',
+        'Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée).',
       ),
     ).toBeInTheDocument();
   });

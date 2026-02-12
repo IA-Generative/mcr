@@ -37,7 +37,7 @@ def send_report_generation_success_email(meeting_id: int) -> bool:
     email = meeting_info.email
     meeting_name = meeting.name or ""
     meeting_link = _get_meeting_link(meeting.id)
-    subject = f"Votre compte rendu de la réunion {meeting_name} est prêt"
+    subject = f"Votre compte-rendu de la réunion {meeting_name} est prêt"
 
     return send_email(
         to_email=email,
