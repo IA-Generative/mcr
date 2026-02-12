@@ -3,8 +3,18 @@ EVALUATION_DATA_DIR ?=$(SOURCE_DIR)/evaluation/data
 EVALUATION_OUTPUT_DIR  ?= $(EVALUATION_DATA_DIR)/outputs
 MODEL    ?= tiny
 
+# Load environment files for different contexts
+ENV_LOCAL_DOCKER := ../.env.local.docker
+ifneq ("$(wildcard $(ENV_LOCAL_DOCKER))","")
+  include $(ENV_LOCAL_DOCKER)
+  export
+endif
+ENV_LOCAL_HOST := ../.env.local.host
+ifneq ("$(wildcard $(ENV_LOCAL_HOST))","")
+  include $(ENV_LOCAL_HOST)
+  export
+endif
 ENV_FILE := ../.env
-
 ifneq ("$(wildcard $(ENV_FILE))","")
   include $(ENV_FILE)
   export
@@ -86,13 +96,13 @@ test-coverage-integration:
 		grep -v "CoverageWarning" | grep TOTAL | awk '{print "$(SERVICE_NAME) $(TEST_TYPE) " $$4}'
 
 eval:
-	DATA_DIR=$(EVALUATION_DATA_DIR) OUT_DIR=$(EVALUATION_OUTPUT_DIR) MODEL=$(MODEL)
-	uv sync --all-extras && \
+	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) STT_MODEL=$(MODEL) \
+	uv sync --all-extras --inexact && \
 	uv run python -m mcr_meeting.evaluation.cli.cli
 
 metrics:
 	DATA_DIR=$(EVALUATION_DATA_DIR) OUT_DIR=$(EVALUATION_OUTPUT_DIR)
-	uv sync --all-extras && \
+	uv sync --all-extras --inexact && \
 	uv run python -m mcr_meeting.evaluation.cli.cli_generate_metrics
 
 # Before running this, make sure you have graphviz installed in your system.
