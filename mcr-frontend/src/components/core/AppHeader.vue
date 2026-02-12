@@ -6,6 +6,34 @@
     :quick-links
     :show-beta="true"
   >
+    <template #before-quick-links>
+      <DsfrDropdown
+        :main-button="{
+          label: $t('header.links.mirai-services.main-button'),
+          icon: 'fr-icon-grid-fill',
+          size: 'sm',
+        }"
+        class="max-sm:self-end"
+        :buttons="[
+          {
+            label: $t('header.links.mirai-services.portal'),
+            onClick: () => redirectTo('https://mirai.interieur.gouv.fr/'),
+          },
+          {
+            label: $t('header.links.mirai-services.chat'),
+            onClick: () => redirectTo('https://chat.mirai.interieur.gouv.fr/'),
+          },
+          {
+            label: $t('header.links.mirai-services.resumer'),
+            onClick: () => redirectTo('https://resume.mirai.interieur.gouv.fr/'),
+          },
+          {
+            label: $t('header.links.mirai-services.ocr'),
+            onClick: () => redirectTo('https://ocr.mirai.interieur.gouv.fr/'),
+          },
+        ]"
+      />
+    </template>
   </DsfrHeader>
   <DsfrNotice
     v-if="isBetaEnabled"
@@ -47,19 +75,14 @@ const isBetaEnabled = useFeatureFlag('beta');
 
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
-    label: t('header.links.user-guide'),
-    icon: 'ri-question-line',
-    to: '/fcr-guide-utilisateur.pdf',
-    target: '_blank',
-  },
-  {
     label: t('header.links.useful-tips'),
+    icon: 'fr-icon-info-line',
     to: 'https://mirai.interieur.gouv.fr/outils-mirai/compte-rendu/bonnes-pratiques-fcr/',
     target: '_blank',
   },
   {
     label: t('header.links.sign-out'),
-    icon: 'ri-logout-box-line',
+    icon: 'fr-icon-logout-box-r-line',
     to: '/',
     onClick: () => {
       signOut();
@@ -82,6 +105,10 @@ const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
     return whenNotLoggedLinks;
   }
 });
+
+function redirectTo(url: string): void {
+  window.open(url, '_blank', 'noopener, noreferrer');
+}
 
 const URL_FORM_FEEDBACK =
   'https://grist.numerique.gouv.fr/o/miraigrist/forms/vvANEpRC3y67QtutV6JnJC/223';
@@ -108,5 +135,28 @@ const URL_FORM_FEEDBACK =
 :deep(.fr-badge) {
   background-color: #e8edff;
   color: #0063cb;
+}
+
+:deep(.fr-accordion__btn[aria-expanded='true']) {
+  background-color: var(--background-open-blue-france);
+  color: var(--background-action-high-blue-france);
+}
+
+:deep(.fr-accordion__btn[aria-expanded='true']:hover) {
+  background-color: var(--background-open-blue-france-hover);
+}
+
+:deep(.fr-accordion__btn[aria-expanded='true']):active {
+  background-color: var(--background-open-blue-france-active);
+}
+
+:deep(.fr-accordion__btn) {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Prevent the displaying of the icon for external links on the left of the buttons */
+:deep(.fr-btn[target='_blank']::after) {
+  display: none !important; /* enlève l'icône à droite */
 }
 </style>

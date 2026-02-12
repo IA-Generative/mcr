@@ -17,6 +17,9 @@ from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
 from mcr_meeting.app.services.docx_report_generation_service import (
     generate_docx_decisions_reports_from_template,
 )
+from mcr_meeting.app.services.email.email_service import (
+    send_report_generation_success_email,
+)
 from mcr_meeting.app.services.meeting_service import (
     update_meeting_end_date,
     update_meeting_start_date,
@@ -28,9 +31,6 @@ from mcr_meeting.app.services.meeting_transition_record_service import (
 )
 from mcr_meeting.app.services.report_task_service import save_formatted_report
 from mcr_meeting.app.services.s3_service import get_transcription_object_name
-from mcr_meeting.app.services.send_email_service import (
-    send_report_generation_success_email,
-)
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )

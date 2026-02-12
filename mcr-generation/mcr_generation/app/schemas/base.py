@@ -135,7 +135,7 @@ class Decision(BaseModel):
         None,
         description=(
             "Liste des actions concrètes à entreprendre suite à la décision "
-            "(ex. 'envoyer le compte rendu', 'planifier une réunion de suivi'). "
+            "(ex. 'envoyer le compte-rendu', 'planifier une réunion de suivi'). "
             "Si aucune action n’est précisée, ou que l'action est la meme que la decision dans laquelle elle s'inscrit, alors renvoyer une liste vide."
         ),
     )

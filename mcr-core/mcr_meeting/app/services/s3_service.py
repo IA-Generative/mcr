@@ -10,6 +10,7 @@ from mcr_meeting.app.schemas.S3_types import (
     MultipartCompleteRequest,
     MultipartCreationObject,
     MultipartInitRequest,
+    S3ListObjectsPage,
     S3Object,
 )
 from mcr_meeting.app.utils.files_mime_types import guess_mime_type
@@ -109,20 +110,13 @@ def get_objects_list_from_prefix(prefix: str) -> Iterator[S3Object]:
         Bucket=s3_settings.S3_BUCKET, Prefix=get_audio_object_prefix(prefix)
     )
 
-    objects = []
+    all_objects: list[S3Object] = []
     for page in page_iterator:
-        if "Contents" in page:
-            objects.extend(page["Contents"])
+        page_model = S3ListObjectsPage.model_validate(page)
+        all_objects.extend(page_model.contents)
 
-    # Sort by last modified time
-    sorted_objects = sorted(objects, key=lambda obj: obj["LastModified"])
-
-    for obj in sorted_objects:
-        yield S3Object(
-            bucket_name=s3_settings.S3_BUCKET,
-            object_name=obj["Key"],
-            last_modified=obj["LastModified"],
-        )
+    for obj in sorted(all_objects, key=lambda o: o.object_name):
+        yield obj
 
 
 def get_extension_from_object_list(

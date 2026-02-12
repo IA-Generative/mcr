@@ -14,7 +14,6 @@ from pyannote.metrics.diarization import (
 
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
-    SpeakerTranscription,
 )
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     filter_noise_from_audio_bytes,
@@ -24,12 +23,12 @@ from mcr_meeting.app.services.feature_flag_service import (
     FeatureFlagClient,
     get_feature_flag_client,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import (
-    merge_consecutive_segments_per_speaker,
-)
 from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
-from mcr_meeting.app.services.transcription_engine_service import (
-    speech_to_text_transcription,
+from mcr_meeting.app.services.speech_to_text.speech_to_text import (
+    SpeechToTextPipeline,
+)
+from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
+    merge_consecutive_segments_per_speaker,
 )
 from mcr_meeting.evaluation.eval_types import (
     DiarizationMetrics,
@@ -38,7 +37,7 @@ from mcr_meeting.evaluation.eval_types import (
     EvaluationOutput,
     EvaluationSummary,
     TranscriptionMetrics,
-    TranscriptionResult,
+    TranscriptionOutput,
 )
 
 
@@ -57,8 +56,9 @@ class AudioFileProcessor:
             self.model = model
             self.is_model_specified = True
         self.feature_flag_client = feature_flag_client
+        self.speech_to_text_pipeline = SpeechToTextPipeline()
 
-    def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionResult:
+    def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionOutput:
         """Process a single audio file and return transcription result"""
 
         normalized_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
@@ -75,47 +75,15 @@ class AudioFileProcessor:
             logger.info("Noise filtering disabled, skipping filtering step")
             processed_bytes = normalized_bytes
 
-        raw_transcription = (
-            speech_to_text_transcription(audio_bytes=processed_bytes, model=self.model)
-            if self.is_model_specified
-            else speech_to_text_transcription(audio_bytes=processed_bytes)
+        raw_diarized_transcription_segments = self.speech_to_text_pipeline.run(
+            processed_bytes
         )
 
-        raw_segments = [
-            SpeakerTranscription(
-                meeting_id=0,
-                transcription_index=segment.id,
-                speaker=segment.speaker if segment.speaker else f"INCONNU_{segment.id}",
-                transcription=segment.text,
-                start=segment.start,
-                end=segment.end,
-            )
-            for segment in raw_transcription
-        ]
+        segments = merge_consecutive_segments_per_speaker(
+            raw_diarized_transcription_segments
+        )
 
-        transcription = merge_consecutive_segments_per_speaker(raw_segments)
-
-        segments = [
-            DiarizedTranscriptionSegment(
-                id=seg.transcription_index,
-                start=seg.start,
-                end=seg.end,
-                text=seg.transcription,
-                speaker=seg.speaker,
-            )
-            for seg in transcription
-        ]
-        text = " ".join(seg.text for seg in segments)
-        return TranscriptionResult(text=text, segments=segments)
-
-
-def extract_reference_text(ref_data: TranscriptionResult) -> str:
-    """Extract reference text from reference data"""
-    if ref_data.text:
-        return ref_data.text
-    if ref_data.segments:
-        return " ".join(seg.text for seg in ref_data.segments)
-    raise ValueError("No valid reference text found in reference data")
+        return TranscriptionOutput(segments=segments)
 
 
 class MetricsCalculator:
@@ -163,21 +131,22 @@ class MetricsCalculator:
     def calculate_metrics(
         self,
         sample: EvaluationInput,
-        hypothesis_transcription: TranscriptionResult,
-    ) -> Optional[EvaluationMetrics]:
+        hypothesis_transcription: TranscriptionOutput,
+    ) -> EvaluationMetrics:
         """Calculate metrics for a single file"""
         if not sample.reference_transcription:
             logger.warning(
                 "Reference transcription is empty. Cannot calculate metrics for {}",
                 sample.uid,
             )
-            return None
+            raise ValueError(
+                "Reference transcription should not be empty for metrics calculation."
+            )
 
         logger.info("Calculating metrics for {}", sample.uid)
-        reference_text = extract_reference_text(sample.reference_transcription)
-        generated_text = " ".join(seg.text for seg in hypothesis_transcription.segments)
         transcription_metrics = self.calculate_transcription_metrics(
-            reference_text, generated_text
+            reference_text=sample.reference_transcription.text,
+            hypothesis_text=hypothesis_transcription.text,
         )
 
         diarization_metrics = self.calculate_diarization_metrics(
@@ -206,7 +175,7 @@ class ResultsManager:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def save_generated_transcription(
-        self, result: TranscriptionResult, uid: str, timestamp: str
+        self, result: TranscriptionOutput, uid: str, timestamp: str
     ) -> None:
         """Save transcription result to JSON file if in dev mode"""
         if not self.dev:

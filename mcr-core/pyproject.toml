@@ -17,6 +17,7 @@ dependencies = [
     "mypy_boto3_s3>=1.40.26",
     "python-statemachine>=2.5.0",
     "unleashclient>=6.3.0",
+    "jinja2>=3.1.6",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +35,7 @@ worker = [
     "pandas>=2.3.1",
     "jiwer>=4.0.0",
     "ffmpeg-python>=0.2.0",
-    "openai-whisper==20240927",
+    "openai-whisper==20250625",
     "transformers==4.52.4",
     "torch==2.7.1",
     "torchaudio==2.7.1",
@@ -48,6 +49,9 @@ worker = [
     "httpx>=0.28.1",
     "sentry-sdk[celery]>=2.34.1",
     "faster-whisper>=1.2.0",
+    "openai==1.92.2",
+    "instructor==1.9.0",
+    "langchain == 0.3.27",
 ]
 
 [dependency-groups]
@@ -106,6 +110,7 @@ module = [
     "jiwer",
     "ffmpeg",
     "pyannote.*",
+    "faster_whisper",
     "soundfile",
     "docxtpl.*",
 ]

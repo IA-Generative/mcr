@@ -7,9 +7,12 @@ from pydantic import BaseModel
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 
 
-class TranscriptionResult(BaseModel):
-    text: str
+class TranscriptionOutput(BaseModel):
     segments: List[DiarizedTranscriptionSegment]
+
+    @property
+    def text(self) -> str:
+        return " ".join(segment.text for segment in self.segments)
 
 
 class EvaluationMetrics(BaseModel):
@@ -45,8 +48,8 @@ class EvaluationInput(BaseModel):
     uid: str
     audio_path: Path
     audio_bytes: Optional[BytesIO] = None
-    reference_transcription: Optional[TranscriptionResult] = None
-    generated_transcription: Optional[TranscriptionResult] = None
+    reference_transcription: Optional[TranscriptionOutput] = None
+    generated_transcription: Optional[TranscriptionOutput] = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -54,8 +57,8 @@ class EvaluationInput(BaseModel):
 
 class EvaluationOutput(BaseModel):
     uid: str
-    reference_transcription: TranscriptionResult
-    generated_transcription: TranscriptionResult
+    reference_transcription: TranscriptionOutput
+    generated_transcription: TranscriptionOutput
     metrics: EvaluationMetrics
 
     class Config:

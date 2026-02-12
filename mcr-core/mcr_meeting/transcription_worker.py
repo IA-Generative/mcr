@@ -9,8 +9,9 @@ import httpx
 import sentry_sdk
 from celery import Celery, Task
 from celery.signals import task_failure, task_prerun, task_success, worker_process_init
-from faster_whisper import WhisperModel  # type: ignore[import]
+from faster_whisper import WhisperModel
 from loguru import logger
+from pyannote.audio import Pipeline
 
 from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
@@ -36,8 +37,12 @@ from mcr_meeting.app.utils.compute_devices import (
     get_gpu_name,
     is_gpu_available,
 )
+from mcr_meeting.app.utils.load_speech_to_text_model import (
+    load_diarization_pipeline,
+    load_whisper_model,
+)
 from mcr_meeting.evaluation.asr_evaluation_pipeline import ASREvaluationPipeline
-from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionResult
+from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionOutput
 from mcr_meeting.setup.logger import setup_logging
 
 setup_logging()
@@ -75,10 +80,15 @@ celery_worker.conf.task_acks_late = True
 
 class WorkerContext(TypedDict):
     device: ComputeDevice
-    model: Any  # type: ignore[explicit-any]
+    model: WhisperModel | None
+    diarization_pipeline: Pipeline | None
 
 
-context: WorkerContext = {"device": ComputeDevice.CPU, "model": None}  # type: ignore[explicit-any]
+context: WorkerContext = {
+    "device": ComputeDevice.CPU,
+    "model": None,
+    "diarization_pipeline": None,
+}
 
 
 @worker_process_init.connect
@@ -100,15 +110,8 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
         logger.trace("GPU not available — running on CPU")
         context["device"] = ComputeDevice.CPU
 
-    # Load Whisper model
-    logger.info("Loading Whisper model...")
-    model = WhisperModel(s2t_settings.STT_MODEL, device=context["device"])
-
-    if not model:
-        raise RuntimeError("Failed to load Whisper model")
-
-    logger.info("Model loaded successfully")
-    context["model"] = model
+    context["model"] = load_whisper_model(context["device"])
+    context["diarization_pipeline"] = load_diarization_pipeline(context["device"])
 
     logger.info("======== Celery worker processes initialization done =========")
 
@@ -237,7 +240,7 @@ def evaluate(zip_data: bytes) -> None:
             ref_json_path = reference_dir / f"{uid}.json"
             if ref_json_path.exists():
                 with open(ref_json_path, "r") as f:
-                    reference_transcription = TranscriptionResult.model_validate_json(
+                    reference_transcription = TranscriptionOutput.model_validate_json(
                         f.read()
                     )
             else:

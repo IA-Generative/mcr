@@ -18,8 +18,8 @@
   },
   "header": {
     "app": {
-      "name": "France Compte Rendu",
-      "description": "Aide à la rédaction de compte rendu"
+      "name": "MIrAI Compte-Rendu",
+      "description": "Aide à la rédaction de compte-rendu"
     },
     "notice": {
       "title": "Cet outil est en version bêta.",
@@ -34,7 +34,14 @@
       "user-guide": "Guide utilisateur",
       "sign-in": "Se connecter",
       "sign-out": "Se déconnecter",
-      "useful-tips": "Conseils pratiques"
+      "useful-tips": "Ressources MCR",
+      "mirai-services": {
+        "main-button": "Outils MIrAI",
+        "portal": "Portail MIrAI",
+        "chat": "MIrAI Chat",
+        "resumer": "Résumer",
+        "ocr": "OCR"
+      }
     },
     "main-menu": {
       "meetings": "Liste des réunions",
@@ -82,6 +89,12 @@
       }
     }
   },
+  "meetings_v2": {
+    "hero": {
+      "title": "Faire un compte-rendu",
+      "subtitle": "Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée)."
+    }
+  },
   "meeting": {
     "confirm-delete": {
       "title": "Êtes-vous sûr de vouloir supprimer la réunion\u00a0?"
@@ -122,7 +135,7 @@
         },
         "notice-2": {
           "title": "Avant de démarrer l'enregistrement, pensez à\u00a0:",
-          "warning": "Informer les participants de l'utilisation de France Compte Rendu pour cette réunion."
+          "warning": "Informer les participants de l'utilisation de MIrAI Compte-Rendu pour cette réunion."
         }
       },
       "actions": {
@@ -265,8 +278,8 @@
       }
     },
     "report": {
-      "generate": "Générer le compte rendu",
-      "download": "Télécharger le compte rendu",
+      "generate": "Générer le compte-rendu",
+      "download": "Télécharger le compte-rendu",
       "disclaimer": {
         "title": "Choisissez le format",
         "description": "L'outil FCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
@@ -278,12 +291,12 @@
       },
       "report-pending": {
         "title": "L'écriture du compte-rendu est en cours...",
-        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte rendu sera disponible au téléchargement une fois terminé."
+        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte-rendu sera disponible au téléchargement une fois terminé."
       },
       "error": {
         "no-transcription": {
           "title": "La transcription n'est pas terminée",
-          "description": "Vous pourrez générer un compte rendu lorsque la transcription de la réunion aura été générée."
+          "description": "Vous pourrez générer un compte-rendu lorsque la transcription de la réunion aura été générée."
         }
       }
     },
@@ -375,7 +388,7 @@
   },
   "not-tester": {
     "title": "Accès non autorisé",
-    "description": "L'outil France Compte Rendu est en cours de développement. Son accès est pour le moment réservé à un échantillon de beta-testeurs dont vous ne faites pas partie.",
+    "description": "L'outil MIrAI Compte-Rendu est en cours de développement. Son accès est pour le moment réservé à un échantillon de beta-testeurs dont vous ne faites pas partie.",
     "help": {
       "text": "Si vous souhaitez recevoir une alerte lors de la mise en ligne officielle de l'application, veuillez vous inscrire sur cette {url}.",
       "text-url": "liste"
@@ -397,7 +410,7 @@
     "meetings-loading": "Erreur lors du chargement des réunions",
     "meeting-creation": "Erreur lors de la création de la réunion",
     "audio-capture": "Erreur lors de la captation audio de la visioconférence",
-    "report-generation": "Erreur lors de la génération du compte rendu. Veuillez réessayer.",
+    "report-generation": "Erreur lors de la génération du compte-rendu. Veuillez réessayer.",
     "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer."
   }
 }
