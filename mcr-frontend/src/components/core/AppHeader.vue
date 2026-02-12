@@ -10,6 +10,7 @@
       <DsfrDropdown
         :main-button="{
           label: $t('header.links.mirai-services.main-button'),
+          icon: 'fr-icon-grid-fill',
           size: 'sm',
         }"
         class="max-sm:self-end"
@@ -75,6 +76,7 @@ const isBetaEnabled = useFeatureFlag('beta');
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
     label: t('header.links.useful-tips'),
+    icon: 'fr-icon-info-line',
     to: 'https://mirai.interieur.gouv.fr/outils-mirai/compte-rendu/bonnes-pratiques-fcr/',
     target: '_blank',
   },
@@ -146,6 +148,11 @@ const URL_FORM_FEEDBACK =
 
 :deep(.fr-accordion__btn[aria-expanded='true']):active {
   background-color: var(--background-open-blue-france-active);
+}
+
+:deep(.fr-accordion__btn) {
+  display: inline-flex;
+  align-items: center;
 }
 
 /* Prevent the displaying of the icon for external links on the left of the buttons */
