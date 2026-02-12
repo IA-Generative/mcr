@@ -18,7 +18,7 @@
   },
   "header": {
     "app": {
-      "name": "MIrAI Compte-Rendu",
+      "name": "MIrAI Compte Rendu",
       "description": "Aide à la rédaction de compte rendu"
     },
     "notice": {
@@ -135,7 +135,7 @@
         },
         "notice-2": {
           "title": "Avant de démarrer l'enregistrement, pensez à\u00a0:",
-          "warning": "Informer les participants de l'utilisation de MIrAI Compte-Rendu pour cette réunion."
+          "warning": "Informer les participants de l'utilisation de MIrAI Compte Rendu pour cette réunion."
         }
       },
       "actions": {
@@ -388,7 +388,7 @@
   },
   "not-tester": {
     "title": "Accès non autorisé",
-    "description": "L'outil MIrAI Compte-Rendu est en cours de développement. Son accès est pour le moment réservé à un échantillon de beta-testeurs dont vous ne faites pas partie.",
+    "description": "L'outil MIrAI Compte Rendu est en cours de développement. Son accès est pour le moment réservé à un échantillon de beta-testeurs dont vous ne faites pas partie.",
     "help": {
       "text": "Si vous souhaitez recevoir une alerte lors de la mise en ligne officielle de l'application, veuillez vous inscrire sur cette {url}.",
       "text-url": "liste"
