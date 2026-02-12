@@ -2,14 +2,61 @@ import importlib
 import inspect
 import os
 import sys
+from typing import Union, List, Set
 
 from loguru import logger
 from statemachine import StateMachine
 from statemachine.contrib.diagram import DotGraphMachine
+import pydot
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+
+GLOBAL_STATES = ["DELETED"]
+
+
+def create_graph_with_hidden_states(
+    machine: Union[type[StateMachine], StateMachine],
+    hidden_states: Union[List[str], Set[str]] = None,
+) -> pydot.Dot:
+    """
+    Generate a state machine diagram with specific states visually minimized
+    and positioned as sink nodes.
+    """
+    hidden_states = set(hidden_states or [])
+    graph_generator = DotGraphMachine(machine)
+    dot_graph = graph_generator()
+
+    if not hidden_states:
+        return dot_graph
+
+    # hidden states subgraph
+    sink_subgraph = pydot.Subgraph(rank="sink")
+
+    for node in dot_graph.get_nodes():
+        node_name = node.get_name().strip('"')
+
+        if node_name in hidden_states:
+            # muted styles
+            node.set_style("filled")
+            node.set_fillcolor("#eeeeee")
+            node.set_color("gray")
+            node.set_fontcolor("gray")
+            sink_subgraph.add_node(node)
+
+    dot_graph.add_subgraph(sink_subgraph)
+
+    for edge in dot_graph.get_edges():
+        source = edge.get_source().strip('"')
+        dest = edge.get_destination().strip('"')
+
+        if source in hidden_states or dest in hidden_states:
+            edge.set_style("dotted")
+            edge.set_color("gray")
+            edge.set_constraint("false")
+
+    return dot_graph
 
 
 def main():
@@ -41,8 +88,11 @@ def main():
                         try:
                             sm = obj()
                             graph = DotGraphMachine(sm)
+                            graph = create_graph_with_hidden_states(
+                                sm, hidden_states=GLOBAL_STATES
+                            )
                             output_file = os.path.join(graph_dir, f"{name}.png")
-                            graph().write_png(path=output_file)
+                            graph.write_png(path=output_file)
                             logger.info(
                                 "Graph generated successfully for {}: {}",
                                 name,
