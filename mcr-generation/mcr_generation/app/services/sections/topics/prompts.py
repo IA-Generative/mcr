@@ -28,7 +28,7 @@ Tu dois renvoyer le résultat final strictement au format JSON validant le sché
 
 
 REDUCE_PROMPT_TEMPLATE = """
-Tu es un assistant chargé de générer un compte rendu de réunion consolidé en deux parties : les sujets discutés et les prochaines étapes.
+Tu es un assistant chargé de générer un compte-rendu de réunion consolidé en deux parties : les sujets discutés et les prochaines étapes.
 
 Objectif principal de la réunion : {meeting_subject}
 Liste des participants mappés : {speaker_mapping}

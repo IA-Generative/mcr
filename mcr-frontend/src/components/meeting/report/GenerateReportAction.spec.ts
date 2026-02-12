@@ -63,13 +63,13 @@ describe('GenerateReportAction', () => {
     // Simuler l'appel de generateReport avec erreur
     mockGenerateReport(1, {
       onError: () => {
-        mockAddErrorMessage('Erreur lors de la génération du compte rendu. Veuillez réessayer.');
+        mockAddErrorMessage('Erreur lors de la génération du compte-rendu. Veuillez réessayer.');
       },
     });
 
     // Assert
     expect(mockAddErrorMessage).toHaveBeenCalledWith(
-      'Erreur lors de la génération du compte rendu. Veuillez réessayer.',
+      'Erreur lors de la génération du compte-rendu. Veuillez réessayer.',
     );
   });
 
