@@ -1,11 +1,11 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
-import os
 import tempfile
 from io import BytesIO
 from typing import List
 
 import numpy as np
+from faster_whisper import WhisperModel
 from loguru import logger
 from numpy.typing import NDArray
 
@@ -44,7 +44,7 @@ class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        self.dev = os.environ.get("ENV_MODE") == "DEV"
+        pass
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
@@ -91,22 +91,21 @@ class SpeechToTextPipeline:
         )
         return merged_segments
 
-    def transcribe(  # type: ignore[explicit-any]
+    def transcribe_audio_chunk(
         self,
         audio: NDArray[np.float32],
+        transcription_model: WhisperModel,
     ) -> List[TranscriptionSegment]:
-        """Transcribe audio bytes to text with speaker diarization
+        """Transcribe audio array:q to text with speaker diarization
 
         Args:
-            audio (NDArray[np.float32]): The input audio as a numpy array.
+            audio (NDArray): The input audio array.
+            transcription_model (WhisperModel): The transcription model.
 
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
         """
-        transcription_model = get_transcription_model()
-
-        audio = audio.astype(np.float32, copy=False)
-        logger.info("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
+        logger.debug("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
 
         segments, info = transcription_model.transcribe(
             audio,
@@ -120,7 +119,7 @@ class SpeechToTextPipeline:
         logger.debug("Transcription info: {}", info)
 
         if not result:
-            logger.info("No segments found in transcription result.")
+            logger.debug("No segments found in transcription result.")
             return []
 
         transcription_segments = [
@@ -135,7 +134,61 @@ class SpeechToTextPipeline:
 
         return transcription_segments
 
-    def diarize(
+    def transcribe_audio(
+        self,
+        audio_bytes: BytesIO,
+        vad_spans: List[DiarizationSegment],
+    ) -> List[TranscriptionSegment]:
+        """Transcribe full audio bytes to text.
+
+        Args:
+            audio_bytes (BytesIO): The input audio bytes.
+            vad_spans (List[DiarizationSegment]): The VAD segments to split the audio into for transcription.
+
+        Returns:
+            List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
+        """
+        transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
+
+        logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
+
+        transciription_model = get_transcription_model()
+        transcription_segments: List[TranscriptionSegment] = []
+
+        for idx, chunk in enumerate(transcription_inputs):
+            logger.debug(
+                "Transcribing vad chunk: start={}, end={}",
+                chunk.diarization.start,
+                chunk.diarization.end,
+            )
+            chunk_transcription_segments = self.transcribe_audio_chunk(
+                chunk.audio, transciription_model
+            )
+            if not chunk_transcription_segments:
+                logger.debug(
+                    "No transcription for this chunk: start: {} - end: {}.",
+                    chunk.diarization.start,
+                    chunk.diarization.end,
+                )
+                continue
+            logger.debug(
+                "Number of transcription segments in one chunk: {}",
+                len(chunk_transcription_segments),
+            )
+
+            for segment in chunk_transcription_segments:
+                transcription_segments.append(
+                    TranscriptionSegment(
+                        id=idx,
+                        start=segment.start + chunk.diarization.start,
+                        end=segment.end + chunk.diarization.start,
+                        text=segment.text,
+                    )
+                )
+
+        return transcription_segments
+
+    def diarize_audio(
         self,
         audio_bytes: BytesIO,
     ) -> List[DiarizationSegment]:
@@ -155,7 +208,7 @@ class SpeechToTextPipeline:
 
             pyannote_diarization = diarization_pipeline(tmp_audio_path)
 
-            diarization = [
+            diarization_segments = [
                 DiarizationSegment(
                     start=segment.start,
                     end=segment.end,
@@ -166,9 +219,9 @@ class SpeechToTextPipeline:
                 )
             ]
 
-            return diarization
+            return diarization_segments
 
-    def run(  # type: ignore[explicit-any]
+    def run(
         self,
         audio_bytes: BytesIO,
     ) -> List[DiarizedTranscriptionSegment]:
@@ -178,59 +231,24 @@ class SpeechToTextPipeline:
 
         pre_processed_audio_bytes = self.pre_process(audio_bytes)
 
-        diarization_result = self.diarize(
+        diarization_result = self.diarize_audio(
             pre_processed_audio_bytes,
         )
 
         if not diarization_result:
-            logger.info("No diarization result. Returning empty transcription.")
+            logger.debug("No diarization result. Returning empty transcription.")
             return []
 
         vad_spans: List[DiarizationSegment] = get_vad_segments_from_diarization(
             diarization_result
         )
 
-        vad_transcription_inputs = split_audio_on_timestamps(
+        transcription_segments = self.transcribe_audio(
             pre_processed_audio_bytes, vad_spans
         )
 
-        vad_transcription_segments: List[TranscriptionSegment] = []
-
-        logger.info("Number of diarization chunks: {}", len(diarization_result))
-
-        for idx, chunk in enumerate(vad_transcription_inputs):
-            logger.info(
-                "Transcribing vad chunk: start={}, end={}",
-                chunk.diarization.start,
-                chunk.diarization.end,
-            )
-            chunk_transcription_segments = self.transcribe(
-                chunk.audio,
-            )
-            if not chunk_transcription_segments:
-                logger.info(
-                    "No transcription for this chunk: start: {} - end: {}.",
-                    chunk.diarization.start,
-                    chunk.diarization.end,
-                )
-                continue
-            logger.info(
-                "Number of transcription segments in one chunk: {}",
-                len(chunk_transcription_segments),
-            )
-
-            for segment in chunk_transcription_segments:
-                vad_transcription_segments.append(
-                    TranscriptionSegment(
-                        id=idx,
-                        start=segment.start + chunk.diarization.start,
-                        end=segment.end + chunk.diarization.start,
-                        text=segment.text,
-                    )
-                )
-
         diarized_transcription_segments = diarize_vad_transcription_segments(
-            vad_transcription_segments, diarization_result
+            transcription_segments, diarization_result
         )
 
         merged_segments = self.post_process(diarized_transcription_segments)
