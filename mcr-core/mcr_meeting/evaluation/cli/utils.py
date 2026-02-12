@@ -4,7 +4,11 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_meeting.evaluation.asr_evaluation_pipeline import MetricsPipeline
-from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionOutput
+from mcr_meeting.evaluation.eval_types import (
+    EvaluationInput,
+    MetricsPipelineInput,
+    TranscriptionOutput,
+)
 
 
 def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
@@ -27,7 +31,6 @@ def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
                 audio_path=audio_file,
                 audio_bytes=BytesIO(audio_file.read_bytes()),
                 reference_transcription=reference,
-                generated_transcription=None,
             )
         )
     return evaluation_inputs
@@ -35,8 +38,8 @@ def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
 
 def load_hypothesis_inputs(
     ref_dir: Path, hyp_dir: Path, audio_dir: Path
-) -> list[EvaluationInput]:
-    evaluation_inputs = []
+) -> list[MetricsPipelineInput]:
+    metrics_pipeline_inputs = []
     for reference_transcript in ref_dir.glob("*.json"):
         uid = reference_transcript.stem
         hypothese_transcript_path = hyp_dir / f"{uid}.json"
@@ -53,8 +56,8 @@ def load_hypothesis_inputs(
             hypothese_transcript_path.read_text()
         )
 
-        evaluation_inputs.append(
-            EvaluationInput(
+        metrics_pipeline_inputs.append(
+            MetricsPipelineInput(
                 uid=uid,
                 audio_path=audio_path,
                 audio_bytes=BytesIO(audio_path.read_bytes())
@@ -64,17 +67,19 @@ def load_hypothesis_inputs(
                 generated_transcription=generated,
             )
         )
-    return evaluation_inputs
+    return metrics_pipeline_inputs
 
 
-def run_evaluation(evaluation_inputs: list[EvaluationInput], output_dir: Path) -> None:
-    if not evaluation_inputs:
+def run_evaluation(
+    metrics_pipeline_inputs: list[MetricsPipelineInput], output_dir: Path
+) -> None:
+    if not metrics_pipeline_inputs:
         logger.error("No evaluation inputs found → nothing to do.")
         exit(1)
 
     pipeline = MetricsPipeline()
     summary = pipeline.calculate_and_save_metrics(
-        evaluation_inputs=evaluation_inputs, output_dir=output_dir
+        metrics_pipeline_inputs=metrics_pipeline_inputs, output_dir=output_dir
     )
     logger.info("\n=== Evaluation Metrics ===")
     logger.info("\n=== Averages ===")

@@ -134,15 +134,6 @@ class MetricsCalculator:
         hypothesis_transcription: TranscriptionOutput,
     ) -> EvaluationMetrics:
         """Calculate metrics for a single file"""
-        if not sample.reference_transcription:
-            logger.warning(
-                "Reference transcription is empty. Cannot calculate metrics for {}",
-                sample.uid,
-            )
-            raise ValueError(
-                "Reference transcription should not be empty for metrics calculation."
-            )
-
         logger.info("Calculating metrics for {}", sample.uid)
         transcription_metrics = self.calculate_transcription_metrics(
             reference_text=sample.reference_transcription.text,
