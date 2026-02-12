@@ -1741,6 +1741,7 @@ dependencies = [
     { name = "loguru" },
     { name = "mypy-boto3-s3" },
     { name = "numpy" },
+    { name = "openai" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "python-statemachine" },
