@@ -9,7 +9,7 @@
     <DsfrDropdown
       :main-button="{
         label: $t('meetings.table.add'),
-        icon: 'ri-add-line',
+        icon: 'fr-icon-add-line',
         size: 'md',
       }"
       class="max-sm:self-end"
