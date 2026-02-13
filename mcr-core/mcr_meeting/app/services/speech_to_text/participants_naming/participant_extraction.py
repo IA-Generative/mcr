@@ -58,12 +58,17 @@ class ParticipantExtraction:
     def extract(self, text: str) -> List[Participant]:
         chunks = self._chunk_text(text)
 
+        if not chunks:
+            logger.warning("No chunks found")
+            return []
+
         # Seed with first chunk
         participants = self._initial_extract(chunks[0])
 
         # Refine with subsequent chunks
-        for chunk in chunks[1:]:
-            participants = self._refine(participants, chunk)
+        if len(chunks) > 1:
+            for chunk in chunks[1:]:
+                participants = self._refine(participants, chunk)
 
         return participants
 
