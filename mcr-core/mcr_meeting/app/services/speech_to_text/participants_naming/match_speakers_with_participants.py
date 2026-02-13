@@ -26,7 +26,7 @@ def format_segments_for_llm(segments: list[DiarizedTranscriptionSegment]) -> str
 
 def replace_speaker_name_if_available(
     segments: list[DiarizedTranscriptionSegment], participants: list[Participant]
-) -> list[DiarizedTranscriptionSegment]:
+) -> None:
     """Replaces speaker IDs with real names where available."""
     # Build the map once: { "SPEAKER_01": "John Doe" }
     speaker_id_to_speaker_name = {p.speaker_id: p.name for p in participants if p.name}
