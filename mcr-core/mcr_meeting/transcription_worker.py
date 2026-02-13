@@ -243,8 +243,7 @@ def evaluate(zip_data: bytes) -> None:
                     reference_transcription = TranscriptionOutput.model_validate_json(
                         f.read()
                     )
-            else:
-                reference_transcription = None
+            if not isinstance(reference_transcription, TranscriptionOutput):
                 logger.warning(
                     "Reference transcription not found for {}, skipping this file.", uid
                 )
@@ -255,7 +254,6 @@ def evaluate(zip_data: bytes) -> None:
                     audio_path=audio_file,
                     audio_bytes=audio_bytes,
                     reference_transcription=reference_transcription,
-                    generated_transcription=None,
                 )
             )
 
