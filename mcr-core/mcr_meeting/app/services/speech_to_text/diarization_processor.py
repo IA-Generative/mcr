@@ -6,6 +6,7 @@ import httpx
 from loguru import logger
 
 from mcr_meeting.app.configs.base import (
+    PyannoteDiarizationParameters,
     TranscriptionApiSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import DiarizationError
@@ -22,6 +23,7 @@ from mcr_meeting.app.services.speech_to_text.utils.models import (
 )
 
 api_settings = TranscriptionApiSettings()
+diarization_params = PyannoteDiarizationParameters()
 
 
 class DiarizationProcessor:
@@ -89,9 +91,15 @@ class DiarizationProcessor:
         try:
             client = self._get_http_client()
 
+            form_data = {
+                "min_duration_off": diarization_params.min_duration_off,
+                "clustering_threshold": diarization_params.threshold,
+            }
+
             response = client.post(
                 f"{api_settings.DIARIZATION_API_BASE_URL}/diarize",
                 files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+                data=form_data,
                 headers={"Authorization": f"Bearer {api_settings.DIARIZATION_API_KEY}"},
             )
 
