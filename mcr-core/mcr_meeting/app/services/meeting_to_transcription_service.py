@@ -13,6 +13,7 @@ from mcr_meeting.app.schemas.transcription_schema import (
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     download_and_concatenate_s3_audio_chunks_into_bytes,
 )
+from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
 from mcr_meeting.app.services.s3_service import (
     get_objects_list_from_prefix,
 )
@@ -103,7 +104,13 @@ def transcribe_meeting(
 
         diarized_transcription_segments = speech_to_text_pipeline.run(full_audio_bytes)
 
-        enrich_segments_with_participants(diarized_transcription_segments)
+        feature_flag_client = get_feature_flag_client()
+
+        if feature_flag_client.is_enabled("speaker_identification"):
+            logger.info("Speaker identification enabled, enriching segments")
+            enrich_segments_with_participants(diarized_transcription_segments)
+        else:
+            logger.info("Speaker identification disabled, skipping enrichment")
 
         # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
         speaker_transcription_segments = [
