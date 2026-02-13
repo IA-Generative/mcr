@@ -152,7 +152,7 @@ class SpeechToTextPipeline:
 
         logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
 
-        transciription_model = get_transcription_model()
+        transcription_model = get_transcription_model()
         transcription_segments: List[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(transcription_inputs):
@@ -162,7 +162,7 @@ class SpeechToTextPipeline:
                 chunk.diarization.end,
             )
             chunk_transcription_segments = self.transcribe_audio_chunk(
-                chunk.audio, transciription_model
+                chunk.audio, transcription_model
             )
             if not chunk_transcription_segments:
                 logger.debug(
