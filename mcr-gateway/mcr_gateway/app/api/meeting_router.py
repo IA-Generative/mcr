@@ -279,13 +279,18 @@ async def stop_capture(
 )
 async def get_meetings(
     search: str = Query(None, description="Terme de recherche optionnel"),
+    page: int = Query(1, description="Numéro de page"),
+    page_size: int = Query(10, description="Nombre d'éléments par page"),
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
 ) -> List[Meeting]:
     """
     Route pour interroger mcr-core et retourner la liste des réunions.
     """
     return await get_meetings_service(
-        search=search, user_keycloak_uuid=current_user.keycloak_uuid
+        search=search,
+        page=page,
+        page_size=page_size,
+        user_keycloak_uuid=current_user.keycloak_uuid,
     )
 
 
