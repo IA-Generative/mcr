@@ -6,6 +6,9 @@ from mcr_meeting.app.schemas.transcription_schema import (
 from mcr_meeting.app.services.speech_to_text.participants_naming import (
     ParticipantExtraction,
 )
+from mcr_meeting.app.services.speech_to_text.participants_naming.participant_extraction import (
+    Participant,
+)
 
 
 def format_segments_for_llm(segments: list[DiarizedTranscriptionSegment]) -> str:
@@ -19,6 +22,20 @@ def format_segments_for_llm(segments: list[DiarizedTranscriptionSegment]) -> str
         str: Dialogue string.
     """
     return "\n".join([str(seg) for seg in segments])
+
+
+def replace_speaker_name_if_available(
+    segments: list[DiarizedTranscriptionSegment], participants: list[Participant]
+) -> list[DiarizedTranscriptionSegment]:
+    """Replaces speaker IDs with real names where available."""
+    # Build the map once: { "SPEAKER_01": "John Doe" }
+    speaker_id_to_speaker_name = {p.speaker_id: p.name for p in participants if p.name}
+    logger.info("speaker_id_to_speaker_name {}", speaker_id_to_speaker_name)
+
+    for segment in segments:
+        segment.speaker = speaker_id_to_speaker_name.get(
+            segment.speaker, segment.speaker
+        )
 
 
 def enrich_segments_with_participants(
@@ -39,19 +56,9 @@ def enrich_segments_with_participants(
 
         extractor = ParticipantExtraction()
         participants = extractor.extract(dialogue_text)
+        replace_speaker_name_if_available(segments, participants)
 
-        logger.debug("Found {} participants", len(participants))
-        if not participants:
-            logger.debug("No participant found")
-        else:
-            for p in participants:
-                # Logged for this ticket, will be removed later
-                logger.debug("--- Participant ---")
-                logger.debug("ID: {}", p.speaker_id)
-                logger.debug("Name: {}", p.name)
-                logger.debug("Role: {}", p.role)
-                logger.debug("Confidence: {}", p.confidence)
-                logger.debug("Justification: {}", p.association_justification)
+        logger.debug("Extracted {} participants' names", len(participants))
     except Exception as e:
         logger.warning("Failed to extract participants: {}", e)
         pass
