@@ -3,6 +3,6 @@ psycopg2~=2.9
 SQLAlchemy~=2.0
 alembic~=1.10
 pydantic~=1.10
-python-jose~=3.3
+python-jose~=3.5
 requests~=2.30
 uvicorn~=0.37
