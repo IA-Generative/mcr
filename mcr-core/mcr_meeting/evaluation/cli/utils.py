@@ -10,10 +10,15 @@ from mcr_meeting.evaluation.eval_types import (
     TranscriptionOutput,
 )
 
+SUPPORTED_AUDIO_FORMATS = ("mp3", "wav")
+
 
 def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
     evaluation_inputs = []
-    for audio_file in audio_dir.glob("*.mp3"):
+    audio_files = [
+        f for fmt in SUPPORTED_AUDIO_FORMATS for f in audio_dir.glob(f"*.{fmt}")
+    ]
+    for audio_file in audio_files:
         uid = audio_file.stem
         ref_path = ref_dir / f"{uid}.json"
         if not ref_path.exists():
