@@ -25,3 +25,4 @@ mcr_meeting/evaluation/data/inputs/reference_transcripts/*
 mcr_meeting/evaluation/data/outputs/hypothesis_transcripts/*
 mcr_meeting/evaluation/data/outputs/*
 mcr_meeting/evaluation/data/summre_dev_split/*
+mcr_meeting/evaluation/data/noisy_dataset/*
