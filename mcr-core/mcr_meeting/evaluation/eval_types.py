@@ -1,6 +1,6 @@
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel
 
@@ -47,12 +47,15 @@ class EvaluationSummary(BaseModel):
 class EvaluationInput(BaseModel):
     uid: str
     audio_path: Path
-    audio_bytes: Optional[BytesIO] = None
-    reference_transcription: Optional[TranscriptionOutput] = None
-    generated_transcription: Optional[TranscriptionOutput] = None
+    audio_bytes: BytesIO
+    reference_transcription: TranscriptionOutput
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class MetricsPipelineInput(EvaluationInput):
+    generated_transcription: TranscriptionOutput
 
 
 class EvaluationOutput(BaseModel):
