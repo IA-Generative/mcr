@@ -20,6 +20,7 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     normalize_audio_bytes_to_wav_bytes,
 )
 from mcr_meeting.app.services.feature_flag_service import (
+    FeatureFlag,
     FeatureFlagClient,
     get_feature_flag_client,
 )
@@ -67,7 +68,7 @@ class AudioFileProcessor:
 
         # Apply noise filtering only if feature flag is enabled
         if feature_flag_client and feature_flag_client.is_enabled(
-            "audio_noise_filtering"
+            FeatureFlag.AUDIO_NOISE_FILTERING
         ):
             logger.info("Noise filtering enabled")
             processed_bytes = filter_noise_from_audio_bytes(normalized_bytes)
@@ -225,7 +226,7 @@ class ResultsManager:
 
         if self.dev:
             logger.warning("Results saving in s3 is disabled in dev mode")
-            return
+            # return
 
         csv_bytes = df.to_csv(index=False).encode("utf-8")
 

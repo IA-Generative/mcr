@@ -172,6 +172,10 @@ jobs:
       UNLEASH_URL: ${{ vars.UNLEASH_URL }}
       UNLEASH_INSTANCE_ID: ${{ secrets.UNLEASH_INSTANCE_ID }}
       ENV_MODE: ${{ vars.ENV_MODE }}
+      TRANSCRIPTION_API_BASE_URL: ${{ secrets.TRANSCRIPTION_API_BASE_URL }}
+      TRANSCRIPTION_API_KEY: ${{ secrets.TRANSCRIPTION_API_KEY }}
+      DIARIZATION_API_BASE_URL: ${{ secrets.DIARIZATION_API_BASE_URL }}
+      DIARIZATION_API_KEY: ${{ secrets.DIARIZATION_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 

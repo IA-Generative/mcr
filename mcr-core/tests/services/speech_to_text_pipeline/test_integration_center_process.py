@@ -10,6 +10,7 @@ from loguru import logger
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
+    TranscriptionSegment,
 )
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 from mcr_meeting.app.services.speech_to_text.types import (
@@ -94,20 +95,22 @@ def run_the_code_to_test(
         ),
     ],
 )
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.transcription_processor.get_transcription_model"
+)
+@patch(
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_center_process_normal_flow(
-    mock_get_diarization_pipeline,
-    mock_get_transcription_model,
+    mock_get_diarization_pipeline: MagicMock,
+    mock_get_transcription_model: MagicMock,
     diarization_fixture: str,
     transcription_fixture: str,
     expected_segments_count: int,
     expected_speakers: list[str],
-    pre_processed_audio_bytes,
-    request,
-):
+    pre_processed_audio_bytes: BytesIO,
+    request: pytest.FixtureRequest,
+) -> None:
     """Test center process with normal flow and different speaker configurations.
 
     This test verifies:
@@ -185,12 +188,12 @@ def test_integration_center_process_normal_flow(
 
 
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_center_process_empty_diarization(
-    mock_get_diarization_pipeline,
-    pre_processed_audio_bytes,
-):
+    mock_get_diarization_pipeline: MagicMock,
+    pre_processed_audio_bytes: BytesIO,
+) -> None:
     """Test center process when diarization returns empty result.
 
     This test verifies that the flow correctly handles empty diarization
@@ -213,17 +216,19 @@ def test_integration_center_process_empty_diarization(
     assert len(transcription_segments) == 0
 
 
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
 @patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+    "mcr_meeting.app.services.speech_to_text.transcription_processor.get_transcription_model"
+)
+@patch(
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_center_process_with_empty_chunks(
-    mock_get_diarization_pipeline,
-    mock_get_transcription_model,
-    diarization_result_multiple_speakers,
-    mock_transcription_segments_with_empty,
-    pre_processed_audio_bytes,
-):
+    mock_get_diarization_pipeline: MagicMock,
+    mock_get_transcription_model: MagicMock,
+    diarization_result_multiple_speakers: list[DiarizationSegment],
+    mock_transcription_segments_with_empty: list[list[TranscriptionSegment]],
+    pre_processed_audio_bytes: BytesIO,
+) -> None:
     """Test center process when some chunks produce no transcription.
 
     This test verifies that the flow correctly handles empty transcription
