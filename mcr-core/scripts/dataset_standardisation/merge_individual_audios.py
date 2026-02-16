@@ -120,14 +120,10 @@ def mix_audio_files(audio_paths: List[str]) -> BytesIO:
 
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
-        raise InvalidAudioFileError(
-            f"FFmpeg audio mixing failed: {stderr_text}"
-        ) from e
+        raise InvalidAudioFileError(f"FFmpeg audio mixing failed: {stderr_text}") from e
 
     except Exception as e:
-        raise InvalidAudioFileError(
-            f"Unexpected error during audio mixing: {e}"
-        ) from e
+        raise InvalidAudioFileError(f"Unexpected error during audio mixing: {e}") from e
 
 
 def group_audio_files_by_prefix(
@@ -222,7 +218,9 @@ def main() -> None:
     to raw_audios_path.
     """
     # Define paths - TODO: Update these paths
-    individual_audios_path = Path("mcr_meeting/evaluation/data/clean_dataset/individual_audios")
+    individual_audios_path = Path(
+        "mcr_meeting/evaluation/data/clean_dataset/individual_audios"
+    )
     raw_audios_path = Path("mcr_meeting/evaluation/data/clean_dataset/raw_audios")
 
     logger.info("Starting audio mixing process")
@@ -231,7 +229,7 @@ def main() -> None:
 
     # Group files by first 4 characters
     groups = group_audio_files_by_prefix(individual_audios_path, prefix_length=4)
-    
+
     if not groups:
         logger.warning("No audio groups found. Exiting.")
         return
