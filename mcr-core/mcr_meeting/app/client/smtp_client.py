@@ -1,103 +1,119 @@
 import logging
 import smtplib
-import threading
+import socket
+import time
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from mcr_meeting.app.configs.base import Settings, SMTPSettings
-
-_smtp_server = None
-# Protects SMTP singleton from race conditions in our multi-threaded app
-_smtp_lock = threading.Lock()
+from mcr_meeting.app.configs.base import SMTPSettings
 
 logger = logging.getLogger(__name__)
-settings = Settings()
 
 
-def send_email(to_email: str, subject: str, html: str) -> bool:
+def send_email(
+    to_email: str,
+    subject: str,
+    html: str,
+    max_retries: int = 3,
+) -> bool:
     """
-    Send an email using the singleton SMTP client.
-
-    Args:
-        to_email (str): Recipient email address
-        subject (str): Email subject
-        html (str): Email html content (HTML)
+    Send an email with retry and exponential backoff.
 
     Returns:
-        bool: True if sent successfully, False otherwise
+        bool: True if sent successfully, False otherwise.
     """
-    try:
-        settings = SMTPSettings()
-        server = _get_smtp_server()
 
-        msg = MIMEMultipart()
-        msg["From"] = settings.SMTP_SENDER
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(html, "html", "utf-8"))
+    settings = SMTPSettings()
 
-        server.sendmail(
-            settings.SMTP_SENDER,
-            [to_email],
-            msg.as_string(),
-        )
-
-        return True
-
-    except Exception as e:
-        logger.error("Failed to send email to %s: %s", to_email, str(e))
-        # Reset connection on failure
-        close_smtp_server()
-        return False
-
-
-def _get_smtp_server() -> smtplib.SMTP_SSL:
-    """
-    Lazily initialize and return the singleton SMTP server.
-    """
-    global _smtp_server
-
-    if _smtp_server is not None:
-        return _smtp_server
-
-    with _smtp_lock:
-        if _smtp_server is not None:
-            return _smtp_server
-
-        settings = SMTPSettings()
+    for attempt in range(1, max_retries + 1):
         try:
-            server = smtplib.SMTP_SSL(
+            with smtplib.SMTP_SSL(
                 settings.SMTP_ENDPOINT,
                 settings.SMTP_PORT,
-                timeout=10,
+                timeout=30,
+            ) as server:
+                server.login(
+                    settings.SMTP_USERNAME,
+                    settings.SMTP_SECRET,
+                )
+
+                msg = MIMEMultipart()
+                msg["From"] = settings.SMTP_SENDER
+                msg["To"] = to_email
+                msg["Subject"] = subject
+                msg.attach(MIMEText(html, "html", "utf-8"))
+
+                errors = server.sendmail(
+                    settings.SMTP_SENDER,
+                    [to_email],
+                    msg.as_string(),
+                )
+
+                if errors:
+                    logger.error("SMTP refused recipients: %s", errors)
+                    return False
+
+            logger.info("Email sent to %s", to_email)
+            return True
+
+        except Exception as exc:
+            retryable = _is_retryable_exception(exc)
+
+            logger.warning(
+                "Email attempt %d/%d failed (retryable=%s): %s",
+                attempt,
+                max_retries,
+                retryable,
+                str(exc),
             )
-            server.login(
-                settings.SMTP_USERNAME,
-                settings.SMTP_SECRET,
-            )
-            _smtp_server = server
-            logger.info("SMTP connection initialized")
-        except Exception:
-            logger.exception("Failed to initialize SMTP connection")
-            raise
 
-    return _smtp_server
+            if not retryable or attempt == max_retries:
+                logger.exception("Email sending failed permanently for %s", to_email)
+                return False
+
+            # Exponential backoff: 2s, 4s, 8s...
+            sleep_time = 2**attempt
+            time.sleep(sleep_time)
+
+    return False
 
 
-def close_smtp_server() -> None:
+def _is_retryable_exception(exc: Exception) -> bool:
     """
-    Explicitly close the SMTP connection (useful on shutdown).
+    Determine if an SMTP exception is temporary and worth retrying.
     """
-    global _smtp_server
 
-    with _smtp_lock:
-        if _smtp_server is None:
-            return
+    # Network-level issues
+    if isinstance(exc, (socket.timeout, OSError)):
+        return True
+    # Generic SMTP exceptions
+    if isinstance(exc, smtplib.SMTPServerDisconnected):
+        return True
 
+    if isinstance(exc, smtplib.SMTPConnectError):
+        return True
+
+    if isinstance(exc, smtplib.SMTPDataError):
+        # Retry only 4xx errors (temporary)
         try:
-            _smtp_server.quit()
-            logger.info("SMTP connection closed")
+            code = exc.smtp_code
+            return 400 <= code < 500
         except Exception:
-            logger.exception("Failed to close SMTP connection")
-        finally:
-            _smtp_server = None
+            return True
+
+    # Authentication / permanent failures should NOT retry
+    if isinstance(
+        exc,
+        (
+            smtplib.SMTPAuthenticationError,
+            smtplib.SMTPSenderRefused,
+            smtplib.SMTPRecipientsRefused,
+        ),
+    ):
+        return False
+
+    # Retry for generic SMTPException
+    if isinstance(exc, smtplib.SMTPException):
+        return True
+
+    return False
