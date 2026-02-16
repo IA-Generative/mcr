@@ -6,12 +6,12 @@ requires-python = "~=3.12.0"
 
 
 dependencies = [
-    "fastapi[standard]==0.118.0",
+    "fastapi[standard]==0.129.0",
     "starlette",
     "httpx==0.28.1",
-    "uvicorn==0.37.0",
-    "pydantic[email]==2.11.10",
-    "pydantic-settings==2.11.0",
+    "uvicorn==0.40.0",
+    "pydantic[email]==2.12.5",
+    "pydantic-settings==2.13.0",
     "python-keycloak==5.8.1",
     "loguru>=0.7.3",
 ]
