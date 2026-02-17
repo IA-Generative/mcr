@@ -122,6 +122,31 @@ class TestCreateMeetingService:
         assert result.name_platform == MeetingPlatforms.MCR_RECORD
         assert result.status == MeetingStatus.CAPTURE_IN_PROGRESS
 
+    def test_create_meeting_service_sets_none_for_visio(
+        self, db_session: Session, user_fixture: User
+    ) -> None:
+        """Test that VISIO platform sets status to NONE."""
+        # Arrange
+        meeting_data = MeetingCreate(
+            name="Visio Meeting",
+            name_platform=MeetingPlatforms.VISIO,
+            creation_date=datetime(2024, 10, 1, 12, 0, tzinfo=timezone.utc),
+            url="https://visio.numerique.gouv.fr/aaa-bbbb-ccc",
+        )
+
+        # Act
+        result = create_meeting_service(meeting_data, user_fixture.keycloak_uuid)
+
+        # Assert
+        assert result.id is not None
+        assert result.name_platform == MeetingPlatforms.VISIO
+        assert result.status == MeetingStatus.NONE
+
+        # Verify meeting was actually persisted to database
+        db_meeting = db_session.get(Meeting, result.id)
+        assert db_meeting is not None
+        assert db_meeting.name == "Visio Meeting"
+
     def test_create_meeting_service_sets_none_for_other_platforms(
         self, db_session: Session, user_fixture: User
     ) -> None:

@@ -60,6 +60,7 @@ class MeetingBase(BaseModel):
             MeetingPlatforms.COMU: validate_comu_meeting,
             MeetingPlatforms.WEBINAIRE: validate_webinaire_meeting,
             MeetingPlatforms.WEBCONF: validate_webconf_meeting,
+            MeetingPlatforms.VISIO: validate_visio_meeting,
             MeetingPlatforms.MCR_IMPORT: no_validation,
             MeetingPlatforms.MCR_RECORD: no_validation,
         }
@@ -234,6 +235,21 @@ def validate_webconf_meeting(values: MeetingBase) -> None:
         raise ValueError("No connection information provided")
 
 
+def validate_visio_meeting(values: MeetingBase) -> None:
+    """Validates the values of a MeetingBase object for a VISIO meeting platform.
+    Args:
+        values (MeetingBase): The values to be validated.
+    Raises:
+        ValueError: If the URL is in an invalid format."""
+    visio_url_validator = VisioUrlValidator()
+    if values.url:
+        if not visio_url_validator.validate_url(values.url):
+            raise ValueError(f"Invalid URL format for platform {values.name_platform}")
+        return None
+    else:
+        raise ValueError("No connection information provided")
+
+
 def no_validation(values: MeetingBase) -> None:
     """No validation is performed for this platform."""
     return None
@@ -301,6 +317,18 @@ class WebConfUrlValidator:
         return re.compile(
             rf"^https://{self.domain.pattern}/{self.meeting_name.pattern}$"
         )
+
+    def validate_url(self, url: str) -> bool:
+        return bool(self.url_regex.match(url))
+
+
+class VisioUrlValidator:
+    domain = re.compile(r"visio\.numerique\.gouv\.fr")
+    slug = re.compile(r"[a-z]{3}-[a-z]{4}-[a-z]{3}")
+
+    @property
+    def url_regex(self) -> re.Pattern[str]:
+        return re.compile(rf"^https://{self.domain.pattern}/{self.slug.pattern}$")
 
     def validate_url(self, url: str) -> bool:
         return bool(self.url_regex.match(url))
