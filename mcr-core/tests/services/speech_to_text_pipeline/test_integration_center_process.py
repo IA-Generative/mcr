@@ -96,6 +96,12 @@ def run_the_code_to_test(
     ],
 )
 @patch(
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_feature_flag_client"
+)
+@patch(
+    "mcr_meeting.app.services.speech_to_text.transcription_processor.get_feature_flag_client"
+)
+@patch(
     "mcr_meeting.app.services.speech_to_text.transcription_processor.get_transcription_model"
 )
 @patch(
@@ -104,11 +110,14 @@ def run_the_code_to_test(
 def test_integration_center_process_normal_flow(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_transcription_model: MagicMock,
+    mock_get_feature_flag_client_transcription: MagicMock,
+    mock_get_feature_flag_client_diarization: MagicMock,
     diarization_fixture: str,
     transcription_fixture: str,
     expected_segments_count: int,
     expected_speakers: list[str],
     pre_processed_audio_bytes: BytesIO,
+    create_mock_feature_flag_client,
     request: pytest.FixtureRequest,
 ) -> None:
     """Test center process with normal flow and different speaker configurations.
@@ -122,6 +131,22 @@ def test_integration_center_process_normal_flow(
     """
     diarization_result = request.getfixturevalue(diarization_fixture)
     transcription_segments_list = request.getfixturevalue(transcription_fixture)
+
+    # Mock feature flag to use local diarization (not API)
+    mock_feature_flag_client_diar = create_mock_feature_flag_client(
+        "api_based_diarization", enabled=False
+    )
+    mock_get_feature_flag_client_diarization.return_value = (
+        mock_feature_flag_client_diar
+    )
+
+    # Mock feature flag to use local transcription (not API)
+    mock_feature_flag_client_trans = create_mock_feature_flag_client(
+        "api_based_transcription", enabled=False
+    )
+    mock_get_feature_flag_client_transcription.return_value = (
+        mock_feature_flag_client_trans
+    )
 
     # Mock diarization_pipeline(tmp_audio_path) inside diarize()
     mock_diarization_pipeline = MagicMock()
@@ -188,17 +213,30 @@ def test_integration_center_process_normal_flow(
 
 
 @patch(
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_feature_flag_client"
+)
+@patch(
     "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_center_process_empty_diarization(
     mock_get_diarization_pipeline: MagicMock,
+    mock_get_feature_flag_client_diarization: MagicMock,
     pre_processed_audio_bytes: BytesIO,
+    create_mock_feature_flag_client,
 ) -> None:
     """Test center process when diarization returns empty result.
 
     This test verifies that the flow correctly handles empty diarization
     and returns an empty list of transcription segments.
     """
+    # Mock feature flag to use local diarization (not API)
+    mock_feature_flag_client_diar = create_mock_feature_flag_client(
+        "api_based_diarization", enabled=False
+    )
+    mock_get_feature_flag_client_diarization.return_value = (
+        mock_feature_flag_client_diar
+    )
+
     # Mock diarization_pipeline(tmp_audio_path) to return empty result
     mock_diarization_pipeline = MagicMock()
     mock_diarization_pipeline.return_value = MagicMock(
@@ -217,6 +255,12 @@ def test_integration_center_process_empty_diarization(
 
 
 @patch(
+    "mcr_meeting.app.services.speech_to_text.diarization_processor.get_feature_flag_client"
+)
+@patch(
+    "mcr_meeting.app.services.speech_to_text.transcription_processor.get_feature_flag_client"
+)
+@patch(
     "mcr_meeting.app.services.speech_to_text.transcription_processor.get_transcription_model"
 )
 @patch(
@@ -225,9 +269,12 @@ def test_integration_center_process_empty_diarization(
 def test_integration_center_process_with_empty_chunks(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_transcription_model: MagicMock,
+    mock_get_feature_flag_client_transcription: MagicMock,
+    mock_get_feature_flag_client_diarization: MagicMock,
     diarization_result_multiple_speakers: list[DiarizationSegment],
     mock_transcription_segments_with_empty: list[list[TranscriptionSegment]],
     pre_processed_audio_bytes: BytesIO,
+    create_mock_feature_flag_client,
 ) -> None:
     """Test center process when some chunks produce no transcription.
 
@@ -235,6 +282,22 @@ def test_integration_center_process_with_empty_chunks(
     chunks by skipping them (continue statement).
     """
     diarization_result = diarization_result_multiple_speakers
+
+    # Mock feature flag to use local diarization (not API)
+    mock_feature_flag_client_diar = create_mock_feature_flag_client(
+        "api_based_diarization", enabled=False
+    )
+    mock_get_feature_flag_client_diarization.return_value = (
+        mock_feature_flag_client_diar
+    )
+
+    # Mock feature flag to use local transcription (not API)
+    mock_feature_flag_client_trans = create_mock_feature_flag_client(
+        "api_based_transcription", enabled=False
+    )
+    mock_get_feature_flag_client_transcription.return_value = (
+        mock_feature_flag_client_trans
+    )
 
     # Mock diarization_pipeline(tmp_audio_path) inside diarize()
     mock_diarization_pipeline = MagicMock()
