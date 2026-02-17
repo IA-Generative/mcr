@@ -2,6 +2,7 @@ import pytest
 
 from mcr_meeting.app.schemas.meeting_schema import (
     ComuUrlValidator,
+    VisioUrlValidator,
     WebConfUrlValidator,
     WebinaireUrlValidator,
 )
@@ -201,4 +202,61 @@ webconf_test_cases = [
 @pytest.mark.parametrize("name,url,should_match", webconf_test_cases)
 def test_webconf_url_validator(name: str, url: str, should_match: bool) -> None:
     validator = WebConfUrlValidator()
+    assert validator.validate_url(url) == should_match, f"{name} failed"
+
+
+visio_test_cases = [
+    # Valid
+    (
+        "Valid URL",
+        "https://visio.numerique.gouv.fr/aaa-bbbb-ccc",
+        True,
+    ),
+    # Invalid
+    (
+        "Wrong domain",
+        "https://visio.numerique.gouv.eu/aaa-bbbb-ccc",
+        False,
+    ),
+    (
+        "HTTP instead of HTTPS",
+        "http://visio.numerique.gouv.fr/aaa-bbbb-ccc",
+        False,
+    ),
+    (
+        "Missing slug",
+        "https://visio.numerique.gouv.fr/",
+        False,
+    ),
+    (
+        "Uppercase letters in slug",
+        "https://visio.numerique.gouv.fr/Aaa-bBbb-ccC",
+        False,
+    ),
+    (
+        "Numbers in slug",
+        "https://visio.numerique.gouv.fr/rh1-bbbb-ccc",
+        False,
+    ),
+    (
+        "Trailing slash",
+        "https://visio.numerique.gouv.fr/aaa-bbbb-ccc/",
+        False,
+    ),
+    (
+        "Wrong group lengths",
+        "https://visio.numerique.gouv.fr/abcd-efgh-ijkl",
+        False,
+    ),
+    (
+        "Missing group",
+        "https://visio.numerique.gouv.fr/aaa-bbbb",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize("name,url,should_match", visio_test_cases)
+def test_visio_url_validator(name: str, url: str, should_match: bool) -> None:
+    validator = VisioUrlValidator()
     assert validator.validate_url(url) == should_match, f"{name} failed"
