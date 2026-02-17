@@ -312,6 +312,11 @@
       }
     }
   },
+  "meeting-v2": {
+    "visio-form": {
+      "title": "Je participe à une réunion en visioconférence"
+    }
+  },
   "members": {
     "title": "Annuaire",
     "subtitle": "Gérez la liste de participants susceptibles d'assister aux réunions. Si le participant n'existe pas, vous pouvez l'ajouter en cliquant sur @:members.table.add",
