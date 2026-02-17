@@ -26,7 +26,7 @@ ENV/
 htmlcov/
 
 # Evaluation data - exclude large zip files to avoid I/O errors during build
-mcr_meeting/evaluation/data/*.zip
+mcr_meeting/evaluation/data/*
 
 # Notebooks
 *.ipynb_checkpoints
@@ -54,6 +54,3 @@ scripts/
 README.md
 Makefile
 *.md
-
-# Config files (si non nécessaires en production)
-alembic.ini
