@@ -46,6 +46,7 @@ class MeetingPlatform(StrEnum):
     COMU = "COMU"
     WEBINAIRE = "WEBINAIRE"
     WEBCONF = "WEBCONF"
+    VISIO = "VISIO"
 
 
 class Meeting(Base):
