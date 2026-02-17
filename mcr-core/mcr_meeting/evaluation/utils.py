@@ -226,7 +226,7 @@ class ResultsManager:
 
         if self.dev:
             logger.warning("Results saving in s3 is disabled in dev mode")
-            # return
+            return
 
         csv_bytes = df.to_csv(index=False).encode("utf-8")
 
