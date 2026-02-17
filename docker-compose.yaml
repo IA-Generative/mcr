@@ -239,16 +239,14 @@ services:
   capture_worker:
     build:
       context: ./mcr-capture-worker
+      target: dev
     container_name: mcr-capture-worker
+    volumes:
+      - ./mcr-capture-worker/mcr_capture_worker:/app/mcr_capture_worker
     develop:
       watch:
         - action: rebuild
           path: ./mcr-capture-worker/pyproject.toml
-        - action: sync+restart
-          path: ./mcr-capture-worker
-          target: /app
-          ignore:
-            - .venv/
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
