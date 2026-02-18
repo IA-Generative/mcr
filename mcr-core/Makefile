@@ -1,24 +1,6 @@
 SOURCE_DIR = ./mcr_meeting
 EVALUATION_DATA_DIR ?=$(SOURCE_DIR)/evaluation/data
 EVALUATION_OUTPUT_DIR  ?= $(EVALUATION_DATA_DIR)/outputs
-MODEL    ?= tiny
-
-# Load environment files for different contexts
-ENV_LOCAL_DOCKER := ../.env.local.docker
-ifneq ("$(wildcard $(ENV_LOCAL_DOCKER))","")
-  include $(ENV_LOCAL_DOCKER)
-  export
-endif
-ENV_LOCAL_HOST := ../.env.local.host
-ifneq ("$(wildcard $(ENV_LOCAL_HOST))","")
-  include $(ENV_LOCAL_HOST)
-  export
-endif
-ENV_FILE := ../.env
-ifneq ("$(wildcard $(ENV_FILE))","")
-  include $(ENV_FILE)
-  export
-endif
 
 .PHONY: clean help
 
@@ -96,8 +78,8 @@ test-coverage-integration:
 		grep -v "CoverageWarning" | grep TOTAL | awk '{print "$(SERVICE_NAME) $(TEST_TYPE) " $$4}'
 
 eval:
-	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) STT_MODEL=$(MODEL) \
 	uv sync --all-extras --inexact && \
+	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) \
 	uv run python -m mcr_meeting.evaluation.cli.cli
 
 metrics:

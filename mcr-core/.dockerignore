@@ -25,7 +25,7 @@ ENV/
 .coverage
 htmlcov/
 
-# Evaluation data - exclude large zip files to avoid I/O errors during build
+# Evaluation data
 mcr_meeting/evaluation/data/*
 
 # Notebooks
