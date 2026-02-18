@@ -106,8 +106,10 @@ class TranscriptionProcessor:
         transcription_model: WhisperModel,
     ) -> List[TranscriptionSegment]:
         if self._is_api_transcription_enabled():
+            logger.info("Using API transcription")
             return self._transcribe_audio_chunk_api(audio)
         else:
+            logger.info("Using local transcription")
             return self._transcribe_audio_chunk_local(audio, transcription_model)
 
     def _transcribe_audio_chunk_local(
