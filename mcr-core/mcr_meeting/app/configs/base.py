@@ -359,6 +359,15 @@ class TranscriptionApiSettings(BaseSettings):
         default=None,
         description="API request timeout in seconds, None means no timeout",
     )
+    MAX_RETRIES: int = Field(
+        default=6,
+        description="""
+        Number of retries for API requests on network errors. 
+        Set to 6 so that the total retry time is over 1 minute (63s) 
+        with a backoff of 0.5s (base for httpx and openAI client)
+        This was set as the goal on 27/02/26
+        """,
+    )
 
 
 class EvaluationSettings(BaseSettings):
