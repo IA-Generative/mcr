@@ -127,21 +127,21 @@ def mix_audio_files(audio_paths: List[str]) -> BytesIO:
 
 
 def group_audio_files_by_prefix(
-    directory: Path, prefix_length: int = 4
+    directory: Path, prefix_length: int = 9
 ) -> Dict[str, List[str]]:
     """
     Group WAV audio files by their filename prefix.
 
     Args:
         directory (Path): Directory containing WAV files to group.
-        prefix_length (int): Number of characters to use as group key. Default is 4.
+        prefix_length (int): Number of characters to use as group key. Default is 9.
 
     Returns:
         Dict[str, List[str]]: Dictionary mapping group keys to lists of file paths.
             Files with names shorter than prefix_length are skipped.
 
     Example:
-        >>> groups = group_audio_files_by_prefix(Path("audio/"))
+        >>> groups = group_audio_files_by_prefix(Path("audio/"), 4)
         >>> # {'0001': ['0001_speaker1.wav', '0001_speaker2.wav'], ...}
     """
     groups: Dict[str, List[str]] = defaultdict(list)
@@ -197,7 +197,7 @@ def process_audio_group(
         output_directory.mkdir(parents=True, exist_ok=True)
 
         # Save mixed audio
-        output_path = output_directory / f"{group_key}_mixed.wav"
+        output_path = output_directory / f"{group_key}.wav"
         with open(output_path, "wb") as f:
             f.write(mixed_audio.getvalue())
 
@@ -217,7 +217,6 @@ def main() -> None:
     characters of their filename, mixes each group, and saves the results
     to raw_audios_path.
     """
-    # Define paths - TODO: Update these paths
     individual_audios_path = Path(
         "mcr_meeting/evaluation/data/clean_dataset/individual_audios"
     )
@@ -227,8 +226,8 @@ def main() -> None:
     logger.info("Input directory: {}", individual_audios_path)
     logger.info("Output directory: {}", raw_audios_path)
 
-    # Group files by first 4 characters
-    groups = group_audio_files_by_prefix(individual_audios_path, prefix_length=4)
+    # Group files by first 9 characters
+    groups = group_audio_files_by_prefix(individual_audios_path, prefix_length=9)
 
     if not groups:
         logger.warning("No audio groups found. Exiting.")
