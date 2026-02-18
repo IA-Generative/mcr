@@ -66,10 +66,14 @@ def get_meeting(
 def get_meetings(
     user_keycloak_uuid: UUID,
     search: str | None,
+    page: int,
+    page_size: int,
 ) -> List[Meeting]:
     return get_meetings_service(
         user_keycloak_uuid=user_keycloak_uuid,
         search=search,
+        page=page,
+        page_size=page_size,
     )
 
 
