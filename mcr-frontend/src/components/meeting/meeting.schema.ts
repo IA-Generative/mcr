@@ -6,27 +6,26 @@ import {
 import { t } from '@/plugins/i18n';
 import type { Nullable } from '@/utils/types';
 
-const comuUrlPatterns = {
-  domains: [
-    /webconf\.comu\.gouv\.fr/,
-    /webconf\.comu\.interieur\.rie\.gouv\.fr/,
-    /webconf\.comu\.minint\.fr/,
-  ],
+const comuDomainPattern = [
+  /webconf\.comu\.gouv\.fr/,
+  /webconf\.comu\.interieur\.rie\.gouv\.fr/,
+  /webconf\.comu\.minint\.fr/,
+]
+  .map((r) => r.source)
+  .join('|');
+
+const comuUrlPattern = {
   secret: /\?secret=[A-Za-z0-9_.]{22}/,
   meetingId: /\d+/,
   maybeLanguageCode: /(\/[a-z]{2}-[A-Z]{2})?/,
-
-  get domainPattern() {
-    return this.domains.map((r) => r.source).join('|');
-  },
 };
 
 export const comuPrivateUrlValidator = RegExp(
-  `^https://(${comuUrlPatterns.domainPattern})${comuUrlPatterns.maybeLanguageCode.source}/meeting/${comuUrlPatterns.meetingId.source}${comuUrlPatterns.secret.source}$`,
+  `^https://(${comuDomainPattern})${comuUrlPattern.maybeLanguageCode.source}/meeting/${comuUrlPattern.meetingId.source}${comuUrlPattern.secret.source}$`,
 );
 
 export const comuPublicUrlValidator = RegExp(
-  `^https://(${comuUrlPatterns.domainPattern})${comuUrlPatterns.maybeLanguageCode.source}/meeting/${comuUrlPatterns.meetingId.source}$`,
+  `^https://(${comuDomainPattern})${comuUrlPattern.maybeLanguageCode.source}/meeting/${comuUrlPattern.meetingId.source}$`,
 );
 
 const webinaireUrlPattern = {
@@ -62,29 +61,48 @@ export const visioUrlValidator = RegExp(
 
 export const visioIncompleteUrlValidator = RegExp(`${visioUrlPattern.domain.source}`);
 
+type PlatformUrlConfig = {
+  name: OnlineMeetingPlatforms;
+  validator: RegExp;
+  errorValidator?: RegExp;
+  errorMessage?: string;
+};
+
+const platformConfigs: PlatformUrlConfig[] = [
+  {
+    name: 'COMU',
+    validator: comuPrivateUrlValidator,
+    errorValidator: comuPublicUrlValidator,
+    errorMessage: t('meeting.form.errors.url.not-private'),
+  },
+  {
+    name: 'WEBINAIRE',
+    validator: webinaireModeratorUrlValidator,
+    errorValidator: webinairePublicUrlValidator,
+    errorMessage: t('meeting.form.errors.url.not-moderator'),
+  },
+  {
+    name: 'WEBCONF',
+    validator: webconfUrlValidator,
+  },
+  {
+    name: 'VISIO',
+    validator: visioUrlValidator,
+    errorValidator: visioIncompleteUrlValidator,
+    errorMessage: t('meeting.form.errors.url.invalid-visio-url'),
+  },
+];
+
 function validateUrl(url: string | null) {
-  if (!url) return true; // allow null or empty
-  return (
-    comuPrivateUrlValidator.test(url) ||
-    webinaireModeratorUrlValidator.test(url) ||
-    webconfUrlValidator.test(url) ||
-    visioUrlValidator.test(url)
-  );
+  if (!url) return true;
+  return platformConfigs.some(({ validator }) => validator.test(url));
 }
 
 function selectErrorMessage(url: string | null) {
-  if (url !== null && webinairePublicUrlValidator.test(url)) {
-    return t('meeting.form.errors.url.not-moderator');
+  if (url !== null) {
+    const match = platformConfigs.find(({ errorValidator }) => errorValidator?.test(url));
+    if (match?.errorMessage) return match.errorMessage;
   }
-
-  if (url !== null && comuPublicUrlValidator.test(url)) {
-    return t('meeting.form.errors.url.not-private');
-  }
-
-  if (url !== null && visioIncompleteUrlValidator.test(url)) {
-    return t('meeting.form.errors.url.invalid-visio-url');
-  }
-
   return t('meeting.form.errors.url.not-supported');
 }
 
@@ -131,15 +149,9 @@ export function meetingFieldsToMeetingDto(fields: AddOnlineMeetingFields): AddOn
 }
 
 function guessPlatformUsingUrl(url: Nullable<string>): OnlineMeetingPlatforms {
-  if (url === null || comuPrivateUrlValidator.test(url)) {
-    return 'COMU';
-  } else if (webinaireModeratorUrlValidator.test(url)) {
-    return 'WEBINAIRE';
-  } else if (webconfUrlValidator.test(url)) {
-    return 'WEBCONF';
-  } else if (visioUrlValidator.test(url)) {
-    return 'VISIO';
-  }
+  if (url === null) return 'COMU';
+  const match = platformConfigs.find(({ validator }) => validator.test(url));
+  if (match) return match.name;
   throw new Error('Received invalid url to send to meeting');
 }
 
