@@ -40,6 +40,8 @@ export const webinaireModeratorUrlValidator = RegExp(
   `^https://${webinaireUrlPattern.domain.source}/meeting/signin/moderateur/${webinaireUrlPattern.meetingId.source}/creator/${webinaireUrlPattern.creatorId.source}/hash/${webinaireUrlPattern.validationHash.source}$`,
 );
 
+export const webinairePublicUrlValidator = RegExp(`^https://${webinaireUrlPattern.domain.source}`);
+
 const webconfUrlPattern = {
   domain: /webconf\.numerique\.gouv\.fr/,
   meetingName: /(?=(?:.*\d){3,})[A-Za-z0-9]{10,}/,
@@ -49,14 +51,24 @@ export const webconfUrlValidator = RegExp(
   `^https://${webconfUrlPattern.domain.source}/${webconfUrlPattern.meetingName.source}$`,
 );
 
-export const webinairePublicUrlValidator = RegExp(`^https://${webinaireUrlPattern.domain.source}`);
+const visioUrlPattern = {
+  domain: /visio\.numerique\.gouv\.fr/,
+  meetingSlug: /[a-z]{3}-[a-z]{4}-[a-z]{3}/,
+};
+
+export const visioUrlValidator = RegExp(
+  `^https://${visioUrlPattern.domain.source}/${visioUrlPattern.meetingSlug.source}$`,
+);
+
+export const visioIncompleteUrlValidator = RegExp(`${visioUrlPattern.domain.source}`);
 
 function validateUrl(url: string | null) {
   if (!url) return true; // allow null or empty
   return (
     comuPrivateUrlValidator.test(url) ||
     webinaireModeratorUrlValidator.test(url) ||
-    webconfUrlValidator.test(url)
+    webconfUrlValidator.test(url) ||
+    visioUrlValidator.test(url)
   );
 }
 
@@ -67,6 +79,10 @@ function selectErrorMessage(url: string | null) {
 
   if (url !== null && comuPublicUrlValidator.test(url)) {
     return t('meeting.form.errors.url.not-private');
+  }
+
+  if (url !== null && visioIncompleteUrlValidator.test(url)) {
+    return t('meeting.form.errors.url.invalid-visio-url');
   }
 
   return t('meeting.form.errors.url.not-supported');
@@ -121,6 +137,8 @@ function guessPlatformUsingUrl(url: Nullable<string>): OnlineMeetingPlatforms {
     return 'WEBINAIRE';
   } else if (webconfUrlValidator.test(url)) {
     return 'WEBCONF';
+  } else if (visioUrlValidator.test(url)) {
+    return 'VISIO';
   }
   throw new Error('Received invalid url to send to meeting');
 }
