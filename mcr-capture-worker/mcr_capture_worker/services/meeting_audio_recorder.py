@@ -69,7 +69,9 @@ class MeetingAudioRecorder:
                     "--use-fake-ui-for-media-stream",
                 ],
             )
-            context = await self.browser.new_context()
+            context = await self.browser.new_context(
+                permissions=["microphone", "camera"],
+            )
             page = await context.new_page()
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
 
