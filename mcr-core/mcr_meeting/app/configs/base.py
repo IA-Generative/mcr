@@ -361,3 +361,11 @@ class TranscriptionApiSettings(BaseSettings):
         default=None,
         description="API request timeout in seconds, None means no timeout",
     )
+    MAX_RETRIES: int = Field(
+        default=5,
+        description="Number of retries for API requests on network errors",
+    )
+    BASE_RETRY_BACKOFF: int = Field(
+        default=1,
+        description="Number of seconds before the first retry. Grows exponentially by a factor of two at each retry",
+    )

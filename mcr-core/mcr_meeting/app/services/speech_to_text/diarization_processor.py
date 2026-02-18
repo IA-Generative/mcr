@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import List
 
 import httpx
+import urllib3
 from loguru import logger
 
 from mcr_meeting.app.configs.base import (
@@ -32,7 +33,16 @@ class DiarizationProcessor:
 
     def _get_http_client(self) -> httpx.Client:
         if self._http_client is None:
-            self._http_client = httpx.Client(timeout=api_settings.API_TIMEOUT)
+            self._http_client = httpx.Client(
+                timeout=api_settings.API_TIMEOUT,
+                transport=httpx.HTTPTransport(
+                    retries=urllib3.Retry(
+                        total=api_settings.MAX_RETRIES,
+                        allowed_methods=None,
+                        backoff_factor=api_settings.BASE_RETRY_BACKOFF,
+                    )
+                ),
+            )
         return self._http_client
 
     def _is_api_diarization_enabled(self) -> bool:

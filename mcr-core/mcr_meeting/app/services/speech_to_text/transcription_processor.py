@@ -40,6 +40,7 @@ class TranscriptionProcessor:
             self._openai_client = OpenAI(
                 api_key=api_settings.TRANSCRIPTION_API_KEY,
                 base_url=api_settings.TRANSCRIPTION_API_BASE_URL,
+                max_retries=api_settings.MAX_RETRIES,
             )
         return self._openai_client
 
