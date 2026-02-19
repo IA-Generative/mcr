@@ -1,3 +1,4 @@
+from loguru import logger
 from playwright.async_api import Page
 
 from mcr_capture_worker.models.meeting_model import Meeting
@@ -27,7 +28,21 @@ class VisioStrategy(ConnectionStrategy):
 
     async def load_recording_script(self, page: Page) -> None:
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webinaire_comu/audioRecorder.js"
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/config.js"
+        )
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/streamUtils.js"
+        )
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/recorderController.js"
+        )
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/index.js"
+        )
+
+    async def wait_for_webRTC_connection(self, page: Page) -> None:
+        logger.info(
+            "VISIO - LA SUITE: Skipping MediaStream check (will be available when participants speak)"
         )
 
     async def _join_waiting_room(self, page: Page) -> None:
