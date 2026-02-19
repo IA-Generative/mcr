@@ -2,6 +2,7 @@
 
 from typing import Optional
 
+from openai import NotGiven
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -120,13 +121,17 @@ class WhisperTranscriptionSettings(BaseSettings):
     Configuration settings for Whisper Transcription
     """
 
-    language: Optional[str] = Field(
+    LANGUAGE: Optional[str] = Field(
         default="fr",
         description="The language of the audio. If None, language detection will be performed.",
     )
-    word_timestamps: Optional[bool] = Field(
+    WORD_TIMESTAMPS: Optional[bool] = Field(
         default=True,
         description="For the model to return word_timestamps or just segment timestamps.",
+    )
+    INITIAL_PROMPT: str | NotGiven = Field(
+        default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
+        description="Prompt passed to the transcription model",
     )
 
 

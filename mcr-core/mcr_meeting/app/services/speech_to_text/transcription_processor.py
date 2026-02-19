@@ -118,9 +118,9 @@ class TranscriptionProcessor:
 
         segments, info = transcription_model.transcribe(
             audio,
-            language=transcription_settings.language,
-            word_timestamps=transcription_settings.word_timestamps,
-            initial_prompt="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
+            language=transcription_settings.LANGUAGE,
+            word_timestamps=transcription_settings.WORD_TIMESTAMPS,
+            initial_prompt=transcription_settings.INITIAL_PROMPT,
         )
 
         result = list(segments)
@@ -161,6 +161,7 @@ class TranscriptionProcessor:
                 file=("audio.wav", audio_bytes, "audio/wav"),
                 language=api_settings.API_LANGUAGE,
                 response_format="verbose_json",
+                prompt=transcription_settings.INITIAL_PROMPT,
                 timestamp_granularities=["segment"],
             )
 
