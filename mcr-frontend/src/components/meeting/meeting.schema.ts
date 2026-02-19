@@ -1,3 +1,4 @@
+import { computed } from 'vue';
 import yup from '@/config/yup';
 import {
   OnlineMeetingPlatforms,
@@ -69,51 +70,57 @@ type PlatformUrlConfig = {
   errorMessage?: string;
 };
 
-const platformConfigs: PlatformUrlConfig[] = [
-  {
-    name: 'COMU',
-    validator: comuPrivateUrlValidator,
-    errorValidator: comuPublicUrlValidator,
-    errorMessage: t('meeting.form.errors.url.not-private'),
-  },
-  {
-    name: 'WEBINAIRE',
-    validator: webinaireModeratorUrlValidator,
-    errorValidator: webinairePublicUrlValidator,
-    errorMessage: t('meeting.form.errors.url.not-moderator'),
-  },
-  {
-    name: 'WEBCONF',
-    validator: webconfUrlValidator,
-  },
-];
-
 const isVisioEnabled = useFeatureFlag('visio');
-let notSupportedErrorMessage = '';
 
-if (isVisioEnabled) {
-  platformConfigs.push({
-    name: 'VISIO',
-    validator: visioUrlValidator,
-    errorValidator: visioIncompleteUrlValidator,
-    errorMessage: t('meeting.form.errors.url.invalid-visio-url'),
-  });
-  notSupportedErrorMessage = t('meeting.form.errors.url.not-supported.visio-enabled');
-} else {
-  notSupportedErrorMessage = t('meeting.form.errors.url.not-supported.visio-disabled');
-}
+const platformConfigs = computed<PlatformUrlConfig[]>(() => {
+  const configs: PlatformUrlConfig[] = [
+    {
+      name: 'COMU',
+      validator: comuPrivateUrlValidator,
+      errorValidator: comuPublicUrlValidator,
+      errorMessage: t('meeting.form.errors.url.not-private'),
+    },
+    {
+      name: 'WEBINAIRE',
+      validator: webinaireModeratorUrlValidator,
+      errorValidator: webinairePublicUrlValidator,
+      errorMessage: t('meeting.form.errors.url.not-moderator'),
+    },
+    {
+      name: 'WEBCONF',
+      validator: webconfUrlValidator,
+    },
+  ];
+
+  if (isVisioEnabled.value) {
+    configs.push({
+      name: 'VISIO',
+      validator: visioUrlValidator,
+      errorValidator: visioIncompleteUrlValidator,
+      errorMessage: t('meeting.form.errors.url.invalid-visio-url'),
+    });
+  }
+
+  return configs;
+});
+
+const notSupportedErrorMessage = computed(() =>
+  isVisioEnabled.value
+    ? t('meeting.form.errors.url.not-supported.visio-enabled')
+    : t('meeting.form.errors.url.not-supported.visio-disabled'),
+);
 
 function validateUrl(url: string | null) {
   if (!url) return true;
-  return platformConfigs.some(({ validator }) => validator.test(url));
+  return platformConfigs.value.some(({ validator }) => validator.test(url));
 }
 
 function selectErrorMessage(url: string | null) {
   if (url !== null) {
-    const match = platformConfigs.find(({ errorValidator }) => errorValidator?.test(url));
+    const match = platformConfigs.value.find(({ errorValidator }) => errorValidator?.test(url));
     if (match?.errorMessage) return match.errorMessage;
   }
-  return notSupportedErrorMessage;
+  return notSupportedErrorMessage.value;
 }
 
 type AddOnlineMeetingFields = Omit<AddOnlineMeetingDto, 'name_platform' | 'creation_date'>;
@@ -122,7 +129,7 @@ export const AddMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup.ob
   name: yup.string().required().label(t('meeting.form.fields.name')),
   url: yup
     .string()
-    .url(notSupportedErrorMessage)
+    .url(notSupportedErrorMessage.value)
     .nullable()
     .default(null)
     .test(
@@ -160,7 +167,7 @@ export function meetingFieldsToMeetingDto(fields: AddOnlineMeetingFields): AddOn
 
 function guessPlatformUsingUrl(url: Nullable<string>): OnlineMeetingPlatforms {
   if (url === null) return 'COMU';
-  const match = platformConfigs.find(({ validator }) => validator.test(url));
+  const match = platformConfigs.value.find(({ validator }) => validator.test(url));
   if (match) return match.name;
   throw new Error('Received invalid url to send to meeting');
 }
