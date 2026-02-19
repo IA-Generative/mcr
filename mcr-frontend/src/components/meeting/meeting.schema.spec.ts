@@ -7,6 +7,16 @@ type TestCase = {
   shouldMatch: boolean;
 };
 
+vi.mock('@/composables/use-feature-flag', () => {
+  const mockedUseFeatureFlag = () => {
+    return true;
+  };
+
+  return {
+    useFeatureFlag: mockedUseFeatureFlag,
+  };
+});
+
 const comuTestCases: TestCase[] = [
   // ✅ Valid
   {

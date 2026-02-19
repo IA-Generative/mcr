@@ -5,6 +5,7 @@ import {
 } from '@/services/meetings/meetings.types';
 import { t } from '@/plugins/i18n';
 import type { Nullable } from '@/utils/types';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 
 const comuDomainPattern = [
   /webconf\.comu\.gouv\.fr/,
@@ -85,13 +86,22 @@ const platformConfigs: PlatformUrlConfig[] = [
     name: 'WEBCONF',
     validator: webconfUrlValidator,
   },
-  {
+];
+
+const isVisioEnabled = useFeatureFlag('visio');
+let notSupportedErrorMessage = '';
+
+if (isVisioEnabled) {
+  platformConfigs.push({
     name: 'VISIO',
     validator: visioUrlValidator,
     errorValidator: visioIncompleteUrlValidator,
     errorMessage: t('meeting.form.errors.url.invalid-visio-url'),
-  },
-];
+  });
+  notSupportedErrorMessage = t('meeting.form.errors.url.not-supported.visio-enabled');
+} else {
+  notSupportedErrorMessage = t('meeting.form.errors.url.not-supported.visio-disabled');
+}
 
 function validateUrl(url: string | null) {
   if (!url) return true;
@@ -103,7 +113,7 @@ function selectErrorMessage(url: string | null) {
     const match = platformConfigs.find(({ errorValidator }) => errorValidator?.test(url));
     if (match?.errorMessage) return match.errorMessage;
   }
-  return t('meeting.form.errors.url.not-supported');
+  return notSupportedErrorMessage;
 }
 
 type AddOnlineMeetingFields = Omit<AddOnlineMeetingDto, 'name_platform' | 'creation_date'>;
@@ -112,7 +122,7 @@ export const AddMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup.ob
   name: yup.string().required().label(t('meeting.form.fields.name')),
   url: yup
     .string()
-    .url(t('meeting.form.errors.url.not-supported'))
+    .url(notSupportedErrorMessage)
     .nullable()
     .default(null)
     .test(
