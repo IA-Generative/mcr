@@ -11,6 +11,8 @@ from mcr_capture_worker.services.connection_strategies.abstract_connection impor
 
 
 class VisioStrategy(ConnectionStrategy):
+    CONNECTION_TIMEOUT = 300000
+
     async def connect_to_meeting(self, page: Page, meeting: Meeting) -> None:
         if not is_meeting_with_url(meeting):
             raise ValueError("Visio meeting doesn't have a valid url")
@@ -47,6 +49,10 @@ class VisioStrategy(ConnectionStrategy):
 
     async def _join_waiting_room(self, page: Page) -> None:
         await page.get_by_role("button", name="Join").click()
+        # Wait no more than CONNECTION_TIMEOUT in the waiting room
+        await page.wait_for_selector(
+            ".lk-video-conference", state="visible", timeout=self.CONNECTION_TIMEOUT
+        )
 
     async def _set_camera_and_mic_off(self, page: Page) -> None:
         await page.get_by_role("button", name="Disable microphone").click()
