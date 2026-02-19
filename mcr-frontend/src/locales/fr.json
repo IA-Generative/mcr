@@ -186,10 +186,14 @@
       "errors": {
         "url": {
           "not-found": "L'URL entré n'a pas pu être validée, vérifiez l'url ou utiliser l'identifiant/mot de passe",
-          "not-supported": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire ou Webconf. Les autres plateformes de visioconférence ne sont pas encore supportées par FCR.",
+          "not-supported": {
+            "visio-enabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire, Webconf ou Visio. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR.",
+            "visio-disabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire ou Webconf. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR."
+          },
           "not-moderator": "Veuillez renseigner l'URL modérateur de votre Webinaire. Demandez-le à l'organisateur ou rendez-vous sur le site de Webinaire > Mes réunions > Inviter > Inviter les modérateurs",
           "not-private": "URL COMU publique détectée. Veuillez renseigner l'URL privée de la réunion (finissant par un secret) ou utiliser l'identifiant/mot de passe de la réunion en cliquant sur l'interrupteur",
-          "invalid-comu-parsing": "L'URL COMU est invalide, il ne contient pas d'identifiant/mot de passe ni de secret."
+          "invalid-comu-parsing": "L'URL COMU est invalide, il ne contient pas d'identifiant/mot de passe ni de secret.",
+          "invalid-visio-url": "URL Visio invalide détectée. Format attendu: https://visio.numerique.gouv.fr/aaa-bbbb-ccc."
         }
       }
     },

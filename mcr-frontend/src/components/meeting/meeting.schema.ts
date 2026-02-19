@@ -5,28 +5,28 @@ import {
 } from '@/services/meetings/meetings.types';
 import { t } from '@/plugins/i18n';
 import type { Nullable } from '@/utils/types';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 
-const comuUrlPatterns = {
-  domains: [
-    /webconf\.comu\.gouv\.fr/,
-    /webconf\.comu\.interieur\.rie\.gouv\.fr/,
-    /webconf\.comu\.minint\.fr/,
-  ],
+const comuDomainPattern = [
+  /webconf\.comu\.gouv\.fr/,
+  /webconf\.comu\.interieur\.rie\.gouv\.fr/,
+  /webconf\.comu\.minint\.fr/,
+]
+  .map((r) => r.source)
+  .join('|');
+
+const comuUrlPattern = {
   secret: /\?secret=[A-Za-z0-9_.]{22}/,
   meetingId: /\d+/,
   maybeLanguageCode: /(\/[a-z]{2}-[A-Z]{2})?/,
-
-  get domainPattern() {
-    return this.domains.map((r) => r.source).join('|');
-  },
 };
 
 export const comuPrivateUrlValidator = RegExp(
-  `^https://(${comuUrlPatterns.domainPattern})${comuUrlPatterns.maybeLanguageCode.source}/meeting/${comuUrlPatterns.meetingId.source}${comuUrlPatterns.secret.source}$`,
+  `^https://(${comuDomainPattern})${comuUrlPattern.maybeLanguageCode.source}/meeting/${comuUrlPattern.meetingId.source}${comuUrlPattern.secret.source}$`,
 );
 
 export const comuPublicUrlValidator = RegExp(
-  `^https://(${comuUrlPatterns.domainPattern})${comuUrlPatterns.maybeLanguageCode.source}/meeting/${comuUrlPatterns.meetingId.source}$`,
+  `^https://(${comuDomainPattern})${comuUrlPattern.maybeLanguageCode.source}/meeting/${comuUrlPattern.meetingId.source}$`,
 );
 
 const webinaireUrlPattern = {
@@ -40,6 +40,8 @@ export const webinaireModeratorUrlValidator = RegExp(
   `^https://${webinaireUrlPattern.domain.source}/meeting/signin/moderateur/${webinaireUrlPattern.meetingId.source}/creator/${webinaireUrlPattern.creatorId.source}/hash/${webinaireUrlPattern.validationHash.source}$`,
 );
 
+export const webinairePublicUrlValidator = RegExp(`^https://${webinaireUrlPattern.domain.source}`);
+
 const webconfUrlPattern = {
   domain: /webconf\.numerique\.gouv\.fr/,
   meetingName: /(?=(?:.*\d){3,})[A-Za-z0-9]{10,}/,
@@ -49,27 +51,69 @@ export const webconfUrlValidator = RegExp(
   `^https://${webconfUrlPattern.domain.source}/${webconfUrlPattern.meetingName.source}$`,
 );
 
-export const webinairePublicUrlValidator = RegExp(`^https://${webinaireUrlPattern.domain.source}`);
+const visioUrlPattern = {
+  domain: /visio\.numerique\.gouv\.fr/,
+  meetingSlug: /[a-z]{3}-[a-z]{4}-[a-z]{3}/,
+};
+
+export const visioUrlValidator = RegExp(
+  `^https://${visioUrlPattern.domain.source}/${visioUrlPattern.meetingSlug.source}$`,
+);
+
+export const visioIncompleteUrlValidator = RegExp(`${visioUrlPattern.domain.source}`);
+
+type PlatformUrlConfig = {
+  name: OnlineMeetingPlatforms;
+  validator: RegExp;
+  errorValidator?: RegExp;
+  errorMessage?: string;
+};
+
+const platformConfigs: PlatformUrlConfig[] = [
+  {
+    name: 'COMU',
+    validator: comuPrivateUrlValidator,
+    errorValidator: comuPublicUrlValidator,
+    errorMessage: t('meeting.form.errors.url.not-private'),
+  },
+  {
+    name: 'WEBINAIRE',
+    validator: webinaireModeratorUrlValidator,
+    errorValidator: webinairePublicUrlValidator,
+    errorMessage: t('meeting.form.errors.url.not-moderator'),
+  },
+  {
+    name: 'WEBCONF',
+    validator: webconfUrlValidator,
+  },
+];
+
+const isVisioEnabled = useFeatureFlag('visio');
+let notSupportedErrorMessage = '';
+
+if (isVisioEnabled) {
+  platformConfigs.push({
+    name: 'VISIO',
+    validator: visioUrlValidator,
+    errorValidator: visioIncompleteUrlValidator,
+    errorMessage: t('meeting.form.errors.url.invalid-visio-url'),
+  });
+  notSupportedErrorMessage = t('meeting.form.errors.url.not-supported.visio-enabled');
+} else {
+  notSupportedErrorMessage = t('meeting.form.errors.url.not-supported.visio-disabled');
+}
 
 function validateUrl(url: string | null) {
-  if (!url) return true; // allow null or empty
-  return (
-    comuPrivateUrlValidator.test(url) ||
-    webinaireModeratorUrlValidator.test(url) ||
-    webconfUrlValidator.test(url)
-  );
+  if (!url) return true;
+  return platformConfigs.some(({ validator }) => validator.test(url));
 }
 
 function selectErrorMessage(url: string | null) {
-  if (url !== null && webinairePublicUrlValidator.test(url)) {
-    return t('meeting.form.errors.url.not-moderator');
+  if (url !== null) {
+    const match = platformConfigs.find(({ errorValidator }) => errorValidator?.test(url));
+    if (match?.errorMessage) return match.errorMessage;
   }
-
-  if (url !== null && comuPublicUrlValidator.test(url)) {
-    return t('meeting.form.errors.url.not-private');
-  }
-
-  return t('meeting.form.errors.url.not-supported');
+  return notSupportedErrorMessage;
 }
 
 type AddOnlineMeetingFields = Omit<AddOnlineMeetingDto, 'name_platform' | 'creation_date'>;
@@ -78,7 +122,7 @@ export const AddMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup.ob
   name: yup.string().required().label(t('meeting.form.fields.name')),
   url: yup
     .string()
-    .url(t('meeting.form.errors.url.not-supported'))
+    .url(notSupportedErrorMessage)
     .nullable()
     .default(null)
     .test(
@@ -115,13 +159,9 @@ export function meetingFieldsToMeetingDto(fields: AddOnlineMeetingFields): AddOn
 }
 
 function guessPlatformUsingUrl(url: Nullable<string>): OnlineMeetingPlatforms {
-  if (url === null || comuPrivateUrlValidator.test(url)) {
-    return 'COMU';
-  } else if (webinaireModeratorUrlValidator.test(url)) {
-    return 'WEBINAIRE';
-  } else if (webconfUrlValidator.test(url)) {
-    return 'WEBCONF';
-  }
+  if (url === null) return 'COMU';
+  const match = platformConfigs.find(({ validator }) => validator.test(url));
+  if (match) return match.name;
   throw new Error('Received invalid url to send to meeting');
 }
 
