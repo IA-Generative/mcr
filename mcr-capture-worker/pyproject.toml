@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff", "mypy","boto3-stubs[s3]>=1.35.0"]
+dev = ["ruff", "mypy", "boto3-stubs[s3]>=1.35.0", "watchdog", "debugpy"]
 test = [
     "pytest",
     "pytest-dotenv",

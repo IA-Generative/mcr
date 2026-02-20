@@ -4,6 +4,16 @@ import AddMeetingForm from '@/components/meeting/AddMeetingForm.vue';
 
 import { renderWithPlugins } from '@/vitest.setup';
 
+vi.mock('@/composables/use-feature-flag', () => {
+  const mockedUseFeatureFlag = () => {
+    return true;
+  };
+
+  return {
+    useFeatureFlag: mockedUseFeatureFlag,
+  };
+});
+
 describe('AddMeetingForm', () => {
   it('url selector is shown by default', () => {
     // Arrange

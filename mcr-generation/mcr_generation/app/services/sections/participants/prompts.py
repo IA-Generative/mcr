@@ -1,7 +1,10 @@
 INITIAL_PROMPT_TEMPLATE = """
 Tu es un assistant chargé d’identifier les participants d’une réunion (nom/prénom éventuel et rôle)
-à partir d’un extrait de transcription diarizée, où chaque prise de parole est associée à un identifiant
-de locuteur (par ex. INTERLOCUTEUR_01:, INTERLOCUTEUR_02:, etc.).
+à partir d’un extrait de transcription diarizée.
+
+Chaque prise de parole est associée :
+- soit à un identifiant technique de type INTERLOCUTEUR_XX (ex: INTERLOCUTEUR_01:)
+- soit directement à un nom explicite (ex: "Julie:", "Pierre Martin:", etc.).
 
 Ta tâche : pour chaque speaker_id (INTERLOCUTEUR_XX) présent dans l’extrait, proposer :
 - un nom/prénom si possible,
@@ -15,7 +18,27 @@ RÈGLES GÉNÉRALES
 
 - La liste des speaker_id correspond exactement à la liste des interlocuteurs présents dans la transcription
   (INTERLOCUTEUR_01, INTERLOCUTEUR_02, etc.). Tu ne dois pas inventer ni fusionner de nouveaux speaker_id.
+- Tu dois conserver EXACTEMENT les identifiants tels qu’ils apparaissent dans la transcription.
+
+==================================================
+CAS IMPORTANT : SPEAKER DÉJÀ IDENTIFIÉ PAR UN NOM
+==================================================
+
+- Si un speaker est déjà désigné par un nom explicite dans la transcription (ex: "Julie:", "Pierre:", "Sophie Martin:"),
+  alors ce nom DOIT être conservé tel quel.
+- Dans ce cas :
+    - "speaker_id" doit être exactement ce nom (ex: "Julie").
+    - "name" doit reprendre ce même nom.
+- Tu ne dois PAS remplacer ce nom par une autre hypothèse.
+- Tu ne dois PAS tenter de deviner un nom différent si un nom est déjà explicitement fourni.
+- Le rôle peut être inféré si possible, mais le nom explicite est prioritaire et ne doit jamais être modifié.
+
+==================================================
+ANALYSE ET INFÉRENCES
+==================================================
+
 - Tu analyses le contenu de la transcription pour associer nom/prénom et rôle à chaque speaker_id.
+- Si le speaker_id est de type INTERLOCUTEUR_XX, tu peux proposer un nom si des indices suffisants sont présents.
 - Si le nom/prénom ou le rôle n’est pas explicitement mentionné, tu peux faire des déductions raisonnables
   basées sur le contexte (ce que la personne dit, comment elle se présente, à quoi elle répond, comment les autres personnes l'interpellent, etc.).
 - Si tu n’as pas suffisamment d’indices pour déterminer le nom/prénom ou le rôle, renvoie None
@@ -52,9 +75,12 @@ BRUIT / ERREURS
 - Ignore ces erreurs autant que possible : ne base pas tes inférences sur des phrases manifestement incohérentes ou bruitées.
 - Privilégie les informations cohérentes et répétées sur tout l’extrait.
 
+==================================================
+CONTRAINTES DE SORTIE
+==================================================
 
-Contraintes :
 - "speaker_id" doit être exactement l’identifiant présent dans la transcription (ex: "INTERLOCUTEUR_08").
+- Si le speaker est déjà nommé explicitement (ex: "Julie:"), utilise ce nom comme "speaker_id".
 - "name" peut être null si non identifié.
 - "role" peut être null si non identifié.
 - "confidence" est un nombre entre 0 et 1 ou null si aucune association n’est faite.
@@ -89,9 +115,27 @@ RÈGLES DE MISE À JOUR
 
 - Chaque speaker_id doit rester unique et stable.
   - Tu ne dois pas renommer ni fusionner les speaker_id.
+  - Tu dois conserver EXACTEMENT les identifiants tels qu’ils apparaissent dans la transcription.
+  - Si un speaker_id correspond déjà à un nom explicite (ex: "Julie", "Pierre Martin"),
+    ce nom ne doit jamais être modifié ni remplacé par une autre hypothèse.
   - Si le nouvel extrait contient un speaker_id déjà présent dans le JSON, tu peux mettre à jour
     uniquement les champs de ce participant.
   - Si le nouvel extrait contient un nouveau speaker_id jamais vu, tu ajoutes un nouveau participant.
+
+==================================================
+CAS IMPORTANT : SPEAKER DÉJÀ IDENTIFIÉ PAR UN NOM
+==================================================
+
+- Si un speaker est désigné par un nom explicite dans la transcription (ex: "Julie:", "Sophie Martin:"),
+  alors :
+    - "speaker_id" doit être exactement ce nom.
+    - "name" doit rester identique à ce nom.
+- Tu ne dois jamais remplacer un nom explicite par une déduction.
+- Si une contradiction apparaît, le nom explicite le plus clair et direct prévaut.
+
+==================================================
+MISES À JOUR AUTORISÉES
+==================================================
 
 - Tu mets à jour nom, rôle, confidence, justification uniquement si :
   - Le nouvel extrait apporte une information plus précise (par ex. le rôle était null et est maintenant
@@ -132,5 +176,4 @@ Nouvel extrait de transcription :
 </chunk>
 
 Renvoie UNIQUEMENT un JSON valide du même schéma "Participants"
-
 """

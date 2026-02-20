@@ -30,3 +30,11 @@ class ForbiddenAccessException(MCRException):
 
 class MeetingMultipartException(MCRException):
     """Raised when the importation of an audio file fails."""
+
+
+class DiarizationError(MCRException):
+    """Raised when the diarization fails"""
+
+
+class TranscriptionError(MCRException):
+    """Raised when the transcription fails"""

@@ -4,6 +4,8 @@ on:
   pull_request:
     branches:
       - main
+      - dev
+    types: [opened, synchronize, reopened, edited]
 
 # test
 
@@ -13,8 +15,15 @@ jobs:
     steps:
       - name: Validate source branch
         run: |
-          SOURCE_BRANCH="${{ github.head_ref }}"
+          TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+          echo "Target branch: $TARGET_BRANCH"
           echo "Source branch: $SOURCE_BRANCH"
+
+          if [[ "$TARGET_BRANCH" != "main" ]]; then
+            echo "ℹ️ PR does not target main, skipping validation"
+            exit 0
+          fi
 
           if [[ "$SOURCE_BRANCH" == "dev" || "$SOURCE_BRANCH" == hotfix* ]]; then
             echo "✅ Valid source branch - validation passed"

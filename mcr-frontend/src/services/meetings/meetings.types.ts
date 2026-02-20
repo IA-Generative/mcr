@@ -18,7 +18,7 @@ export const MeetingStatus = [
 ] as const;
 export type MeetingStatus = (typeof MeetingStatus)[number];
 
-export const OnlineMeetingPlatforms = ['COMU', 'WEBINAIRE', 'WEBCONF'] as const;
+export const OnlineMeetingPlatforms = ['COMU', 'WEBINAIRE', 'WEBCONF', 'VISIO'] as const;
 export const ImportMeetingPlatforms = ['MCR_IMPORT'] as const;
 export const RecordMeetingPlatforms = ['MCR_RECORD'] as const;
 

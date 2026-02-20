@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Evaluation data
+mcr_meeting/evaluation/data/*
+
+# Notebooks
+*.ipynb_checkpoints
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets & env files
+.env*
+*.pem
+*.key
+*.crt
+secrets/
+
+# Git
+.git/
+.gitignore
+
+# Development
+tests/
+docs/
+notebooks/
+scripts/
+README.md
+Makefile
+*.md

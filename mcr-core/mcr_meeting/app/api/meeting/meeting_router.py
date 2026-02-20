@@ -99,18 +99,27 @@ async def create_meeting_with_file(
 def get_meetings(
     x_user_keycloak_uuid: UUID4 = Header(),
     search: str = Query(None, description="Terme de recherche optionnel"),
+    page: int = Query(1, description="Numéro de page"),
+    page_size: int = Query(10, description="Nombre d'éléments par page"),
 ) -> List[MeetingResponse]:
     """
     Route pour récupérer une liste de réunions filtrées.
 
     Args:
         search (str): Terme de recherche optionnel.
+        page (int): Numéro de page.
+        page_size (int): Nombre d'éléments par page.
 
     Returns:
         List[Meeting]: Liste des réunions correspondant aux critères.
     """
+    page = max(1, page)
+    page_size = page_size if page_size > 0 else 1
     meetings = get_meetings_orchestrator(
-        search=search, user_keycloak_uuid=x_user_keycloak_uuid
+        search=search,
+        page=page,
+        page_size=page_size,
+        user_keycloak_uuid=x_user_keycloak_uuid,
     )
     return [MeetingResponse.model_validate(m) for m in meetings]
 

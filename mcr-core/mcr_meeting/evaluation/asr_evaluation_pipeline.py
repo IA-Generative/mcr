@@ -1,18 +1,20 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import pandas as pd
 from loguru import logger
 
+from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 from mcr_meeting.evaluation.eval_types import (
     EvaluationInput,
     EvaluationOutput,
     EvaluationSummary,
+    MetricsPipelineInput,
+    TranscriptionOutput,
 )
 from mcr_meeting.evaluation.utils import (
-    AudioFileProcessor,
     MetricsCalculator,
     ResultsManager,
 )
@@ -21,29 +23,25 @@ from mcr_meeting.evaluation.utils import (
 class ASREvaluationPipeline:
     """Main pipeline orchestrator for Automatic Speech Recognition (ASR) evaluation"""
 
-    def __init__(self, inputs: List[EvaluationInput], model: Optional[object] = None):
+    def __init__(self, inputs: List[EvaluationInput]):
         self.inputs = inputs
         self.dev = os.environ.get("ENV_MODE") == "DEV"
         self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.audio_processor = AudioFileProcessor(model)
+        self.speech_to_text_pipeline = SpeechToTextPipeline()
         self.metrics_manager = MetricsPipeline()
 
     def process_single_sample(
         self, sample: EvaluationInput, results_manager: ResultsManager
-    ) -> Optional[EvaluationInput]:
+    ) -> MetricsPipelineInput | None:
         """Process a single audio file and return evaluation metrics"""
         try:
             logger.info("Processing sample {}...", sample.uid)
 
-            if not sample.audio_bytes:
-                logger.warning(
-                    "Empty audio file, skipping sample %s",
-                    sample.uid,
-                )
-                return None
-
-            generated_transcription = self.audio_processor.process_audio_file(
+            generated_transcription_segments = self.speech_to_text_pipeline.run(
                 sample.audio_bytes
+            )
+            generated_transcription = TranscriptionOutput(
+                segments=generated_transcription_segments
             )
             logger.info(
                 "Generated transcription for {}: {}...",
@@ -53,26 +51,37 @@ class ASREvaluationPipeline:
             results_manager.save_generated_transcription(
                 generated_transcription, sample.uid, self.timestamp
             )
-            sample.generated_transcription = generated_transcription
-            return sample
+            metrics_pipeline_input = MetricsPipelineInput(
+                uid=sample.uid,
+                audio_path=sample.audio_path,
+                audio_bytes=sample.audio_bytes,
+                reference_transcription=sample.reference_transcription,
+                generated_transcription=generated_transcription,
+            )
+            return metrics_pipeline_input
         except Exception as e:
-            logger.error("Error processing {}: {}", sample.uid, str(e))
+            logger.exception(
+                "Error processing {}. Skipping the evaluation for this sample. "
+                "The error raised is: {}",
+                sample.uid,
+                str(e),
+            )
             return None
 
     def run_evaluation(self, output_dir: Path) -> EvaluationSummary:
         """Run the complete evaluation pipeline"""
         results_manager = ResultsManager(output_dir, self.dev)
-        evaluation_inputs: List[EvaluationInput] = []
+        metrics_pipeline_inputs: List[MetricsPipelineInput] = []
         for sample in self.inputs:
-            evaluation_input = self.process_single_sample(sample, results_manager)
-            if evaluation_input:
-                evaluation_inputs.append(evaluation_input)
+            metrics_pipeline_input = self.process_single_sample(sample, results_manager)
+            if metrics_pipeline_input:
+                metrics_pipeline_inputs.append(metrics_pipeline_input)
 
-        if not evaluation_inputs:
+        if not metrics_pipeline_inputs:
             raise ValueError("No files were successfully processed")
 
         summary = self.metrics_manager.calculate_and_save_metrics(
-            evaluation_inputs, output_dir
+            metrics_pipeline_inputs, output_dir
         )
 
         return summary
@@ -87,28 +96,17 @@ class MetricsPipeline:
         self.metrics_calculator = MetricsCalculator()
 
     def calculate_metrics(
-        self, evaluation_inputs: List[EvaluationInput]
+        self, metrics_pipeline_inputs: List[MetricsPipelineInput]
     ) -> List[EvaluationOutput]:
         """Calculate metrics for all evaluation outputs"""
-        processed_outputs: List[EvaluationOutput] = []
-        for sample in evaluation_inputs:
-            if not sample.generated_transcription:
-                logger.warning(
-                    "No generated transcription for sample {}, skipping.",
-                    sample.uid,
-                )
-                continue
+        if not metrics_pipeline_inputs:
+            raise ValueError("No evaluation inputs to process")
 
+        processed_outputs: List[EvaluationOutput] = []
+        for sample in metrics_pipeline_inputs:
             metrics = self.metrics_calculator.calculate_metrics(
                 sample, sample.generated_transcription
             )
-
-            if not metrics:
-                logger.warning(
-                    "Metrics could not be calculated for sample {}, skipping.",
-                    sample.uid,
-                )
-                continue
 
             logger.info(
                 "Sample {} - evaluation metrics: {}",
@@ -133,8 +131,6 @@ class MetricsPipeline:
             raise ValueError("No evaluation outputs to process")
 
         results_manager = ResultsManager(output_dir, self.dev)
-        if not evaluation_outputs:
-            raise ValueError("No files were successfully processed")
 
         wer_scores = [output.metrics.wer for output in evaluation_outputs]
         cer_scores = [output.metrics.cer for output in evaluation_outputs]
@@ -174,9 +170,9 @@ class MetricsPipeline:
         return summary
 
     def calculate_and_save_metrics(
-        self, evaluation_inputs: List[EvaluationInput], output_dir: Path
+        self, metrics_pipeline_inputs: List[MetricsPipelineInput], output_dir: Path
     ) -> EvaluationSummary:
         """Calculate and save metrics for all evaluation inputs"""
-        evaluation_outputs = self.calculate_metrics(evaluation_inputs)
+        evaluation_outputs = self.calculate_metrics(metrics_pipeline_inputs)
         summary = self.save_metrics(evaluation_outputs, output_dir)
         return summary

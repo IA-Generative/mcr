@@ -16,7 +16,10 @@ from mcr_meeting.app.db.db import (
     router_db_session_context_manager,
 )
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
+from mcr_meeting.app.services.feature_flag_service import (
+    FeatureFlag,
+    get_feature_flag_client,
+)
 from mcr_meeting.main import app
 
 # --- TEST DB SETUP ---
@@ -149,7 +152,7 @@ def create_mock_feature_flag_client(mocker: MockerFixture):
             mock_feature_flag_client.is_enabled.assert_called_with("audio_noise_filtering")
     """
 
-    def _create_mock(flag_name: str, enabled: bool) -> Mock:
+    def _create_mock(flag_name: FeatureFlag, enabled: bool) -> Mock:
         mock_client = Mock()
 
         # Create a side_effect that returns enabled only for the specified flag

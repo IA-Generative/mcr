@@ -1,11 +1,21 @@
 import { describe, expect, test } from 'vitest';
-import { comuPrivateUrlValidator } from './meeting.schema';
+import { comuPrivateUrlValidator, visioUrlValidator } from './meeting.schema';
 
 type TestCase = {
   name: string;
   url: string;
   shouldMatch: boolean;
 };
+
+vi.mock('@/composables/use-feature-flag', () => {
+  const mockedUseFeatureFlag = () => {
+    return true;
+  };
+
+  return {
+    useFeatureFlag: mockedUseFeatureFlag,
+  };
+});
 
 const comuTestCases: TestCase[] = [
   // ✅ Valid
@@ -93,8 +103,62 @@ const comuTestCases: TestCase[] = [
   },
 ];
 
+const visioTestCases: TestCase[] = [
+  {
+    name: 'Valid URL',
+    url: 'https://visio.numerique.gouv.fr/aaa-bbbb-ccc',
+    shouldMatch: true,
+  },
+  {
+    name: 'Wrong domain',
+    url: 'https://visio.numerique.gouv.eu/aaa-bbbb-ccc',
+    shouldMatch: false,
+  },
+  {
+    name: 'HTTP instead of HTTPS',
+    url: 'http://visio.numerique.gouv.fr/aaa-bbbb-ccc',
+    shouldMatch: false,
+  },
+  {
+    name: 'Missing slug',
+    url: 'https://visio.numerique.gouv.fr/',
+    shouldMatch: false,
+  },
+  {
+    name: 'Uppercase letters in slug',
+    url: 'https://visio.numerique.gouv.fr/Aaa-bBbb-ccC',
+    shouldMatch: false,
+  },
+  {
+    name: 'Numbers in slug',
+    url: 'https://visio.numerique.gouv.fr/rh1-bbbb-ccc',
+    shouldMatch: false,
+  },
+  {
+    name: 'Trailing slash',
+    url: 'https://visio.numerique.gouv.fr/aaa-bbbb-ccc/',
+    shouldMatch: false,
+  },
+  {
+    name: 'Wrong group lengths',
+    url: 'https://visio.numerique.gouv.fr/abcd-efgh-ijkl',
+    shouldMatch: false,
+  },
+  {
+    name: 'Missing group',
+    url: 'https://visio.numerique.gouv.fr/aaa-bbbb',
+    shouldMatch: false,
+  },
+];
+
 describe('comuUrlRegex match tests', () => {
   test.each(comuTestCases)('$name', ({ url, shouldMatch }) => {
     expect(comuPrivateUrlValidator.test(url)).toBe(shouldMatch);
+  });
+});
+
+describe('visioUrlRegex match tests', () => {
+  test.each(visioTestCases)('$name', ({ url, shouldMatch }) => {
+    expect(visioUrlValidator.test(url)).toBe(shouldMatch);
   });
 });

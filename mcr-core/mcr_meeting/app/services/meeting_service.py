@@ -111,20 +111,25 @@ def update_meeting_status(meeting: Meeting, meeting_status: MeetingStatus) -> Me
 
 
 def get_meetings_service(
-    user_keycloak_uuid: UUID, search: Optional[str]
+    user_keycloak_uuid: UUID,
+    search: Optional[str],
+    page: int,
+    page_size: int,
 ) -> List[Meeting]:
     """
     Service pour récupérer une liste de réunions.
 
     Args:
         search (str): Terme de recherche optionnel pour filtrer les réunions.
+        page (int): Numéro de page.
+        page_size (int): Nombre d'éléments par page.
 
     Returns:
         List[Meeting]: Liste des réunions correspondant aux critères.
     """
     user = get_user_by_keycloak_uuid_service(user_keycloak_uuid)
 
-    return get_meetings(search=search, user_id=user.id)
+    return get_meetings(search=search, user_id=user.id, page=page, page_size=page_size)
 
 
 def get_meeting_with_transcriptions_service(

@@ -73,17 +73,24 @@ def update_meeting(updated_meeting: Meeting) -> Meeting:
     return updated_meeting
 
 
-def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
+def get_meetings(
+    user_id: int, search: Optional[str], page: int, page_size: int
+) -> List[Meeting]:
     """
     Récupère une liste de réunions filtrées depuis la base de données.
 
     Args:
         user_id (int): ID de l'utilisateur.
         search (str): Terme de recherche optionnel pour filtrer les réunions.
+        page (int): Numéro de page.
+        page_size (int): Nombre d'éléments par page.
 
     Returns:
         List[Meeting]: Liste des réunions correspondant aux critères.
     """
+    page = max(1, page)
+    page_size = page_size if page_size > 0 else 1
+
     db = get_db_session_ctx()
     query = db.query(Meeting).filter(
         Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED
@@ -94,7 +101,13 @@ def get_meetings(user_id: int, search: Optional[str] = None) -> List[Meeting]:
             Meeting.name.ilike(search_pattern),
         )
 
-    return query.order_by(Meeting.creation_date.desc()).all()
+    offset = (page - 1) * page_size
+    return (
+        query.order_by(Meeting.creation_date.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
 
 
 def get_meeting_with_transcriptions(

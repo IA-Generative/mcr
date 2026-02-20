@@ -46,6 +46,7 @@ class MeetingPlatform(StrEnum):
     COMU = "COMU"
     WEBINAIRE = "WEBINAIRE"
     WEBCONF = "WEBCONF"
+    VISIO = "VISIO"
 
 
 class Meeting(Base):
@@ -115,3 +116,16 @@ class WebConfMeeting(Meeting):
         )
 
         return WebConfConnectionStrategy()
+
+
+class VisiofMeeting(Meeting):
+    __mapper_args__ = {
+        "polymorphic_identity": MeetingPlatform.VISIO,
+    }
+
+    def get_connection_strategy(self) -> "ConnectionStrategy":
+        from mcr_capture_worker.services.connection_strategies import (
+            VisioStrategy,
+        )
+
+        return VisioStrategy()
