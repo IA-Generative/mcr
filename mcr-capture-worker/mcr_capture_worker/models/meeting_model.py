@@ -12,6 +12,9 @@ if TYPE_CHECKING:
     from mcr_capture_worker.services.connection_strategies.abstract_connection import (
         ConnectionStrategy,
     )
+    from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor import (
+        MeetingMonitor,
+    )
 
 
 class MeetingStatus(StrEnum):
@@ -78,6 +81,9 @@ class Meeting(Base):
     def get_connection_strategy(self) -> "ConnectionStrategy":
         raise NotImplementedError
 
+    def get_meeting_monitor(self) -> "MeetingMonitor":
+        raise NotImplementedError
+
 
 class ComuMeeting(Meeting):
     __mapper_args__ = {
@@ -116,6 +122,11 @@ class WebConfMeeting(Meeting):
         )
 
         return WebConfConnectionStrategy()
+
+    def get_meeting_monitor(self) -> "MeetingMonitor":
+        from mcr_capture_worker.services.meeting_monitors import WebConfMeetingMonitor
+
+        return WebConfMeetingMonitor()
 
 
 class VisiofMeeting(Meeting):
