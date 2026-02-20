@@ -361,3 +361,13 @@ class TranscriptionApiSettings(BaseSettings):
         default=None,
         description="API request timeout in seconds, None means no timeout",
     )
+
+
+class EvaluationSettings(BaseSettings):
+    """
+    Configuration settings for evaluation parameters
+    """
+
+    SUPPORTED_AUDIO_FORMATS: list[str] = Field(
+        default=["mp3", "wav"], description="Supported audio formats for evaluation"
+    )
