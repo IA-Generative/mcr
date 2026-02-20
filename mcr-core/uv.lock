@@ -1741,7 +1741,6 @@ dependencies = [
     { name = "loguru" },
     { name = "mypy-boto3-s3" },
     { name = "numpy" },
-    { name = "openai" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "python-statemachine" },
@@ -1782,6 +1781,7 @@ worker = [
     { name = "torch" },
     { name = "torchaudio" },
     { name = "transformers" },
+    { name = "urllib3" },
 ]
 
 [package.dev-dependencies]
@@ -1859,6 +1859,7 @@ requires-dist = [
     { name = "torchaudio", marker = "extra == 'worker'", specifier = "==2.7.1" },
     { name = "transformers", marker = "extra == 'worker'", specifier = "==4.52.4" },
     { name = "unleashclient", specifier = ">=6.3.0" },
+    { name = "urllib3", marker = "extra == 'worker'", specifier = ">=2.5.0" },
     { name = "uvicorn", marker = "extra == 'api'", specifier = "==0.30.6" },
 ]
 provides-extras = ["api", "worker"]

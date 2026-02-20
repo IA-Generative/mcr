@@ -52,6 +52,7 @@ worker = [
     "openai==1.92.2",
     "instructor==1.9.0",
     "langchain == 0.3.27",
+    "urllib3>=2.5.0",
 ]
 
 [dependency-groups]
