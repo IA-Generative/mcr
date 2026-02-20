@@ -17,6 +17,7 @@ from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
     ApiSettings,
     CelerySettings,
+    EvaluationSettings,
     SentrySettings,
     ServiceSettings,
     Settings,
@@ -54,6 +55,7 @@ api_settings = ApiSettings()
 transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
 sentrySettings = SentrySettings()
 settings = Settings()
+SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
 
 sentry_sdk.init(
     dsn=sentrySettings.SENTRY_TRANSCRIPTION_DSN,
@@ -233,7 +235,12 @@ def evaluate(zip_data: bytes) -> None:
             )
 
         evaluation_inputs = []
-        for audio_file in audio_dir.glob("*.mp3"):
+        audio_files = [
+            f
+            for fmt in SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION
+            for f in audio_dir.glob(f"*.{fmt}")
+        ]
+        for audio_file in audio_files:
             uid = audio_file.stem
             audio_bytes = BytesIO(audio_file.read_bytes())
 
