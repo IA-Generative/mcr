@@ -18,3 +18,10 @@ class WebConfMeetingMonitor(MeetingMonitor):
             logger.warning(
                 "WebConf disconnect button not found; proceeding to close browser"
             )
+
+    async def _get_participant_count(self, page: Page) -> int:
+        badge = page.locator('span[class$="-badge"]')
+        text = await badge.text_content(timeout=5000)
+        if text is None or not text.strip().isdigit():
+            raise ValueError(f"Could not read participant count from badge: {text}")
+        return int(text.strip())

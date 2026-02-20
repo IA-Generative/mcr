@@ -13,6 +13,7 @@ from mcr_capture_worker.schemas.audio_capture_schema import OnDataAvailableBytes
 from mcr_capture_worker.services.connection_strategies import (
     ConnectionStrategy,
 )
+from mcr_capture_worker.services.meeting_monitors import MeetingMonitor
 from mcr_capture_worker.services.s3_service import (
     put_file_in_audio_folder,
 )
@@ -33,9 +34,14 @@ class MeetingAudioRecorder:
         self.pending_uploads = UploadQueue()
         self.teardown_after_stop_is_finished = False
         self.meeting_transition_client: Optional[MeetingApiClient] = None
+        self._alone_since: Optional[float] = None
+        self._connected_at: Optional[float] = None
 
     def set_connection_strategy(self, connection_strategy: ConnectionStrategy) -> None:
         self.connection_strategy = connection_strategy
+
+    def set_meeting_monitor(self, meeting_monitor: MeetingMonitor) -> None:
+        self.meeting_monitor = meeting_monitor
 
     async def start(self) -> None:
         """
@@ -77,6 +83,7 @@ class MeetingAudioRecorder:
 
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
+            self._connected_at = time.monotonic()
 
             await self.meeting_transition_client.start_capture_bot(self.meeting_id)
 
@@ -100,6 +107,16 @@ class MeetingAudioRecorder:
                 if not meeting or meeting.status != MeetingStatus.CAPTURE_IN_PROGRESS:
                     await self.stop_recording(page)
                     break
+
+                if await self._should_auto_disconnect(page):
+                    logger.info(
+                        "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
+                        self.meeting_id,
+                        capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S,
+                    )
+                    await self.stop_recording(page)
+                    break
+
                 # Continue capturing and processing audio chunks
                 # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
                 # A blocking loop would prevent Playwright from processing browser events,
@@ -112,6 +129,40 @@ class MeetingAudioRecorder:
                 e,
             )
             await self.browser.close()
+
+    async def _should_auto_disconnect(self, page: Page) -> bool:
+        if self._connected_at is not None:
+            elapsed_since_connect = time.monotonic() - self._connected_at
+            if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
+                return False
+
+        participant_count = await self.meeting_monitor.get_participant_count(page)
+
+        if participant_count is None:
+            self._alone_since = None
+            return False
+
+        bot_is_alone = participant_count <= 1
+
+        if bot_is_alone:
+            now = time.monotonic()
+            if self._alone_since is None:
+                self._alone_since = now
+                logger.info(
+                    "Bot appears alone in meeting {} (participant_count={}). Starting grace period.",
+                    self.meeting_id,
+                    participant_count,
+                )
+            elapsed = now - self._alone_since
+            return elapsed >= capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
+        else:
+            if self._alone_since is not None:
+                logger.info(
+                    "Participants rejoined meeting {} -- resetting auto-disconnect timer.",
+                    self.meeting_id,
+                )
+            self._alone_since = None
+            return False
 
     async def handle_audio_chunk(self, data: BytesIO) -> None:
         try:

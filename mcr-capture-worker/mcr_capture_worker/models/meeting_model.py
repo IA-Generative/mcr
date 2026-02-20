@@ -97,6 +97,11 @@ class ComuMeeting(Meeting):
 
         return ComuConnectionStrategy()
 
+    def get_meeting_monitor(self) -> "MeetingMonitor":
+        from mcr_capture_worker.services.meeting_monitors import ComuMeetingMonitor
+
+        return ComuMeetingMonitor()
+
 
 class WebinaireMeeting(Meeting):
     __mapper_args__ = {
@@ -109,6 +114,13 @@ class WebinaireMeeting(Meeting):
         )
 
         return WebinaireConnectionStrategy()
+
+    def get_meeting_monitor(self) -> "MeetingMonitor":
+        from mcr_capture_worker.services.meeting_monitors import (
+            WebinaireMeetingMonitor,
+        )
+
+        return WebinaireMeetingMonitor()
 
 
 class WebConfMeeting(Meeting):

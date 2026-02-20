@@ -54,6 +54,14 @@ class CaptureSettings(BaseSettings):
         10_000,
         description="Time in ms before a playwright action raise a TimeoutError when trying an action",
     )
+    AUTO_DISCONNECT_INITIAL_DELAY_S: int = Field(
+        300,
+        description="Time in seconds after bot connection before starting participant monitoring",
+    )
+    AUTO_DISCONNECT_GRACE_PERIOD_S: int = Field(
+        300,
+        description="Time in seconds the bot waits alone in a meeting before auto-disconnecting",
+    )
 
     model_config = SettingsConfigDict(
         from_attributes=True, case_sensitive=True, env_file=".env", extra="allow"
