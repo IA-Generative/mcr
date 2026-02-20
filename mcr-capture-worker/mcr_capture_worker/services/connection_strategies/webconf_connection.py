@@ -55,16 +55,6 @@ class WebConfConnectionStrategy(ConnectionStrategy):
         await page.click('[aria-label="Couper votre micro"]')
         logger.info("Disabled camera and microphone")
 
-    async def disconnect_from_meeting(self, page: Page) -> None:
-        try:
-            await page.click('[aria-label="Quitter la conversation"]')
-            logger.info("Clicked 'Quitter la conversation'")
-            await asyncio.sleep(1)
-        except Exception:
-            logger.warning(
-                "WebConf disconnect button not found; proceeding to close browser"
-            )
-
     async def load_recording_script(self, page: Page) -> None:
         await page.add_init_script(
             path="mcr_capture_worker/services/audio/webconf/config.js"
