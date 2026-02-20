@@ -6,15 +6,6 @@ from playwright.async_api import Page
 
 
 class MeetingMonitor(ABC):
-    @abstractmethod
-    async def _get_participant_count(self, page: Page) -> int:
-        """Platform-specific implementation to scrape the participant count from the meeting UI.
-
-        Returns the total number of participants currently in the meeting,
-        including the bot itself.
-        """
-        pass
-
     async def get_participant_count(self, page: Page) -> Optional[int]:
         """Safely retrieve participant count from the meeting UI.
 
@@ -28,3 +19,12 @@ class MeetingMonitor(ABC):
 
     async def disconnect_from_meeting(self, page: Page) -> None:
         return
+
+    @abstractmethod
+    async def _get_participant_count(self, page: Page) -> int:
+        """Platform-specific implementation to scrape the participant count from the meeting UI.
+
+        Returns the total number of participants currently in the meeting,
+        including the bot itself.
+        """
+        pass
