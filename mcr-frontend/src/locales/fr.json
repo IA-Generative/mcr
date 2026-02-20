@@ -318,7 +318,13 @@
   },
   "meeting-v2": {
     "visio-form": {
-      "title": "Je participe à une réunion en visioconférence"
+      "meeting-title": {
+        "title": "Titre de votre réunion dans MCR",
+        "example": "Exemple : Réunion d'équipe 23/01/26"
+      },
+      "parameters": "Paramètres de votre visioconférence",
+      "title": "Je participe à une réunion en visioconférence",
+      "visio-tools": "Outil de visioconférence"
     }
   },
   "members": {

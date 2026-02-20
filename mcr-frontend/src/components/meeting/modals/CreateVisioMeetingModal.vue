@@ -21,12 +21,15 @@
         {{ $t('meeting-v2.visio-form.title') }}
       </h2>
     </div>
+    <CreateVisioMeetingForm />
+    <hr />
   </BaseModal>
 </template>
 
 <script setup lang="ts">
 import BaseModal from '@/components/core/BaseModal.vue';
 import { useVfm } from 'vue-final-modal';
+import CreateVisioMeetingForm from '../CreateVisioMeetingForm.vue';
 
 const CREATE_MEETING_MODAL_ID = 'meeting-visio-modal-V2';
 const close = () => useVfm().close(CREATE_MEETING_MODAL_ID);
