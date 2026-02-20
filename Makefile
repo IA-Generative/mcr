@@ -56,9 +56,6 @@ pre-commit:
 
 start-playwright-with-gui:
 	@docker compose down capture_worker
-	@set -a; \
-	. ./.env.local.host; \
-	set +a; \
 	cd mcr-capture-worker && \
 	uv run playwright install && \
 	uv run -m mcr_capture_worker.worker

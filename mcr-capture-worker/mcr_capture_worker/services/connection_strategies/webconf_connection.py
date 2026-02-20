@@ -67,14 +67,14 @@ class WebConfConnectionStrategy(ConnectionStrategy):
 
     async def load_recording_script(self, page: Page) -> None:
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webconf/config.js"
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/config.js"
         )
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webconf/streamUtils.js"
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/streamUtils.js"
         )
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webconf/recorderController.js"
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/recorderController.js"
         )
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webconf/index.js"
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/index.js"
         )

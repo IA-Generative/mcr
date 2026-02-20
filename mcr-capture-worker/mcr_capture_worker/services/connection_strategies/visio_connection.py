@@ -1,3 +1,4 @@
+from loguru import logger
 from playwright.async_api import Page
 
 from mcr_capture_worker.models.meeting_model import Meeting
@@ -10,6 +11,8 @@ from mcr_capture_worker.services.connection_strategies.abstract_connection impor
 
 
 class VisioStrategy(ConnectionStrategy):
+    CONNECTION_TIMEOUT = 300000
+
     async def connect_to_meeting(self, page: Page, meeting: Meeting) -> None:
         if not is_meeting_with_url(meeting):
             raise ValueError("Visio meeting doesn't have a valid url")
@@ -27,11 +30,29 @@ class VisioStrategy(ConnectionStrategy):
 
     async def load_recording_script(self, page: Page) -> None:
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webinaire_comu/audioRecorder.js"
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/config.js"
+        )
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/streamUtils.js"
+        )
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/recorderController.js"
+        )
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/inject_stream_strategy/index.js"
+        )
+
+    async def wait_for_webRTC_connection(self, page: Page) -> None:
+        logger.info(
+            "VISIO - LA SUITE: Skipping MediaStream check (will be available when participants speak)"
         )
 
     async def _join_waiting_room(self, page: Page) -> None:
         await page.get_by_role("button", name="Join").click()
+        # Wait no more than CONNECTION_TIMEOUT in the waiting room
+        await page.wait_for_selector(
+            ".lk-video-conference", state="visible", timeout=self.CONNECTION_TIMEOUT
+        )
 
     async def _set_camera_and_mic_off(self, page: Page) -> None:
         await page.get_by_role("button", name="Disable microphone").click()

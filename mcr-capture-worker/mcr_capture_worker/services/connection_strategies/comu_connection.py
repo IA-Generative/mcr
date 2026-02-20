@@ -59,5 +59,5 @@ class ComuConnectionStrategy(ConnectionStrategy):
 
     async def load_recording_script(self, page: Page) -> None:
         await page.add_init_script(
-            path="mcr_capture_worker/services/audio/webinaire_comu/audioRecorder.js"
+            path="mcr_capture_worker/services/audio/wait_for_stream_strategy/audioRecorder.js"
         )
