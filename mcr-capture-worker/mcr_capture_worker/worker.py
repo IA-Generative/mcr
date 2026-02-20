@@ -24,6 +24,7 @@ def process_meeting() -> None:
 
     meeting_audio_recorder = MeetingAudioRecorder(meeting_id=meeting.id)
     meeting_audio_recorder.set_connection_strategy(meeting.get_connection_strategy())
+    meeting_audio_recorder.set_meeting_monitor(meeting.get_meeting_monitor())
 
     meeting = get_meeting_with_owner(meeting.id)
     meeting_transition_client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
