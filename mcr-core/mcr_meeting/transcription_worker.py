@@ -221,18 +221,27 @@ def evaluate(zip_data: bytes) -> None:
             "Extracted files in {}: {}", temp_path, [str(f) for f in extracted_files]
         )
 
-        base_path = temp_path / "inputs"
-        audio_dir = base_path / "raw_audios"
-        reference_dir = base_path / "reference_transcripts"
+        # Find any directory that contains both raw_audios and reference_transcripts
+        base_path = None
+        for candidate in [temp_path, *temp_path.iterdir()]:
+            if (
+                candidate.is_dir()
+                and (candidate / "raw_audios").exists()
+                and (candidate / "reference_transcripts").exists()
+            ):
+                base_path = candidate
+                break
 
-        if not audio_dir.exists() or not reference_dir.exists():
+        if base_path is None:
             logger.error(
-                "Could not find 'raw_audios' or 'reference_transcripts' in {}",
-                base_path,
+                "Could not find 'raw_audios' and 'reference_transcripts' directories in the zip file."
             )
             raise ValueError(
-                "Zip file must contain 'raw_audios' and 'reference_transcripts' folders within an 'inputs' directory.",
+                "Zip file must contain 'raw_audios' and 'reference_transcripts' folders (at any root level).",
             )
+
+        audio_dir = base_path / "raw_audios"
+        reference_dir = base_path / "reference_transcripts"
 
         evaluation_inputs = []
         audio_files = [
