@@ -4,7 +4,7 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_meeting.evaluation.asr_evaluation_pipeline import ASREvaluationPipeline
-from mcr_meeting.evaluation.cli.utils import load_audio_inputs
+from mcr_meeting.evaluation.cli.utils import load_evaluation_inputs
 
 
 def main() -> None:
@@ -18,7 +18,7 @@ def main() -> None:
     logger.info("Output directory for metrics: {}", out_dir)
     logger.info("AUDIO DIRECTORY: {}", audio_dir)
 
-    evaluation_inputs = load_audio_inputs(audio_dir, ref_dir)
+    evaluation_inputs = load_evaluation_inputs(audio_dir, ref_dir)
 
     if not evaluation_inputs:
         logger.error("No audio files → nothing to do.")

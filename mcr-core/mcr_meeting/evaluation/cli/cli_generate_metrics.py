@@ -5,8 +5,8 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_meeting.evaluation.cli.utils import (
-    load_audio_inputs,
-    load_hypothesis_inputs,
+    load_evaluation_inputs,
+    load_metrics_inputs,
     run_evaluation,
 )
 
@@ -25,8 +25,8 @@ def main() -> None:
 
     evaluation_inputs = []
 
-    evaluation_inputs.extend(load_audio_inputs(audio_dir, ref_dir))
-    evaluation_inputs.extend(load_hypothesis_inputs(ref_dir, hyp_dir, audio_dir))
+    evaluation_inputs.extend(load_evaluation_inputs(audio_dir, ref_dir))
+    evaluation_inputs.extend(load_metrics_inputs(ref_dir, hyp_dir))
 
     run_evaluation(evaluation_inputs, output_dir=metrics_dir)
 

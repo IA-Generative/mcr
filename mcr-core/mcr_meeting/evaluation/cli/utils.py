@@ -14,7 +14,7 @@ from mcr_meeting.evaluation.eval_types import (
 SUPPORTED_AUDIO_FORMATS = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
 
 
-def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
+def load_evaluation_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
     evaluation_inputs = []
     audio_files = [
         f for fmt in SUPPORTED_AUDIO_FORMATS for f in audio_dir.glob(f"*.{fmt}")
@@ -42,9 +42,7 @@ def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
     return evaluation_inputs
 
 
-def load_hypothesis_inputs(
-    ref_dir: Path, hyp_dir: Path, audio_dir: Path
-) -> list[MetricsPipelineInput]:
+def load_metrics_inputs(ref_dir: Path, hyp_dir: Path) -> list[MetricsPipelineInput]:
     metrics_pipeline_inputs = []
     for reference_transcript in ref_dir.glob("*.json"):
         uid = reference_transcript.stem
