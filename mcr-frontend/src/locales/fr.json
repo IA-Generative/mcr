@@ -318,6 +318,11 @@
   },
   "meeting-v2": {
     "visio-form": {
+      "connection": {
+        "advice": "Consulter cet article {link} pour localiser votre URL modérateur ou vos identifiants.",
+        "link": "Bonnes pratiques MCR",
+        "title": "Veuillez renseigner une URL ou des identifiants de visioconférence"
+      },
       "meeting-title": {
         "title": "Titre de votre réunion dans MCR",
         "example": "Exemple : Réunion d'équipe 23/01/26"
