@@ -3,6 +3,7 @@ from pathlib import Path
 
 from loguru import logger
 
+from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.evaluation.asr_evaluation_pipeline import MetricsPipeline
 from mcr_meeting.evaluation.eval_types import (
     EvaluationInput,
@@ -10,7 +11,7 @@ from mcr_meeting.evaluation.eval_types import (
     TranscriptionOutput,
 )
 
-SUPPORTED_AUDIO_FORMATS = ("mp3", "wav")
+SUPPORTED_AUDIO_FORMATS = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
 
 
 def load_audio_inputs(audio_dir: Path, ref_dir: Path) -> list[EvaluationInput]:
