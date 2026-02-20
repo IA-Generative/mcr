@@ -49,7 +49,6 @@ def load_hypothesis_inputs(
     for reference_transcript in ref_dir.glob("*.json"):
         uid = reference_transcript.stem
         hypothese_transcript_path = hyp_dir / f"{uid}.json"
-        audio_path = audio_dir / f"{uid}.mp3"
 
         if not hypothese_transcript_path.exists():
             logger.warning("Missing hypothesis transcript for {}, skipping.", uid)
@@ -65,10 +64,6 @@ def load_hypothesis_inputs(
         metrics_pipeline_inputs.append(
             MetricsPipelineInput(
                 uid=uid,
-                audio_path=audio_path,
-                audio_bytes=BytesIO(audio_path.read_bytes())
-                if audio_path.exists()
-                else BytesIO(b""),
                 reference_transcription=reference,
                 generated_transcription=generated,
             )
