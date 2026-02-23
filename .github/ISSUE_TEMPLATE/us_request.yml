@@ -1,0 +1,50 @@
+name: "User Story"
+description: Décrire un besoin utilisateur sous forme de user story
+title: "ETQ"
+labels: ["user story"]
+
+body:
+  - type: textarea
+    id: functional
+    attributes:
+      label: Functional
+      description: Description fonctionnelle attendue (besoin, parcours, règles métier).
+      placeholder: |
+        En tant que ...
+        Je veux ...
+        Afin de ...
+
+        Contexte :
+        Règles métier :
+        Cas limites / exceptions :
+    validations:
+      required: true
+
+  - type: textarea
+    id: validation_checks
+    attributes:
+      label: Validation Checks
+      description: Critères d’acceptation
+      placeholder: |
+        - [ ] Scénario 1
+        - [ ] Scénario 2
+        - [ ] Gestion des erreurs
+        - [ ] Logging / monitoring (si applicable)
+    validations:
+      required: true
+
+  - type: textarea
+    id: tech
+    attributes:
+      label: Tech
+      description: Détails techniques (impacts, endpoints, migrations, risques, stratégie de rollout).
+      placeholder: |
+        Services / modules impactés :
+        API / endpoints :
+        DB / migrations :
+        Events / messages (si applicable) :
+        Sécurité / permissions :
+        Tests à prévoir :
+        Risques / dépendances :
+    validations:
+      required: true

@@ -1,0 +1,42 @@
+name: "Feature"
+description: Proposer une nouvelle fonctionnalité
+title: "[FEATURE] "
+labels: ["feature"]
+
+body:
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: Pourquoi cette fonctionnalité est-elle nécessaire ?
+      placeholder: |
+        Contexte :
+        Problème actuel :
+        Impact business / utilisateur :
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_outcomes
+    attributes:
+      label: Expected outcomes
+      description: Quels sont les résultats attendus une fois la feature livrée ?
+      placeholder: |
+        - Résultat 1
+        - Résultat 2
+        - Critères de succès mesurables
+    validations:
+      required: true
+
+  - type: textarea
+    id: technical_strategy
+    attributes:
+      label: Technical strategy
+      description: Quelle est l'approche technique envisagée ?
+      placeholder: |
+        Architecture impactée :
+        Choix techniques :
+        Risques / contraintes :
+        Points ouverts :
+    validations:
+      required: true
