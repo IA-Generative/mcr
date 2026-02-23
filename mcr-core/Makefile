@@ -83,8 +83,8 @@ eval:
 	uv run python -m mcr_meeting.evaluation.cli.cli
 
 metrics:
-	DATA_DIR=$(EVALUATION_DATA_DIR) OUT_DIR=$(EVALUATION_OUTPUT_DIR)
 	uv sync --all-extras --inexact && \
+	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) \
 	uv run python -m mcr_meeting.evaluation.cli.cli_generate_metrics
 
 # Before running this, make sure you have graphviz installed in your system.
