@@ -23,9 +23,6 @@ from mcr_meeting.app.services.speech_to_text.participants_naming.match_speakers_
 from mcr_meeting.app.services.speech_to_text.speech_to_text import (
     SpeechToTextPipeline,
 )
-from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
-    remove_hallucinations,
-)
 
 speech_to_text_pipeline = SpeechToTextPipeline()
 
@@ -106,15 +103,6 @@ def transcribe_meeting(
             )
 
         diarized_transcription_segments = speech_to_text_pipeline.run(full_audio_bytes)
-        logger.info("Found {} segments", len(diarized_transcription_segments))
-
-        diarized_transcription_segments = remove_hallucinations(
-            diarized_transcription_segments
-        )
-        logger.info(
-            "Found {} segments after removing hallucinations",
-            len(diarized_transcription_segments),
-        )
 
         feature_flag_client = get_feature_flag_client()
 

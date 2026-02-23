@@ -49,6 +49,17 @@ def merge_consecutive_segments_per_speaker(
 def remove_hallucinations(
     segments: list[DiarizedTranscriptionSegment],
 ) -> list[DiarizedTranscriptionSegment]:
+    """
+    Remove hallucinations from the transcription.
+
+    Args:
+        segments (list[DiarizedTranscriptionSegment]): A list of DiarizedTranscriptionSegment objects
+            representing the transcription's segments to be cleaned.
+
+    Returns:
+        list[DiarizedTranscriptionSegment]: A new list of DiarizedTranscriptionSegment objects with hallucinations
+            removed.
+    """
     forbidden_sentences = TranscriptionForbiddenSentences()
     pattern = re.compile(
         "|".join(re.escape(s) for s in forbidden_sentences.FORBIDDEN_SENTENCES)
