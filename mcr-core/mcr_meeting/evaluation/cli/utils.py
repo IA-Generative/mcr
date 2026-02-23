@@ -46,11 +46,15 @@ def load_metrics_inputs(ref_dir: Path, hyp_dir: Path) -> list[MetricsPipelineInp
     metrics_pipeline_inputs = []
     for reference_transcript in ref_dir.glob("*.json"):
         uid = reference_transcript.stem
-        hypothese_transcript_path = hyp_dir / f"{uid}.json"
-
-        if not hypothese_transcript_path.exists():
-            logger.warning("Missing hypothesis transcript for {}, skipping.", uid)
-            continue
+        matches = list(hyp_dir.glob(f"*{uid}.json"))
+        logger.debug("Looking for hypothesis transcript ending with {}", f"{uid}.json")
+        if len(matches) == 0:
+            raise FileNotFoundError(f"Missing hypothesis transcript for {uid}.")
+        if len(matches) > 1:
+            raise ValueError(
+                f"Multiple hypothesis transcripts found for {uid}: {matches}."
+            )
+        hypothese_transcript_path = matches[0]
 
         reference = TranscriptionOutput.model_validate_json(
             reference_transcript.read_text()
@@ -69,7 +73,7 @@ def load_metrics_inputs(ref_dir: Path, hyp_dir: Path) -> list[MetricsPipelineInp
     return metrics_pipeline_inputs
 
 
-def run_evaluation(
+def run_metrics_calculation(
     metrics_pipeline_inputs: list[MetricsPipelineInput], output_dir: Path
 ) -> None:
     if not metrics_pipeline_inputs:
