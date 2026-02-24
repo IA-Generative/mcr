@@ -7,15 +7,12 @@ from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor impor
 
 class ComuMeetingMonitor(MeetingMonitor):
     async def _get_participant_count(self, page: Page) -> int:
-        count_text = await page.evaluate(
-            """() => {
-                const btn = document.querySelector('[data-test="participants-button"]');
-                if (!btn) return null;
-                const badge = btn.querySelector('mdc-badge');
-                if (!badge) return null;
-                return badge.shadowRoot?.textContent?.trim() ?? null;
-            }"""
+        # COMU: the mdc-badge is inside [data-test="participants-button"]
+        # Use >> to pierce the shadow DOM of mdc-badge
+        badge_text = page.locator(
+            '[data-test="participants-button"] mdc-badge >> mdc-text'
         )
-        if count_text is None or not count_text.strip().isdigit():
-            raise ValueError(f"Could not read participant count from badge: {count_text}")
-        return int(count_text.strip())
+        text = await badge_text.text_content(timeout=5000)
+        if text is None or not text.strip().isdigit():
+            raise ValueError(f"Could not read participant count from badge: {text}")
+        return int(text.strip())
