@@ -10,10 +10,6 @@ from mcr_capture_worker.clients.meeting_transition_client import MeetingApiClien
 from mcr_capture_worker.meeting_repository import get_meeting, get_meeting_with_owner
 from mcr_capture_worker.models.meeting_model import MeetingStatus
 from mcr_capture_worker.schemas.audio_capture_schema import OnDataAvailableBytesWrapper
-from mcr_capture_worker.services.connection_strategies import (
-    ConnectionStrategy,
-)
-from mcr_capture_worker.services.meeting_monitors import MeetingMonitor
 from mcr_capture_worker.services.s3_service import (
     put_file_in_audio_folder,
 )
@@ -34,14 +30,7 @@ class MeetingAudioRecorder:
         self.pending_uploads = UploadQueue()
         self.teardown_after_stop_is_finished = False
         self.meeting_transition_client: Optional[MeetingApiClient] = None
-        self._alone_since: Optional[float] = None
         self._connected_at: Optional[float] = None
-
-    def set_connection_strategy(self, connection_strategy: ConnectionStrategy) -> None:
-        self.connection_strategy = connection_strategy
-
-    def set_meeting_monitor(self, meeting_monitor: MeetingMonitor) -> None:
-        self.meeting_monitor = meeting_monitor
 
     async def start(self) -> None:
         """
@@ -57,11 +46,13 @@ class MeetingAudioRecorder:
             Exception: If any error occurs during browser automation or audio processing.
         """
         meeting = get_meeting_with_owner(self.meeting_id)
-        self.user_uuid = meeting.owner.keycloak_uuid
-        self.meeting_platform = meeting.name_platform
-
         if meeting is None:
             raise ValueError(f"Couldn't get meeting {self.meeting_id}")
+
+        self.user_uuid = meeting.owner.keycloak_uuid
+        self.meeting_platform = meeting.name_platform
+        self.connection_strategy = meeting.get_connection_strategy()
+        self.meeting_monitor = meeting.get_meeting_monitor()
 
         self.meeting_transition_client = MeetingApiClient(str(self.user_uuid))
         if self.meeting_transition_client is None:
@@ -136,33 +127,9 @@ class MeetingAudioRecorder:
             if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
                 return False
 
-        participant_count = await self.meeting_monitor.get_participant_count(page)
-
-        if participant_count is None:
-            self._alone_since = None
-            return False
-
-        bot_is_alone = participant_count <= 1
-
-        if bot_is_alone:
-            now = time.monotonic()
-            if self._alone_since is None:
-                self._alone_since = now
-                logger.info(
-                    "Bot appears alone in meeting {} (participant_count={}). Starting grace period.",
-                    self.meeting_id,
-                    participant_count,
-                )
-            elapsed = now - self._alone_since
-            return elapsed >= capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
-        else:
-            if self._alone_since is not None:
-                logger.info(
-                    "Participants rejoined meeting {} -- resetting auto-disconnect timer.",
-                    self.meeting_id,
-                )
-            self._alone_since = None
-            return False
+        return await self.meeting_monitor.should_disconnect(
+            page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
+        )
 
     async def handle_audio_chunk(self, data: BytesIO) -> None:
         try:

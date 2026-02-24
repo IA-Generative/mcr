@@ -1,3 +1,4 @@
+import time
 from abc import ABC, abstractmethod
 from typing import Optional
 
@@ -6,6 +7,36 @@ from playwright.async_api import Page
 
 
 class MeetingMonitor(ABC):
+    def __init__(self) -> None:
+        self._alone_since: Optional[float] = None
+
+    def start_alone_timer(self) -> None:
+        if self._alone_since is None:
+            self._alone_since = time.monotonic()
+
+    def reset_alone_timer(self) -> None:
+        self._alone_since = None
+
+    def is_alone_timer_expired(self, grace_period_s: int) -> bool:
+        if self._alone_since is None:
+            return False
+        return (time.monotonic() - self._alone_since) >= grace_period_s
+
+    async def should_disconnect(self, page: Page, grace_period_s: int) -> bool:
+        """Check participant count and return True if the bot should auto-disconnect."""
+        participant_count = await self.get_participant_count(page)
+
+        if participant_count is None:
+            self.reset_alone_timer()
+            return False
+
+        if participant_count <= 1:
+            self.start_alone_timer()
+            return self.is_alone_timer_expired(grace_period_s)
+
+        self.reset_alone_timer()
+        return False
+
     async def get_participant_count(self, page: Page) -> Optional[int]:
         """Safely retrieve participant count from the meeting UI.
 
