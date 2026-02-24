@@ -152,3 +152,8 @@ class VisiofMeeting(Meeting):
         )
 
         return VisioStrategy()
+
+    def get_meeting_monitor(self) -> "MeetingMonitor":
+        from mcr_capture_worker.services.meeting_monitors import VisioMeetingMonitor
+
+        return VisioMeetingMonitor()
