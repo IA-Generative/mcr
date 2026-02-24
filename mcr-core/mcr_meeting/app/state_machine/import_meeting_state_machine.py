@@ -1,7 +1,7 @@
 from statemachine import State, StateMachine
 
 from mcr_meeting.app.models import Meeting, MeetingStatus
-from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
+from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.statemachine_actions.meeting_actions import (
     after_complete_report_handler,
     after_init_transcription_handler,
@@ -85,7 +85,7 @@ class ImportMeetingStateMachine(StateMachine):
             return
         after_start_report_handler(self.meeting, self.current_state_value)
 
-    def after_COMPLETE_REPORT(self, report_response: ReportGenerationResponse) -> None:
+    def after_COMPLETE_REPORT(self, report_response: ReportResponse) -> None:
         if self.meeting is None:
             return
         after_complete_report_handler(

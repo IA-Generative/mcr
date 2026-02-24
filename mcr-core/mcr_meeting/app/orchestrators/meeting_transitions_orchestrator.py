@@ -7,7 +7,7 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingEvent,
     MeetingPlatforms,
 )
-from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
+from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.services.meeting_service import get_meeting_service
 from mcr_meeting.app.services.transcription_task_service import (
     create_formatted_docx_transcription,
@@ -109,9 +109,7 @@ def start_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.START_REPORT)
 
 
-def complete_report(
-    meeting_id: int, report_response: ReportGenerationResponse
-) -> Meeting:
+def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting:
     meeting = get_meeting_service(meeting_id=meeting_id)
 
     return _apply_transition(
