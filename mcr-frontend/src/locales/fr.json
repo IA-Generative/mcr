@@ -14,7 +14,8 @@
     },
     "form": {
       "update": "Mettre à jour"
-    }
+    },
+    "or": "ou"
   },
   "header": {
     "app": {
@@ -318,10 +319,17 @@
   },
   "meeting-v2": {
     "visio-form": {
+      "comu": {
+        "access_code": "Code d'accès",
+        "meeting_id": "ID de la réunion",
+        "url": "URL modérateur",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur COMU",
+        "url_hint": "Exemple: https://webconf.comu.gouv.fr/meeting/987654?secret=abcDEF1234567890ffXYza"
+      },
       "connection": {
         "advice": "Consulter cet article {link} pour localiser votre URL modérateur ou vos identifiants.",
         "link": "Bonnes pratiques MCR",
-        "title": "Veuillez renseigner une URL ou des identifiants de visioconférence"
+        "title": "Veuillez renseigner une URL ou des identifiants de visioconférence*"
       },
       "meeting-title": {
         "title": "Titre de votre réunion dans MCR*",
