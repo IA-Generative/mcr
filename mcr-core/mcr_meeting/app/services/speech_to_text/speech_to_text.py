@@ -22,6 +22,7 @@ from mcr_meeting.app.services.speech_to_text.diarization_processor import (
 )
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
+    remove_hallucinations,
 )
 from mcr_meeting.app.services.speech_to_text.transcription_processor import (
     TranscriptionProcessor,
@@ -83,7 +84,8 @@ class SpeechToTextPipeline:
         merged_segments = merge_consecutive_segments_per_speaker(
             diarized_transcription_segments
         )
-        return merged_segments
+        cleaned_segments = remove_hallucinations(merged_segments)
+        return cleaned_segments
 
     def transcribe_audio(
         self,
@@ -147,8 +149,8 @@ class SpeechToTextPipeline:
             transcription_segments, diarization_result
         )
 
-        merged_segments = self.post_process(diarized_transcription_segments)
+        cleaned_segments = self.post_process(diarized_transcription_segments)
 
-        logger.debug("Final transcription segments: {}", merged_segments)
+        logger.debug("Final transcription segments: {}", cleaned_segments)
 
-        return merged_segments
+        return cleaned_segments
