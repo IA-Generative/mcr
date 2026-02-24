@@ -371,3 +371,28 @@ class EvaluationSettings(BaseSettings):
     SUPPORTED_AUDIO_FORMATS: list[str] = Field(
         default=["mp3", "wav"], description="Supported audio formats for evaluation"
     )
+
+
+class TranscriptionForbiddenSentences(BaseSettings):
+    """
+    Defines the sentences to remove from any transcription
+    """
+
+    FORBIDDEN_SENTENCES: list[str] = Field(
+        # Be careful, the order of the sentences matters. The first pattern to match will be the one removed.
+        # Longer patterns should be listed first.
+        # Example: if "Société Radio-Canada" is listed before "Sous-titrage Société Radio-Canada",
+        # the latter will never be removed.
+        default=[
+            "Le texte dans un langage naturel est un peu plus important pour le texte dans un langage naturel.",
+            "Merci d'avoir regardé cette vidéo !",
+            "Sous-titrage Société Radio-Canada",
+            "Société Radio-Canada",
+            "Sous-titrage FR 2021",
+            "Sous-titrage ST' 501",
+            "C'est parti !",
+            "...  ...",
+            "–",
+        ],
+        description="List of forbidden sentences to remove from any transcription",
+    )

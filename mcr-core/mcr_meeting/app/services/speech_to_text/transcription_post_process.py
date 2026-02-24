@@ -2,11 +2,13 @@
 Utility functions for transcription processing.
 """
 
+import re
 from itertools import groupby
 from typing import List
 
 from loguru import logger
 
+from mcr_meeting.app.configs.base import TranscriptionForbiddenSentences
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 
 
@@ -42,3 +44,27 @@ def merge_consecutive_segments_per_speaker(
         )
 
     return merged_transcriptions
+
+
+def remove_hallucinations(
+    segments: list[DiarizedTranscriptionSegment],
+) -> list[DiarizedTranscriptionSegment]:
+    forbidden_sentences = TranscriptionForbiddenSentences()
+    pattern = re.compile(
+        "|".join(re.escape(s) for s in forbidden_sentences.FORBIDDEN_SENTENCES)
+    )
+
+    cleaned_segments = []
+
+    for segment in segments:
+        # Remove forbidden strings
+        segment.text = pattern.sub("", segment.text)
+
+        # Clean whitespace
+        segment.text = " ".join(segment.text.split())
+
+        # Keep only non-empty segments
+        if segment.text:
+            cleaned_segments.append(segment)
+
+    return cleaned_segments
