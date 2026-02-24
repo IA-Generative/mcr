@@ -1674,6 +1674,20 @@ wheels = [
 ]
 
 [[package]]
+name = "markdowntodocx"
+version = "0.1.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pygments" },
+    { name = "python-docx" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/02/97/385f5c5c97ec04d288fee1fc7ca1b7ae3ff492ef8bdcab35831b404e201b/markdowntodocx-0.1.9.2.tar.gz", hash = "sha256:2497e72367dcafc7df4b67c5db8fed64a9f4ddd8a3607acdf45e573eab7eec89", size = 19578, upload-time = "2026-01-23T15:53:47.127Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/1a/34a13d8c727c6d7d8a21433a9d5bd4f32ea322024b41f6f641dcce0a9212/markdowntodocx-0.1.9.2-py3-none-any.whl", hash = "sha256:2b8ef48ed85e0d1154f48440ee430390e96d707cd3c97525c60e6b9ff2e9d978", size = 17583, upload-time = "2026-01-23T15:53:45.588Z" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1741,7 +1755,6 @@ dependencies = [
     { name = "loguru" },
     { name = "mypy-boto3-s3" },
     { name = "numpy" },
-    { name = "openai" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "python-statemachine" },
@@ -1756,6 +1769,7 @@ api = [
     { name = "docxtpl" },
     { name = "dotenv" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "markdowntodocx" },
     { name = "python-docx" },
     { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "starlette" },
@@ -1836,6 +1850,7 @@ requires-dist = [
     { name = "lightning", marker = "extra == 'worker'", specifier = "==2.5.5" },
     { name = "llvmlite", marker = "extra == 'worker'", specifier = ">=0.44.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "markdowntodocx", marker = "extra == 'api'", specifier = ">=0.1.9.2" },
     { name = "mypy-boto3-s3", specifier = ">=1.40.26" },
     { name = "numba", marker = "extra == 'worker'", specifier = ">=0.61.0" },
     { name = "numpy", specifier = ">=2.2.6" },
