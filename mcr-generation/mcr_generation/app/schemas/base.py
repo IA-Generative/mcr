@@ -186,8 +186,11 @@ class Header(BaseModel):
     next_meeting: Optional[str]
 
 
-class DecisionRecord(BaseModel):
+class BaseReport(BaseModel):
     header: Header
+
+
+class DecisionRecord(BaseReport):
     topics_with_decision: List[Topic]
     next_steps: List[str]
 
@@ -200,8 +203,7 @@ class DetailedDiscussion(BaseModel):
     focus_points: List[str]
 
 
-class DetailedSynthesis(BaseModel):
-    header: Header
+class DetailedSynthesis(BaseReport):
     discussions_summary: List[str]
     detailed_discussions: List[DetailedDiscussion]
     to_do_list: List[str]

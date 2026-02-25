@@ -7,7 +7,10 @@ from loguru import logger
 
 from mcr_generation.app.configs.settings import ApiSettings
 from mcr_generation.app.schemas.base import DecisionRecord, Header
-from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks, ReportTypes
+from mcr_generation.app.schemas.celery_types import (
+    MCRReportGenerationTasks,
+    ReportTypes,
+)
 from mcr_generation.app.services.sections import (
     MapReduceTopics,
     RefineIntent,
