@@ -31,7 +31,7 @@ class DecisionRecordGenerator(BaseReportGenerator):
             DecisionRecord: Report containing the header, topics with decisions,
                 and next steps.
         """
-        header = self.get_header(chunks)
+        header = self.generate_header(chunks)
 
         map_reduce = MapReduceTopics(
             meeting_subject=header.title,

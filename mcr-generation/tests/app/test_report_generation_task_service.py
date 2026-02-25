@@ -17,30 +17,19 @@ from mcr_generation.app.schemas.base import (
 )
 
 # ---------------------------------------------------------------------------
-# Patch modules with side effects at import time BEFORE the service is imported.
+# Mocks specific to this file (celery, s3, and the report generator package
+# which is mocked wholesale here since it is not the subject under test).
+# Common mocks (langfuse, openai, section modules, …) live in tests/conftest.py.
 # ---------------------------------------------------------------------------
-_mock_langfuse = MagicMock()
-_mock_langfuse.observe = lambda *args, **kwargs: (lambda fn: fn)
-sys.modules["langfuse"] = _mock_langfuse
-
 _mock_celery_worker = MagicMock()
 _mock_celery_worker.celery_app.task = lambda *args, **kwargs: (lambda fn: fn)
 sys.modules["mcr_generation.app.utils.celery_worker"] = _mock_celery_worker
 
+# input_chunker: the real module is needed by other test files (they import Chunk directly).
+# report_generator.*: the real modules are needed by test_base/decision_record_generator.
+# Both are mocked here only because this file tests the task service, not the generators.
 for _mod in [
-    "mcr_generation.app.utils.s3_client",
-    "mcr_generation.app.services.utils.s3_service",
     "mcr_generation.app.services.utils.input_chunker",
-    "mcr_generation.app.services.sections",
-    "mcr_generation.app.services.sections.intent",
-    "mcr_generation.app.services.sections.intent.refine_intent",
-    "mcr_generation.app.services.sections.next_meeting",
-    "mcr_generation.app.services.sections.next_meeting.refine_next_meeting",
-    "mcr_generation.app.services.sections.next_meeting.format_section_for_report",
-    "mcr_generation.app.services.sections.participants",
-    "mcr_generation.app.services.sections.participants.refine_participants",
-    "mcr_generation.app.services.sections.topics",
-    "mcr_generation.app.services.sections.topics.map_reduce_topics",
     "mcr_generation.app.services.report_generator",
     "mcr_generation.app.services.report_generator.base_report_generator",
     "mcr_generation.app.services.report_generator.decision_record_generator",
@@ -48,8 +37,6 @@ for _mod in [
     sys.modules[_mod] = MagicMock()
 # ---------------------------------------------------------------------------
 # This import must come AFTER the sys.modules patches above.
-# If imported earlier, Python would load the real modules (langfuse, celery, etc.)
-# before the mocks are in place, breaking the tests.
 # E402 is suppressed intentionally here.
 
 from mcr_generation.app.services.report_generation_task_service import (  # noqa: E402
