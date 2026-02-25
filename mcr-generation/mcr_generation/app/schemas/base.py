@@ -111,6 +111,7 @@ class Participant(BaseModel):
         description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur.",
     )
     association_justification: Optional[str] = Field(
+        exclude=True,
         description=(
             "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id."
         ),

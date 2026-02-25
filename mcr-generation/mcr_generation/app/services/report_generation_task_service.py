@@ -78,21 +78,7 @@ def generate_report_from_docx_success(
 
     meeting_id = sender.request.args[0]
 
-    payload_dict = {
-        "next_steps": result.next_steps,
-        "topics_with_decision": [
-            topic.model_dump() for topic in result.topics_with_decision
-        ],
-        "header": {
-            "title": result.header.title,
-            "objective": result.header.objective,
-            "next_meeting": result.header.next_meeting,
-            "participants": [
-                p.model_dump(exclude={"association_justification"})
-                for p in result.header.participants
-            ],
-        },
-    }
+    payload_dict = result.model_dump()
 
     with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
         response = client.post(
