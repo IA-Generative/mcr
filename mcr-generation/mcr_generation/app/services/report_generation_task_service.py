@@ -7,7 +7,7 @@ from loguru import logger
 
 from mcr_generation.app.configs.settings import ApiSettings
 from mcr_generation.app.schemas.base import DecisionRecord, Header
-from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks
+from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks, ReportTypes
 from mcr_generation.app.services.sections import (
     MapReduceTopics,
     RefineIntent,
@@ -27,6 +27,7 @@ api_settings = ApiSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
+    report_type: ReportTypes = ReportTypes.DECISION_RECORD,
 ) -> DecisionRecord:
     refine_intent = RefineIntent()
     refine_participants = RefineParticipants()

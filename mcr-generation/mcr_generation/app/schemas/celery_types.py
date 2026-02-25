@@ -17,6 +17,11 @@ class MCRTranscriptionTasks(StrEnum):
         return f"{cls.BASE_NAME}.*"
 
 
+class ReportTypes(StrEnum):
+    DECISION_RECORD = "DECISION_RECORD"
+    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+
+
 class MCRReportGenerationTasks(StrEnum):
     BASE_NAME = "generation_worker"
 
