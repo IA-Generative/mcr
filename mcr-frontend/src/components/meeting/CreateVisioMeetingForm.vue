@@ -50,12 +50,15 @@
     </DsfrNotice>
   </div>
 
-  <ComuMeetingForm v-if="selectedPlatform == 'COMU'" />
+  <component :is="currentVisioToolComponent" />
 </template>
 
 <script setup lang="ts">
 import { OnlineMeetingPlatforms } from '@/services/meetings/meetings.types';
 import ComuMeetingForm from './visio-modal/ComuMeetingForm.vue';
+import WebconfMeetingForm from './visio-modal/WebconfMeetingForm.vue';
+import WebinaireMeetingForm from './visio-modal/WebinaireMeetingForm.vue';
+import VisioMeetingForm from './visio-modal/VisioMeetingForm.vue';
 
 const platformLabels: Record<OnlineMeetingPlatforms, string> = {
   COMU: 'COMU',
@@ -72,6 +75,23 @@ const selectedPlatform = ref<OnlineMeetingPlatforms | null>(null);
 
 const URL_GOOD_PRACTICES =
   'https://mirai.interieur.gouv.fr/outils-mirai/compte-rendu/bonnes-pratiques-fcr/';
+
+const currentVisioToolComponent = computed(() => getVisioToolComponent(selectedPlatform));
+
+function getVisioToolComponent(selectedPlatform: Ref<OnlineMeetingPlatforms | null>) {
+  switch (selectedPlatform.value) {
+    case 'COMU':
+      return ComuMeetingForm;
+    case 'VISIO':
+      return VisioMeetingForm;
+    case 'WEBCONF':
+      return WebconfMeetingForm;
+    case 'WEBINAIRE':
+      return WebinaireMeetingForm;
+    default:
+      return null;
+  }
+}
 </script>
 
 <style scoped>
