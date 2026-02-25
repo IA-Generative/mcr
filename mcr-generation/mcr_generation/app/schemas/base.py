@@ -111,6 +111,7 @@ class Participant(BaseModel):
         description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur.",
     )
     association_justification: Optional[str] = Field(
+        exclude=True,
         description=(
             "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id."
         ),
@@ -178,14 +179,30 @@ class Topic(BaseModel):
     )
 
 
-class Report(BaseModel):
-    """
-    Full report.
-    """
-
+class Header(BaseModel):
     title: Optional[str]
     objective: Optional[str]
     participants: List[Participant]
+    next_meeting: Optional[str]
+
+
+class DecisionRecord(BaseModel):
+    header: Header
     topics_with_decision: List[Topic]
     next_steps: List[str]
-    next_meeting: Optional[str]
+
+
+class DetailedDiscussion(BaseModel):
+    title: str
+    key_ideas: List[str]
+    decisions: List[str]
+    actions: List[str]
+    focus_points: List[str]
+
+
+class DetailedSynthesis(BaseModel):
+    header: Header
+    discussions_summary: List[str]
+    detailed_discussions: List[DetailedDiscussion]
+    to_do_list: List[str]
+    to_monitor_list: List[str]
