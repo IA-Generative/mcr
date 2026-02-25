@@ -33,10 +33,10 @@ from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
 )
 from mcr_meeting.evaluation.eval_types import (
     DiarizationMetrics,
-    EvaluationInput,
     EvaluationMetrics,
     EvaluationOutput,
     EvaluationSummary,
+    MetricsPipelineInput,
     TranscriptionMetrics,
     TranscriptionOutput,
 )
@@ -131,7 +131,7 @@ class MetricsCalculator:
 
     def calculate_metrics(
         self,
-        sample: EvaluationInput,
+        sample: MetricsPipelineInput,
         hypothesis_transcription: TranscriptionOutput,
     ) -> EvaluationMetrics:
         """Calculate metrics for a single file"""

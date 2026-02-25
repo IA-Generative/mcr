@@ -53,8 +53,6 @@ class ASREvaluationPipeline:
             )
             metrics_pipeline_input = MetricsPipelineInput(
                 uid=sample.uid,
-                audio_path=sample.audio_path,
-                audio_bytes=sample.audio_bytes,
                 reference_transcription=sample.reference_transcription,
                 generated_transcription=generated_transcription,
             )

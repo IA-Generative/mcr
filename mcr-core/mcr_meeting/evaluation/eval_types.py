@@ -54,7 +54,9 @@ class EvaluationInput(BaseModel):
         arbitrary_types_allowed = True
 
 
-class MetricsPipelineInput(EvaluationInput):
+class MetricsPipelineInput(BaseModel):
+    uid: str
+    reference_transcription: TranscriptionOutput
     generated_transcription: TranscriptionOutput
 
 
@@ -63,6 +65,3 @@ class EvaluationOutput(BaseModel):
     reference_transcription: TranscriptionOutput
     generated_transcription: TranscriptionOutput
     metrics: EvaluationMetrics
-
-    class Config:
-        arbitrary_types_allowed = True
