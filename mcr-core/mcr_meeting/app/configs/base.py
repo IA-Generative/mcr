@@ -383,10 +383,14 @@ class TranscriptionForbiddenSentences(BaseSettings):
         # the latter will never be removed.
         default=[
             "Le texte dans un langage naturel est un peu plus important pour le texte dans un langage naturel.",
+            "Le texte dans un langage naturel et du texte dans un langage naturel, sans répétition.",
+            "Le texte dans un langage naturel, sans répétition.",
             "Merci d'avoir regardé cette vidéo !",
             "Sous-titrage Société Radio-Canada",
             "Société Radio-Canada",
             "Sous-titrage FR 2021",
+            "Sous-titrage FR ?",
+            "Sous-titrage FR",
             "Sous-titrage ST' 501",
             "C'est parti !",
             "...  ...",
