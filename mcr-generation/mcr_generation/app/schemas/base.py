@@ -184,7 +184,24 @@ class Header(BaseModel):
     participants: List[Participant]
     next_meeting: Optional[str]
 
+
 class DecisionRecord(BaseModel):
     header: Header
     topics_with_decision: List[Topic]
     next_steps: List[str]
+
+
+class DetailedDiscussion(BaseModel):
+    title: str
+    key_ideas: List[str]
+    decisions: List[str]
+    actions: List[str]
+    focus_points: List[str]
+
+
+class DetailedSynthesis(BaseModel):
+    header: Header
+    discussions_summary: List[str]
+    detailed_discussions: List[DetailedDiscussion]
+    to_do_list: List[str]
+    to_monitor_list: List[str]
