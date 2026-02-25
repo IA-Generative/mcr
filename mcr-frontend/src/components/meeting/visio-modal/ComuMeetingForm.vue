@@ -1,8 +1,10 @@
 <template>
   <DsfrInputGroup
+    v-model="comuUrl"
     class="m-0"
     :label="$t('meeting-v2.visio-form.comu.url')"
     :hint="$t('meeting-v2.visio-form.comu.url_hint')"
+    :error-message="comuUrlError"
     label-visible
   />
 
@@ -24,6 +26,21 @@
     />
   </div>
 </template>
+
+<script setup lang="ts">
+import { t } from '@/plugins/i18n';
+import { comuPrivateUrlValidator } from '../meeting.schema';
+
+const comuUrl = ref<string>('');
+
+const comuUrlError = computed(() => {
+  if (!comuUrl.value) return '';
+  if (!comuPrivateUrlValidator.test(comuUrl.value)) {
+    return t('meeting-v2.visio-form.comu.url_error');
+  }
+  return '';
+});
+</script>
 
 <style scoped>
 .separator {
