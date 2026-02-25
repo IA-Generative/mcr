@@ -1,5 +1,5 @@
 <template>
-  <div class="text-xl font-semibold pb-2">{{ $t('meeting-v2.visio-form.parameters') }}</div>
+  <div class="text-xl font-semibold pb-4">{{ $t('meeting-v2.visio-form.parameters') }}</div>
   <DsfrInputGroup
     :label="$t('meeting-v2.visio-form.meeting-title.title')"
     :hint="$t('meeting-v2.visio-form.meeting-title.example')"
@@ -18,7 +18,7 @@
 
   <div
     v-if="selectedPlatform !== null"
-    class="pb-2"
+    class="pb-4"
   >
     <div class="text-xl font-semibold pb-2">
       {{ $t('meeting-v2.visio-form.connection.title') }}
@@ -49,10 +49,13 @@
       </template>
     </DsfrNotice>
   </div>
+
+  <ComuMeetingForm v-if="selectedPlatform == 'COMU'" />
 </template>
 
 <script setup lang="ts">
 import { OnlineMeetingPlatforms } from '@/services/meetings/meetings.types';
+import ComuMeetingForm from './visio-modal/ComuMeetingForm.vue';
 
 const platformLabels: Record<OnlineMeetingPlatforms, string> = {
   COMU: 'COMU',
