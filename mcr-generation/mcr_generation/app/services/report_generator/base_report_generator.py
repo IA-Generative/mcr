@@ -23,7 +23,7 @@ class BaseReportGenerator(ABC):
     the `generate` method to produce a complete report in the desired format.
     """
 
-    def get_header(self, chunks: list[Chunk]) -> Header:
+    def generate_header(self, chunks: list[Chunk]) -> Header:
         """
         Extract and build the report header from transcript chunks.
 

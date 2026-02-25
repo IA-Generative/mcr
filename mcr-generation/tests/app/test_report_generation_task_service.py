@@ -32,6 +32,18 @@ for _mod in [
     "mcr_generation.app.services.utils.s3_service",
     "mcr_generation.app.services.utils.input_chunker",
     "mcr_generation.app.services.sections",
+    "mcr_generation.app.services.sections.intent",
+    "mcr_generation.app.services.sections.intent.refine_intent",
+    "mcr_generation.app.services.sections.next_meeting",
+    "mcr_generation.app.services.sections.next_meeting.refine_next_meeting",
+    "mcr_generation.app.services.sections.next_meeting.format_section_for_report",
+    "mcr_generation.app.services.sections.participants",
+    "mcr_generation.app.services.sections.participants.refine_participants",
+    "mcr_generation.app.services.sections.topics",
+    "mcr_generation.app.services.sections.topics.map_reduce_topics",
+    "mcr_generation.app.services.report_generator",
+    "mcr_generation.app.services.report_generator.base_report_generator",
+    "mcr_generation.app.services.report_generator.decision_record_generator",
 ]:
     sys.modules[_mod] = MagicMock()
 # ---------------------------------------------------------------------------
@@ -83,24 +95,13 @@ class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
         self, decision_record: DecisionRecord
     ) -> None:
-        """Happy path: all service calls are mocked and the returned DecisionRecord
-        must be assembled from their outputs."""
-        mock_intent = MagicMock()
-        mock_intent.title = "Réunion Budget Q1"
-        mock_intent.objective = "Valider le budget du premier trimestre"
-
-        mock_participants = MagicMock()
-        mock_participants.participants = decision_record.header.participants
-
-        mock_next_meeting = MagicMock()
-        mock_next_meeting_str = "15/03/2026 à 10h00"
-
-        mock_content = MagicMock()
-        mock_content.topics = decision_record.topics_with_decision
-        mock_content.next_steps = decision_record.next_steps
-
+        """Happy path: get_generator is mocked and its generate() return value is
+        forwarded as-is by the task."""
         mock_chunks = ["chunk1", "chunk2"]
         mock_docx_bytes = b"docx content"
+
+        mock_generator = MagicMock()
+        mock_generator.generate.return_value = decision_record
 
         with (
             patch(
@@ -109,56 +110,18 @@ class TestGenerateReportFromDocx:
             patch(
                 f"{MODULE}.chunk_docx_to_document_list", return_value=mock_chunks
             ) as mock_chunker,
-            patch(f"{MODULE}.RefineIntent") as mock_refine_intent_cls,
-            patch(f"{MODULE}.RefineParticipants") as mock_refine_participants_cls,
-            patch(f"{MODULE}.RefineNextMeeting") as mock_refine_next_meeting_cls,
-            patch(f"{MODULE}.MapReduceTopics") as mock_map_reduce_cls,
             patch(
-                f"{MODULE}.format_next_meeting_for_report",
-                return_value=mock_next_meeting_str,
-            ),
+                f"{MODULE}.get_generator", return_value=mock_generator
+            ) as mock_get_generator,
         ):
-            mock_refine_intent_cls.return_value.init_then_refine.return_value = (
-                mock_intent
-            )
-            mock_refine_participants_cls.return_value.init_then_refine.return_value = (
-                mock_participants
-            )
-            mock_refine_next_meeting_cls.return_value.init_then_refine.return_value = (
-                mock_next_meeting
-            )
-            mock_map_reduce_cls.return_value.map_reduce_all_steps.return_value = (
-                mock_content
-            )
-
             result = generate_report_from_docx(1, "transcription.docx")
 
-        assert isinstance(result, DecisionRecord)
-        assert result.header.title == mock_intent.title
-        assert result.header.objective == mock_intent.objective
-        assert result.header.participants == decision_record.header.participants
-        assert result.header.next_meeting == mock_next_meeting_str
-        assert result.topics_with_decision == decision_record.topics_with_decision
-        assert result.next_steps == decision_record.next_steps
+        assert result == decision_record
 
         mock_s3.assert_called_once_with("transcription.docx")
         mock_chunker.assert_called_once_with(mock_docx_bytes)
-        mock_refine_intent_cls.return_value.init_then_refine.assert_called_once_with(
-            mock_chunks
-        )
-        mock_refine_participants_cls.return_value.init_then_refine.assert_called_once_with(
-            mock_chunks
-        )
-        mock_refine_next_meeting_cls.return_value.init_then_refine.assert_called_once_with(
-            mock_chunks
-        )
-        mock_map_reduce_cls.assert_called_once_with(
-            meeting_subject=mock_intent.title,
-            speaker_mapping=mock_participants,
-        )
-        mock_map_reduce_cls.return_value.map_reduce_all_steps.assert_called_once_with(
-            mock_chunks
-        )
+        mock_get_generator.assert_called_once()
+        mock_generator.generate.assert_called_once_with(mock_chunks)
 
     def test_propagates_s3_error(self) -> None:
         """An exception raised by get_file_from_s3 must propagate."""
