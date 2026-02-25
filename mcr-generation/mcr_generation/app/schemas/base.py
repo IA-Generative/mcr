@@ -178,14 +178,13 @@ class Topic(BaseModel):
     )
 
 
-class Report(BaseModel):
-    """
-    Full report.
-    """
-
+class Header(BaseModel):
     title: Optional[str]
     objective: Optional[str]
     participants: List[Participant]
+    next_meeting: Optional[str]
+
+class DecisionRecord(BaseModel):
+    header: Header
     topics_with_decision: List[Topic]
     next_steps: List[str]
-    next_meeting: Optional[str]

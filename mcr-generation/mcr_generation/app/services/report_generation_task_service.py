@@ -6,7 +6,7 @@ from langfuse import observe
 from loguru import logger
 
 from mcr_generation.app.configs.settings import ApiSettings
-from mcr_generation.app.schemas.base import Report
+from mcr_generation.app.schemas.base import DecisionRecord, Header
 from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks
 from mcr_generation.app.services.sections import (
     MapReduceTopics,
@@ -27,7 +27,7 @@ api_settings = ApiSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
-) -> Report:
+) -> DecisionRecord:
     refine_intent = RefineIntent()
     refine_participants = RefineParticipants()
     refine_next_meeting = RefineNextMeeting()
@@ -43,13 +43,17 @@ def generate_report_from_docx(
     )
     content = map_reduce.map_reduce_all_steps(chunks)
 
-    report = Report(
+    header = Header(
         title=intent.title,
         objective=intent.objective,
-        next_meeting=format_next_meeting_for_report(next_meeting),
-        next_steps=content.next_steps,
         participants=participants.participants,
+        next_meeting=format_next_meeting_for_report(next_meeting),
+    )
+
+    report = DecisionRecord(
+        header=header,
         topics_with_decision=content.topics,
+        next_steps=content.next_steps,
     )
 
     return report
@@ -57,7 +61,7 @@ def generate_report_from_docx(
 
 @task_success.connect
 def generate_report_from_docx_success(
-    sender: Any, result: Report, **kwargs: Any
+    sender: Any, result: DecisionRecord, **kwargs: Any
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API.
 
@@ -80,12 +84,12 @@ def generate_report_from_docx_success(
             topic.model_dump() for topic in result.topics_with_decision
         ],
         "header": {
-            "title": result.title,
-            "objective": result.objective,
-            "next_meeting": result.next_meeting,
+            "title": result.header.title,
+            "objective": result.header.objective,
+            "next_meeting": result.header.next_meeting,
             "participants": [
                 p.model_dump(exclude={"association_justification"})
-                for p in result.participants
+                for p in result.header.participants
             ],
         },
     }
