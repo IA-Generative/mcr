@@ -322,6 +322,7 @@
       "comu": {
         "access_code": "Code d'accès",
         "meeting_id": "ID de la réunion",
+        "meeting_id_error": "Un identifiant de réunion COMU doit être composé uniquement de chiffres",
         "url": "URL modérateur",
         "url_error": "Veuillez renseigner l'URL d'une réunion sur COMU",
         "url_hint": "Exemple: https://webconf.comu.gouv.fr/meeting/987654?secret=abcDEF1234567890ffXYza"
