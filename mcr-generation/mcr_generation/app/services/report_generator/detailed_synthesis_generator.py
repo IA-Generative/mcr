@@ -1,6 +1,9 @@
-from mcr_generation.app.schemas.base import DetailedSynthesis
+from mcr_generation.app.schemas.base import DetailedSynthesis, Participants
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
+)
+from mcr_generation.app.services.sections.detailed_discussions.map_reduce_detailed_discussions import (
+    MapReduceDetailedDiscussions,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
@@ -31,10 +34,16 @@ class DetailedSynthesisGenerator(BaseReportGenerator):
         """
         header = self.generate_header(chunks)
 
+        map_reduce = MapReduceDetailedDiscussions(
+            meeting_subject=header.title,
+            speaker_mapping=Participants(participants=header.participants),
+        )
+        content = map_reduce.map_reduce_all_steps(chunks)
+
         return DetailedSynthesis(
             header=header,
             discussions_summary=[],
-            detailed_discussions=[],
+            detailed_discussions=content.detailed_discussions,
             to_do_list=[],
             to_monitor_list=[],
         )
