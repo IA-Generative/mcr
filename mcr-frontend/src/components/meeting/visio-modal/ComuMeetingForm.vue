@@ -12,7 +12,7 @@
     <span>{{ $t('common.or') }}</span>
   </div>
 
-  <div class="flex flex-row gap-x-6">
+  <div class="flex flex-row gap-x-6 pb-4">
     <DsfrInputGroup
       class="w-full flex-1"
       :label="$t('meeting-v2.visio-form.comu.access_code')"
@@ -20,8 +20,10 @@
     />
 
     <DsfrInputGroup
+      v-model="comuId"
       class="w-full flex-1"
       :label="$t('meeting-v2.visio-form.comu.meeting_id')"
+      :error-message="comuIdError"
       label-visible
     />
   </div>
@@ -32,11 +34,19 @@ import { t } from '@/plugins/i18n';
 import { comuPrivateUrlValidator } from '../meeting.schema';
 
 const comuUrl = ref<string>('');
-
 const comuUrlError = computed(() => {
   if (!comuUrl.value) return '';
   if (!comuPrivateUrlValidator.test(comuUrl.value)) {
     return t('meeting-v2.visio-form.comu.url_error');
+  }
+  return '';
+});
+
+const comuId = ref<string>('');
+const comuIdError = computed(() => {
+  if (!comuId.value) return '';
+  if (!RegExp(/^[0-9]+$/).test(comuId.value)) {
+    return t('meeting-v2.visio-form.comu.meeting_id_error');
   }
   return '';
 });
@@ -68,5 +78,6 @@ const comuUrlError = computed(() => {
 
 :deep(.fr-input-group) {
   flex-grow: 1;
+  min-width: 50%;
 }
 </style>
