@@ -1,0 +1,110 @@
+name: Update Project on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - dev
+
+jobs:
+  update-project-date:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
+      ORG: IA-Generative
+      PROJECT_NUMBER: "11"
+      FIELD_NAME: Ready to validate date
+    steps:
+      - name: Get project and field IDs
+        id: project
+        run: |
+          PROJECT_DATA=$(gh api graphql -f query='
+            query($org: String!, $number: Int!) {
+              organization(login: $org) {
+                projectV2(number: $number) {
+                  id
+                  field(name: "'"$FIELD_NAME"'") {
+                    ... on ProjectV2Field {
+                      id
+                    }
+                  }
+                }
+              }
+            }
+          ' -f org="$ORG" -F number="$PROJECT_NUMBER")
+
+          echo "project_id=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.id')" >> "$GITHUB_OUTPUT"
+          echo "field_id=$(echo "$PROJECT_DATA" | jq -r '.data.organization.projectV2.field.id')" >> "$GITHUB_OUTPUT"
+
+      - name: Get linked issues from PR
+        id: issues
+        run: |
+          LINKED_ISSUES=$(gh api graphql -f query='
+            query($owner: String!, $repo: String!, $pr: Int!) {
+              repository(owner: $owner, name: $repo) {
+                pullRequest(number: $pr) {
+                  closingIssuesReferences(first: 10) {
+                    nodes {
+                      id
+                      number
+                    }
+                  }
+                }
+              }
+            }
+          ' -f owner="${{ github.repository_owner }}" -f repo="${{ github.event.repository.name }}" -F pr=${{ github.event.pull_request.number }})
+
+          echo "issue_ids=$(echo "$LINKED_ISSUES" | jq -c '[.data.repository.pullRequest.closingIssuesReferences.nodes[].id]')" >> "$GITHUB_OUTPUT"
+
+      - name: Update Ready to validate date on linked issues
+        run: |
+          PROJECT_ID="${{ steps.project.outputs.project_id }}"
+          FIELD_ID="${{ steps.project.outputs.field_id }}"
+          TODAY=$(date +%Y-%m-%d)
+          ISSUE_IDS='${{ steps.issues.outputs.issue_ids }}'
+
+          echo "$ISSUE_IDS" | jq -r '.[]' | while read -r ISSUE_ID; do
+            echo "Processing issue node: $ISSUE_ID"
+
+            ITEM_DATA=$(gh api graphql -f query='
+              query($issueId: ID!) {
+                node(id: $issueId) {
+                  ... on Issue {
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ' -f issueId="$ISSUE_ID")
+
+            ITEM_ID=$(echo "$ITEM_DATA" | jq -r --arg pid "$PROJECT_ID" '.data.node.projectItems.nodes[] | select(.project.id == $pid) | .id')
+
+            if [ -z "$ITEM_ID" ]; then
+              echo "Issue not found in project, skipping"
+              continue
+            fi
+
+            gh api graphql -f query='
+              mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $date: Date!) {
+                updateProjectV2ItemFieldValue(input: {
+                  projectId: $projectId
+                  itemId: $itemId
+                  fieldId: $fieldId
+                  value: { date: $date }
+                }) {
+                  projectV2Item {
+                    id
+                  }
+                }
+              }
+            ' -f projectId="$PROJECT_ID" -f itemId="$ITEM_ID" -f fieldId="$FIELD_ID" -f date="$TODAY"
+
+            echo "Updated issue with Ready to validate date: $TODAY"
+          done
