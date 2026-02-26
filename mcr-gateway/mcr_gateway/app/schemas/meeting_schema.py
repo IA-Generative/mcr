@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum
+from enum import Enum, StrEnum
 
 from pydantic import BaseModel, field_serializer
 from pydantic_settings import SettingsConfigDict
@@ -105,3 +105,12 @@ class MeetingWithPresignedUrl(BaseModel):
 
     meeting: Meeting
     presigned_url: str
+
+
+class ReportType(StrEnum):
+    DECISION_RECORD = "DECISION_RECORD"
+    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+
+
+class ReportGenerationRequest(BaseModel):
+    report_types: list[ReportType]

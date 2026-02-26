@@ -18,6 +18,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingUpdate,
     MeetingWithPresignedUrl,
+    ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -384,6 +385,7 @@ async def get_meeting_report(
 )
 async def generate_meeting_report(
     meeting_id: int,
+    body: ReportGenerationRequest,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
 ) -> Response:
     """
@@ -391,13 +393,16 @@ async def generate_meeting_report(
 
     Args:
         meeting_id (int): The ID of the meeting.
+        body (ReportGenerationRequest): The report generation request containing report types.
 
     Returns:
         DOCX file of the transcription meeting
 
     """
     return await generate_report(
-        meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
+        meeting_id=meeting_id,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+        body=body,
     )
 
 
