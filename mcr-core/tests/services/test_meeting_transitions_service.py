@@ -18,6 +18,7 @@ from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mt
 from mcr_meeting.app.schemas.report_generation import (
     ReportGenerationResponse,
     ReportHeader,
+    ReportType,
 )
 from mcr_meeting.app.statemachine_actions import meeting_actions
 from tests.factories import MeetingFactory
@@ -332,6 +333,7 @@ def test_start_report(
     result = mts.start_report(
         meeting_id=meeting.id,
         user_keycloak_uuid=user_keycloak_uuid,
+        report_type=ReportType.DECISION_RECORD,
     )
 
     assert result.status == MeetingStatus.REPORT_PENDING
