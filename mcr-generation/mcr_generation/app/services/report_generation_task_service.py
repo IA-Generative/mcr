@@ -6,15 +6,12 @@ from langfuse import observe
 from loguru import logger
 
 from mcr_generation.app.configs.settings import ApiSettings
-from mcr_generation.app.schemas.base import DecisionRecord, Header
-from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks
-from mcr_generation.app.services.sections import (
-    MapReduceTopics,
-    RefineIntent,
-    RefineNextMeeting,
-    RefineParticipants,
-    format_next_meeting_for_report,
+from mcr_generation.app.schemas.base import BaseReport
+from mcr_generation.app.schemas.celery_types import (
+    MCRReportGenerationTasks,
+    ReportTypes,
 )
+from mcr_generation.app.services.report_generator import get_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
@@ -27,41 +24,19 @@ api_settings = ApiSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
-) -> DecisionRecord:
-    refine_intent = RefineIntent()
-    refine_participants = RefineParticipants()
-    refine_next_meeting = RefineNextMeeting()
+    report_type: str = ReportTypes.DECISION_RECORD.value,
+) -> BaseReport:
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
-    intent = refine_intent.init_then_refine(chunks)
-    participants = refine_participants.init_then_refine(chunks)
-    next_meeting = refine_next_meeting.init_then_refine(chunks)
 
-    map_reduce = MapReduceTopics(
-        meeting_subject=intent.title,
-        speaker_mapping=participants,
-    )
-    content = map_reduce.map_reduce_all_steps(chunks)
-
-    header = Header(
-        title=intent.title,
-        objective=intent.objective,
-        participants=participants.participants,
-        next_meeting=format_next_meeting_for_report(next_meeting),
-    )
-
-    report = DecisionRecord(
-        header=header,
-        topics_with_decision=content.topics,
-        next_steps=content.next_steps,
-    )
-
-    return report
+    report_type_enum = ReportTypes(report_type)
+    generator = get_generator(report_type_enum)
+    return generator.generate(chunks)
 
 
 @task_success.connect
 def generate_report_from_docx_success(
-    sender: Any, result: DecisionRecord, **kwargs: Any
+    sender: Any, result: BaseReport, **kwargs: Any
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API.
 

@@ -43,4 +43,4 @@ extend-select = ["T20", "I", "G"]
 logger-objects = ["loguru.logger"]
 
 [tool.pytest.ini_options]
-env_files = ["../.env.local.testing"]
+env_files = ["../.env.local.docker", "../.env.local.host", "../.env.local.testing"]

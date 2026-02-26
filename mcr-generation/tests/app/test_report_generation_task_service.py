@@ -17,27 +17,26 @@ from mcr_generation.app.schemas.base import (
 )
 
 # ---------------------------------------------------------------------------
-# Patch modules with side effects at import time BEFORE the service is imported.
+# Mocks specific to this file (celery, s3, and the report generator package
+# which is mocked wholesale here since it is not the subject under test).
+# Common mocks (langfuse, openai, section modules, …) live in tests/conftest.py.
 # ---------------------------------------------------------------------------
-_mock_langfuse = MagicMock()
-_mock_langfuse.observe = lambda *args, **kwargs: (lambda fn: fn)
-sys.modules["langfuse"] = _mock_langfuse
-
 _mock_celery_worker = MagicMock()
 _mock_celery_worker.celery_app.task = lambda *args, **kwargs: (lambda fn: fn)
 sys.modules["mcr_generation.app.utils.celery_worker"] = _mock_celery_worker
 
+# input_chunker: the real module is needed by other test files (they import Chunk directly).
+# report_generator.*: the real modules are needed by test_base/decision_record_generator.
+# Both are mocked here only because this file tests the task service, not the generators.
 for _mod in [
-    "mcr_generation.app.utils.s3_client",
-    "mcr_generation.app.services.utils.s3_service",
     "mcr_generation.app.services.utils.input_chunker",
-    "mcr_generation.app.services.sections",
+    "mcr_generation.app.services.report_generator",
+    "mcr_generation.app.services.report_generator.base_report_generator",
+    "mcr_generation.app.services.report_generator.decision_record_generator",
 ]:
     sys.modules[_mod] = MagicMock()
 # ---------------------------------------------------------------------------
 # This import must come AFTER the sys.modules patches above.
-# If imported earlier, Python would load the real modules (langfuse, celery, etc.)
-# before the mocks are in place, breaking the tests.
 # E402 is suppressed intentionally here.
 
 from mcr_generation.app.services.report_generation_task_service import (  # noqa: E402
@@ -83,24 +82,13 @@ class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
         self, decision_record: DecisionRecord
     ) -> None:
-        """Happy path: all service calls are mocked and the returned DecisionRecord
-        must be assembled from their outputs."""
-        mock_intent = MagicMock()
-        mock_intent.title = "Réunion Budget Q1"
-        mock_intent.objective = "Valider le budget du premier trimestre"
-
-        mock_participants = MagicMock()
-        mock_participants.participants = decision_record.header.participants
-
-        mock_next_meeting = MagicMock()
-        mock_next_meeting_str = "15/03/2026 à 10h00"
-
-        mock_content = MagicMock()
-        mock_content.topics = decision_record.topics_with_decision
-        mock_content.next_steps = decision_record.next_steps
-
+        """Happy path: get_generator is mocked and its generate() return value is
+        forwarded as-is by the task."""
         mock_chunks = ["chunk1", "chunk2"]
         mock_docx_bytes = b"docx content"
+
+        mock_generator = MagicMock()
+        mock_generator.generate.return_value = decision_record
 
         with (
             patch(
@@ -109,56 +97,18 @@ class TestGenerateReportFromDocx:
             patch(
                 f"{MODULE}.chunk_docx_to_document_list", return_value=mock_chunks
             ) as mock_chunker,
-            patch(f"{MODULE}.RefineIntent") as mock_refine_intent_cls,
-            patch(f"{MODULE}.RefineParticipants") as mock_refine_participants_cls,
-            patch(f"{MODULE}.RefineNextMeeting") as mock_refine_next_meeting_cls,
-            patch(f"{MODULE}.MapReduceTopics") as mock_map_reduce_cls,
             patch(
-                f"{MODULE}.format_next_meeting_for_report",
-                return_value=mock_next_meeting_str,
-            ),
+                f"{MODULE}.get_generator", return_value=mock_generator
+            ) as mock_get_generator,
         ):
-            mock_refine_intent_cls.return_value.init_then_refine.return_value = (
-                mock_intent
-            )
-            mock_refine_participants_cls.return_value.init_then_refine.return_value = (
-                mock_participants
-            )
-            mock_refine_next_meeting_cls.return_value.init_then_refine.return_value = (
-                mock_next_meeting
-            )
-            mock_map_reduce_cls.return_value.map_reduce_all_steps.return_value = (
-                mock_content
-            )
-
             result = generate_report_from_docx(1, "transcription.docx")
 
-        assert isinstance(result, DecisionRecord)
-        assert result.header.title == mock_intent.title
-        assert result.header.objective == mock_intent.objective
-        assert result.header.participants == decision_record.header.participants
-        assert result.header.next_meeting == mock_next_meeting_str
-        assert result.topics_with_decision == decision_record.topics_with_decision
-        assert result.next_steps == decision_record.next_steps
+        assert result == decision_record
 
         mock_s3.assert_called_once_with("transcription.docx")
         mock_chunker.assert_called_once_with(mock_docx_bytes)
-        mock_refine_intent_cls.return_value.init_then_refine.assert_called_once_with(
-            mock_chunks
-        )
-        mock_refine_participants_cls.return_value.init_then_refine.assert_called_once_with(
-            mock_chunks
-        )
-        mock_refine_next_meeting_cls.return_value.init_then_refine.assert_called_once_with(
-            mock_chunks
-        )
-        mock_map_reduce_cls.assert_called_once_with(
-            meeting_subject=mock_intent.title,
-            speaker_mapping=mock_participants,
-        )
-        mock_map_reduce_cls.return_value.map_reduce_all_steps.assert_called_once_with(
-            mock_chunks
-        )
+        mock_get_generator.assert_called_once()
+        mock_generator.generate.assert_called_once_with(mock_chunks)
 
     def test_propagates_s3_error(self) -> None:
         """An exception raised by get_file_from_s3 must propagate."""
