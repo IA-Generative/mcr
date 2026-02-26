@@ -4,13 +4,7 @@
     :title="''"
     size="lg"
     class="max-sm:p-4"
-    :actions="[
-      {
-        label: $t('common.cancel'),
-        secondary: true,
-        onClick: () => close(),
-      },
-    ]"
+    no-actions
   >
     <div>
       <img src="@dsfr-artwork/pictograms/digital/self-training.svg?url" />
@@ -21,8 +15,7 @@
         {{ $t('meeting-v2.visio-form.title') }}
       </h2>
     </div>
-    <CreateVisioMeetingForm />
-    <hr />
+    <CreateVisioMeetingForm @submit="(dto: AddOnlineMeetingDto) => onSubmit(dto)" />
   </BaseModal>
 </template>
 
@@ -30,9 +23,14 @@
 import BaseModal from '@/components/core/BaseModal.vue';
 import { useVfm } from 'vue-final-modal';
 import CreateVisioMeetingForm from '../CreateVisioMeetingForm.vue';
+import type { AddOnlineMeetingDto } from '@/services/meetings/meetings.types';
 
 const CREATE_MEETING_MODAL_ID = 'meeting-visio-modal-V2';
 const close = () => useVfm().close(CREATE_MEETING_MODAL_ID);
+
+function onSubmit(dto: AddOnlineMeetingDto) {
+  console.log(dto);
+}
 </script>
 
 <style scoped>
