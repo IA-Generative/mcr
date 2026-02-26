@@ -39,7 +39,7 @@
           :disabled="!choice"
           @click="$emit('onGenerate', choice)"
         >
-          {{ $t(props.actionLabelKey) }}
+          {{ $t('meeting.report.generate') }}
         </DsfrButton>
       </div>
     </div>
@@ -47,9 +47,6 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  actionLabelKey: string;
-}>();
 const choice = ref('cr1');
 
 function handleSelect(value: string) {

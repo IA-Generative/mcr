@@ -1,7 +1,6 @@
 <template>
   <component
     :is="currentStateComponent"
-    :action-label-key="actionLabelKey"
     @on-generate="() => onGetOrGenerateReport()"
   />
 </template>
@@ -14,6 +13,7 @@ import { downloadFileFromAxios } from '@/utils/file';
 import { useI18n } from 'vue-i18n';
 import TranscriptionNotReadyComponent from './TranscriptionNotReady.vue';
 import ReportFormatSelection from './ReportFormatSelection.vue';
+import ReportDownload from './ReportDownload.vue';
 import ReportPending from './ReportPending.vue';
 import { sanitizeFilename } from '@/utils/formatters';
 
@@ -48,17 +48,12 @@ function onGetOrGenerateReport() {
 
 const currentStateComponent = computed(() => getStateComponent(props.meeting.status));
 
-const actionLabelKey = computed(() => {
-  return props.meeting.status === 'REPORT_DONE'
-    ? 'meeting.report.download'
-    : 'meeting.report.generate';
-});
-
 function getStateComponent(status: MeetingStatus) {
   switch (status) {
     case 'TRANSCRIPTION_DONE':
-    case 'REPORT_DONE':
       return ReportFormatSelection;
+    case 'REPORT_DONE':
+      return ReportDownload;
     case 'REPORT_PENDING':
       return ReportPending;
     default:

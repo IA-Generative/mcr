@@ -62,6 +62,7 @@ declare module 'vue' {
     RecordMeetingModal: typeof import('./components/meeting/modals/RecordMeetingModal.vue')['default']
     RecordMeetingStep1: typeof import('./components/meeting/forms/record-meeting/RecordMeetingStep1.vue')['default']
     RecordMeetingStep2: typeof import('./components/meeting/forms/record-meeting/RecordMeetingStep2.vue')['default']
+    ReportDownload: typeof import('./components/meeting/report/ReportDownload.vue')['default']
     ReportFormatSelection: typeof import('./components/meeting/report/ReportFormatSelection.vue')['default']
     ReportPending: typeof import('./components/meeting/report/ReportPending.vue')['default']
     RoundedActionButton: typeof import('./components/core/RoundedActionButton.vue')['default']
