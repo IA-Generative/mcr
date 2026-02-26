@@ -2,13 +2,12 @@ name: Update Project on PR Merge
 
 on:
   pull_request:
-    types: [closed]
+    types: [opened]
     branches:
       - dev
 
 jobs:
   update-project-date:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GH_PROJECT_TOKEN }}
