@@ -24,15 +24,13 @@ api_settings = ApiSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
-    report_type: ReportTypes = ReportTypes.DECISION_RECORD,
+    report_type: str = ReportTypes.DECISION_RECORD.value,
 ) -> BaseReport:
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
 
-    report_type = ReportTypes(
-        report_type
-    )  # re-cast str → enum after Celery deserialisation
-    generator = get_generator(report_type)
+    report_type_enum = ReportTypes(report_type)
+    generator = get_generator(report_type_enum)
     return generator.generate(chunks)
 
 
