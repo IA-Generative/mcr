@@ -18,6 +18,7 @@ declare module 'vue' {
     BotConnectionFailed: typeof import('./components/meeting/transcription/states/BotConnectionFailed.vue')['default']
     BotDisconnecting: typeof import('./components/meeting/transcription/states/BotDisconnecting.vue')['default']
     CaptureVisioInProgress: typeof import('./components/meeting/transcription/states/CaptureVisioInProgress.vue')['default']
+    ComuMeetingForm: typeof import('./components/meeting/visio-modal/ComuMeetingForm.vue')['default']
     CreateMeetingModal: typeof import('./components/meeting/modals/CreateMeetingModal.vue')['default']
     CreateVisioMeetingForm: typeof import('./components/meeting/CreateVisioMeetingForm.vue')['default']
     CreateVisioMeetingModal: typeof import('./components/meeting/modals/CreateVisioMeetingModal.vue')['default']
