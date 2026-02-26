@@ -2,6 +2,7 @@ import asyncio
 import tempfile
 from abc import ABC, abstractmethod
 from io import BytesIO
+
 from loguru import logger
 from playwright.async_api import BrowserContext, Page
 

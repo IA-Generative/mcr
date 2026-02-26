@@ -4,6 +4,7 @@ from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor impor
     MeetingMonitor,
 )
 
+
 class VisioMeetingMonitor(MeetingMonitor):
     async def _get_participant_count(self, page: Page) -> int:
         # Visio: participant count in a circle badge overlay
