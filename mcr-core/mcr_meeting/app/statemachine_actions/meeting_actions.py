@@ -16,6 +16,7 @@ from mcr_meeting.app.schemas.celery_types import (
 )
 from mcr_meeting.app.schemas.report_generation import (
     ReportResponse,
+    ReportType,
     is_decision_report_synthesis,
     is_detailed_synthesis,
 )
@@ -101,7 +102,9 @@ def after_start_transcription_handler(
     )
 
 
-def after_start_report_handler(meeting: Meeting, next_status: MeetingStatus) -> None:
+def after_start_report_handler(
+    meeting: Meeting, next_status: MeetingStatus, report_type: ReportType
+) -> None:
     try:
         if meeting.transcription_filename is None:
             raise NotFoundException("Could not find meeting transcription")
@@ -114,7 +117,7 @@ def after_start_report_handler(meeting: Meeting, next_status: MeetingStatus) -> 
             update_meeting_status(meeting, next_status)
             celery_producer_app.send_task(
                 MCRReportGenerationTasks.REPORT,
-                args=[meeting.id, transcription_object_name],
+                args=[meeting.id, transcription_object_name, report_type],
             )
 
         logger.info("Report generation task created for meeting: {}", meeting.id)
