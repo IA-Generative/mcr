@@ -12,6 +12,7 @@
 
   <div class="flex flex-row gap-x-6 pb-4">
     <DsfrInputGroup
+      v-model="comuAccessCode"
       class="w-full flex-1"
       :label="$t('meeting-v2.visio-form.comu.access_code')"
       label-visible
@@ -25,12 +26,28 @@
       label-visible
     />
   </div>
+
+  <hr />
+
+  <div class="flex justify-end">
+    <DsfrButton
+      :label="$t('meeting-v2.visio-form.submit')"
+      icon="fr-icon-play-circle-fill"
+      :disabled="!isSubmitEnabled"
+      @click="handleSubmit()"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { t } from '@/plugins/i18n';
 import { comuPrivateUrlValidator } from '../meeting.schema';
 import VisioConnectionSeparator from './VisioConnectionSeparator.vue';
+import type { AddOnlineMeetingDto } from '@/services/meetings/meetings.types';
+
+const props = defineProps<{
+  title: string;
+}>();
 
 const comuUrl = ref<string>('');
 const comuUrlError = computed(() => {
@@ -49,6 +66,33 @@ const comuIdError = computed(() => {
   }
   return '';
 });
+
+const comuAccessCode = ref<string>('');
+
+const isSubmitEnabled = computed(() => {
+  return (
+    props.title !== '' &&
+    (comuPrivateUrlValidator.test(comuUrl.value) ||
+      (comuAccessCode.value !== '' && comuId.value !== ''))
+  );
+});
+
+const emit = defineEmits<{
+  submit: [visioUrl: AddOnlineMeetingDto];
+  cancel: [];
+}>();
+
+function handleSubmit() {
+  const dto: AddOnlineMeetingDto = {
+    name: props.title,
+    name_platform: 'COMU',
+    url: comuUrl.value ?? undefined,
+    meeting_platform_id: comuId.value ?? undefined,
+    meeting_password: comuAccessCode.value ?? undefined,
+    creation_date: new Date().toISOString(),
+  };
+  emit('submit', dto);
+}
 </script>
 
 <style scoped>
