@@ -291,8 +291,8 @@
       },
       "type": {
         "cr1": "Relevé de décisions",
-        "cr2": "Format à venir",
-        "cr3": "@:meeting.report.type.cr2"
+        "cr2": "Synthèse détaillée",
+        "cr3": "Format à venir"
       },
       "report-pending": {
         "title": "L'écriture du compte-rendu est en cours...",

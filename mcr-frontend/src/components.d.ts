@@ -88,5 +88,9 @@ declare module 'vue' {
     TranscriptionPending: typeof import('./components/meeting/transcription/states/TranscriptionPending.vue')['default']
     TranscriptionWaitTime: typeof import('./components/meeting/transcription/TranscriptionWaitTime.vue')['default']
     VIcon: typeof import('@gouvminint/vue-dsfr')['VIcon']
+    VisioConnectionSeparator: typeof import('./components/meeting/visio-modal/VisioConnectionSeparator.vue')['default']
+    VisioMeetingForm: typeof import('./components/meeting/visio-modal/VisioMeetingForm.vue')['default']
+    WebconfMeetingForm: typeof import('./components/meeting/visio-modal/WebconfMeetingForm.vue')['default']
+    WebinaireMeetingForm: typeof import('./components/meeting/visio-modal/WebinaireMeetingForm.vue')['default']
   }
 }

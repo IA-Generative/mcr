@@ -1,13 +1,17 @@
 <template>
   <component
     :is="currentStateComponent"
-    @on-generate="() => onGetOrGenerateReport()"
+    @on-generate="(reportType: ReportType) => onGetOrGenerateReport(reportType)"
   />
 </template>
 
 <script setup lang="ts">
 import useToaster from '@/composables/use-toaster';
-import { MeetingStatus, type MeetingDto } from '@/services/meetings/meetings.types';
+import {
+  type MeetingDto,
+  type MeetingStatus,
+  type ReportType,
+} from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { downloadFileFromAxios } from '@/utils/file';
 import { useI18n } from 'vue-i18n';
@@ -41,9 +45,10 @@ const { mutate: getReport } = getReportMutation({
   },
 });
 
-function onGetOrGenerateReport() {
+function onGetOrGenerateReport(reportType?: ReportType) {
   if (props.meeting.status == 'REPORT_DONE') getReport(props.meeting.id);
-  else if (props.meeting.status == 'TRANSCRIPTION_DONE') generateReport(props.meeting.id);
+  else if (props.meeting.status == 'TRANSCRIPTION_DONE' && reportType)
+    generateReport({ id: props.meeting.id, body: { report_types: [reportType] } });
 }
 
 const currentStateComponent = computed(() => getStateComponent(props.meeting.status));

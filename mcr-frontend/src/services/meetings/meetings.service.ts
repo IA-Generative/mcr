@@ -6,6 +6,7 @@ import type {
   MeetingDto,
   MeetingDtoWithPresignedUrl,
   Part,
+  ReportGenerationRequest,
   TranscriptionWaitingTimeResponse,
   UpdateMeetingDto,
 } from './meetings.types';
@@ -144,8 +145,8 @@ export async function getReport(id: number): Promise<AxiosResponse> {
   return response;
 }
 
-export async function generateReport(id: number): Promise<void> {
-  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report`);
+export async function generateReport(id: number, body: ReportGenerationRequest): Promise<void> {
+  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report`, body);
 }
 
 export async function getTranscriptionWaitingTime(
