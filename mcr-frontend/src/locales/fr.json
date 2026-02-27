@@ -338,6 +338,22 @@
       },
       "parameters": "Paramètres de votre visioconférence",
       "title": "Je participe à une réunion en visioconférence",
+      "visio": {
+        "url": "URL de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur Visio",
+        "url_hint": "Exemple: https://visio.numerique.gouv.fr/aaa-bbbb-ccc"
+      },
+      "webconf": {
+        "url": "URL de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur Webconf",
+        "url_hint": "Exemple: https://webconf.numerique.gouv.fr/reunion2301"
+      },
+      "webinaire": {
+        "connection_code": "Code de connexion",
+        "url": "URL modérateur de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur le Webinaire de l'État",
+        "url_hint": "Exemple:https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/000/creator/000/hash/0000000000000000000000000000000000000000"
+      },
       "visio-tools": "Outil de visioconférence*"
     }
   },

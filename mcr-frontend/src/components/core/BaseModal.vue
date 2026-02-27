@@ -106,6 +106,7 @@ const onClickDsfrModal = (e: MouseEvent) => {
 .fr-modal__footer {
   margin-top: 0;
   padding-top: 0;
+  position: static;
 }
 
 .fr-modal__content {

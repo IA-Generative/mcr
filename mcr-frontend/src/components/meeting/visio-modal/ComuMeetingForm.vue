@@ -8,9 +8,7 @@
     label-visible
   />
 
-  <div class="separator pt-2 pb-8">
-    <span>{{ $t('common.or') }}</span>
-  </div>
+  <VisioConnectionSeparator />
 
   <div class="flex flex-row gap-x-6 pb-4">
     <DsfrInputGroup
@@ -32,6 +30,7 @@
 <script setup lang="ts">
 import { t } from '@/plugins/i18n';
 import { comuPrivateUrlValidator } from '../meeting.schema';
+import VisioConnectionSeparator from './VisioConnectionSeparator.vue';
 
 const comuUrl = ref<string>('');
 const comuUrlError = computed(() => {
@@ -53,29 +52,6 @@ const comuIdError = computed(() => {
 </script>
 
 <style scoped>
-.separator {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: #000;
-  font-weight: 500;
-}
-
-.separator::before,
-.separator::after {
-  content: '';
-  flex: 1;
-  border-bottom: 1px solid #ddd;
-}
-
-.separator::before {
-  margin-right: 10px;
-}
-
-.separator::after {
-  margin-left: 10px;
-}
-
 :deep(.fr-input-group) {
   flex-grow: 1;
   min-width: 50%;
