@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 import instructor
 from langchain.schema import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -18,20 +16,20 @@ class Participant(BaseModel):
     speaker_id: str = Field(
         description="Identifiant unique du locuteur dans la transcription ex: LOCUTEUR_03.",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         description="Prenom et/ou nom déduit pour le locuteur à partir des interactions dans la transcription. Ex: 'Jean' ou 'Jean Dupont'.",
     )
-    role: Optional[str] = Field(
+    role: str | None = Field(
         None,
         description="Fonction/rôle si mentionné ou déduit (ex. PO, Tech Lead, Directeur financier).",
     )
-    confidence: Optional[float] = Field(
+    confidence: float | None = Field(
         ge=0.0,
         le=1.0,
         description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur.",
     )
-    association_justification: Optional[str] = Field(
+    association_justification: str | None = Field(
         description=(
             "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id."
         ),
@@ -55,7 +53,7 @@ class ParticipantExtraction:
             mode=instructor.Mode.JSON,
         )
 
-    def extract(self, text: str) -> List[Participant]:
+    def extract(self, text: str) -> list[Participant]:
         chunks = self._chunk_text(text)
 
         if not chunks:
@@ -72,11 +70,11 @@ class ParticipantExtraction:
 
         return participants
 
-    def _initial_extract(self, chunk: Chunk) -> List[Participant]:
+    def _initial_extract(self, chunk: Chunk) -> list[Participant]:
         # Use INITIAL_PROMPT_TEMPLATE
         return self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
-            response_model=List[Participant],
+            response_model=list[Participant],
             messages=[
                 {
                     "role": "user",
@@ -85,11 +83,11 @@ class ParticipantExtraction:
             ],
         )
 
-    def _refine(self, current: List[Participant], chunk: Chunk) -> List[Participant]:
+    def _refine(self, current: list[Participant], chunk: Chunk) -> list[Participant]:
         # Use REFINE_PROMPT_TEMPLATE
         return self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
-            response_model=List[Participant],
+            response_model=list[Participant],
             messages=[
                 {
                     "role": "user",

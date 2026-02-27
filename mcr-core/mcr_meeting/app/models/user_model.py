@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # Avoid circular imports but allow proper typing
     from .meeting_model import Meeting
@@ -42,4 +42,4 @@ class User(Base):
     entity_name: Mapped[str] = mapped_column(String, index=True, nullable=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     role: Mapped[Role] = mapped_column(SQLEnum(Role), default=Role.USER)
-    meetings: Mapped[List["Meeting"]] = relationship(back_populates="owner")
+    meetings: Mapped[list["Meeting"]] = relationship(back_populates="owner")

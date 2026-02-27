@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import UUID4, BaseModel, ConfigDict, EmailStr
 
 from mcr_meeting.app.models.user_model import Role
@@ -16,10 +14,10 @@ class UserBase(BaseModel):
         email (EmailStr, optional): The user's email address, formatted as an email.
     """
 
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    entity_name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    first_name: str | None = None
+    last_name: str | None = None
+    entity_name: str | None = None
+    email: EmailStr | None = None
 
 
 class UserCreate(UserBase):
@@ -50,7 +48,7 @@ class UserUpdate(UserBase):
         role (Role): The role of the user (assumed to be an enum or similar).
     """
 
-    password: Optional[str] = None
+    password: str | None = None
     role: Role
 
 

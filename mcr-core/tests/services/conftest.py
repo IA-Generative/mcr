@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 
 from mcr_meeting.app.models.meeting_model import (
@@ -67,7 +65,7 @@ segment_data_list = [
 
 
 @pytest.fixture
-def segment_fixture_list() -> List[TranscriptionSegment]:
+def segment_fixture_list() -> list[TranscriptionSegment]:
     segments = [TranscriptionSegment(**data) for data in segment_data_list]
 
     return segments

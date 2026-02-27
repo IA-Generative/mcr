@@ -1,7 +1,7 @@
 """Fixtures for speech-to-text pipeline integration tests."""
 
+from collections.abc import Callable
 from io import BytesIO
-from typing import Callable
 
 import pytest
 from pydub.generators import Sine

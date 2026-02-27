@@ -1,7 +1,6 @@
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List
 
 import pandas as pd
 from loguru import logger
@@ -23,7 +22,7 @@ from mcr_meeting.evaluation.utils import (
 class ASREvaluationPipeline:
     """Main pipeline orchestrator for Automatic Speech Recognition (ASR) evaluation"""
 
-    def __init__(self, inputs: List[EvaluationInput]):
+    def __init__(self, inputs: list[EvaluationInput]):
         self.inputs = inputs
         self.dev = os.environ.get("ENV_MODE") == "DEV"
         self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -69,7 +68,7 @@ class ASREvaluationPipeline:
     def run_evaluation(self, output_dir: Path) -> EvaluationSummary:
         """Run the complete evaluation pipeline"""
         results_manager = ResultsManager(output_dir, self.dev)
-        metrics_pipeline_inputs: List[MetricsPipelineInput] = []
+        metrics_pipeline_inputs: list[MetricsPipelineInput] = []
         for sample in self.inputs:
             metrics_pipeline_input = self.process_single_sample(sample, results_manager)
             if metrics_pipeline_input:
@@ -94,13 +93,13 @@ class MetricsPipeline:
         self.metrics_calculator = MetricsCalculator()
 
     def calculate_metrics(
-        self, metrics_pipeline_inputs: List[MetricsPipelineInput]
-    ) -> List[EvaluationOutput]:
+        self, metrics_pipeline_inputs: list[MetricsPipelineInput]
+    ) -> list[EvaluationOutput]:
         """Calculate metrics for all evaluation outputs"""
         if not metrics_pipeline_inputs:
             raise ValueError("No evaluation inputs to process")
 
-        processed_outputs: List[EvaluationOutput] = []
+        processed_outputs: list[EvaluationOutput] = []
         for sample in metrics_pipeline_inputs:
             metrics = self.metrics_calculator.calculate_metrics(
                 sample, sample.generated_transcription
@@ -122,7 +121,7 @@ class MetricsPipeline:
         return processed_outputs
 
     def save_metrics(
-        self, evaluation_outputs: List[EvaluationOutput], output_dir: Path
+        self, evaluation_outputs: list[EvaluationOutput], output_dir: Path
     ) -> EvaluationSummary:
         """Save metrics for all evaluation outputs"""
         if not evaluation_outputs:
@@ -168,7 +167,7 @@ class MetricsPipeline:
         return summary
 
     def calculate_and_save_metrics(
-        self, metrics_pipeline_inputs: List[MetricsPipelineInput], output_dir: Path
+        self, metrics_pipeline_inputs: list[MetricsPipelineInput], output_dir: Path
     ) -> EvaluationSummary:
         """Calculate and save metrics for all evaluation inputs"""
         evaluation_outputs = self.calculate_metrics(metrics_pipeline_inputs)

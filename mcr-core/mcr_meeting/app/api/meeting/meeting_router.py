@@ -1,5 +1,3 @@
-from typing import List
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -101,7 +99,7 @@ def get_meetings(
     search: str = Query(None, description="Terme de recherche optionnel"),
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
-) -> List[MeetingResponse]:
+) -> list[MeetingResponse]:
     """
     Route pour récupérer une liste de réunions filtrées.
 

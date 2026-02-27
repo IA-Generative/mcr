@@ -1,6 +1,6 @@
+from collections.abc import AsyncGenerator, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar, Token
-from typing import AsyncGenerator, Iterator, Optional
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
@@ -25,7 +25,7 @@ class Base(DeclarativeBase):
 
 
 # Context variable for the session
-db_session_ctx: ContextVar[Optional[Session]] = ContextVar("db_session_ctx")
+db_session_ctx: ContextVar[Session | None] = ContextVar("db_session_ctx")
 
 
 def set_db_session_ctx(session: Session) -> Token[Session | None]:

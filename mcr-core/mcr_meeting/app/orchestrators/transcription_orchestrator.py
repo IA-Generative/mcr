@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import UploadFile
 from pydantic import UUID4
 
@@ -63,7 +61,7 @@ def upload_transcription_docx(
 
 def get_transcription_waiting_time(
     meeting_id: int,
-    user_keycloak_uuid: Optional[UUID4] = None,
+    user_keycloak_uuid: UUID4 | None = None,
 ) -> TranscriptionQueueStatusResponse:
     get_meeting_service(
         meeting_id=meeting_id,

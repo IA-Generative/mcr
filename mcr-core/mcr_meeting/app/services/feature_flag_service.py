@@ -66,7 +66,7 @@ class UnleashFeatureFlagClient(FeatureFlagClient):
 
 class FeatureFlagSingleton:
     _instance: Optional["FeatureFlagSingleton"] = None
-    _feature_flag_client: Optional[FeatureFlagClient] = None
+    _feature_flag_client: FeatureFlagClient | None = None
 
     def __new__(cls) -> "FeatureFlagSingleton":
         if cls._instance is None:

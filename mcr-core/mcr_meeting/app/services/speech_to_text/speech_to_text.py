@@ -1,7 +1,6 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
 from io import BytesIO
-from typing import List
 
 from loguru import logger
 
@@ -66,8 +65,8 @@ class SpeechToTextPipeline:
 
     def post_process(
         self,
-        diarized_transcription_segments: List[DiarizedTranscriptionSegment],
-    ) -> List[DiarizedTranscriptionSegment]:
+        diarized_transcription_segments: list[DiarizedTranscriptionSegment],
+    ) -> list[DiarizedTranscriptionSegment]:
         """Post-process diarized transcription segments.
 
         This includes merging consecutive segments from the same speaker.
@@ -90,8 +89,8 @@ class SpeechToTextPipeline:
     def transcribe_audio(
         self,
         audio_bytes: BytesIO,
-        vad_spans: List[DiarizationSegment],
-    ) -> List[TranscriptionSegment]:
+        vad_spans: list[DiarizationSegment],
+    ) -> list[TranscriptionSegment]:
         """Transcribe full audio bytes to text.
 
         Args:
@@ -108,7 +107,7 @@ class SpeechToTextPipeline:
     def diarize_audio(
         self,
         audio_bytes: BytesIO,
-    ) -> List[DiarizationSegment]:
+    ) -> list[DiarizationSegment]:
         """Perform speaker diarization on audio bytes
 
         Args:
@@ -122,7 +121,7 @@ class SpeechToTextPipeline:
     def run(
         self,
         audio_bytes: BytesIO,
-    ) -> List[DiarizedTranscriptionSegment]:
+    ) -> list[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
         logger.debug("Starting speech-to-text pipeline with pre-processing.")
@@ -137,7 +136,7 @@ class SpeechToTextPipeline:
             logger.debug("No diarization result. Returning empty transcription.")
             return []
 
-        vad_spans: List[DiarizationSegment] = get_vad_segments_from_diarization(
+        vad_spans: list[DiarizationSegment] = get_vad_segments_from_diarization(
             diarization_result
         )
 

@@ -50,6 +50,6 @@ def find_current_transition_record_for_meeting(
 
     if not meeting_transition_record:
         raise NotFoundException(
-            "Meeting transition record with ID {} not found".format(meeting_id)
+            f"Meeting transition record with ID {meeting_id} not found"
         )
     return meeting_transition_record

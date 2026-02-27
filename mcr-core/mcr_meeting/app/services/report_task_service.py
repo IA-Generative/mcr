@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
@@ -28,7 +28,7 @@ def get_formatted_report_from_s3(meeting: Meeting) -> BytesIO:
 
 
 def save_formatted_report(
-    meeting_id: int, file_like_object: BinaryIO, filename: Optional[str] = None
+    meeting_id: int, file_like_object: BinaryIO, filename: str | None = None
 ) -> None:
     name = filename if filename is not None else DEFAULT_REPORT_FILENAME
 

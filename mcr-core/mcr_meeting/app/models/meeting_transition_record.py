@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy import Enum as SQLEnum
@@ -31,9 +30,7 @@ class MeetingTransitionRecord(Base):
         ForeignKey("meeting.id", ondelete="CASCADE"), nullable=False
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    predicted_date_of_next_transition: Mapped[Optional[datetime]] = mapped_column(
-        DateTime
-    )
+    predicted_date_of_next_transition: Mapped[datetime | None] = mapped_column(DateTime)
     status: Mapped[MeetingStatus] = mapped_column(
         SQLEnum(MeetingStatus), nullable=False
     )

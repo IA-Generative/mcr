@@ -1,6 +1,5 @@
 from io import BytesIO
 from pathlib import Path
-from typing import List, Optional
 
 import pandas as pd
 from jiwer import cer, wer
@@ -47,8 +46,8 @@ class AudioFileProcessor:
 
     def __init__(
         self,
-        model: Optional[object] = None,
-        feature_flag_client: Optional[FeatureFlagClient] = None,
+        model: object | None = None,
+        feature_flag_client: FeatureFlagClient | None = None,
     ):
         """Initialize with an optional ASR model and feature flag client"""
         self.is_model_specified = False
@@ -102,8 +101,8 @@ class MetricsCalculator:
 
     @staticmethod
     def calculate_diarization_metrics(
-        reference_segments: List[DiarizedTranscriptionSegment],
-        hypothesis_segments: List[DiarizedTranscriptionSegment],
+        reference_segments: list[DiarizedTranscriptionSegment],
+        hypothesis_segments: list[DiarizedTranscriptionSegment],
     ) -> DiarizationMetrics:
         """Calculate Diarization Error Rate (DER)"""
 
@@ -185,7 +184,7 @@ class ResultsManager:
         logger.info("Saved transcription result to: {}", output_path)
 
     def save_metrics_csv(
-        self, metrics_list: List[EvaluationOutput], timestamp: str
+        self, metrics_list: list[EvaluationOutput], timestamp: str
     ) -> None:
         """Save evaluation metrics to CSV file"""
         if not self.dev:

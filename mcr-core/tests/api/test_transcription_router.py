@@ -1,7 +1,7 @@
 # type: ignore[explicit-any]
 
+from collections.abc import Callable
 from datetime import datetime, timezone
-from typing import Callable
 from unittest.mock import Mock
 
 import pytest

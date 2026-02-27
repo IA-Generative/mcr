@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import List
 
 import numpy as np
 from faster_whisper import WhisperModel
@@ -58,14 +57,14 @@ class TranscriptionProcessor:
     def transcribe(
         self,
         audio_bytes: BytesIO,
-        vad_spans: List[DiarizationSegment],
-    ) -> List[TranscriptionSegment]:
+        vad_spans: list[DiarizationSegment],
+    ) -> list[TranscriptionSegment]:
         transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
 
         logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
 
         transcription_model = get_transcription_model()
-        transcription_segments: List[TranscriptionSegment] = []
+        transcription_segments: list[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(transcription_inputs):
             logger.debug(
@@ -104,7 +103,7 @@ class TranscriptionProcessor:
         self,
         audio: NDArray[np.float32],
         transcription_model: WhisperModel,
-    ) -> List[TranscriptionSegment]:
+    ) -> list[TranscriptionSegment]:
         if self._is_api_transcription_enabled():
             return self._transcribe_audio_chunk_api(audio)
         else:
@@ -112,7 +111,7 @@ class TranscriptionProcessor:
 
     def _transcribe_audio_chunk_local(
         self, audio: NDArray[np.float32], transcription_model: WhisperModel
-    ) -> List[TranscriptionSegment]:
+    ) -> list[TranscriptionSegment]:
         logger.debug("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
 
         segments, info = transcription_model.transcribe(
@@ -145,7 +144,7 @@ class TranscriptionProcessor:
     def _transcribe_audio_chunk_api(
         self,
         audio: NDArray[np.float32],
-    ) -> List[TranscriptionSegment]:
+    ) -> list[TranscriptionSegment]:
         import soundfile as sf
 
         audio_bytes = BytesIO()

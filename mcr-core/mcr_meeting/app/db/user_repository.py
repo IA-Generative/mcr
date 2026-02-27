@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from loguru import logger
 from pydantic import UUID4
 
@@ -61,7 +59,7 @@ def delete_user(user: User) -> None:
     db.commit()
 
 
-def get_users(search: Optional[str]) -> List[User]:
+def get_users(search: str | None) -> list[User]:
     """
     Récupère une liste de utilisateurs filtrés depuis la base de données.
 

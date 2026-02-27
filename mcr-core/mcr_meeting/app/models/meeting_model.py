@@ -6,7 +6,6 @@ if TYPE_CHECKING:  # Avoid circular imports but allow proper typing
 
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy import Enum as SQLEnum
@@ -105,32 +104,32 @@ class Meeting(Base):
     __tablename__ = "meeting"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-    name: Mapped[Optional[str]] = mapped_column(String, index=True)
-    url: Mapped[Optional[str]] = mapped_column(String, index=True)
+    name: Mapped[str | None] = mapped_column(String, index=True)
+    url: Mapped[str | None] = mapped_column(String, index=True)
     name_platform: Mapped[MeetingPlatforms] = mapped_column(
         SQLEnum(MeetingPlatforms), nullable=False
     )
-    creation_date: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
-    start_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    end_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    creation_date: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime)
+    end_date: Mapped[datetime | None] = mapped_column(DateTime)
     status: Mapped[MeetingStatus] = mapped_column(
         SQLEnum(MeetingStatus), default=MeetingStatus.NONE, nullable=False
     )
-    transcription_filename: Mapped[Optional[str]] = mapped_column(String)
-    report_filename: Mapped[Optional[str]] = mapped_column(String)
+    transcription_filename: Mapped[str | None] = mapped_column(String)
+    report_filename: Mapped[str | None] = mapped_column(String)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    meeting_platform_id: Mapped[Optional[str]] = mapped_column(String)
-    meeting_password: Mapped[Optional[str]] = mapped_column(String)
+    meeting_platform_id: Mapped[str | None] = mapped_column(String)
+    meeting_password: Mapped[str | None] = mapped_column(String)
     owner: Mapped["User"] = relationship(back_populates="meetings")
 
-    transcriptions: Mapped[List["Transcription"]] = relationship(
+    transcriptions: Mapped[list["Transcription"]] = relationship(
         back_populates="meeting",
         cascade="all, delete",
         order_by="Transcription.transcription_index.asc()",
     )
 
     @property
-    def duration_minutes(self) -> Optional[int]:
+    def duration_minutes(self) -> int | None:
         if self.start_date is None or self.end_date is None:
             return None
 
