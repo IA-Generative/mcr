@@ -19,8 +19,6 @@ class DetailedSynthesisGenerator(BaseReportGenerator):
     a `DetailedSynthesis` report. After extracting the header, it populates the
     various synthesis sections (discussions summary, detailed discussions, to-do
     list, and items to monitor).
-
-    see outtput example in: report_generator/examples/detailed_synthesis_example.json
     """
 
     def generate(self, chunks: list[Chunk]) -> DetailedSynthesis:
