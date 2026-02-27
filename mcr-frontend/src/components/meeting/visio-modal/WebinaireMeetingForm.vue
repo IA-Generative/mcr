@@ -8,14 +8,6 @@
     label-visible
   />
 
-  <VisioConnectionSeparator />
-
-  <DsfrInputGroup
-    class="m-0"
-    :label="$t('meeting-v2.visio-form.webinaire.connection_code')"
-    label-visible
-  />
-
   <hr />
 
   <div class="flex justify-end">
@@ -36,8 +28,6 @@ import type { AddOnlineMeetingDto } from '@/services/meetings/meetings.types';
 const props = defineProps<{
   title: string;
 }>();
-
-const webinaireConnectionCode = ref<string>('');
 
 const webinaireUrl = ref<string>('');
 const webinaireUrlError = computed(() => {
