@@ -28,8 +28,13 @@ import type { AddOnlineMeetingDto } from '@/services/meetings/meetings.types';
 const CREATE_MEETING_MODAL_ID = 'meeting-visio-modal-V2';
 const close = () => useVfm().close(CREATE_MEETING_MODAL_ID);
 
+const emit = defineEmits<{
+  (e: 'createMeeting', payload: AddOnlineMeetingDto): void;
+}>();
+
 function onSubmit(dto: AddOnlineMeetingDto) {
-  console.log(dto);
+  emit('createMeeting', dto);
+  close();
 }
 </script>
 
