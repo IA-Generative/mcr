@@ -59,11 +59,6 @@ class TestSynthesizeDetailedDiscussions:
         mock_detailed_discussions,
     ) -> None:
         """Test synthesize_detailed_discussions calls the LLM with correct parameters."""
-        # Setup mocks
-        mock_llm_config_instance = mock_llm_config.return_value
-        mock_llm_config_instance.LLM_HUB_API_URL = "http://test.url"
-        mock_llm_config_instance.LLM_HUB_API_KEY = "test_key"
-
         expected_content = Content(
             discussions_summary=["Summary 1"],
             to_do_list=["Action A"],
