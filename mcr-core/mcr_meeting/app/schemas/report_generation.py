@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, TypeGuard, Union
 
 from pydantic import BaseModel
 
@@ -55,3 +55,34 @@ class ReportGenerationResponse(BaseModel):
     header: ReportHeader
     topics_with_decision: List[ReportTopicWithDecision]
     next_steps: List[str]
+
+
+class ReportDetailedDiscussion(BaseModel):
+    title: str
+    key_ideas: List[str]
+    decisions: List[str]
+    actions: List[str]
+    focus_points: List[str]
+
+
+class DetailedSynthesisGenerationResponse(BaseModel):
+    header: ReportHeader
+    discussions_summary: List[str]
+    detailed_discussions: List[ReportDetailedDiscussion]
+    to_do_list: List[str]
+    to_monitor_list: List[str]
+
+
+ReportResponse = Union[DetailedSynthesisGenerationResponse, ReportGenerationResponse]
+
+
+def is_detailed_synthesis(
+    response: ReportResponse,
+) -> TypeGuard[DetailedSynthesisGenerationResponse]:
+    return isinstance(response, DetailedSynthesisGenerationResponse)
+
+
+def is_decision_report_synthesis(
+    response: ReportResponse,
+) -> TypeGuard[ReportGenerationResponse]:
+    return isinstance(response, ReportGenerationResponse)

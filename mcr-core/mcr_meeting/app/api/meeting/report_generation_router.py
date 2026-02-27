@@ -10,7 +10,7 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_report,
     start_report,
 )
-from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
+from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.services.report_task_service import (
     get_formatted_report_from_s3,
 )
@@ -77,7 +77,7 @@ async def generate_meeting_report(
 @router.post("/{meeting_id}/report/success")
 async def generate_meeting_report_success(
     meeting_id: int,
-    report_response: ReportGenerationResponse,
+    report_response: ReportResponse,
 ) -> None:
     complete_report(meeting_id=meeting_id, report_response=report_response)
 

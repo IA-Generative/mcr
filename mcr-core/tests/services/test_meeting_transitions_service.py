@@ -15,6 +15,10 @@ from mcr_meeting.app.models.meeting_model import (
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.models.user_model import User
 from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mts
+from mcr_meeting.app.schemas.report_generation import (
+    ReportGenerationResponse,
+    ReportHeader,
+)
 from mcr_meeting.app.statemachine_actions import meeting_actions
 from tests.factories import MeetingFactory
 
@@ -334,14 +338,24 @@ def test_start_report(
 
 
 def test_complete_report(
-    _mock_save_formatted_report: MagicMock, mock_send_email: MagicMock
+    _mock_save_formatted_report: MagicMock,
+    mock_send_email: MagicMock,
 ) -> None:
     """Test completing report transitions to REPORT_DONE."""
     meeting = MeetingFactory.create(
         status=MeetingStatus.REPORT_PENDING,
         name_platform=MeetingPlatforms.COMU,
     )
-    report_response = MagicMock()
+    report_response = ReportGenerationResponse(
+        header=ReportHeader(
+            title="Test Meeting",
+            objective=None,
+            participants=[],
+            next_meeting=None,
+        ),
+        topics_with_decision=[],
+        next_steps=[],
+    )
 
     result = mts.complete_report(meeting_id=meeting.id, report_response=report_response)
 

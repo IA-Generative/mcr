@@ -1,9 +1,11 @@
+import os
 from io import BytesIO
 from typing import Any, Optional
 
 from docxtpl import RichText
 
 from mcr_meeting.app.schemas.report_generation import (
+    DetailedSynthesisGenerationResponse,
     ReportGenerationResponse,
     ReportHeader,
     ReportParticipant,
@@ -11,6 +13,7 @@ from mcr_meeting.app.schemas.report_generation import (
 from mcr_meeting.app.services.docx_generation.templated_docx_generator import (
     TemplatedDocxGenerator,
 )
+from mcr_meeting.app.services.report_content.template_renderer import render_to_docx
 
 
 def generate_docx_decisions_reports_from_template(
@@ -151,3 +154,38 @@ def format_title_for_report(
         if meeting_name is not None
         else ""
     )
+
+
+def generate_detailed_synthesis_docx(
+    response: DetailedSynthesisGenerationResponse,
+    meeting_name: Optional[str],
+) -> BytesIO:
+    title = _format_title_detailed_synthesis(response.header, meeting_name)
+    data = {
+        "title": title,
+        **response.model_dump(exclude={"header"}),
+    }
+    return render_to_docx(
+        "detailed_synthesis.md.jinja", data, _get_style_template_path()
+    )
+
+
+def _get_style_template_path() -> str:
+    path = os.path.join(
+        os.getcwd(),
+        "mcr_meeting",
+        "app",
+        "cr-templates",
+        "detailed_synthesis_template.docx",
+    )
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Style template not found at {path}")
+    return path
+
+
+def _format_title_detailed_synthesis(
+    header: Optional[ReportHeader], meeting_name: Optional[str]
+) -> str:
+    if header is not None and header.title is not None:
+        return header.title
+    return meeting_name or ""

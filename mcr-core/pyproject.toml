@@ -30,6 +30,7 @@ api = [
     "sentry-sdk[fastapi]>=2.34.1",
     "alembic==1.16.4",
     "dotenv==0.9.9",
+    "markdowntodocx>=0.1.9.2",
 ]
 worker = [
     "pandas>=2.3.1",
