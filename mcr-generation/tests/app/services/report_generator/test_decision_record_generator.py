@@ -12,7 +12,6 @@ from mcr_generation.app.schemas.base import (
     DecisionRecord,
     Header,
     Participant,
-    Participants,
     Topic,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
@@ -182,7 +181,7 @@ class TestDecisionRecordGeneratorGenerate:
 
         mock_map_reduce_cls.assert_called_once_with(
             meeting_subject=mock_header.title,
-            speaker_mapping=Participants(participants=mock_header.participants),
+            participants=mock_header.participants,
         )
 
     def test_map_reduce_all_steps_called_once_with_chunks(

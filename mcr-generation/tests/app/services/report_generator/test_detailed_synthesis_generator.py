@@ -135,25 +135,18 @@ class TestDetailedSynthesisGeneratorGenerate:
             patch(
                 "mcr_generation.app.services.report_generator.detailed_synthesis_generator.MapReduceDetailedDiscussions"
             ) as mock_map_reduce_class,
-            patch(
-                "mcr_generation.app.services.report_generator.detailed_synthesis_generator.Participants"
-            ) as mock_participants_class,
         ):
             mock_map_reduce = mock_map_reduce_class.return_value
             mock_map_reduce.map_reduce_all_steps.return_value.detailed_discussions = (
                 mock_discussions
             )
-            mock_participants = mock_participants_class.return_value
 
             result = DetailedSynthesisGenerator().generate(chunks)
 
-        # Verify Participants creation and MapReduceDetailedDiscussions initialization
-        mock_participants_class.assert_called_once_with(
-            participants=mock_header.participants
-        )
+        # Verify MapReduceDetailedDiscussions initialization with participants list
         mock_map_reduce_class.assert_called_once_with(
             meeting_subject=mock_header.title,
-            speaker_mapping=mock_participants,
+            participants=mock_header.participants,
         )
         # Verify map_reduce_all_steps execution and result
         mock_map_reduce.map_reduce_all_steps.assert_called_once_with(chunks)

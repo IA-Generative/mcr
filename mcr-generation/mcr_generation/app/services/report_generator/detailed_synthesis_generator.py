@@ -1,4 +1,4 @@
-from mcr_generation.app.schemas.base import DetailedSynthesis, Participants
+from mcr_generation.app.schemas.base import DetailedSynthesis
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
 )
@@ -24,17 +24,16 @@ class DetailedSynthesisGenerator(BaseReportGenerator):
     def generate(self, chunks: list[Chunk]) -> DetailedSynthesis:
         header = self.generate_header(chunks)
 
-        participants = Participants(participants=header.participants)
         map_reduce = MapReduceDetailedDiscussions(
             meeting_subject=header.title,
-            speaker_mapping=participants,
+            participants=header.participants,
         )
         content = map_reduce.map_reduce_all_steps(chunks)
 
         synthesis_result = synthesize_detailed_discussions(
             detailed_discussions=content.detailed_discussions,
             meeting_subject=header.title,
-            speaker_mapping=str(participants) if participants else None,
+            participants=header.participants,
         )
 
         return DetailedSynthesis(

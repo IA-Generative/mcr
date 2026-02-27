@@ -5,7 +5,7 @@ from langfuse import observe
 from openai import OpenAI
 
 from mcr_generation.app.configs.settings import LLMConfig
-from mcr_generation.app.schemas.base import DetailedDiscussion
+from mcr_generation.app.schemas.base import DetailedDiscussion, Participant
 from mcr_generation.app.services.sections.discussions_synthesis.prompts import (
     SYNTHESIZE_PROMPT,
 )
@@ -19,8 +19,9 @@ from mcr_generation.app.services.utils.llm_helpers import (
 def synthesize_detailed_discussions(
     detailed_discussions: list[DetailedDiscussion],
     meeting_subject: str | None,
-    speaker_mapping: str | None,
+    participants: list[Participant],
 ) -> Content:
+    speaker_mapping = str(participants) if participants else None
     if not detailed_discussions:
         return Content()
 

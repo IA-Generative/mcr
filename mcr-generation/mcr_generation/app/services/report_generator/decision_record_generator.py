@@ -1,4 +1,4 @@
-from mcr_generation.app.schemas.base import DecisionRecord, Participants
+from mcr_generation.app.schemas.base import DecisionRecord
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
 )
@@ -22,7 +22,7 @@ class DecisionRecordGenerator(BaseReportGenerator):
 
         map_reduce = MapReduceTopics(
             meeting_subject=header.title,
-            speaker_mapping=Participants(participants=header.participants),
+            participants=header.participants,
         )
         content = map_reduce.map_reduce_all_steps(chunks)
 
