@@ -1,6 +1,5 @@
 import time
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from loguru import logger
 from playwright.async_api import Page
@@ -8,7 +7,7 @@ from playwright.async_api import Page
 
 class MeetingMonitor(ABC):
     def __init__(self) -> None:
-        self._alone_since: Optional[float] = None
+        self._alone_since: float | None = None
 
     def start_alone_timer(self) -> None:
         if self._alone_since is None:
@@ -33,7 +32,7 @@ class MeetingMonitor(ABC):
         self.reset_alone_timer()
         return False
 
-    async def get_participant_count(self, page: Page) -> Optional[int]:
+    async def get_participant_count(self, page: Page) -> int | None:
         """Safely retrieve participant count from the meeting UI.
 
         Returns the participant count, or None if it could not be determined.

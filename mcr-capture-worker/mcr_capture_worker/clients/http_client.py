@@ -1,10 +1,10 @@
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
 
 class HttpClient:
-    def __init__(self, base_url: str, token: Optional[str] = None):
+    def __init__(self, base_url: str, token: str | None = None):
         self.base_url = base_url
         self.token = token
 
@@ -15,7 +15,7 @@ class HttpClient:
         return headers
 
     async def post(
-        self, endpoint: str, data: Optional[dict[str, Any]] = None
+        self, endpoint: str, data: dict[str, Any] | None = None
     ) -> httpx.Response:
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             response = await client.post(
@@ -25,7 +25,7 @@ class HttpClient:
             return response
 
     async def get(
-        self, endpoint: str, params: Optional[dict[str, Any]] = None
+        self, endpoint: str, params: dict[str, Any] | None = None
     ) -> httpx.Response:
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             response = await client.get(

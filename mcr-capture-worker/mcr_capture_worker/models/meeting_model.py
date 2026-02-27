@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, String
@@ -60,8 +60,8 @@ class Meeting(Base):
     __tablename__ = "meeting"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
-    name: Mapped[Optional[str]] = mapped_column(String, index=True)
-    url: Mapped[Optional[str]] = mapped_column(String, index=True)
+    name: Mapped[str | None] = mapped_column(String, index=True)
+    url: Mapped[str | None] = mapped_column(String, index=True)
     name_platform: Mapped[MeetingPlatform] = mapped_column(
         SQLEnum(MeetingPlatform), nullable=False
     )
@@ -69,8 +69,8 @@ class Meeting(Base):
         SQLEnum(MeetingStatus), default=MeetingStatus.NONE, nullable=False
     )
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
-    meeting_platform_id: Mapped[Optional[str]] = mapped_column(String)
-    meeting_password: Mapped[Optional[str]] = mapped_column(String)
+    meeting_platform_id: Mapped[str | None] = mapped_column(String)
+    meeting_password: Mapped[str | None] = mapped_column(String)
     owner: Mapped["User"] = relationship()
 
     __mapper_args__ = {

@@ -1,6 +1,4 @@
-from typing import Protocol
-
-from typing_extensions import TypeGuard
+from typing import Protocol, TypeGuard
 
 from mcr_capture_worker.models.meeting_model import Meeting
 
