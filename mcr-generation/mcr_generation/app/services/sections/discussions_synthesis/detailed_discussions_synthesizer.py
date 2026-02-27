@@ -44,7 +44,6 @@ class DetailedDiscussionsSynthesizer:
 
         detailed_discussions_json = json.dumps(
             [discussion.model_dump() for discussion in detailed_discussions],
-            indent=2,
             ensure_ascii=False,
         )
 
