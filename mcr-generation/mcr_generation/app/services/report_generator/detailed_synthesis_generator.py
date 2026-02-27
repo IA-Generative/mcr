@@ -16,22 +16,11 @@ class DetailedSynthesisGenerator(BaseReportGenerator):
     a `DetailedSynthesis` report. After extracting the header, it populates the
     various synthesis sections (discussions summary, detailed discussions, to-do
     list, and items to monitor).
+
+    see outtput example in: report_generator/examples/detailed_synthesis_example.json
     """
 
     def generate(self, chunks: list[Chunk]) -> DetailedSynthesis:
-        """
-        Generate a detailed synthesis report from transcript chunks.
-
-        Extracts the report header and builds all synthesis sections from the
-        provided transcript segments.
-
-        Args:
-            chunks (list[Chunk]): Ordered list of transcript segments to analyse.
-
-        Returns:
-            DetailedSynthesis: Report containing the header, discussions summary,
-                detailed discussions, to-do list, and items to monitor.
-        """
         header = self.generate_header(chunks)
 
         map_reduce = MapReduceDetailedDiscussions(

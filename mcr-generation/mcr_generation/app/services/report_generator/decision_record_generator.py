@@ -15,22 +15,11 @@ class DecisionRecordGenerator(BaseReportGenerator):
     Extends `BaseReportGenerator` by implementing the `generate` method to produce
     a `DecisionRecord` report. After extracting the header, it runs a map-reduce
     step over the transcript chunks to identify topics and next steps.
+
+    see outtput example in: report_generator/examples/decision_record_example.json
     """
 
     def generate(self, chunks: list[Chunk]) -> DecisionRecord:
-        """
-        Generate a decision record report from transcript chunks.
-
-        Extracts the report header, then runs a map-reduce over the chunks to
-        identify topics with decisions and next steps.
-
-        Args:
-            chunks (list[Chunk]): Ordered list of transcript segments to analyse.
-
-        Returns:
-            DecisionRecord: Report containing the header, topics with decisions,
-                and next steps.
-        """
         header = self.generate_header(chunks)
 
         map_reduce = MapReduceTopics(
