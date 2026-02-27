@@ -83,8 +83,8 @@ class MapReduceDetailedDiscussions:
 
         reduce_message = REDUCE_PROMPT_TEMPLATE.format(
             detailed_discussions=discussions_input,
-            meeting_subject=self.meeting_subject,
-            speaker_mapping=self.speaker_mapping,
+            meeting_subject=self.meeting_subject or "Inconnu",
+            speaker_mapping=self.speaker_mapping or "Non fourni",
         )
 
         resp = call_llm_with_structured_output(
@@ -107,8 +107,8 @@ class MapReduceDetailedDiscussions:
         content = prompt.invoke(
             {
                 "chunk_text": chunk.text,
-                "meeting_subject": self.meeting_subject,
-                "speaker_mapping": self.speaker_mapping,
+                "meeting_subject": self.meeting_subject or "Inconnu",
+                "speaker_mapping": self.speaker_mapping or "Non fourni",
             }
         ).to_string()
 
