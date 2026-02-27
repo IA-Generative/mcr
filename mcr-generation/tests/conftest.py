@@ -43,5 +43,9 @@ def pytest_configure(config):  # noqa: ARG001
         "mcr_generation.app.services.sections.participants.refine_participants",
         "mcr_generation.app.services.sections.topics",
         "mcr_generation.app.services.sections.topics.map_reduce_topics",
+        "mcr_generation.app.services.sections.detailed_discussions",
+        "mcr_generation.app.services.sections.detailed_discussions.map_reduce_detailed_discussions",
+        "mcr_generation.app.services.sections.discussions_synthesis",
+        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions",
     ]:
         sys.modules[_mod] = MagicMock()

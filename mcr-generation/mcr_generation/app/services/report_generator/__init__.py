@@ -5,6 +5,9 @@ from mcr_generation.app.services.report_generator.base_report_generator import (
 from mcr_generation.app.services.report_generator.decision_record_generator import (
     DecisionRecordGenerator,
 )
+from mcr_generation.app.services.report_generator.detailed_synthesis_generator import (
+    DetailedSynthesisGenerator,
+)
 
 
 def get_generator(report_type: ReportTypes) -> BaseReportGenerator:
@@ -23,5 +26,7 @@ def get_generator(report_type: ReportTypes) -> BaseReportGenerator:
     match report_type:
         case ReportTypes.DECISION_RECORD:
             return DecisionRecordGenerator()
+        case ReportTypes.DETAILED_SYNTHESIS:
+            return DetailedSynthesisGenerator()
         case _:
             raise ValueError(f"Unknown report type: {report_type}")
