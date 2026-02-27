@@ -7,7 +7,7 @@ from openai import OpenAI
 from mcr_generation.app.configs.settings import LLMConfig
 from mcr_generation.app.schemas.base import DetailedDiscussion
 from mcr_generation.app.services.sections.discussions_synthesis.prompts import (
-    SYNTHETISE_PROMPT,
+    SYNTHESIZE_PROMPT,
 )
 from mcr_generation.app.services.sections.discussions_synthesis.types import Content
 from mcr_generation.app.services.utils.llm_helpers import (
@@ -15,8 +15,8 @@ from mcr_generation.app.services.utils.llm_helpers import (
 )
 
 
-@observe(name="synthetise_detailed_discussions")
-def synthetise_detailed_discussions(
+@observe(name="synthesize_detailed_discussions")
+def synthesize_detailed_discussions(
     detailed_discussions: list[DetailedDiscussion],
     meeting_subject: str | None,
     speaker_mapping: str | None,
@@ -39,7 +39,7 @@ def synthetise_detailed_discussions(
         ensure_ascii=False,
     )
 
-    user_message_content = SYNTHETISE_PROMPT.format(
+    user_message_content = SYNTHESIZE_PROMPT.format(
         meeting_subject=meeting_subject or "Inconnu",
         speaker_mapping=speaker_mapping or "Non fourni",
         detailed_discussions_json=detailed_discussions_json,

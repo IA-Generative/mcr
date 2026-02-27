@@ -1,4 +1,4 @@
-SYNTHETISE_PROMPT = """
+SYNTHESIZE_PROMPT = """
 Tu es un assistant chargé de générer la section "synthèse" d'un compte-rendu de réunion.
 
 Objet de la réunion : {meeting_subject}

@@ -3,8 +3,8 @@ from unittest.mock import patch
 import pytest
 
 from mcr_generation.app.schemas.base import DetailedDiscussion
-from mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions import (
-    synthetise_detailed_discussions,
+from mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions import (
+    synthesize_detailed_discussions,
 )
 from mcr_generation.app.services.sections.discussions_synthesis.types import Content
 
@@ -29,28 +29,28 @@ def mock_detailed_discussions():
     ]
 
 
-class TestSynthetiseDetailedDiscussions:
-    def test_synthetise_detailed_discussions_empty_list(self) -> None:
-        """Test synthetise_detailed_discussions with an empty list of discussions."""
-        result = synthetise_detailed_discussions([], "Subject", "Mapping")
+class TestSynthesizeDetailedDiscussions:
+    def test_synthesize_detailed_discussions_empty_list(self) -> None:
+        """Test synthesize_detailed_discussions with an empty list of discussions."""
+        result = synthesize_detailed_discussions([], "Subject", "Mapping")
         assert isinstance(result, Content)
         assert result.discussions_summary == []
         assert result.to_do_list == []
         assert result.to_monitor_list == []
 
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.call_llm_with_structured_output"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.call_llm_with_structured_output"
     )
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.LLMConfig"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.LLMConfig"
     )
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.OpenAI"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.OpenAI"
     )
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.instructor"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.instructor"
     )
-    def test_synthetise_detailed_discussions_calls_llm(
+    def test_synthesize_detailed_discussions_calls_llm(
         self,
         mock_instructor,
         mock_openai,
@@ -58,7 +58,7 @@ class TestSynthetiseDetailedDiscussions:
         mock_call_llm,
         mock_detailed_discussions,
     ) -> None:
-        """Test synthetise_detailed_discussions calls the LLM with correct parameters."""
+        """Test synthesize_detailed_discussions calls the LLM with correct parameters."""
         # Setup mocks
         mock_llm_config_instance = mock_llm_config.return_value
         mock_llm_config_instance.LLM_HUB_API_URL = "http://test.url"
@@ -75,7 +75,7 @@ class TestSynthetiseDetailedDiscussions:
         speaker_mapping = "Speaker 1: Alice"
 
         # Run function
-        result = synthetise_detailed_discussions(
+        result = synthesize_detailed_discussions(
             mock_detailed_discussions, meeting_subject, speaker_mapping
         )
 
@@ -94,28 +94,28 @@ class TestSynthetiseDetailedDiscussions:
             assert disc.title in user_message_content
 
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.call_llm_with_structured_output"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.call_llm_with_structured_output"
     )
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.LLMConfig"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.LLMConfig"
     )
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.OpenAI"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.OpenAI"
     )
     @patch(
-        "mcr_generation.app.services.sections.discussions_synthesis.synthetise_detailed_discussions.instructor"
+        "mcr_generation.app.services.sections.discussions_synthesis.synthesize_detailed_discussions.instructor"
     )
-    def test_synthetise_detailed_discussions_none_parameters(
+    def test_synthesize_detailed_discussions_none_parameters(
         self,
         mock_instructor,
         mock_openai,
         mock_llm_config,
         mock_call_llm,
     ) -> None:
-        """Test synthetise_detailed_discussions with None for subject and mapping."""
+        """Test synthesize_detailed_discussions with None for subject and mapping."""
         mock_call_llm.return_value = Content()
 
-        synthetise_detailed_discussions(
+        synthesize_detailed_discussions(
             [
                 DetailedDiscussion(
                     title="T", key_ideas=[], decisions=[], actions=[], focus_points=[]
