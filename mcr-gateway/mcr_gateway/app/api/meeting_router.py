@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import httpx
 from fastapi import (
@@ -274,7 +274,7 @@ async def stop_capture(
 
 @router.get(
     "/meetings",
-    response_model=List[Meeting],
+    response_model=list[Meeting],
     tags=["Meetings"],
 )
 async def get_meetings(
@@ -282,7 +282,7 @@ async def get_meetings(
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> List[Meeting]:
+) -> list[Meeting]:
     """
     Route pour interroger mcr-core et retourner la liste des réunions.
     """
@@ -404,7 +404,7 @@ async def generate_meeting_report(
 @router.get("/meetings/transcription/wait-time/estimation")
 async def get_queue_estimated_waiting_time(
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get the current global waiting time for the transcription queue.
 

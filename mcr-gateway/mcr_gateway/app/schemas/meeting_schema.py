@@ -1,6 +1,5 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
 
 from pydantic import BaseModel, field_serializer
 from pydantic_settings import SettingsConfigDict
@@ -39,13 +38,13 @@ class MeetingBase(BaseModel):
     """
 
     name: str
-    url: Optional[str] = None
+    url: str | None = None
     name_platform: str
     creation_date: datetime
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    meeting_password: Optional[str] = None
-    meeting_platform_id: Optional[str] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    meeting_password: str | None = None
+    meeting_platform_id: str | None = None
 
     model_config = SettingsConfigDict(
         from_attributes=True,

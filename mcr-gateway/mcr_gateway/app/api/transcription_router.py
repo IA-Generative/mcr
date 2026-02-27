@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,7 +17,7 @@ router = APIRouter()
 async def get_meeting_transcription_waiting_time(
     meeting_id: int,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get the estimated waiting time for the transcription of a given meeting.
 
