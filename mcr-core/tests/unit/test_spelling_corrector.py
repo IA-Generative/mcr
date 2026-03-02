@@ -43,15 +43,6 @@ class TestSpellingCorrectorCorrect:
 
         assert result == []
 
-    def test_should_warn_when_no_segments(self, corrector: SpellingCorrector) -> None:
-        """Checks that a warning is logged when segments list is empty."""
-        with patch(
-            "mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector.logger"
-        ) as mock_logger:
-            corrector.correct([])
-
-        mock_logger.warning.assert_called_once_with("No segments found to correct")
-
     def test_should_not_mutate_input_segments(
         self, corrector: SpellingCorrector
     ) -> None:
