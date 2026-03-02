@@ -39,6 +39,7 @@ from mcr_meeting.evaluation.eval_types import (
     TranscriptionMetrics,
     TranscriptionOutput,
 )
+from mcr_meeting.evaluation.text_normalization import french_text_normalizer
 
 
 class AudioFileProcessor:
@@ -95,8 +96,10 @@ class MetricsCalculator:
         hypothesis_text: str,
     ) -> TranscriptionMetrics:
         """Calculate WER and CER metrics for a single file"""
-        wer_score = wer(reference_text, hypothesis_text)
-        cer_score = cer(reference_text, hypothesis_text)
+        normalized_reference_text = french_text_normalizer(reference_text)
+        normalized_hypothesis_text = french_text_normalizer(hypothesis_text)
+        wer_score = wer(normalized_reference_text, normalized_hypothesis_text)
+        cer_score = cer(normalized_reference_text, normalized_hypothesis_text)
         return TranscriptionMetrics(wer=round(wer_score, 4), cer=round(cer_score, 4))
 
     @staticmethod
