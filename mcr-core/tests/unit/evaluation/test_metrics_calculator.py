@@ -1,7 +1,5 @@
-import pytest
-
-from mcr_meeting.evaluation.text_normalization import french_text_normalizer
 from mcr_meeting.evaluation.utils import MetricsCalculator
+from mcr_meeting.evaluation.utils.text_normalization import french_text_normalizer
 
 
 class TestFrenchTextNormalizer:
@@ -21,7 +19,10 @@ class TestFrenchTextNormalizer:
         assert french_text_normalizer("  bonjour  ") == "bonjour"
 
     def test_combined(self):
-        assert french_text_normalizer("Ça s'est passé, très bien.") == "ca s est passe tres bien"
+        assert (
+            french_text_normalizer("Ça s'est passé, très bien.")
+            == "ca s est passe tres bien"
+        )
 
     def test_apostrophe_becomes_space(self):
         assert french_text_normalizer("c'est") == "c est"
