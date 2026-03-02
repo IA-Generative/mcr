@@ -5,14 +5,13 @@ import MeetingListPage from '@/views/meeting/MeetingListPage.vue';
 import { renderWithPlugins } from '@/vitest.setup';
 
 // Utilisation de vi.hoisted pour déclarer les mocks avant le hoisting
-const { mockGetAllMeetingsQuery, mockUseQuery, mockAddErrorMessage } =
-  vi.hoisted(() => {
-    return {
-      mockGetAllMeetingsQuery: vi.fn(),
-      mockUseQuery: vi.fn(),
-      mockAddErrorMessage: vi.fn(),
-    };
-  });
+const { mockGetAllMeetingsQuery, mockUseQuery, mockAddErrorMessage } = vi.hoisted(() => {
+  return {
+    mockGetAllMeetingsQuery: vi.fn(),
+    mockUseQuery: vi.fn(),
+    mockAddErrorMessage: vi.fn(),
+  };
+});
 
 // MeetingListPage renders child components that each use different parts of useMeetings().
 // mockUseMeetings uses a Proxy so any unspecified property returns a default mock mutation,
@@ -52,7 +51,6 @@ describe('MeetingListPage - 24h warning banner', () => {
       isLoading: ref(false),
       error: ref(null),
     });
-
   });
 
   it('should_display_warning_banner_when_waiting_time_greater_or_equal_to_24_hours', () => {
