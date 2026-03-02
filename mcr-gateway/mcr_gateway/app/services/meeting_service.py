@@ -467,6 +467,24 @@ async def generate_report(
         )
 
 
+async def reset_report_service(
+    meeting_id: int,
+    user_keycloak_uuid: UUID4,
+) -> None:
+    try:
+        async with get_meeting_http_client(user_keycloak_uuid) as client:
+            response = await client.post(url=f"{meeting_id}/report/reset")
+            response.raise_for_status()
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while resetting the report.",
+        )
+
+
 def update_dict_with_iso_dates(
     meeting_dict: dict[str, Any], meeting: MeetingBase
 ) -> dict[str, Any]:

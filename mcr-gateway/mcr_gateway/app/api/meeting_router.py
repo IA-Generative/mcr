@@ -36,6 +36,7 @@ from mcr_gateway.app.services.meeting_service import (
     get_meetings_service,
     get_report,
     init_meeting_capture_service,
+    reset_report_service,
     start_meeting_transcription_service,
     stop_meeting_capture_service,
     update_meeting_service,
@@ -403,6 +404,20 @@ async def generate_meeting_report(
         meeting_id=meeting_id,
         user_keycloak_uuid=current_user.keycloak_uuid,
         body=body,
+    )
+
+
+@router.post(
+    "/meetings/{meeting_id}/report/reset",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Meetings"],
+)
+async def reset_meeting_report(
+    meeting_id: int,
+    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+) -> None:
+    await reset_report_service(
+        meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
     )
 
 
