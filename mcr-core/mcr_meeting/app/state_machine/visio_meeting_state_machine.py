@@ -69,6 +69,7 @@ class VisioMeetingStateMachine(StateMachine):
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
     START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
     COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
+    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE)
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
 
@@ -136,6 +137,11 @@ class VisioMeetingStateMachine(StateMachine):
         after_complete_report_handler(
             self.meeting, self.current_state_value, report_response
         )
+
+    def after_RESET_REPORT(self) -> None:
+        if self.meeting is None:
+            return
+        update_status_handler(self.meeting, self.current_state_value)
 
     def after_DELETE(self) -> None:
         if self.meeting is None:
