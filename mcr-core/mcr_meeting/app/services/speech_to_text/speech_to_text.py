@@ -13,6 +13,9 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
 )
+from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
+    SpellingCorrector,
+)
 from mcr_meeting.app.services.feature_flag_service import (
     get_feature_flag_client,
 )
@@ -77,6 +80,8 @@ class SpeechToTextPipeline:
         Returns:
             List[DiarizedTranscriptionSegment]: The post-processed diarized transcription segments.
         """
+        feature_flag_client = get_feature_flag_client()
+
         if not diarized_transcription_segments:
             logger.warning("No transcription segments found")
             raise InvalidAudioFileError("No transcription segments found")
@@ -84,6 +89,13 @@ class SpeechToTextPipeline:
             diarized_transcription_segments
         )
         cleaned_segments = remove_hallucinations(merged_segments)
+
+        if feature_flag_client.is_enabled("spelling_correction"):
+            logger.info("Spelling correction enabled, correcting segments")
+            corrector = SpellingCorrector()
+            cleaned_segments = corrector.correct(cleaned_segments)
+        else:
+            logger.info("Spelling correction disabled, skipping correction")
         return cleaned_segments
 
     def transcribe_audio(
