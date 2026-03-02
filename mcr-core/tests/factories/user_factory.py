@@ -1,6 +1,6 @@
 import uuid
 
-from factory import Faker, LazyFunction, Trait
+from factory import Faker, LazyFunction, Sequence, Trait
 
 from mcr_meeting.app.models.user_model import Role, User
 
@@ -26,7 +26,7 @@ class UserFactory(BaseFactory[User]):
     first_name = Faker("first_name")
     last_name = Faker("last_name")
     entity_name = Faker("company")
-    email = Faker("email")
+    email = Sequence(lambda n: f"user_{n}@example.com")
     role = Role.USER
     keycloak_uuid = LazyFunction(uuid.uuid4)
 

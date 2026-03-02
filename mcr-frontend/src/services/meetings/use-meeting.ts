@@ -23,6 +23,7 @@ import type {
   AddMeetingDto,
   MeetingDto,
   MeetingStatus,
+  ReportGenerationRequest,
   UpdateMeetingDto,
 } from './meetings.types';
 import { type Ref } from 'vue';
@@ -210,13 +211,15 @@ function getReportMutation(options?: ExtraMutationOptions<typeof getReport>) {
   });
 }
 
-function generateReportMutation(options?: ExtraMutationOptions<typeof generateReport>) {
+type GenerateReportInput = { id: number; body: ReportGenerationRequest };
+
+function generateReportMutation(options?: { onError?: (error: Error) => void }) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => generateReport(id),
+    mutationFn: ({ id, body }: GenerateReportInput) => generateReport(id, body),
     ...options,
-    onSuccess: (_, id) => {
+    onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({
         queryKey: [QUERY_KEYS.MEETINGS, id],
       });

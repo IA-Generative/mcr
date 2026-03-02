@@ -1,6 +1,16 @@
-from typing import TypeGuard
+from enum import StrEnum
+from typing import Annotated, TypeGuard
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ReportType(StrEnum):
+    DECISION_RECORD = "DECISION_RECORD"
+    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+
+
+class ReportGenerationRequest(BaseModel):
+    report_types: Annotated[list[ReportType], Field(min_length=1, max_length=1)]
 
 
 class ReportParticipant(BaseModel):

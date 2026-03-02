@@ -8,27 +8,24 @@
       <div class="flex gap-5">
         <DsfrButton
           secondary
-          :class="{ active: choice === 'cr1' }"
+          :class="{ active: choice === 'DECISION_RECORD' }"
           class="fr-tile shadow-none"
-          @click="handleSelect('cr1')"
+          @click="handleSelect('DECISION_RECORD')"
         >
           {{ $t('meeting.report.type.cr1') }}
         </DsfrButton>
         <DsfrButton
           secondary
-          disabled
-          :class="{ active: choice === 'cr2' }"
+          :class="{ active: choice === 'DETAILED_SYNTHESIS' }"
           class="fr-tile shadow-none"
-          @click="handleSelect('cr2')"
+          @click="handleSelect('DETAILED_SYNTHESIS')"
         >
           {{ $t('meeting.report.type.cr2') }}
         </DsfrButton>
         <DsfrButton
           secondary
           disabled
-          :class="{ active: choice === 'cr3' }"
           class="fr-tile shadow-none"
-          @click="handleSelect('cr3')"
         >
           {{ $t('meeting.report.type.cr3') }}
         </DsfrButton>
@@ -39,7 +36,7 @@
           :disabled="!choice"
           @click="$emit('onGenerate', choice)"
         >
-          {{ $t(props.actionLabelKey) }}
+          {{ $t('meeting.report.generate') }}
         </DsfrButton>
       </div>
     </div>
@@ -47,17 +44,16 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{
-  actionLabelKey: string;
-}>();
-const choice = ref('cr1');
+import { ReportType } from '@/services/meetings/meetings.types';
 
-function handleSelect(value: string) {
+const choice = ref<ReportType>('DECISION_RECORD');
+
+function handleSelect(value: ReportType) {
   choice.value = value;
 }
 
 defineEmits<{
-  onGenerate: [values: string];
+  onGenerate: [value: ReportType];
 }>();
 </script>
 

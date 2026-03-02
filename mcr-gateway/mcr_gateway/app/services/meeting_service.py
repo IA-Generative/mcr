@@ -15,6 +15,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingUpdate,
     MeetingWithPresignedUrl,
+    ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -434,12 +435,14 @@ async def get_report(
 async def generate_report(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
+    body: ReportGenerationRequest,
 ) -> Response:
     """
     Get the transcription DOCX file of a given meeting
 
     Args:
         meeting_id (int): The ID of the meeting.
+        body (ReportGenerationRequest): The report generation request containing report types.
 
     Returns:
         DOCX file of the transcription meeting
@@ -447,7 +450,10 @@ async def generate_report(
     """
     try:
         async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(url=f"{meeting_id}/report")
+            response = await client.post(
+                url=f"{meeting_id}/report",
+                json=body.model_dump(),
+            )
             response.raise_for_status()
 
             return Response(status_code=response.status_code)
