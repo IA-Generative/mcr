@@ -11,6 +11,7 @@ import {
   getTranscriptionWaitingTime,
   initCapture,
   removeOne,
+  resetReport,
   startTranscription,
   stopCapture,
   update,
@@ -227,6 +228,19 @@ function generateReportMutation(options?: { onError?: (error: Error) => void }) 
   });
 }
 
+function resetReportMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: number) => resetReport(id),
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({
+        queryKey: [QUERY_KEYS.MEETINGS, id],
+      });
+    },
+  });
+}
+
 function updateMeetingStatus(meeting: MeetingDto, status: MeetingStatus): MeetingDto {
   return {
     ...meeting,
@@ -291,6 +305,7 @@ export function useMeetings() {
     uploadFileWithPresignedUrlMutation,
     getReportMutation,
     generateReportMutation,
+    resetReportMutation,
     lookupMeetingUrlMutation,
     getMeetingTranscriptionWaitTime,
   };

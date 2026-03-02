@@ -8,6 +8,7 @@ from mcr_meeting.app.db.db import router_db_session_context_manager
 from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_report,
+    reset_report,
     start_report,
 )
 from mcr_meeting.app.schemas.report_generation import (
@@ -89,6 +90,14 @@ async def generate_meeting_report_success(
     report_response: ReportResponse,
 ) -> None:
     complete_report(meeting_id=meeting_id, report_response=report_response)
+
+
+@router.post("/{meeting_id}/report/reset", status_code=204)
+async def reset_meeting_report(
+    meeting_id: int,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> None:
+    reset_report(meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid)
 
 
 @router.post("/{meeting_id}/report/failure")
