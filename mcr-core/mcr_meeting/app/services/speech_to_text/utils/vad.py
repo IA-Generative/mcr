@@ -1,7 +1,6 @@
 """Utility functions for processing audio and transcription segments during Speech To Text pipeline."""
 
 import re
-from typing import List, Optional, Tuple
 
 from loguru import logger
 
@@ -17,8 +16,8 @@ vad_settings = VADSettings()
 
 
 def get_vad_segments_from_diarization(
-    diarization: List[DiarizationSegment],
-) -> List[DiarizationSegment]:
+    diarization: list[DiarizationSegment],
+) -> list[DiarizationSegment]:
     """Filter diarization segments using VAD parameters to remove short segments and merge close ones.
 
     Args:
@@ -53,14 +52,14 @@ def get_vad_segments_from_diarization(
 
 def find_best_matching_diarization(
     transcription_span: TimeSpan,
-    diarization_spans: List[Tuple[TimeSpan, DiarizationSegment]],
-) -> Tuple[Optional[DiarizationSegment], float]:
+    diarization_spans: list[tuple[TimeSpan, DiarizationSegment]],
+) -> tuple[DiarizationSegment | None, float]:
     """Find the diarization segment with the maximum overlap (seconds) with
     a given transcription span.
 
     Returns a tuple of (best_matching_diarization_segment|None, overlap_seconds).
     """
-    best: Optional[DiarizationSegment] = None
+    best: DiarizationSegment | None = None
     max_overlap_seconds = 0.0
     for span, diarization_segment in diarization_spans:
         overlap_seconds = transcription_span.overlap(span)
@@ -90,15 +89,15 @@ def transcription_span_outside_diarization_range(
 
 
 def diarize_vad_transcription_segments(
-    vad_transcription_segments: List[TranscriptionSegment],
-    diarization_result: List[DiarizationSegment],
-) -> List[DiarizedTranscriptionSegment]:
+    vad_transcription_segments: list[TranscriptionSegment],
+    diarization_result: list[DiarizationSegment],
+) -> list[DiarizedTranscriptionSegment]:
     """Align VAD transcription segments with diarization results to assign speaker labels.
 
     This implementation uses the TimeSpan helper to make overlap/containment
     reasoning concise and self-documenting.
     """
-    aligned_segments: List[DiarizedTranscriptionSegment] = []
+    aligned_segments: list[DiarizedTranscriptionSegment] = []
 
     if not diarization_result:
         logger.warning("Diarization result is empty, returning empty speakers.")

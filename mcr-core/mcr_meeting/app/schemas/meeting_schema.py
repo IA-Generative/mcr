@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, timezone
-from typing import Optional, Self
+from typing import Self
 from urllib.parse import urlparse, urlunparse
 
 from pydantic import (
@@ -30,13 +30,13 @@ class MeetingBase(BaseModel):
     """
 
     name: str
-    url: Optional[str] = None
+    url: str | None = None
     name_platform: MeetingPlatforms
     creation_date: datetime
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    meeting_password: Optional[str] = None
-    meeting_platform_id: Optional[str] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    meeting_password: str | None = None
+    meeting_platform_id: str | None = None
 
     @model_validator(mode="after")
     def validate_url_based_on_platform(self) -> Self:

@@ -1,4 +1,4 @@
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from instructor import Instructor
 from langfuse import observe
@@ -15,7 +15,7 @@ T = TypeVar("T", bound=BaseModel)
 @observe(as_type="generation")
 def call_llm_with_structured_output(
     client: Instructor,
-    response_model: Type[T],
+    response_model: type[T],
     user_message_content: str,
     model_name: str = llm_config.LLM_MODEL_NAME,
     temperature: float = llm_config.TEMPERATURE,

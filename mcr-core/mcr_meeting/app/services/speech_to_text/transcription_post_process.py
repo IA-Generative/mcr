@@ -4,7 +4,6 @@ Utility functions for transcription processing.
 
 import re
 from itertools import groupby
-from typing import List
 
 from loguru import logger
 
@@ -13,8 +12,8 @@ from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSe
 
 
 def merge_consecutive_segments_per_speaker(
-    transcriptions: List[DiarizedTranscriptionSegment],
-) -> List[DiarizedTranscriptionSegment]:
+    transcriptions: list[DiarizedTranscriptionSegment],
+) -> list[DiarizedTranscriptionSegment]:
     """
     Merge consecutive speaker segments into a single segment for each speaker.
 
@@ -27,7 +26,7 @@ def merge_consecutive_segments_per_speaker(
             transcriptions for consecutive speakers.
     """
     logger.info("Merging consecutive speaker segments...")
-    merged_transcriptions: List[DiarizedTranscriptionSegment] = []
+    merged_transcriptions: list[DiarizedTranscriptionSegment] = []
 
     for i, (speaker, group) in enumerate(
         groupby(transcriptions, key=lambda x: x.speaker)

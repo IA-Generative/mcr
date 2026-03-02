@@ -1,5 +1,6 @@
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
+from typing import Any
 
 import httpx
 from fastapi import HTTPException, UploadFile
@@ -276,10 +277,10 @@ async def stop_meeting_capture_service(
 
 async def get_meetings_service(
     user_keycloak_uuid: UUID4,
-    search: Optional[str],
+    search: str | None,
     page: int,
     page_size: int,
-) -> List[Meeting]:
+) -> list[Meeting]:
     """
     Service pour interroger mcr-core et récupérer la liste des réunions.
 
@@ -292,7 +293,7 @@ async def get_meetings_service(
         List[Meeting]: Liste des réunions correspondant au filtre.
     """
     try:
-        params: Dict[str, Union[str, int]] = {}
+        params: dict[str, str | int] = {}
 
         if search:
             params["search"] = search

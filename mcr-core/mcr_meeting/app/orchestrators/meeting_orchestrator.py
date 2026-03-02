@@ -1,4 +1,3 @@
-from typing import List
 from uuid import UUID
 
 from mcr_meeting.app.models import Meeting
@@ -68,7 +67,7 @@ def get_meetings(
     search: str | None,
     page: int,
     page_size: int,
-) -> List[Meeting]:
+) -> list[Meeting]:
     return get_meetings_service(
         user_keycloak_uuid=user_keycloak_uuid,
         search=search,

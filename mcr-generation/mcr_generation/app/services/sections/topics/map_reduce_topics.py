@@ -1,7 +1,6 @@
 """Module for extracting and consolidating topics with a topic from meeting transcripts"""
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional
 
 import instructor
 from langchain.prompts import PromptTemplate
@@ -29,13 +28,13 @@ from mcr_generation.app.utils.function_execution_timer import log_execution_time
 
 class MapReduceTopics:
     max_workers: int = 4
-    meeting_subject: Optional[str]
-    speaker_mapping: Optional[str]
+    meeting_subject: str | None
+    speaker_mapping: str | None
 
     def __init__(
         self,
-        meeting_subject: Optional[str] = None,
-        speaker_mapping: Optional[Participants] = None,
+        meeting_subject: str | None = None,
+        speaker_mapping: Participants | None = None,
     ) -> None:
         self.llm_config = LLMConfig()
         self.client_instructor = instructor.from_openai(
@@ -68,7 +67,7 @@ class MapReduceTopics:
         return self.reduce_topics_into_content(all_topics)
 
     @observe(name="section_content_reduce")
-    def reduce_topics_into_content(self, all_topics: List[MappedTopic]) -> Content:
+    def reduce_topics_into_content(self, all_topics: list[MappedTopic]) -> Content:
         """
         Deduplicate and merge related topics using the LLM.
 
@@ -98,7 +97,7 @@ class MapReduceTopics:
         return resp
 
     @observe(name="section_content_map")
-    def map_extract_topics(self, chunk: Chunk) -> List[MappedTopic]:
+    def map_extract_topics(self, chunk: Chunk) -> list[MappedTopic]:
         prompt = PromptTemplate(
             template=MAP_PROMPT_TEMPLATE,
             input_variables=["chunk_text", "meeting_subject", "speaker_mapping"],

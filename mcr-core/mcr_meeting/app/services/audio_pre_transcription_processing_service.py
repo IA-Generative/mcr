@@ -1,7 +1,7 @@
 import os
 import tempfile
+from collections.abc import Iterator
 from io import BytesIO
-from typing import Iterator
 
 import ffmpeg
 from loguru import logger

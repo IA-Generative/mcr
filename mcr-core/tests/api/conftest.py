@@ -1,10 +1,11 @@
 import os
 import tempfile
 import uuid
+from collections.abc import Generator, Iterator
 from contextvars import Token
 from datetime import datetime, timezone
 from types import SimpleNamespace
-from typing import Any, Generator, Iterator
+from typing import Any
 from unittest.mock import Mock
 
 import pytest

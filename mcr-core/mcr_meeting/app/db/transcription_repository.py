@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from loguru import logger
 from sqlalchemy.orm import Session
 
@@ -10,8 +8,8 @@ from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 
 
 def save_transcription(
-    transcription_data: List[SpeakerTranscription],
-) -> List[Transcription]:
+    transcription_data: list[SpeakerTranscription],
+) -> list[Transcription]:
     """
     Persist a transcript in the database's transcription table
 
@@ -24,7 +22,7 @@ def save_transcription(
     with UnitOfWork():
         db = get_db_session_ctx()
 
-        saved_transcriptions: List[Transcription] = []
+        saved_transcriptions: list[Transcription] = []
         for item in transcription_data:
             existing_transcription = get_existing_transcription_segment(
                 meeting_id=item.meeting_id,
@@ -52,7 +50,7 @@ def save_transcription(
 
 def get_existing_transcription_segment(
     meeting_id: int, transcription_index: int, db_session: Session
-) -> Optional[Transcription]:
+) -> Transcription | None:
     existing_transcription = (
         db_session.query(Transcription)
         .filter_by(

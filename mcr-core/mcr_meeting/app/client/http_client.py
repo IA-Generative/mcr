@@ -1,4 +1,4 @@
-from typing import Mapping, Optional
+from collections.abc import Mapping
 
 import httpx
 
@@ -6,7 +6,7 @@ import httpx
 class HttpClient:
     JsonParams = Mapping[str, str | int | float | bool | None]
 
-    def __init__(self, base_url: str, token: Optional[str] = None):
+    def __init__(self, base_url: str, token: str | None = None):
         self.base_url = base_url
         self.token = token
 
@@ -17,7 +17,7 @@ class HttpClient:
         return headers
 
     async def post(
-        self, endpoint: str, data: Optional[dict[str, object]] = None
+        self, endpoint: str, data: dict[str, object] | None = None
     ) -> httpx.Response:
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             response = await client.post(

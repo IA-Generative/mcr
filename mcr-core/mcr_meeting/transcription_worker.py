@@ -255,7 +255,7 @@ def evaluate(zip_data: bytes) -> None:
 
             ref_json_path = reference_dir / f"{uid}.json"
             if ref_json_path.exists():
-                with open(ref_json_path, "r") as f:
+                with open(ref_json_path) as f:
                     reference_transcription = TranscriptionOutput.model_validate_json(
                         f.read()
                     )

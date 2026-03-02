@@ -1,5 +1,3 @@
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 from mcr_generation.app.schemas.base import Topic
@@ -10,21 +8,21 @@ class MappedFollowUpAction(BaseModel):
         ...,
         description=("Description de l'action à réaliser suite à la décision."),
     )
-    owner: Optional[str] = Field(
+    owner: str | None = Field(
         None,
         description=("Personne ou équipe responsable de l'action."),
     )
-    due_date: Optional[str] = Field(
+    due_date: str | None = Field(
         None,
         description=(
             "Date limite pour réaliser l'action (format : JJ/MM/AAAA ou relatif i.e dans une semaine)."
         ),
     )
-    justification: Optional[str] = Field(
+    justification: str | None = Field(
         None,
         description=("Explication de l'action (pourquoi elle est nécessaire)."),
     )
-    relevance_score: Optional[float] = Field(
+    relevance_score: float | None = Field(
         None,
         ge=0,
         le=1,
@@ -32,7 +30,7 @@ class MappedFollowUpAction(BaseModel):
             "Niveau de pertinence de l'action (0 = peu pertinent, 1 = très pertinent)."
         ),
     )
-    confidence_score: Optional[float] = Field(
+    confidence_score: float | None = Field(
         None,
         ge=0,
         le=1,
@@ -50,7 +48,7 @@ class MappedDecision(BaseModel):
             "Une décision correspond à un engagement ou une action convenue (faire ou ne pas faire quelque chose)."
         ),
     )
-    decision_facts: Optional[list[str]] = Field(
+    decision_facts: list[str] | None = Field(
         None,
         description=(
             "Liste de faits ou raisons ayant conduit à cette décision. "
@@ -58,7 +56,7 @@ class MappedDecision(BaseModel):
             "Sinon renvoyer une liste vide."
         ),
     )
-    decision_maker: Optional[str] = Field(
+    decision_maker: str | None = Field(
         None,
         description=(
             "Nom ou rôle de la personne ou de la direction qui a pris la décision "
@@ -66,7 +64,7 @@ class MappedDecision(BaseModel):
             "Si non mentionné explicitement, renvoyer null."
         ),
     )
-    decision_confidence: Optional[float] = Field(
+    decision_confidence: float | None = Field(
         None,
         ge=0,
         le=1,
@@ -75,7 +73,7 @@ class MappedDecision(BaseModel):
             "que cette phrase est bien une décision (1 = très sûr, 0 = très incertain)."
         ),
     )
-    decision_relevance: Optional[float] = Field(
+    decision_relevance: float | None = Field(
         None,
         ge=0,
         le=1,
@@ -84,7 +82,7 @@ class MappedDecision(BaseModel):
         ),
     )
 
-    followup_actions: Optional[list[MappedFollowUpAction]] = Field(
+    followup_actions: list[MappedFollowUpAction] | None = Field(
         None,
         description=(
             "Liste des actions concrètes à entreprendre suite à la décision "
@@ -95,7 +93,7 @@ class MappedDecision(BaseModel):
 
 
 class MappedTopicDetails(BaseModel):
-    subtopic: Optional[str] = Field(
+    subtopic: str | None = Field(
         None,
         description=(
             "Sous-sujet correspondant a un aspect spécifique du sujet principal (ex. 'budget 2024', 'lancement produit X'). "
@@ -110,21 +108,21 @@ class MappedTopicDetails(BaseModel):
             "Inclure UNIQUEMENT les informations les plus pertinentes."
         ),
     )
-    facts_justification: list[Optional[str]] = Field(
+    facts_justification: list[str | None] = Field(
         default_factory=list,
         description=(
             "Liste des justifications ou explications associées à chaque fait énoncé. "
             "Si aucune justification n’est disponible pour un fait, renvoyer null pour cet item."
         ),
     )
-    facts_quotes: list[Optional[str]] = Field(
+    facts_quotes: list[str | None] = Field(
         default_factory=list,
         description=(
             "Liste des citations directes issues de la transcription qui appuient chaque fait énoncé. "
             "Si aucun citation n’est disponible pour un fait, renvoyer null pour cet item."
         ),
     )
-    facts_relevance: Optional[float] = Field(
+    facts_relevance: float | None = Field(
         None,
         ge=0,
         le=1,
@@ -132,7 +130,7 @@ class MappedTopicDetails(BaseModel):
             "Niveau de pertinence des faits par rapport au sujet principal (1 = très pertinent, 0 = peu pertinent)."
         ),
     )
-    facts_confidence: Optional[float] = Field(
+    facts_confidence: float | None = Field(
         None,
         ge=0,
         le=1,

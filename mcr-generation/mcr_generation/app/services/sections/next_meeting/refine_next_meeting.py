@@ -1,5 +1,3 @@
-from typing import Optional
-
 import instructor
 from langchain.prompts import PromptTemplate
 from loguru import logger
@@ -23,7 +21,7 @@ class RefineNextMeeting:
     Seeds with the first chunk, then refines with subsequent chunks to extract NextMeeting information(title + objective).
     """
 
-    max_chunks: Optional[int] = None
+    max_chunks: int | None = None
 
     def __init__(self) -> None:
         self.llm_config = LLMConfig()

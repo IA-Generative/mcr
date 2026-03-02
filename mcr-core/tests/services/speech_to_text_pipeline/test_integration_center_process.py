@@ -1,7 +1,6 @@
 """Test integration of the speech-to-text pipeline center process."""
 
 from io import BytesIO
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -27,7 +26,7 @@ transcription_settings = WhisperTranscriptionSettings()
 def run_the_code_to_test(
     pipeline: SpeechToTextPipeline,
     pre_processed_audio_bytes: BytesIO,
-) -> List[DiarizedTranscriptionSegment]:
+) -> list[DiarizedTranscriptionSegment]:
     """Execute the center process flow that we want to test.
 
     This function contains the exact code from SpeechToTextPipeline.run() that
@@ -49,7 +48,7 @@ def run_the_code_to_test(
         logger.debug("No diarization result. Returning empty transcription.")
         return []
 
-    vad_spans: List[DiarizationSegment] = get_vad_segments_from_diarization(
+    vad_spans: list[DiarizationSegment] = get_vad_segments_from_diarization(
         diarization_result
     )
 

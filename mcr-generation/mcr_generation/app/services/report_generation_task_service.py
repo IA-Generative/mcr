@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from celery.signals import task_failure, task_success
@@ -65,6 +65,6 @@ def generate_report_from_docx_success(
 
 @task_failure.connect
 def set_meeting_failed_status_on_error(
-    sender: Optional[Any] = None, **kwargs: Any
+    sender: Any | None = None, **kwargs: Any
 ) -> None:
     pass

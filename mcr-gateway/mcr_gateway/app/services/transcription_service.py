@@ -1,5 +1,6 @@
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, Generator
+from typing import Any
 
 import httpx
 from fastapi import HTTPException
@@ -37,7 +38,7 @@ async def get_meeting_http_client(
 async def get_transcription_waiting_time_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Service to get the estimated waiting time for the transcription of a given meeting.
 
@@ -55,7 +56,7 @@ async def get_transcription_waiting_time_service(
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             response = await client.get(f"{meeting_id}/transcription/wait-time")
             response.raise_for_status()
-            json_response: Dict[str, Any] = response.json()
+            json_response: dict[str, Any] = response.json()
             return json_response
     except httpx.HTTPStatusError as e:
         logger.error(
@@ -71,7 +72,7 @@ async def get_transcription_waiting_time_service(
 
 async def get_queue_estimated_waiting_time_service(
     user_keycloak_uuid: UUID4,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Service to get the current global waiting time for transcription queue.
 
@@ -88,7 +89,7 @@ async def get_queue_estimated_waiting_time_service(
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             response = await client.get("/transcription/wait-time/estimation")
             response.raise_for_status()
-            json_response: Dict[str, Any] = response.json()
+            json_response: dict[str, Any] = response.json()
             return json_response
     except httpx.HTTPStatusError as e:
         logger.error(

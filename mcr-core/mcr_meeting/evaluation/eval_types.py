@@ -1,6 +1,5 @@
 from io import BytesIO
 from pathlib import Path
-from typing import List
 
 from pydantic import BaseModel
 
@@ -8,7 +7,7 @@ from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSe
 
 
 class TranscriptionOutput(BaseModel):
-    segments: List[DiarizedTranscriptionSegment]
+    segments: list[DiarizedTranscriptionSegment]
 
     @property
     def text(self) -> str:

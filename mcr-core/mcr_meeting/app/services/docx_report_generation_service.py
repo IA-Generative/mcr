@@ -1,6 +1,6 @@
 import os
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any
 
 from docxtpl import RichText
 
@@ -17,7 +17,7 @@ from mcr_meeting.app.services.report_content.template_renderer import render_to_
 
 
 def generate_docx_decisions_reports_from_template(
-    response: ReportGenerationResponse, meeting_name: Optional[str]
+    response: ReportGenerationResponse, meeting_name: str | None
 ) -> BytesIO:
     """
     Generates a DOCX decision report from a predefined template and replaces placeholders with meeting data.
@@ -73,8 +73,8 @@ class ReportDocxGenerator(TemplatedDocxGenerator):
     def build_context(
         self,
         meeting_name: str,
-        objective: Optional[str],
-        next_meeting: Optional[str],
+        objective: str | None,
+        next_meeting: str | None,
         decisions_json: ReportGenerationResponse,
         participants: list[ReportParticipant],
     ) -> dict[str, str | RichText]:
@@ -145,7 +145,7 @@ class ReportDocxGenerator(TemplatedDocxGenerator):
 
 
 def format_title_for_report(
-    header: Optional[ReportHeader], meeting_name: Optional[str]
+    header: ReportHeader | None, meeting_name: str | None
 ) -> str:
     return "Compte-rendu " + (
         header.title
@@ -158,7 +158,7 @@ def format_title_for_report(
 
 def generate_detailed_synthesis_docx(
     response: DetailedSynthesisGenerationResponse,
-    meeting_name: Optional[str],
+    meeting_name: str | None,
 ) -> BytesIO:
     title = _format_title_detailed_synthesis(response.header, meeting_name)
     data = {
@@ -184,7 +184,7 @@ def _get_style_template_path() -> str:
 
 
 def _format_title_detailed_synthesis(
-    header: Optional[ReportHeader], meeting_name: Optional[str]
+    header: ReportHeader | None, meeting_name: str | None
 ) -> str:
     if header is not None and header.title is not None:
         return header.title

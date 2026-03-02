@@ -1,7 +1,6 @@
 import asyncio
 import time
 from io import BytesIO
-from typing import Optional
 
 from loguru import logger
 from playwright.async_api import ConsoleMessage, Page, async_playwright
@@ -29,8 +28,8 @@ class MeetingAudioRecorder:
         self.meeting_id = meeting_id
         self.pending_uploads = UploadQueue()
         self.teardown_after_stop_is_finished = False
-        self.meeting_transition_client: Optional[MeetingApiClient] = None
-        self._connected_at: Optional[float] = None
+        self.meeting_transition_client: MeetingApiClient | None = None
+        self._connected_at: float | None = None
 
     async def start(self) -> None:
         """

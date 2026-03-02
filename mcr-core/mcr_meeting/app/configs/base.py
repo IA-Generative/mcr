@@ -1,7 +1,5 @@
 """Base settings class contains only important fields."""
 
-from typing import Optional
-
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -120,11 +118,11 @@ class WhisperTranscriptionSettings(BaseSettings):
     Configuration settings for Whisper Transcription
     """
 
-    language: Optional[str] = Field(
+    language: str | None = Field(
         default="fr",
         description="The language of the audio. If None, language detection will be performed.",
     )
-    word_timestamps: Optional[bool] = Field(
+    word_timestamps: bool | None = Field(
         default=True,
         description="For the model to return word_timestamps or just segment timestamps.",
     )
@@ -357,7 +355,7 @@ class TranscriptionApiSettings(BaseSettings):
     API_LANGUAGE: str = Field(
         default="fr", description="Language code for transcription"
     )
-    API_TIMEOUT: Optional[float] = Field(
+    API_TIMEOUT: float | None = Field(
         default=None,
         description="API request timeout in seconds, None means no timeout",
     )

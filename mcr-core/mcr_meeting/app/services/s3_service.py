@@ -1,6 +1,7 @@
 import itertools
+from collections.abc import Iterable, Iterator
 from io import BytesIO
-from typing import Iterable, Iterator, Tuple, cast
+from typing import cast
 
 from loguru import logger
 from mypy_boto3_s3.type_defs import CompletedPartTypeDef, ObjectIdentifierTypeDef
@@ -121,7 +122,7 @@ def get_objects_list_from_prefix(prefix: str) -> Iterator[S3Object]:
 
 def get_extension_from_object_list(
     it: Iterator[S3Object],
-) -> Tuple[Iterator[S3Object], str]:
+) -> tuple[Iterator[S3Object], str]:
     """
     Extract file extension from the first S3 object in the iterator.
 
