@@ -98,9 +98,9 @@
 import { useForm, useIsFormValid } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import {
-  AddMeetingSchema,
+  VisioMeetingSchema,
   comuPrivateUrlValidator,
-  meetingFieldsToMeetingDto,
+  visioMeetingFieldsToVisioMeetingDto,
   webconfUrlValidator,
 } from './meeting.schema';
 import {
@@ -130,7 +130,7 @@ const addWithUrl = ref(!props.initialValues?.meeting_platform_id);
 
 const initialValuesWithDefaults = props.initialValues;
 const { defineField, errors, handleSubmit, setValues, setErrors } = useForm({
-  validationSchema: toTypedSchema(AddMeetingSchema),
+  validationSchema: toTypedSchema(VisioMeetingSchema),
   initialValues: initialValuesWithDefaults,
 });
 
@@ -139,7 +139,7 @@ const isValid = useIsFormValid();
 const btnDisabled = computed(() => props.loading || !isValid);
 
 const onSubmit = handleSubmit((values) => {
-  const dto = meetingFieldsToMeetingDto(values);
+  const dto = visioMeetingFieldsToVisioMeetingDto(values);
   emit('submit', dto);
 });
 

@@ -125,35 +125,73 @@ function selectErrorMessage(url: string | null) {
 
 type AddOnlineMeetingFields = Omit<AddOnlineMeetingDto, 'name_platform' | 'creation_date'>;
 
-export const AddMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup.object({
-  name: yup.string().required().label(t('meeting.form.fields.name')),
-  url: yup
-    .string()
-    .url(notSupportedErrorMessage.value)
-    .nullable()
-    .default(null)
-    .test(
-      'valid-url',
-      (urlRef) => selectErrorMessage(urlRef.value),
-      (url) => validateUrl(url),
-    )
-    .label(t('meeting.form.fields.url.label')),
-  meeting_password: yup
-    .string()
-    .nullable()
-    .default(null)
-    .min(6)
-    .max(8)
-    .label(t('meeting.form.fields.external-password')),
-  meeting_platform_id: yup
-    .string()
-    .nullable()
-    .default(null)
-    .min(4)
-    .label(t('meeting.form.fields.external-id')),
-});
+export const VisioMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup
+  .object({
+    name: yup.string().required().label(t('meeting.form.fields.name')),
+    url: yup
+      .string()
+      .transform((value) => (value?.trim() === '' ? null : value))
+      .url(notSupportedErrorMessage.value)
+      .nullable()
+      .default(null)
+      .test(
+        'valid-url',
+        (urlRef) => selectErrorMessage(urlRef.value),
+        (url) => validateUrl(url),
+      )
+      .label(t('meeting.form.fields.url.label')),
+    meeting_password: yup
+      .string()
+      .transform((value) => (value?.trim() === '' ? null : value))
+      .nullable()
+      .default(null)
+      .min(6)
+      .max(8)
+      .label(t('meeting.form.fields.external-password')),
+    meeting_platform_id: yup
+      .string()
+      .transform((value) => (value?.trim() === '' ? null : value))
+      .nullable()
+      .default(null)
+      .min(4)
+      .label(t('meeting.form.fields.external-id')),
+  })
+  .test('url_or_id_password', '', function (values, context) {
+    const { url, meeting_platform_id, meeting_password } = values || {};
 
-export function meetingFieldsToMeetingDto(fields: AddOnlineMeetingFields): AddOnlineMeetingDto {
+    const hasUrl = url !== null && url !== undefined;
+    const hasId = meeting_platform_id !== null && meeting_platform_id !== undefined;
+    const hasPassword = meeting_password !== null && meeting_password !== undefined;
+
+    if (hasUrl || (hasId && hasPassword)) {
+      return true;
+    }
+
+    if (!hasUrl && !hasId && !hasPassword) {
+      return context.createError({
+        path: 'url',
+        message: t('meeting-v2.visio-form.errors.no-field'),
+      });
+    }
+
+    if (hasId && !hasPassword) {
+      return context.createError({
+        path: 'meeting_password',
+        message: t('meeting-v2.visio-form.errors.id-no-password'),
+      });
+    }
+
+    if (!hasId && hasPassword) {
+      return context.createError({
+        path: 'meeting_platform_id',
+        message: t('meeting-v2.visio-form.errors.password-no-id'),
+      });
+    }
+  });
+
+export function visioMeetingFieldsToVisioMeetingDto(
+  fields: AddOnlineMeetingFields,
+): AddOnlineMeetingDto {
   const name_platform = guessPlatformUsingUrl(fields.url);
 
   const dto: AddOnlineMeetingDto = {
