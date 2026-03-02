@@ -312,6 +312,62 @@ def test_complete_transcription() -> None:
     assert result.status == MeetingStatus.TRANSCRIPTION_DONE
 
 
+def test_update_transcription(
+    orchestrator_user: User,
+    user_keycloak_uuid: UUID,
+) -> None:
+    """Test updating transcription from TRANSCRIPTION_DONE stays TRANSCRIPTION_DONE."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    result = mts.update_transcription(
+        meeting_id=meeting.id,
+        user_keycloak_uuid=user_keycloak_uuid,
+    )
+
+    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
+
+
+def test_update_transcription_from_report_done(
+    orchestrator_user: User,
+    user_keycloak_uuid: UUID,
+) -> None:
+    """Test updating transcription from REPORT_DONE transitions to TRANSCRIPTION_DONE."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.REPORT_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    result = mts.update_transcription(
+        meeting_id=meeting.id,
+        user_keycloak_uuid=user_keycloak_uuid,
+    )
+
+    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
+
+
+def test_update_transcription_bad_status(
+    orchestrator_user: User,
+    user_keycloak_uuid: UUID,
+) -> None:
+    """Test that update_transcription raises exception when meeting is in wrong status."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    with pytest.raises(Exception):
+        mts.update_transcription(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=user_keycloak_uuid,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Tests – Report
 # ---------------------------------------------------------------------------
@@ -365,6 +421,43 @@ def test_complete_report(
     assert mock_send_email.call_count == 1
 
 
+def test_reset_report(
+    orchestrator_user: User,
+    user_keycloak_uuid: UUID,
+) -> None:
+    """Test resetting report transitions to TRANSCRIPTION_DONE."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.REPORT_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    result = mts.reset_report(
+        meeting_id=meeting.id,
+        user_keycloak_uuid=user_keycloak_uuid,
+    )
+
+    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
+
+
+def test_reset_report_bad_status(
+    orchestrator_user: User,
+    user_keycloak_uuid: UUID,
+) -> None:
+    """Test that reset_report raises exception when meeting is in wrong status."""
+    meeting = MeetingFactory.create(
+        owner=orchestrator_user,
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    with pytest.raises(Exception):
+        mts.reset_report(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=user_keycloak_uuid,
+        )
+
+
 # ---------------------------------------------------------------------------
 # Error case
 # ---------------------------------------------------------------------------
@@ -382,3 +475,25 @@ def test_init_capture_bad_status(user_keycloak_uuid: UUID) -> None:
             meeting_id=meeting.id,
             user_keycloak_uuid=user_keycloak_uuid,
         )
+
+
+def test_complete_transcription_from_transcription_done_fails() -> None:
+    """Test that complete_transcription from TRANSCRIPTION_DONE raises exception."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    with pytest.raises(Exception):
+        mts.complete_transcription(meeting_id=meeting.id)
+
+
+def test_complete_transcription_from_report_done_fails() -> None:
+    """Test that complete_transcription from REPORT_DONE raises exception."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.REPORT_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    with pytest.raises(Exception):
+        mts.complete_transcription(meeting_id=meeting.id)
