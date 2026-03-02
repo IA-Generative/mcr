@@ -15,28 +15,39 @@ const { mockGetAllMeetingsQuery, mockUseQuery, mockFormatDurationMinutes, mockAd
     };
   });
 
-// Mock du composable useToaster
+// MeetingListPage renders child components that each use different parts of useMeetings().
+// mockUseMeetings uses a Proxy so any unspecified property returns a default mock mutation,
+// avoiding the need to explicitly mock every mutation used by every child component.
+vi.mock('@/services/meetings/use-meeting', async () => {
+  const { mockUseMeetings } = await import('@/vitest.setup');
+  return mockUseMeetings({ getAllMeetingsQuery: mockGetAllMeetingsQuery });
+});
+
 vi.mock('@/composables/use-toaster', () => ({
   default: () => ({
     addErrorMessage: mockAddErrorMessage,
   }),
 }));
 
-// Mock du service des meetings
-vi.mock('@/services/meetings/use-meeting', () => ({
-  useMeetings: () => ({
-    getAllMeetingsQuery: mockGetAllMeetingsQuery,
-  }),
-}));
-
 // Mock de useQuery pour le temps d'attente global
-vi.mock('@tanstack/vue-query', () => ({
+vi.mock('@tanstack/vue-query', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@tanstack/vue-query')>()),
   useQuery: mockUseQuery,
 }));
 
 // Mock de formatDurationMinutes
 vi.mock('@/utils/timeFormatting', () => ({
   formatDurationMinutes: mockFormatDurationMinutes,
+}));
+
+// Mock de useFeatureFlag pour éviter l'initialisation d'Unleash au niveau module
+vi.mock('@/composables/use-feature-flag', () => ({
+  useFeatureFlag: () => ref(false),
+}));
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+  useRoute: () => ({ params: {} }),
 }));
 
 describe('MeetingListPage - 24h warning banner', () => {
