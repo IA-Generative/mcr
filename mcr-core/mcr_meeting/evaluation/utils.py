@@ -14,22 +14,7 @@ from pyannote.metrics.diarization import (
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
 )
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
-    filter_noise_from_audio_bytes,
-    normalize_audio_bytes_to_wav_bytes,
-)
-from mcr_meeting.app.services.feature_flag_service import (
-    FeatureFlag,
-    FeatureFlagClient,
-    get_feature_flag_client,
-)
 from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
-from mcr_meeting.app.services.speech_to_text.speech_to_text import (
-    SpeechToTextPipeline,
-)
-from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
-    merge_consecutive_segments_per_speaker,
-)
 from mcr_meeting.evaluation.eval_types import (
     DiarizationMetrics,
     EvaluationMetrics,
@@ -40,51 +25,6 @@ from mcr_meeting.evaluation.eval_types import (
     TranscriptionOutput,
 )
 from mcr_meeting.evaluation.text_normalization import french_text_normalizer
-
-
-class AudioFileProcessor:
-    """Handles audio file processing and transcription"""
-
-    def __init__(
-        self,
-        model: object | None = None,
-        feature_flag_client: FeatureFlagClient | None = None,
-    ):
-        """Initialize with an optional ASR model and feature flag client"""
-        self.is_model_specified = False
-        if model is not None:
-            logger.info("Using specified model for transcription: {}", model)
-            self.model = model
-            self.is_model_specified = True
-        self.feature_flag_client = feature_flag_client
-        self.speech_to_text_pipeline = SpeechToTextPipeline()
-
-    def process_audio_file(self, audio_bytes: BytesIO) -> TranscriptionOutput:
-        """Process a single audio file and return transcription result"""
-
-        normalized_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
-
-        feature_flag_client = get_feature_flag_client()
-
-        # Apply noise filtering only if feature flag is enabled
-        if feature_flag_client and feature_flag_client.is_enabled(
-            FeatureFlag.AUDIO_NOISE_FILTERING
-        ):
-            logger.info("Noise filtering enabled")
-            processed_bytes = filter_noise_from_audio_bytes(normalized_bytes)
-        else:
-            logger.info("Noise filtering disabled, skipping filtering step")
-            processed_bytes = normalized_bytes
-
-        raw_diarized_transcription_segments = self.speech_to_text_pipeline.run(
-            processed_bytes
-        )
-
-        segments = merge_consecutive_segments_per_speaker(
-            raw_diarized_transcription_segments
-        )
-
-        return TranscriptionOutput(segments=segments)
 
 
 class MetricsCalculator:
