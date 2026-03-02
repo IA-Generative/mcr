@@ -285,6 +285,7 @@
     "report": {
       "generate": "Générer le compte-rendu",
       "download": "Télécharger le compte-rendu",
+      "reset": "Regénérer le compte-rendu",
       "disclaimer": {
         "title": "Choisissez le format",
         "description": "L'outil FCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."

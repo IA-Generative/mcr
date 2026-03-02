@@ -2,6 +2,7 @@
   <component
     :is="currentStateComponent"
     @on-generate="(reportType: ReportType) => onGetOrGenerateReport(reportType)"
+    @on-reset="onResetReport"
   />
 </template>
 
@@ -28,7 +29,7 @@ const props = defineProps<{
 const toaster = useToaster();
 const { t } = useI18n();
 
-const { getReportMutation, generateReportMutation } = useMeetings();
+const { getReportMutation, generateReportMutation, resetReportMutation } = useMeetings();
 const { mutate: generateReport } = generateReportMutation({
   onError: () => {
     toaster.addErrorMessage(t('error.report-generation')!);
@@ -44,6 +45,12 @@ const { mutate: getReport } = getReportMutation({
     toaster.addErrorMessage(t('error.default'));
   },
 });
+
+const { mutate: resetReportStatus } = resetReportMutation();
+
+function onResetReport() {
+  resetReportStatus(props.meeting.id);
+}
 
 function onGetOrGenerateReport(reportType?: ReportType) {
   if (props.meeting.status == 'REPORT_DONE') getReport(props.meeting.id);

@@ -149,6 +149,10 @@ export async function generateReport(id: number, body: ReportGenerationRequest):
   await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report`, body);
 }
 
+export async function resetReport(id: number): Promise<void> {
+  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report/reset`);
+}
+
 export async function getTranscriptionWaitingTime(
   meeting_id: number,
 ): Promise<import('./meetings.types').TranscriptionWaitingTimeResponse> {
