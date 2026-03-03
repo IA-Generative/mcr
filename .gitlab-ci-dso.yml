@@ -1,12 +1,15 @@
 # When pushing to dev or data-dev, we need to build new images.
 # Else, we can promote already built images to the next env
 .is-build-mode: &is-build-mode '$CI_COMMIT_BRANCH == "data-dev" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
+.is-manual-trigger: &is-manual-trigger '$CI_PIPELINE_SOURCE == "web"'
 .is-mep-tag: &is-mep-tag $CI_COMMIT_TAG =~ /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}$/
 
 workflow:
   # Trigger pipeline on push to long running branches or on prod version tag (x.y.z)
   rules:
     - if: *is-mep-tag
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
     - if: '$CI_COMMIT_BRANCH == "data-dev" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
       when: always
@@ -97,6 +100,7 @@ docker-build-frontend:
     EXTRA_BUILD_ARGS: "--target=production"
   stage: docker-build
   rules:
+    - if: *is-manual-trigger
     - if: *is-build-mode
       changes:
         - mcr-frontend/**/*
@@ -119,6 +123,7 @@ docker-build-core:
     DOCKERFILE: "mcr-core/Dockerfile"
     EXTRA_BUILD_ARGS: "--target=api"
   rules:
+    - if: *is-manual-trigger
     - if: *is-build-mode
       changes:
         - mcr-core/**/*
@@ -142,6 +147,7 @@ docker-build-transcription-worker:
     DOCKERFILE: "mcr-core/Dockerfile"
     EXTRA_BUILD_ARGS: "--target=worker"
   rules:
+    - if: *is-manual-trigger
     - if: *is-build-mode
       changes:
         - mcr-core/**/*
@@ -165,6 +171,7 @@ docker-build-gateway:
     DOCKERFILE: "mcr-gateway/Dockerfile"
     EXTRA_BUILD_ARGS: "--target=production"
   rules:
+    - if: *is-manual-trigger
     - if: *is-build-mode
       changes:
         - mcr-gateway/**/*
@@ -188,6 +195,7 @@ docker-build-generation:
     DOCKERFILE: "mcr-generation/Dockerfile"
     EXTRA_BUILD_ARGS: "--target=production"
   rules:
+    - if: *is-manual-trigger
     - if: *is-build-mode
       changes:
         - mcr-generation/**/*
@@ -211,6 +219,7 @@ docker-build-capture-worker:
     DOCKERFILE: "mcr-capture-worker/Dockerfile"
     EXTRA_BUILD_ARGS: ""
   rules:
+    - if: *is-manual-trigger
     - if: *is-build-mode
       changes:
         - mcr-capture-worker/**/*
