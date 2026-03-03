@@ -107,6 +107,22 @@ class TestFrenchTextNormalizer:
         # "alors" should not be removed from inside a longer word
         assert "elabor" in french_text_normalizer("elaboration")
 
+    # --- consecutive duplicate removal ---
+
+    def test_two_consecutive_duplicates_collapsed(self):
+        assert french_text_normalizer("le le probleme") == "le probleme"
+
+    def test_three_consecutive_duplicates_collapsed(self):
+        assert french_text_normalizer("de de de cette") == "de cette"
+
+    def test_non_consecutive_duplicates_kept(self):
+        # Same word repeated but not consecutively should be preserved
+        assert french_text_normalizer("le probleme le") == "le probleme le"
+
+    def test_sentence_with_mixed_duplicates(self):
+        # mirrors the example from the spec
+        assert french_text_normalizer("le le problème du du de de de cette") == "le probleme du de cette"
+
 
 class TestMetricsCalculatorNormalization:
     def test_normalization_is_applied_before_scoring(self):
@@ -135,6 +151,16 @@ class TestMetricsCalculatorNormalization:
         result = MetricsCalculator.calculate_transcription_metrics(
             reference_text="il y a 3 chats et 20 chiens",
             hypothesis_text="il y a trois chats et vingt chiens",
+        )
+        assert result.wer == 0.0
+        assert result.cer == 0.0
+
+    def test_consecutive_duplicates_ignored_in_scoring(self):
+        """A reference with repeated words should score 0 against
+        the deduplicated transcript."""
+        result = MetricsCalculator.calculate_transcription_metrics(
+            reference_text="le le problème du du alors de de de cette question",
+            hypothesis_text="le probleme du de cette question",
         )
         assert result.wer == 0.0
         assert result.cer == 0.0
