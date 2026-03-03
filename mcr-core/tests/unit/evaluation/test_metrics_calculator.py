@@ -36,28 +36,53 @@ class TestFrenchTextNormalizer:
     def test_already_normalized(self):
         assert french_text_normalizer("bonjour monde") == "bonjour monde"
 
+    # --- dataset-specific ground-truth characters ---
+
+    def test_underscore_becomes_space(self):
+        assert french_text_normalizer("hello_world") == "hello world"
+
+    def test_double_quote_removal(self):
+        assert french_text_normalizer('say "hello"') == "say hello"
+
+    def test_parentheses_removal(self):
+        assert french_text_normalizer("(bonjour)") == "bonjour"
+
+    def test_bracket_removal(self):
+        assert french_text_normalizer("[bonjour]") == "bonjour"
+
+    def test_at_symbol_removal(self):
+        assert french_text_normalizer("user@domain") == "user domain"
+
+    def test_plus_hash_equals_removal(self):
+        assert french_text_normalizer("a+b#c=d") == "a b c d"
+
+    def test_slash_angle_brackets_removal(self):
+        assert french_text_normalizer("a/b <c> d") == "a b c d"
+
+    def test_p13_marker_removal(self):
+        assert french_text_normalizer("¤P13¤ bonjour") == "bonjour"
+
+    def test_p13_marker_inline_removal(self):
+        assert french_text_normalizer("bonjour ¤P13¤ monde") == "bonjour monde"
+
+    def test_truncated_word_before_space_removed(self):
+        assert french_text_normalizer("qu- il vient") == "il vient"
+
+    def test_truncated_word_at_end_removed(self):
+        assert french_text_normalizer("il vient s-") == "il vient"
+
+    def test_normal_hyphenated_word_split(self):
+        # vingt-trois: hyphen between two words → two tokens (existing behaviour)
+        assert french_text_normalizer("vingt-trois") == "vingt trois"
+
 
 class TestMetricsCalculatorNormalization:
-    def test_punctuation_difference_does_not_affect_score(self):
+    def test_normalization_is_applied_before_scoring(self):
+        """A dirty reference with markers, accents, brackets and truncated words
+        should score 0 against its clean equivalent."""
         result = MetricsCalculator.calculate_transcription_metrics(
-            reference_text="Bonjour.",
-            hypothesis_text="bonjour",
-        )
-        assert result.wer == 0.0
-        assert result.cer == 0.0
-
-    def test_accent_difference_does_not_affect_score(self):
-        result = MetricsCalculator.calculate_transcription_metrics(
-            reference_text="C'est très bien",
-            hypothesis_text="c est tres bien",
-        )
-        assert result.wer == 0.0
-        assert result.cer == 0.0
-
-    def test_case_difference_does_not_affect_score(self):
-        result = MetricsCalculator.calculate_transcription_metrics(
-            reference_text="Bonjour Monde",
-            hypothesis_text="bonjour monde",
+            reference_text="¤P13¤ Ça s'est [très] bien passé, n'est-ce pas?",
+            hypothesis_text="ca s est tres bien passe n est ce pas",
         )
         assert result.wer == 0.0
         assert result.cer == 0.0
@@ -75,3 +100,10 @@ class TestMetricsCalculatorNormalization:
             hypothesis_text="xyz",
         )
         assert result.cer > 0.0
+
+    def test_missing_words_in_hypothesis_produce_nonzero_wer(self):
+        result = MetricsCalculator.calculate_transcription_metrics(
+            reference_text="je vais bien merci",
+            hypothesis_text="je vais",
+        )
+        assert result.wer > 0.0
