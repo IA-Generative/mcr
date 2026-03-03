@@ -75,14 +75,66 @@ class TestFrenchTextNormalizer:
         # vingt-trois: hyphen between two words → two tokens (existing behaviour)
         assert french_text_normalizer("vingt-trois") == "vingt trois"
 
+    # --- number-to-words conversion ---
+
+    def test_integer_replaced_by_words(self):
+        assert french_text_normalizer("234") == "deux cent trente quatre"
+
+    def test_number_inline(self):
+        assert french_text_normalizer("il y a 3 chats") == "il y a trois chats"
+
+    def test_zero(self):
+        assert french_text_normalizer("0") == "zero"
+
+    # --- interjection removal ---
+
+    def test_euh_removed(self):
+        assert french_text_normalizer("euh bonjour") == "bonjour"
+
+    def test_hein_removed(self):
+        assert french_text_normalizer("c'est bien hein") == "c est bien"
+
+    def test_donc_removed(self):
+        assert french_text_normalizer("donc on y va") == "on y va"
+
+    def test_voila_removed(self):
+        assert french_text_normalizer("voilà c'est fait") == "c est fait"
+
+    def test_multiple_interjections_removed(self):
+        assert french_text_normalizer("euh donc bonjour hein") == "bonjour"
+
+    def test_interjection_not_removed_as_substring(self):
+        # "alors" should not be removed from inside a longer word
+        assert "elabor" in french_text_normalizer("elaboration")
+
 
 class TestMetricsCalculatorNormalization:
     def test_normalization_is_applied_before_scoring(self):
-        """A dirty reference with markers, accents, brackets and truncated words
-        should score 0 against its clean equivalent."""
+        """A dirty reference with markers, accents, brackets, truncated words,
+        interjections and numbers should score 0 against its clean equivalent."""
         result = MetricsCalculator.calculate_transcription_metrics(
-            reference_text="¤P13¤ Ça s'est [très] bien passé, n'est-ce pas?",
+            reference_text="¤P13¤ euh Ça s'est [très] bien passé, n'est-ce pas? hein",
             hypothesis_text="ca s est tres bien passe n est ce pas",
+        )
+        assert result.wer == 0.0
+        assert result.cer == 0.0
+
+    def test_interjections_ignored_in_scoring(self):
+        """Reference cluttered with filler words should score 0 against the
+        clean transcript."""
+        result = MetricsCalculator.calculate_transcription_metrics(
+            reference_text="euh donc je vais hein bien merci euh",
+            hypothesis_text="je vais bien merci",
+        )
+        assert result.wer == 0.0
+        assert result.cer == 0.0
+
+    def test_numbers_converted_to_words_for_scoring(self):
+        """A reference with digits should score 0 against its fully-written
+        French equivalent."""
+        result = MetricsCalculator.calculate_transcription_metrics(
+            reference_text="il y a 3 chats et 20 chiens",
+            hypothesis_text="il y a trois chats et vingt chiens",
         )
         assert result.wer == 0.0
         assert result.cer == 0.0
