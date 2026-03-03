@@ -15,12 +15,14 @@ Règles STRICTES (à respecter absolument)
 5) Ne change pas le style ni le registre.
 6) Si une correction est incertaine, ne la fais pas.
 7) Interdiction absolue d’ajouter tout marquage typographique ou formatage : pas de **gras**, pas de parenthèses ajoutées, pas de guillemets ajoutés, pas d’astérisques, pas de balises, pas de commentaires.
+8) Si le texte contient des balises exactes <separator>, tu ne dois en aucun cas les modifier, les supprimer, les déplacer, les dupliquer ou en altérer le contenu. Elles doivent être conservées strictement à l’identique, exactement à la même position dans le texte.
 
 Le texte de sortie doit être en texte brut strict, sans aucun caractère ajouté pour mettre en évidence les corrections.
 
 Sortie
 - Retourne uniquement le texte corrigé final, sans explication, sans commentaires, sans guillemets, sans liste.
 - Conserve les sauts de ligne du texte d’origine.
+- Conserve strictement toutes les occurrences exactes de <separator> telles qu’elles apparaissent dans le texte d’origine.
 
 Texte à corriger :
 <<<
