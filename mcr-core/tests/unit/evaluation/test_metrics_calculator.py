@@ -1,3 +1,5 @@
+import pytest
+
 from mcr_meeting.evaluation.utils import MetricsCalculator
 from mcr_meeting.evaluation.utils.text_normalization import french_text_normalizer
 
@@ -185,3 +187,52 @@ class TestMetricsCalculatorNormalization:
             hypothesis_text="je vais",
         )
         assert result.wer > 0.0
+
+
+@pytest.mark.parametrize(
+    "reference_text, hypothesis_text",
+    [
+        pytest.param(
+            "euh ben bonjour à tous_les trois + euh nous sommes ici pour une réunion"
+            " qui va durer vingt minutes euh est-ce_que vous voulez vous présenter",
+            "Bonjour à tous les trois. Nous sommes ici pour une réunion qui va durer"
+            " 20 minutes. Est-ce que vous voulez vous présenter ?",
+            id="greeting_with_fillers",
+        ),
+        pytest.param(
+            "oui bien sûr euh bastien euh donc euh nous sommes donc dans l' association euh"
+            " pour un changement culturel important et euh du_coup euh je pense que faire"
+            " cette réunion est intéressante pour euh pour voir un petit peu ce qu' on peut faire",
+            "Oui, bien sûr. Bastien, nous sommes dans l'association pour un changement"
+            " culturel important et du coup, je pense que faire cette réunion est"
+            " intéressante pour voir un petit peu ce qu'on peut faire.",
+            id="introduction_with_fillers",
+        ),
+        pytest.param(
+            "éventuellement @ puisqu' on va essayer aussi de leur vendre nos produits donc euh @",
+            "Éventuellement, puisqu'on va essayer aussi de leur vendre nos produits.",
+            id="eventually_with_markers",
+        ),
+        pytest.param(
+            "merci très bien + ensuite euh + jean-marc + * + ca va",
+            "Merci.  Merci.  Merci.  Merci.  Merci.  Très bien. Ensuite, Jean-Marc, ça va ?",
+            id="repeated_merci_collapsed",
+        ),
+        pytest.param(
+            "il faudrait penser aux intelligences artificielles parce_que je vois qu' il_y a"
+            " quand même des grosses pertes de mémoire parmi nos membres et ça ça pourrait être"
+            " utile de les intégrer parce_que",
+            "il faudrait penser aux intelligences artificielles,  parce que je vois qu'il y a"
+            " quand même des grosses pertes de mémoire parmi nos membres. Et  Ça pourrait être"
+            " utile de les intégrer, parce que",
+            id="ai_memory_with_fillers",
+        ),
+    ],
+)
+def test_real_examples(reference_text: str, hypothesis_text: str) -> None:
+    result = MetricsCalculator.calculate_transcription_metrics(
+        reference_text=reference_text,
+        hypothesis_text=hypothesis_text,
+    )
+    assert result.wer == 0.0
+    assert result.cer == 0.0
