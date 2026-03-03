@@ -112,6 +112,7 @@ module = [
     "whisper_timestamped",
     "jiwer",
     "ffmpeg",
+    "num2words",
     "pyannote.*",
     "faster_whisper",
     "soundfile",

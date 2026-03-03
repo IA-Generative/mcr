@@ -123,7 +123,10 @@ class TestFrenchTextNormalizer:
 
     def test_sentence_with_mixed_duplicates(self):
         # mirrors the example from the spec
-        assert french_text_normalizer("le le problème du du de de de cette") == "le probleme du de cette"
+        assert (
+            french_text_normalizer("le le problème du du de de de cette")
+            == "le probleme du de cette"
+        )
 
 
 class TestMetricsCalculatorNormalization:
