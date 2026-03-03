@@ -102,9 +102,17 @@ function stopAudioLevelMonitoring() {
   audioInputLevel.value = 0;
 }
 
+function setAudioDeviceId(id: string) {
+  currentAudioId.value = id;
+}
+
 async function startRecording(options: RecordingOptions = {}) {
+  if (!currentAudioId.value) {
+    throw new Error('Audio device ID must be set before recording. Call setAudioDeviceId() first.');
+  }
+
   const mediaStream = await navigator.mediaDevices.getUserMedia({
-    audio: { deviceId: currentAudioId.value },
+    audio: { deviceId: { exact: currentAudioId.value } },
   });
 
   mediaRecorder.value = new MediaRecorder(mediaStream, {
@@ -123,6 +131,21 @@ async function getAudioInputDevices() {
   const devices = await navigator.mediaDevices.enumerateDevices();
 
   return devices.filter((device) => device.kind === 'audioinput');
+}
+
+function getDefaultDeviceId(devices: MediaDeviceInfo[]): string {
+  if (devices.length === 0) {
+    return '';
+  }
+  const chromiumDefaultDeviceId = 'default';
+  const firefoxDefaultDeviceId = devices[0].deviceId;
+
+  const foundChromiumDefault = devices.some((d) => d.deviceId === chromiumDefaultDeviceId);
+  if (foundChromiumDefault) {
+    return chromiumDefaultDeviceId;
+  } else {
+    return firefoxDefaultDeviceId;
+  }
 }
 
 function resumeRecording() {
@@ -182,6 +205,8 @@ export function useRecorder() {
     },
     audioInputLevel,
     getAudioInputDevices,
+    getDefaultDeviceId,
+    setAudioDeviceId,
     startRecording,
     resumeRecording,
     abortRecording,
