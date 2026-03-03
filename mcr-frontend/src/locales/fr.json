@@ -338,6 +338,7 @@
         "example": "Exemple : Réunion d'équipe 23/01/26"
       },
       "parameters": "Paramètres de votre visioconférence",
+      "submit": "Lancer la transcription",
       "title": "Je participe à une réunion en visioconférence",
       "visio": {
         "url": "URL de votre visioconférence",

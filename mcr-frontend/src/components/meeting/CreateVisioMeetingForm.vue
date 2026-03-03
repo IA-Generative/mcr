@@ -1,6 +1,7 @@
 <template>
   <div class="text-xl font-semibold pb-4">{{ $t('meeting-v2.visio-form.parameters') }}</div>
   <DsfrInputGroup
+    v-model="meetingTitle"
     :label="$t('meeting-v2.visio-form.meeting-title.title')"
     :hint="$t('meeting-v2.visio-form.meeting-title.example')"
     label-visible
@@ -50,11 +51,18 @@
     </DsfrNotice>
   </div>
 
-  <component :is="currentVisioToolComponent" />
+  <component
+    :is="currentVisioToolComponent"
+    :title="meetingTitle"
+    @submit="(dto: AddOnlineMeetingDto) => handleSubmit(dto)"
+  />
 </template>
 
 <script setup lang="ts">
-import { OnlineMeetingPlatforms } from '@/services/meetings/meetings.types';
+import {
+  OnlineMeetingPlatforms,
+  type AddOnlineMeetingDto,
+} from '@/services/meetings/meetings.types';
 import ComuMeetingForm from './visio-modal/ComuMeetingForm.vue';
 import WebconfMeetingForm from './visio-modal/WebconfMeetingForm.vue';
 import WebinaireMeetingForm from './visio-modal/WebinaireMeetingForm.vue';
@@ -66,6 +74,8 @@ const platformLabels: Record<OnlineMeetingPlatforms, string> = {
   WEBCONF: 'Webconf',
   VISIO: 'Visio',
 };
+
+const meetingTitle = ref<string>('');
 
 const meetingPlatformOptions = OnlineMeetingPlatforms.map((platform) => ({
   value: platform,
@@ -91,6 +101,15 @@ function getVisioToolComponent(selectedPlatform: Ref<OnlineMeetingPlatforms | nu
     default:
       return null;
   }
+}
+
+const emit = defineEmits<{
+  submit: [values: AddOnlineMeetingDto];
+  cancel: [];
+}>();
+
+function handleSubmit(dto: AddOnlineMeetingDto) {
+  emit('submit', dto);
 }
 </script>
 

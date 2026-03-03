@@ -69,11 +69,17 @@ const emit = defineEmits<{
 const router = useRouter();
 const toaster = useToaster();
 
-const { importMeetingMutation, addMeetingMutation, startTranscriptionMutation } = useMeetings();
+const {
+  importMeetingMutation,
+  addMeetingMutation,
+  startTranscriptionMutation,
+  startCaptureMutation,
+} = useMeetings();
 const { uploadFile } = useMultipart();
 const { mutate: importMeeting, isPending: isImportMeetingPending } = importMeetingMutation();
 const { mutate: createMeeting, mutateAsync: createMeetingAsync } = addMeetingMutation();
 const { mutate: startTranscription } = startTranscriptionMutation();
+const { mutateAsync: startCaptureAsync } = startCaptureMutation();
 
 const isMultipartUploadEnabled = useFeatureFlag('multipart-file');
 const isVisioModalV2Enabled = useFeatureFlag('ux-modal-v2');
@@ -114,11 +120,26 @@ const { open: openAddMeetingModal } = useModal({
 
 const { open: openVisioMeetingModal } = useModal({
   component: CreateVisioMeetingModal,
+  attrs: {
+    onCreateMeeting: (values: AddOnlineMeetingDto) => createMeetingStartCaptureAndRedirect(values),
+  },
 });
 
 function createMeetingAndRedirect(values: AddMeetingDto) {
   createMeeting(values, {
     onSuccess: (data) => redirectToMeetingPage(data.id),
+    onError: () => {
+      toaster.addErrorMessage(t('error.meeting-creation')!);
+    },
+  });
+}
+
+function createMeetingStartCaptureAndRedirect(values: AddMeetingDto) {
+  createMeeting(values, {
+    onSuccess: async (data) => {
+      await startCaptureAsync(data.id);
+      redirectToMeetingPage(data.id);
+    },
     onError: () => {
       toaster.addErrorMessage(t('error.meeting-creation')!);
     },
