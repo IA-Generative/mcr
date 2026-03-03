@@ -12,17 +12,17 @@
 
   <div class="flex flex-row gap-x-6 pb-4">
     <DsfrInputGroup
-      v-model="comuAccessCode"
-      class="w-full flex-1"
-      :label="$t('meeting-v2.visio-form.comu.access_code')"
-      label-visible
-    />
-
-    <DsfrInputGroup
       v-model="comuId"
       class="w-full flex-1"
       :label="$t('meeting-v2.visio-form.comu.meeting_id')"
       :error-message="comuIdError"
+      label-visible
+    />
+
+    <DsfrInputGroup
+      v-model="comuAccessCode"
+      class="w-full flex-1"
+      :label="$t('meeting-v2.visio-form.comu.access_code')"
       label-visible
     />
   </div>
