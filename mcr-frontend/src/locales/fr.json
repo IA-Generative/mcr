@@ -333,6 +333,11 @@
         "link": "Bonnes pratiques MCR",
         "title": "Veuillez renseigner une URL ou des identifiants de visioconférence*"
       },
+      "errors": {
+        "id-no-password": "Un mot de passe est nécessaire quand un identifiant de réunion est fourni",
+        "no-field": "Veuillez fournir un URL de réunion ou un identifiant et un mot de passe",
+        "password-no-id": "Un identifiant de réunion est nécessaire quand un mot de passe est fourni"
+      },
       "meeting-title": {
         "title": "Titre de votre réunion dans MCR*",
         "example": "Exemple : Réunion d'équipe 23/01/26"
