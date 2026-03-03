@@ -29,7 +29,7 @@ default:
   image: alpine:3.22.1
 
 variables:
-  REGISTRY_URL: "${REGISTRY_HOST}/${PROJECT_PATH}"
+  IMAGE_REPOSITORY: "${REGISTRY_HOST}/${PROJECT_PATH}"
 
 stages:
   - read-secret
@@ -38,51 +38,16 @@ stages:
   - filter-modules
   - rollout-infra
 
-# Reusable kaniko build job template with workspace preservation (using --ignore-path=/workspace) because on a multi-stage build kaniko deletes the workspace which prevented after_script from being executed.
-# See: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/30769
-.kaniko-build-with-workspace:
-  image:
-    name: ghcr.io/kaniko-build/dist/chainguard-dev-kaniko/executor:v1.25.1-debug
-    entrypoint: [""]
-  script:
-    # CA
-    - if [ ! -z $CA_BUNDLE ]; then cat $CA_BUNDLE >> /kaniko/ssl/certs/additional-ca-cert-bundle.crt; fi
-    # Proxy
-    - export BUILD_ARGS=""
+# Extends the catalog .kaniko:build-push with extra kaniko flags injected at runtime via before_script.
+# We are doing it that way because:
+# - KANIKO_EXTRA_ARGS is set as a CI params, which we can't access and can't override
+# - The microservices job still need to pass extra build args in the form of --target
+.mcr-kaniko-build:
+  extends: .kaniko:build-push
+  before_script:
     - |
-      if [ ! -z "$http_proxy" ]; then
-        export BUILD_ARGS="$BUILD_ARGS --build-arg http_proxy=$http_proxy"
-        sed -i "0,/^RUN /s|^RUN |RUN echo \"proxy=$http_proxy\" >> /etc/dnf/dnf.conf && \
-      echo \"proxy=$http_proxy\" >> /etc/yum.conf && \
-      echo 'Acquire::http::Proxy \\\"$http_proxy\\\";' >> /etc/apt/apt.conf.d/01proxy && \
-      echo \"http_proxy=$http_proxy\" >> /etc/environment && \
-      |" "$CI_PROJECT_DIR/$DOCKERFILE"
-      fi
-    - |
-      if [ ! -z "$https_proxy" ]; then
-        export BUILD_ARGS="$BUILD_ARGS --build-arg https_proxy=$https_proxy"
-        sed -i "0,/^RUN /s|^RUN |RUN echo \"proxy=$https_proxy\" >> /etc/dnf/dnf.conf && \
-      echo \"proxy=$https_proxy\" >> /etc/yum.conf && \
-      echo 'Acquire::https::Proxy \\\"$https_proxy\\\";' >> /etc/apt/apt.conf.d/01proxy && \
-      echo \"https_proxy=$https_proxy\" >> /etc/environment && \
-      |" "$CI_PROJECT_DIR/$DOCKERFILE"
-      fi
-    - if [ ! -z $no_proxy ]; then export BUILD_ARGS="$BUILD_ARGS --build-arg no_proxy=$no_proxy"; fi
-    # Destinations
-    - export ALL_DESTINATIONS=""
-    - for I in $IMAGE_NAMES; do export ALL_DESTINATIONS="$ALL_DESTINATIONS --destination $REGISTRY_URL/$(echo $I | tr \/ '-')"; done
-    - mkdir -p /kaniko/.docker
-    - echo "$DOCKER_AUTH" > /kaniko/.docker/config.json
-    - /kaniko/executor
-      --skip-unused-stages
-      --digest-file=digest.txt
-      --single-snapshot
-      --context="$CI_PROJECT_DIR/$WORKING_DIR"
-      --dockerfile="$CI_PROJECT_DIR/$DOCKERFILE"
-      $BUILD_ARGS $EXTRA_BUILD_ARGS
-      $EXTRA_KANIKO_ARGS
-      --ignore-path=/workspace
-      $ALL_DESTINATIONS
+      MCR_EXTRA="--skip-unused-stages --digest-file=digest.txt --ignore-path=/workspace"
+      export EXTRA_BUILD_ARGS="${EXTRA_BUILD_ARGS} ${MCR_EXTRA}"
 
 read_secret:
   stage: read-secret
