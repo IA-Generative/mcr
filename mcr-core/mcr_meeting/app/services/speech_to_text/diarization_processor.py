@@ -31,7 +31,12 @@ class DiarizationProcessor:
 
     def _get_http_client(self) -> httpx.Client:
         if self._http_client is None:
-            self._http_client = httpx.Client(timeout=api_settings.API_TIMEOUT)
+            self._http_client = httpx.Client(
+                timeout=api_settings.API_TIMEOUT,
+                transport=httpx.HTTPTransport(
+                    retries=api_settings.MAX_RETRIES,
+                ),
+            )
         return self._http_client
 
     def _is_api_diarization_enabled(self) -> bool:
