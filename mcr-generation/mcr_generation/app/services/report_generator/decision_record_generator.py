@@ -1,4 +1,4 @@
-from mcr_generation.app.schemas.base import DecisionRecord, Participants
+from mcr_generation.app.schemas.base import DecisionRecord
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
 )
@@ -15,8 +15,6 @@ class DecisionRecordGenerator(BaseReportGenerator):
     Extends `BaseReportGenerator` by implementing the `generate` method to produce
     a `DecisionRecord` report. After extracting the header, it runs a map-reduce
     step over the transcript chunks to identify topics and next steps.
-
-    see outtput example in: report_generator/examples/decision_record_example.json
     """
 
     def generate(self, chunks: list[Chunk]) -> DecisionRecord:
@@ -24,7 +22,7 @@ class DecisionRecordGenerator(BaseReportGenerator):
 
         map_reduce = MapReduceTopics(
             meeting_subject=header.title,
-            speaker_mapping=Participants(participants=header.participants),
+            participants=header.participants,
         )
         content = map_reduce.map_reduce_all_steps(chunks)
 

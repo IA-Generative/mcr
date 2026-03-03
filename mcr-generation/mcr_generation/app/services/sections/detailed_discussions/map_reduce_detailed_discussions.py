@@ -9,7 +9,7 @@ from loguru import logger
 from openai import OpenAI
 
 from mcr_generation.app.configs.settings import LLMConfig
-from mcr_generation.app.schemas.base import Participants
+from mcr_generation.app.schemas.base import Participant
 from mcr_generation.app.services.sections.detailed_discussions.prompts import (
     MAP_PROMPT_TEMPLATE,
     REDUCE_PROMPT_TEMPLATE,
@@ -34,7 +34,7 @@ class MapReduceDetailedDiscussions:
     def __init__(
         self,
         meeting_subject: str | None = None,
-        speaker_mapping: Participants | None = None,
+        participants: list[Participant] = [],
     ) -> None:
         self.llm_config = LLMConfig()
         self.client_instructor = instructor.from_openai(
@@ -45,7 +45,7 @@ class MapReduceDetailedDiscussions:
             mode=instructor.Mode.JSON,
         )
         self.meeting_subject = meeting_subject
-        self.speaker_mapping = str(speaker_mapping) if speaker_mapping else None
+        self.speaker_mapping = str(participants) if participants else None
 
     @log_execution_time
     @observe(name="section_content_generation")
@@ -83,8 +83,8 @@ class MapReduceDetailedDiscussions:
 
         reduce_message = REDUCE_PROMPT_TEMPLATE.format(
             detailed_discussions=discussions_input,
-            meeting_subject=self.meeting_subject,
-            speaker_mapping=self.speaker_mapping,
+            meeting_subject=self.meeting_subject or "Inconnu",
+            speaker_mapping=self.speaker_mapping or "Non fourni",
         )
 
         resp = call_llm_with_structured_output(
@@ -107,8 +107,8 @@ class MapReduceDetailedDiscussions:
         content = prompt.invoke(
             {
                 "chunk_text": chunk.text,
-                "meeting_subject": self.meeting_subject,
-                "speaker_mapping": self.speaker_mapping,
+                "meeting_subject": self.meeting_subject or "Inconnu",
+                "speaker_mapping": self.speaker_mapping or "Non fourni",
             }
         ).to_string()
 
