@@ -49,6 +49,7 @@ def french_text_normalizer(text: str) -> str:
     - French filler words / interjections removed (euh, hein, donc, voilà, …)
     - Punctuation and special characters removed (replaced by space),
       including underscore
+    - Consecutive duplicate words collapsed (e.g. "le le" → "le", "de de de" → "de")
     - Multiple spaces collapsed to one
     - Leading/trailing whitespace stripped
     """
@@ -79,6 +80,10 @@ def french_text_normalizer(text: str) -> str:
     # Remove French filler words / interjections (applied after accent
     # stripping so the pattern matches the normalized forms, e.g. "voila")
     text = _INTERJECTION_PATTERN.sub(" ", text)
+
+    # Remove consecutive duplicate words (e.g. "le le" → "le", "de de de" → "de").
+    # Applied after punctuation removal so only clean word tokens are compared.
+    text = re.sub(r"\b(\w+)(\s+\1)+\b", r"\1", text)
 
     # Collapse multiple spaces and strip edges
     text = re.sub(r"\s+", " ", text).strip()
