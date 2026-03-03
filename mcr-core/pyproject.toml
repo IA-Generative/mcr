@@ -18,6 +18,7 @@ dependencies = [
     "python-statemachine>=2.5.0",
     "unleashclient>=6.3.0",
     "jinja2>=3.1.6",
+    "num2words>=0.5.13",
 ]
 
 [project.optional-dependencies]
