@@ -47,6 +47,9 @@ stages:
   before_script:
     - |
       MCR_EXTRA="--skip-unused-stages --digest-file=digest.txt --ignore-path=/workspace"
+      if [ -n "${DOCKERHUB_MIRROR_URL:-}" ]; then
+        MCR_EXTRA="${MCR_EXTRA} --registry-mirror=${DOCKERHUB_MIRROR_URL}"
+      fi
       export EXTRA_BUILD_ARGS="${EXTRA_BUILD_ARGS} ${MCR_EXTRA}"
 
 read_secret:
@@ -98,7 +101,7 @@ docker-build-frontend:
       changes:
         - mcr-frontend/**/*
   extends:
-    - .kaniko-build-with-workspace
+    - .mcr-kaniko-build
   after_script:
     - |
       set -x
@@ -121,7 +124,7 @@ docker-build-core:
         - mcr-core/**/*
   stage: docker-build
   extends:
-    - .kaniko-build-with-workspace
+    - .mcr-kaniko-build
   after_script:
     - |
       set -x
@@ -144,7 +147,7 @@ docker-build-transcription-worker:
         - mcr-core/**/*
   stage: docker-build
   extends:
-    - .kaniko-build-with-workspace
+    - .mcr-kaniko-build
   after_script:
     - |
       set -x 
@@ -167,7 +170,7 @@ docker-build-gateway:
         - mcr-gateway/**/*
   stage: docker-build
   extends:
-    - .kaniko-build-with-workspace
+    - .mcr-kaniko-build
   after_script:
     - |
       set -x 
@@ -190,7 +193,7 @@ docker-build-generation:
         - mcr-generation/**/*
   stage: docker-build
   extends:
-    - .kaniko-build-with-workspace
+    - .mcr-kaniko-build
   after_script:
     - |
       set -x 
@@ -213,7 +216,7 @@ docker-build-capture-worker:
         - mcr-capture-worker/**/*
   stage: docker-build
   extends:
-    - .kaniko-build-with-workspace
+    - .mcr-kaniko-build
   after_script:
     - |
       set -x 
