@@ -3,21 +3,27 @@ import unicodedata
 
 from num2words import num2words
 
-
 # French filler words / interjections that carry no semantic content.
 # Listed in their accent-stripped form since removal is applied after
 # Unicode normalization.
-_FRENCH_INTERJECTIONS: frozenset[str] = frozenset({
-    "euh", "heu",   # hesitation sounds
-    "hein",          # huh / right?
-    "ben", "bah",   # well
-    "eh", "ah", "oh",  # exclamations
-    "ouais",         # yeah
-    "voila",         # voilà (accent stripped by normalization)
-    "donc",          # so (used as filler)
-    "alors",         # so / then (used as filler)
-    "quoi",          # what (used as filler)
-})
+_FRENCH_INTERJECTIONS: frozenset[str] = frozenset(
+    {
+        "euh",
+        "heu",  # hesitation sounds
+        "hein",  # huh / right?
+        "bon",
+        "ben",
+        "bah",  # well
+        "eh",
+        "ah",
+        "oh",  # exclamations
+        "ouais",  # yeah
+        "voila",  # voilà (accent stripped by normalization)
+        "donc",  # so (used as filler)
+        "alors",  # so / then (used as filler)
+        "quoi",  # what (used as filler)
+    }
+)
 
 _INTERJECTION_PATTERN: re.Pattern[str] = re.compile(
     r"\b(?:" + "|".join(re.escape(w) for w in sorted(_FRENCH_INTERJECTIONS)) + r")\b"
@@ -30,8 +36,8 @@ def _replace_numbers_with_words(text: str, lang: str = "fr") -> str:
     Example: "234 euros" → "deux cent trente-quatre euros"
     """
 
-    def repl(match: re.Match) -> str:  # type: ignore[type-arg]
-        return num2words(int(match.group()), lang=lang)
+    def repl(match: re.Match[str]) -> str:
+        return str(num2words(int(match.group()), lang=lang))
 
     return re.sub(r"\d+", repl, text)
 
@@ -76,7 +82,7 @@ def french_text_normalizer(text: str) -> str:
     # Remove punctuation and special characters including underscore
     # (replace with space to avoid merging surrounding words)
     text = re.sub(r"[^\w\s]|_", " ", text)
-    
+
     # Remove French filler words / interjections (applied after accent
     # stripping so the pattern matches the normalized forms, e.g. "voila")
     text = _INTERJECTION_PATTERN.sub(" ", text)
