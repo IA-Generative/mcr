@@ -107,6 +107,7 @@ class MeetingAudioRecorder:
                     await self.stop_recording(page)
                     break
 
+                await self.meeting_monitor.enforce_bot_muted(page)
                 # Continue capturing and processing audio chunks
                 # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
                 # A blocking loop would prevent Playwright from processing browser events,
