@@ -4,6 +4,7 @@
     v-model="meetingTitle"
     :label="$t('meeting-v2.visio-form.meeting-title.title')"
     :hint="$t('meeting-v2.visio-form.meeting-title.example')"
+    v-bind="meetingTitleAttrs"
     label-visible
   />
   <div class="pb-8">
@@ -51,11 +52,18 @@
     </DsfrNotice>
   </div>
 
-  <component
-    :is="currentVisioToolComponent"
-    :title="meetingTitle"
-    @submit="(dto: AddOnlineMeetingDto) => handleSubmit(dto)"
-  />
+  <component :is="currentVisioToolComponent" />
+
+  <hr />
+
+  <div class="flex justify-end">
+    <DsfrButton
+      :label="$t('meeting-v2.visio-form.submit')"
+      icon="fr-icon-play-circle-fill"
+      :disabled="!isFormValid"
+      @click="onSubmit()"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -67,6 +75,9 @@ import ComuMeetingForm from './visio-modal/ComuMeetingForm.vue';
 import WebconfMeetingForm from './visio-modal/WebconfMeetingForm.vue';
 import WebinaireMeetingForm from './visio-modal/WebinaireMeetingForm.vue';
 import VisioMeetingForm from './visio-modal/VisioMeetingForm.vue';
+import { useForm, useIsFormValid } from 'vee-validate';
+import { toTypedSchema } from '@vee-validate/yup';
+import { visioMeetingFieldsToVisioMeetingDto, VisioMeetingSchema } from './meeting.schema';
 
 const platformLabels: Record<OnlineMeetingPlatforms, string> = {
   COMU: 'COMU',
@@ -75,7 +86,11 @@ const platformLabels: Record<OnlineMeetingPlatforms, string> = {
   VISIO: 'Visio',
 };
 
-const meetingTitle = ref<string>('');
+const { defineField, handleSubmit } = useForm({
+  validationSchema: toTypedSchema(VisioMeetingSchema),
+});
+
+const [meetingTitle, meetingTitleAttrs] = defineField('name');
 
 const meetingPlatformOptions = OnlineMeetingPlatforms.map((platform) => ({
   value: platform,
@@ -108,9 +123,11 @@ const emit = defineEmits<{
   cancel: [];
 }>();
 
-function handleSubmit(dto: AddOnlineMeetingDto) {
-  emit('submit', dto);
-}
+const isFormValid = useIsFormValid();
+
+const onSubmit = handleSubmit((values) => {
+  emit('submit', visioMeetingFieldsToVisioMeetingDto(values));
+});
 </script>
 
 <style scoped>

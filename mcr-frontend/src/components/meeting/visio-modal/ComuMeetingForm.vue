@@ -12,87 +12,30 @@
 
   <div class="flex flex-row gap-x-6 pb-4">
     <DsfrInputGroup
+      v-model="comuPassword"
+      class="w-full flex-1"
+      :label="$t('meeting-v2.visio-form.comu.access_code')"
+      :error-message="comuPasswordError"
+      label-visible
+    />
+
+    <DsfrInputGroup
       v-model="comuId"
       class="w-full flex-1"
       :label="$t('meeting-v2.visio-form.comu.meeting_id')"
       :error-message="comuIdError"
       label-visible
     />
-
-    <DsfrInputGroup
-      v-model="comuAccessCode"
-      class="w-full flex-1"
-      :label="$t('meeting-v2.visio-form.comu.access_code')"
-      label-visible
-    />
-  </div>
-
-  <hr />
-
-  <div class="flex justify-end">
-    <DsfrButton
-      :label="$t('meeting-v2.visio-form.submit')"
-      icon="fr-icon-play-circle-fill"
-      :disabled="!isSubmitEnabled"
-      @click="handleSubmit()"
-    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { t } from '@/plugins/i18n';
-import { comuPrivateUrlValidator } from '../meeting.schema';
-import VisioConnectionSeparator from './VisioConnectionSeparator.vue';
-import type { AddOnlineMeetingDto } from '@/services/meetings/meetings.types';
+import { useField } from 'vee-validate';
 
-const props = defineProps<{
-  title: string;
-}>();
-
-const comuUrl = ref<string>('');
-const comuUrlError = computed(() => {
-  if (!comuUrl.value) return '';
-  if (!comuPrivateUrlValidator.test(comuUrl.value)) {
-    return t('meeting-v2.visio-form.comu.url_error');
-  }
-  return '';
-});
-
-const comuId = ref<string>('');
-const comuIdError = computed(() => {
-  if (!comuId.value) return '';
-  if (!RegExp(/^[0-9]+$/).test(comuId.value)) {
-    return t('meeting-v2.visio-form.comu.meeting_id_error');
-  }
-  return '';
-});
-
-const comuAccessCode = ref<string>('');
-
-const isSubmitEnabled = computed(() => {
-  return (
-    props.title !== '' &&
-    (comuPrivateUrlValidator.test(comuUrl.value) ||
-      (comuAccessCode.value !== '' && comuId.value !== ''))
-  );
-});
-
-const emit = defineEmits<{
-  submit: [visioUrl: AddOnlineMeetingDto];
-  cancel: [];
-}>();
-
-function handleSubmit() {
-  const dto: AddOnlineMeetingDto = {
-    name: props.title,
-    name_platform: 'COMU',
-    url: comuUrl.value ?? undefined,
-    meeting_platform_id: comuId.value ?? undefined,
-    meeting_password: comuAccessCode.value ?? undefined,
-    creation_date: new Date().toISOString(),
-  };
-  emit('submit', dto);
-}
+const { value: comuUrl, errorMessage: comuUrlError } = useField<string>('url');
+const { value: comuPassword, errorMessage: comuPasswordError } =
+  useField<string>('meeting_password');
+const { value: comuId, errorMessage: comuIdError } = useField<string>('meeting_platform_id');
 </script>
 
 <style scoped>
