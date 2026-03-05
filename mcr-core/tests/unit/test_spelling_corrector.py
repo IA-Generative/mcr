@@ -120,8 +120,8 @@ class TestSpellingCorrectorCorrect:
         )
         corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
             side_effect=[
-                "SEGMENT UN.<separator>",
-                "SEGMENT DEUX.<separator>SEGMENT TROIS.",
+                "SEGMENT UN.<separator0>",
+                "SEGMENT DEUX.<separator1>SEGMENT TROIS.",
             ]
         )
 
@@ -129,7 +129,7 @@ class TestSpellingCorrectorCorrect:
 
         assert corrector._correct_chunk.call_count == 2  # type: ignore[attr-defined]
         assert result[0].text == "SEGMENT UN."
-        assert result[1].text == "SEGMENT DEUX."
+        assert result[1].text == " SEGMENT DEUX."
         assert result[2].text == "SEGMENT TROIS."
 
     def test_should_return_original_segments_if_split_count_differs(
@@ -154,3 +154,79 @@ class TestSpellingCorrectorCorrect:
         result = corrector.correct(segments)
 
         assert result == segments
+
+
+class TestSpellingCorrectorSplitSegments:
+    """Tests for SpellingCorrector._split_segments()."""
+
+    def test_should_split_text_on_numeric_separator_markers(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        chunks = [
+            Chunk(id=0, text="Segment un.<separator0>"),
+            Chunk(id=1, text="Segment deux.<separator1>Segment trois."),
+        ]
+
+        result = corrector._split_segments(chunks)
+
+        assert result == ["Segment un.", " Segment deux.", "Segment trois."]
+
+    def test_should_not_split_when_separator_has_no_numeric_id(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        chunks = [
+            Chunk(id=0, text="Segment un.<separator>"),
+            Chunk(id=1, text="Segment deux."),
+        ]
+
+        result = corrector._split_segments(chunks)
+
+        assert result == ["Segment un.<separator> Segment deux."]
+
+    def test_should_keep_leading_empty_segment_when_text_starts_with_separator(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        chunks = [
+            Chunk(id=0, text="<separator0>Segment un."),
+            Chunk(id=1, text="Segment deux."),
+        ]
+
+        result = corrector._split_segments(chunks)
+
+        assert result == ["", "Segment un. Segment deux."]
+
+
+class TestSpellingCorrectorFormatSegmentsForLlm:
+    """Tests for SpellingCorrector._format_segments_for_llm()."""
+
+    def test_should_insert_numeric_separators_starting_at_zero(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        segments = [
+            make_segment(id=0, text="Segment un."),
+            make_segment(id=1, text="Segment deux."),
+            make_segment(id=2, text="Segment trois."),
+            make_segment(id=3, text="Segment quatre."),
+        ]
+
+        result = corrector._format_segments_for_llm(segments)
+
+        assert "<separator0>" in result
+        assert "<separator1>" in result
+        assert "<separator2>" in result
+        assert "<separator3>" not in result
+        assert result.index("<separator0>") < result.index("<separator1>")
+        assert result.index("<separator1>") < result.index("<separator2>")
+
+    def test_should_strip_segments_and_keep_last_segment_without_separator(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        segments = [
+            make_segment(id=0, text="  Bonjour  "),
+            make_segment(id=1, text="  Salut  "),
+            make_segment(id=2, text="  Au revoir  "),
+        ]
+
+        result = corrector._format_segments_for_llm(segments)
+
+        assert result == "Bonjour <separator0>Salut <separator1>Au revoir"
