@@ -4,7 +4,7 @@ import numpy as np
 from faster_whisper import WhisperModel
 from loguru import logger
 from numpy.typing import NDArray
-from openai import OpenAI
+from openai import NotGiven, OpenAI
 
 from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
@@ -155,12 +155,14 @@ class TranscriptionProcessor:
         try:
             client = self._get_openai_client()
 
+            prompt = transcription_settings.INITIAL_PROMPT or NotGiven()
+
             response = client.audio.transcriptions.create(
                 model=api_settings.TRANSCRIPTION_API_MODEL,
                 file=("audio.wav", audio_bytes, "audio/wav"),
                 language=api_settings.API_LANGUAGE,
                 response_format="verbose_json",
-                prompt=transcription_settings.INITIAL_PROMPT,
+                prompt=prompt,
                 timestamp_granularities=["segment"],
             )
 
