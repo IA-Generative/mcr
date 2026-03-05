@@ -30,14 +30,14 @@
     >
       <DsfrButton
         :disabled="isDisabled"
-        @click="() => $emit('nextStep')"
+        @click="handleNextStep"
       >
         {{ $t('meeting.record-form.actions.next') }}
       </DsfrButton>
       <DsfrButton
         tertiary
         no-outline
-        @click="() => $emit('cancel')"
+        @click="() => emit('cancel')"
       >
         {{ $t('meeting.record-form.actions.cancel') }}
       </DsfrButton>
@@ -49,7 +49,7 @@
 import { useField, useIsFormDirty, useIsFormValid } from 'vee-validate';
 import { useRecorder } from '@/composables/use-recorder';
 
-defineEmits<{
+const emit = defineEmits<{
   cancel: [];
   nextStep: [];
 }>();
@@ -59,16 +59,14 @@ const props = defineProps<{
 }>();
 
 const { value: name, errorMessage: nameError } = useField<string>('name');
-const { value: micId, errorMessage: micIdError } = useField<string>('micId', undefined, {
-  initialValue: 'default',
-});
+const { value: micId, errorMessage: micIdError } = useField<string>('micId');
 const isDirty = useIsFormDirty();
 const isValid = useIsFormValid();
 
 const isDisabled = computed(() => {
   return props.loading || !isDirty.value || !isValid.value;
 });
-const { getAudioInputDevices } = useRecorder();
+const { getAudioInputDevices, getDefaultDeviceId, setAudioDeviceId } = useRecorder();
 
 const devices = ref<McrSelectOption[]>([]);
 
@@ -77,12 +75,19 @@ type McrSelectOption = {
   text: string;
 };
 
-async function loadDevices() {
+async function loadDevicesAndSetDefault() {
   const devicesInfo = await getAudioInputDevices();
   devices.value = devicesInfo.map((device) => {
     return { value: device.deviceId, text: device.label };
   });
+
+  micId.value = getDefaultDeviceId(devicesInfo);
 }
 
-onMounted(loadDevices);
+function handleNextStep() {
+  setAudioDeviceId(micId.value);
+  emit('nextStep');
+}
+
+onMounted(loadDevicesAndSetDefault);
 </script>
