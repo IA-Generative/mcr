@@ -27,6 +27,7 @@ start:
 	touch .env
 	docker compose --env-file .env.local.docker --env-file .env up $(service) --watch
 
+
 stop:
 	docker compose down $(service)
 
