@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 
 import instructor
-from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from loguru import logger
 from openai import OpenAI
@@ -32,22 +31,17 @@ class LLMPostProcessing(ABC):
     def _chunk_text(self, text: str) -> list[Chunk]:
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_config.CHUNK_SIZE,
-            chunk_overlap=self.chunk_config.CHUNK_OVERLAP,
         )
 
-        chunks = text_splitter.split_text(text)
-        chunked_documents = [Document(page_content=chunk) for chunk in chunks]
+        chunked_text = text_splitter.split_text(text)
 
-        logger.debug("Nb of chunked documents: {}", len(chunked_documents))
+        logger.debug("Nb of chunked documents: {}", len(chunked_text))
 
-        chunks_with_ids = [
-            Chunk(id=idx, text=doc.page_content)
-            for idx, doc in enumerate(chunked_documents)
-        ]
+        chunks = [Chunk(id=idx, text=text) for idx, text in enumerate(chunked_text)]
 
-        logger.debug("chunks_with_ids {}", chunks_with_ids)
+        logger.debug("chunks {}", chunks)
 
-        return chunks_with_ids
+        return chunks
 
     @abstractmethod
     def _format_segments_for_llm(
