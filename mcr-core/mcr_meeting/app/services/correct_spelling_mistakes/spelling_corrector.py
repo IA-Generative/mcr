@@ -1,3 +1,5 @@
+import re
+
 from loguru import logger
 from pydantic import BaseModel
 
@@ -13,7 +15,8 @@ class CorrectedText(BaseModel):
 class SpellingCorrector(LLMPostProcessing):
     def __init__(self) -> None:
         super().__init__()
-        self.separator = "<separator>"
+        # Removed > on purpose so we can add its index for better splitting later
+        self.separator = "<separator"
 
     def correct(
         self, segments: list[DiarizedTranscriptionSegment]
@@ -37,18 +40,17 @@ class SpellingCorrector(LLMPostProcessing):
         for chunk in chunks:
             chunk.text = self._correct_chunk(chunk)
 
-        texts = self.__split_segments(chunks)
+        texts = self._split_segments(chunks)
 
         if len(texts) != len(segments):
             logger.warning(
                 "Didn't find the same amount of segments after correction. Skipping."
             )
             return segments
-        else:
-            return [
-                segment.model_copy(update={"text": text})
-                for segment, text in zip(segments, texts)
-            ]
+        return [
+            segment.model_copy(update={"text": text})
+            for segment, text in zip(segments, texts)
+        ]
 
     def _format_segments_for_llm(
         self, segments: list[DiarizedTranscriptionSegment]
@@ -62,7 +64,13 @@ class SpellingCorrector(LLMPostProcessing):
         Returns:
             str: Dialogue string.
         """
-        return self.separator.join(segment.text for segment in segments)
+        return (
+            "".join(
+                segment.text.strip() + f" {self.separator}{i}>"
+                for i, segment in enumerate(segments[:-1])
+            )
+            + segments[-1].text.strip()
+        )
 
     def _correct_chunk(self, chunk: Chunk) -> str:
         result = self.client.chat.completions.create(
@@ -77,6 +85,6 @@ class SpellingCorrector(LLMPostProcessing):
         )
         return result.corrected_text
 
-    def __split_segments(self, chunks: list[Chunk]) -> list[str]:
-        text = "".join(chunk.text for chunk in chunks)
-        return [segment for segment in text.split(self.separator)]
+    def _split_segments(self, chunks: list[Chunk]) -> list[str]:
+        text = " ".join(chunk.text for chunk in chunks)
+        return re.split(r"<separator\d+>", text)
