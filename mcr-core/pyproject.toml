@@ -52,7 +52,7 @@ worker = [
     "faster-whisper>=1.2.0",
     "openai==1.92.2",
     "instructor==1.9.0",
-    "langchain == 0.3.27",
+    "langchain-text-splitters == 0.3.9",
 ]
 
 [dependency-groups]

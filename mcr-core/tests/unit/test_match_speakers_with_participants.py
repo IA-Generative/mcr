@@ -1,20 +1,22 @@
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.services.speech_to_text.participants_naming.match_speakers_with_participants import (
-    format_segments_for_llm,
     replace_speaker_name_if_available,
 )
 from mcr_meeting.app.services.speech_to_text.participants_naming.participant_extraction import (
     Participant,
+    ParticipantExtraction,
 )
 
 
 class TestFormatSegmentsForLLM:
-    """Tests for format_segments_for_llm function."""
+    """Tests for LLMPostProcessing format_segments_for_llm function."""
+
+    participant_extraction = ParticipantExtraction()
 
     def test_should_return_empty_string_when_no_segments(self) -> None:
         """Checks that format_segments_for_llm returns an empty string when no segments are provided."""
         segments = []
-        result = format_segments_for_llm(segments)
+        result = self.participant_extraction._format_segments_for_llm(segments)
         assert result == ""
 
     def test_should_format_single_segment_correctly(self) -> None:
@@ -28,7 +30,7 @@ class TestFormatSegmentsForLLM:
                 end=1.0,
             )
         ]
-        result = format_segments_for_llm(segments)
+        result = self.participant_extraction._format_segments_for_llm(segments)
         assert result == "Speaker A: Hello world"
 
     def test_should_format_multiple_segments_correctly(self) -> None:
@@ -42,14 +44,14 @@ class TestFormatSegmentsForLLM:
                 end=1.0,
             ),
             DiarizedTranscriptionSegment(
-                id=1,
+                id=2,
                 speaker="Speaker B",
                 text="Hi there",
                 start=1.0,
                 end=2.0,
             ),
         ]
-        result = format_segments_for_llm(segments)
+        result = self.participant_extraction._format_segments_for_llm(segments)
         assert result == "Speaker A: Hello\nSpeaker B: Hi there"
 
     def test_should_handle_special_characters_in_transcription(self) -> None:
@@ -63,7 +65,7 @@ class TestFormatSegmentsForLLM:
                 end=2.0,
             )
         ]
-        result = format_segments_for_llm(segments)
+        result = self.participant_extraction._format_segments_for_llm(segments)
         assert result == "Speaker A: Hello! How's it going? \n New line test. $°"
 
 

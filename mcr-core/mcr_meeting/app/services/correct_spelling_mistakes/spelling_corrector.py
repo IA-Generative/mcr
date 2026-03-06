@@ -1,49 +1,90 @@
-import instructor
+import re
+
 from loguru import logger
-from openai import OpenAI
 from pydantic import BaseModel
 
-from mcr_meeting.app.configs.base import LLMSettings
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.services.correct_spelling_mistakes.prompt import PROMPT_TEMPLATE
+from mcr_meeting.app.services.llm_post_processing import Chunk, LLMPostProcessing
 
 
 class CorrectedText(BaseModel):
     corrected_text: str
 
 
-class SpellingCorrector:
+class SpellingCorrector(LLMPostProcessing):
     def __init__(self) -> None:
-        self.settings = LLMSettings()
-        self.client = instructor.from_openai(
-            OpenAI(
-                base_url=self.settings.LLM_HUB_API_URL,
-                api_key=self.settings.LLM_HUB_API_KEY,
-            ),
-            mode=instructor.Mode.JSON,
-        )
+        super().__init__()
+        # Removed > on purpose so we can add its index for better splitting later
+        self.separator = "<separator"
 
     def correct(
         self, segments: list[DiarizedTranscriptionSegment]
     ) -> list[DiarizedTranscriptionSegment]:
+        """
+        Corrects spelling mistakes in the given segments using an LLM.
+
+        Args:
+            segments (list[DiarizedTranscriptionSegment]): List of diarized transcription segments.
+
+        Returns:
+            list[DiarizedTranscriptionSegment]: List of segments with corrected text.
+        """
         if not segments:
             logger.warning("No segments found to correct")
             return []
 
+        text = self._format_segments_for_llm(segments)
+        chunks = self._chunk_text(text)
+
+        for chunk in chunks:
+            chunk.text = self._correct_chunk(chunk)
+
+        texts = self._split_segments(chunks)
+
+        if len(texts) != len(segments):
+            logger.warning(
+                "Didn't find the same amount of segments after correction. Skipping."
+            )
+            return segments
         return [
-            segment.model_copy(update={"text": self._correct_segment(segment.text)})
-            for segment in segments
+            segment.model_copy(update={"text": text})
+            for segment, text in zip(segments, texts)
         ]
 
-    def _correct_segment(self, text: str) -> str:
+    def _format_segments_for_llm(
+        self, segments: list[DiarizedTranscriptionSegment]
+    ) -> str:
+        """
+        Helper to convert segments into a dialogue string.
+
+        Args:
+            segments (list[DiarizedTranscriptionSegment]): List of speaker transcriptions.
+
+        Returns:
+            str: Dialogue string.
+        """
+        return (
+            "".join(
+                segment.text.strip() + f" {self.separator}{i}>"
+                for i, segment in enumerate(segments[:-1])
+            )
+            + segments[-1].text.strip()
+        )
+
+    def _correct_chunk(self, chunk: Chunk) -> str:
         result = self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
             response_model=CorrectedText,
             messages=[
                 {
                     "role": "user",
-                    "content": PROMPT_TEMPLATE.format(text=text),
+                    "content": PROMPT_TEMPLATE.format(text=chunk.text),
                 }
             ],
         )
         return result.corrected_text
+
+    def _split_segments(self, chunks: list[Chunk]) -> list[str]:
+        text = " ".join(chunk.text for chunk in chunks)
+        return re.split(r"<separator\d+>", text)
