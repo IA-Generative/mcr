@@ -9,19 +9,19 @@ from num2words import num2words
 _FRENCH_INTERJECTIONS: frozenset[str] = frozenset(
     {
         "euh",
-        "heu",  # hesitation sounds
-        "hein",  # huh / right?
+        "heu",
+        "hein",
         "bon",
         "ben",
-        "bah",  # well
+        "bah",
         "eh",
         "ah",
-        "oh",  # exclamations
-        "ouais",  # yeah
+        "oh",
+        "ouais",
         "voila",  # voilà (accent stripped by normalization)
-        "donc",  # so (used as filler)
-        "alors",  # so / then (used as filler)
-        "quoi",  # what (used as filler)
+        "donc",
+        "alors",
+        "quoi", 
     }
 )
 
