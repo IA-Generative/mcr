@@ -1,4 +1,5 @@
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import (
@@ -85,7 +86,7 @@ def authorize_user(
     return dependency
 
 
-def get_role_from_token_roles(token_roles: TokenRoles) -> Optional[Role]:
+def get_role_from_token_roles(token_roles: TokenRoles) -> Role | None:
     """
     Parcourt la liste des rôles et retourne 'ADMIN' si présent, sinon 'USER' si présent, sinon None.
     """

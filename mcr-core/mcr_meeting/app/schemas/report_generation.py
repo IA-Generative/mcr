@@ -1,6 +1,16 @@
-from typing import List, Optional
+from enum import StrEnum
+from typing import Annotated, TypeGuard
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+
+class ReportType(StrEnum):
+    DECISION_RECORD = "DECISION_RECORD"
+    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+
+
+class ReportGenerationRequest(BaseModel):
+    report_types: Annotated[list[ReportType], Field(min_length=1, max_length=1)]
 
 
 class ReportParticipant(BaseModel):
@@ -14,9 +24,9 @@ class ReportParticipant(BaseModel):
     """
 
     speaker_id: str
-    name: Optional[str]
-    role: Optional[str]
-    confidence: Optional[float]
+    name: str | None
+    role: str | None
+    confidence: float | None
 
 
 class ReportHeader(BaseModel):
@@ -28,17 +38,17 @@ class ReportHeader(BaseModel):
         report_filename (Optional[str]): The filename of the generated report, if available.
     """
 
-    title: Optional[str]
-    objective: Optional[str]
-    participants: List[ReportParticipant]
-    next_meeting: Optional[str]
+    title: str | None
+    objective: str | None
+    participants: list[ReportParticipant]
+    next_meeting: str | None
 
 
 class ReportTopicWithDecision(BaseModel):
     title: str
-    introduction_text: Optional[str]
+    introduction_text: str | None
     details: list[str]
-    main_decision: Optional[str]
+    main_decision: str | None
 
 
 class ReportGenerationResponse(BaseModel):
@@ -53,5 +63,36 @@ class ReportGenerationResponse(BaseModel):
     """
 
     header: ReportHeader
-    topics_with_decision: List[ReportTopicWithDecision]
-    next_steps: List[str]
+    topics_with_decision: list[ReportTopicWithDecision]
+    next_steps: list[str]
+
+
+class ReportDetailedDiscussion(BaseModel):
+    title: str
+    key_ideas: list[str]
+    decisions: list[str]
+    actions: list[str]
+    focus_points: list[str]
+
+
+class DetailedSynthesisGenerationResponse(BaseModel):
+    header: ReportHeader
+    discussions_summary: list[str]
+    detailed_discussions: list[ReportDetailedDiscussion]
+    to_do_list: list[str]
+    to_monitor_list: list[str]
+
+
+ReportResponse = DetailedSynthesisGenerationResponse | ReportGenerationResponse
+
+
+def is_detailed_synthesis(
+    response: ReportResponse,
+) -> TypeGuard[DetailedSynthesisGenerationResponse]:
+    return isinstance(response, DetailedSynthesisGenerationResponse)
+
+
+def is_decision_report_synthesis(
+    response: ReportResponse,
+) -> TypeGuard[ReportGenerationResponse]:
+    return isinstance(response, ReportGenerationResponse)

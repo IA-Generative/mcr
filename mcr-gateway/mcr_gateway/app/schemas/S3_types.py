@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from pydantic import BaseModel
 
 
@@ -8,7 +6,7 @@ class PresignedAudioFileRequest(BaseModel):
 
 
 class MultipartInitRequest(PresignedAudioFileRequest):
-    content_type: Optional[str] = None
+    content_type: str | None = None
 
 
 class MultipartInitResponse(BaseModel):
@@ -34,7 +32,7 @@ class MultipartCompletePart(BaseModel):
 class MultipartCompleteRequest(BaseModel):
     upload_id: str
     object_key: str
-    parts: List[MultipartCompletePart]
+    parts: list[MultipartCompletePart]
 
 
 class MultipartAbortRequest(BaseModel):

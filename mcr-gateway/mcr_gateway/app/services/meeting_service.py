@@ -1,5 +1,6 @@
+from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Union
+from typing import Any
 
 import httpx
 from fastapi import HTTPException, UploadFile
@@ -14,6 +15,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingUpdate,
     MeetingWithPresignedUrl,
+    ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -276,10 +278,10 @@ async def stop_meeting_capture_service(
 
 async def get_meetings_service(
     user_keycloak_uuid: UUID4,
-    search: Optional[str],
+    search: str | None,
     page: int,
     page_size: int,
-) -> List[Meeting]:
+) -> list[Meeting]:
     """
     Service pour interroger mcr-core et récupérer la liste des réunions.
 
@@ -292,7 +294,7 @@ async def get_meetings_service(
         List[Meeting]: Liste des réunions correspondant au filtre.
     """
     try:
-        params: Dict[str, Union[str, int]] = {}
+        params: dict[str, str | int] = {}
 
         if search:
             params["search"] = search
@@ -433,12 +435,14 @@ async def get_report(
 async def generate_report(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
+    body: ReportGenerationRequest,
 ) -> Response:
     """
     Get the transcription DOCX file of a given meeting
 
     Args:
         meeting_id (int): The ID of the meeting.
+        body (ReportGenerationRequest): The report generation request containing report types.
 
     Returns:
         DOCX file of the transcription meeting
@@ -446,7 +450,10 @@ async def generate_report(
     """
     try:
         async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(url=f"{meeting_id}/report")
+            response = await client.post(
+                url=f"{meeting_id}/report",
+                json=body.model_dump(),
+            )
             response.raise_for_status()
 
             return Response(status_code=response.status_code)
@@ -457,6 +464,24 @@ async def generate_report(
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while getting the report.",
+        )
+
+
+async def reset_report_service(
+    meeting_id: int,
+    user_keycloak_uuid: UUID4,
+) -> None:
+    try:
+        async with get_meeting_http_client(user_keycloak_uuid) as client:
+            response = await client.post(url=f"{meeting_id}/report/reset")
+            response.raise_for_status()
+
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception:
+        raise HTTPException(
+            status_code=500,
+            detail="An unexpected error occurred while resetting the report.",
         )
 
 

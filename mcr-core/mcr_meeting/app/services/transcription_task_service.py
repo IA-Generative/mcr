@@ -1,5 +1,5 @@
 from io import BytesIO
-from typing import BinaryIO, Optional
+from typing import BinaryIO
 
 from loguru import logger
 
@@ -56,7 +56,7 @@ def create_formatted_docx_transcription(meeting: Meeting) -> BytesIO:
 
 
 def save_formatted_transcription_and_update_meeting_status(
-    meeting_id: int, file_like_object: BinaryIO, filename: Optional[str]
+    meeting_id: int, file_like_object: BinaryIO, filename: str | None
 ) -> None:
     name = filename if filename is not None else DEFAULT_TRANSCRIPTION_FILENAME
 

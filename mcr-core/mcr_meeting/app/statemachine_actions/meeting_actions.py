@@ -4,6 +4,7 @@ from loguru import logger
 
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.exceptions.exceptions import (
+    MCRException,
     NotFoundException,
     TaskCreationException,
 )
@@ -13,8 +14,14 @@ from mcr_meeting.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     MCRTranscriptionTasks,
 )
-from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
+from mcr_meeting.app.schemas.report_generation import (
+    ReportResponse,
+    ReportType,
+    is_decision_report_synthesis,
+    is_detailed_synthesis,
+)
 from mcr_meeting.app.services.docx_report_generation_service import (
+    generate_detailed_synthesis_docx,
     generate_docx_decisions_reports_from_template,
 )
 from mcr_meeting.app.services.email.email_service import (
@@ -95,7 +102,9 @@ def after_start_transcription_handler(
     )
 
 
-def after_start_report_handler(meeting: Meeting, next_status: MeetingStatus) -> None:
+def after_start_report_handler(
+    meeting: Meeting, next_status: MeetingStatus, report_type: ReportType
+) -> None:
     try:
         if meeting.transcription_filename is None:
             raise NotFoundException("Could not find meeting transcription")
@@ -108,7 +117,7 @@ def after_start_report_handler(meeting: Meeting, next_status: MeetingStatus) -> 
             update_meeting_status(meeting, next_status)
             celery_producer_app.send_task(
                 MCRReportGenerationTasks.REPORT,
-                args=[meeting.id, transcription_object_name],
+                args=[meeting.id, transcription_object_name, report_type],
             )
 
         logger.info("Report generation task created for meeting: {}", meeting.id)
@@ -121,13 +130,20 @@ def after_start_report_handler(meeting: Meeting, next_status: MeetingStatus) -> 
 def after_complete_report_handler(
     meeting: Meeting,
     next_status: MeetingStatus,
-    report_response: ReportGenerationResponse,
+    report_response: ReportResponse,
 ) -> None:
     with UnitOfWork():
         update_meeting_status(meeting, next_status)
-        docx_buffer = generate_docx_decisions_reports_from_template(
-            report_response, meeting.name
-        )
+        if is_detailed_synthesis(report_response):
+            docx_buffer = generate_detailed_synthesis_docx(
+                report_response, meeting.name
+            )
+        elif is_decision_report_synthesis(report_response):
+            docx_buffer = generate_docx_decisions_reports_from_template(
+                report_response, meeting.name
+            )
+        else:
+            raise MCRException("Invalid report_response type")
         save_formatted_report(meeting_id=meeting.id, file_like_object=docx_buffer)
 
     send_report_generation_success_email(meeting_id=meeting.id)

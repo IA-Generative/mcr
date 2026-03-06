@@ -6,16 +6,16 @@ Create Date: 2025-12-15 13:51:49.112926
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = "3b6b37018db1"
-down_revision: Union[str, None] = "2eff96979526"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "2eff96979526"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 TABLE_NAME = "meeting_transition_record"
 COLUMN_NAME = "predicted_date_of_next_transition"

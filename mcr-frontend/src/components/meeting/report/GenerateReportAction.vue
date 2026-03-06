@@ -1,19 +1,24 @@
 <template>
   <component
     :is="currentStateComponent"
-    :action-label-key="actionLabelKey"
-    @on-generate="() => onGetOrGenerateReport()"
+    @on-generate="(reportType: ReportType) => onGetOrGenerateReport(reportType)"
+    @on-reset="onResetReport"
   />
 </template>
 
 <script setup lang="ts">
 import useToaster from '@/composables/use-toaster';
-import { MeetingStatus, type MeetingDto } from '@/services/meetings/meetings.types';
+import {
+  type MeetingDto,
+  type MeetingStatus,
+  type ReportType,
+} from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { downloadFileFromAxios } from '@/utils/file';
 import { useI18n } from 'vue-i18n';
 import TranscriptionNotReadyComponent from './TranscriptionNotReady.vue';
 import ReportFormatSelection from './ReportFormatSelection.vue';
+import ReportDownload from './ReportDownload.vue';
 import ReportPending from './ReportPending.vue';
 import { sanitizeFilename } from '@/utils/formatters';
 
@@ -24,7 +29,7 @@ const props = defineProps<{
 const toaster = useToaster();
 const { t } = useI18n();
 
-const { getReportMutation, generateReportMutation } = useMeetings();
+const { getReportMutation, generateReportMutation, resetReportMutation } = useMeetings();
 const { mutate: generateReport } = generateReportMutation({
   onError: () => {
     toaster.addErrorMessage(t('error.report-generation')!);
@@ -41,24 +46,26 @@ const { mutate: getReport } = getReportMutation({
   },
 });
 
-function onGetOrGenerateReport() {
+const { mutate: resetReportStatus } = resetReportMutation();
+
+function onResetReport() {
+  resetReportStatus(props.meeting.id);
+}
+
+function onGetOrGenerateReport(reportType?: ReportType) {
   if (props.meeting.status == 'REPORT_DONE') getReport(props.meeting.id);
-  else if (props.meeting.status == 'TRANSCRIPTION_DONE') generateReport(props.meeting.id);
+  else if (props.meeting.status == 'TRANSCRIPTION_DONE' && reportType)
+    generateReport({ id: props.meeting.id, body: { report_types: [reportType] } });
 }
 
 const currentStateComponent = computed(() => getStateComponent(props.meeting.status));
 
-const actionLabelKey = computed(() => {
-  return props.meeting.status === 'REPORT_DONE'
-    ? 'meeting.report.download'
-    : 'meeting.report.generate';
-});
-
 function getStateComponent(status: MeetingStatus) {
   switch (status) {
     case 'TRANSCRIPTION_DONE':
-    case 'REPORT_DONE':
       return ReportFormatSelection;
+    case 'REPORT_DONE':
+      return ReportDownload;
     case 'REPORT_PENDING':
       return ReportPending;
     default:

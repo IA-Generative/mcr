@@ -1,11 +1,10 @@
 from io import BytesIO
-from typing import List
 
 import numpy as np
 from faster_whisper import WhisperModel
 from loguru import logger
 from numpy.typing import NDArray
-from openai import OpenAI
+from openai import NotGiven, OpenAI
 
 from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
@@ -40,6 +39,7 @@ class TranscriptionProcessor:
             self._openai_client = OpenAI(
                 api_key=api_settings.TRANSCRIPTION_API_KEY,
                 base_url=api_settings.TRANSCRIPTION_API_BASE_URL,
+                max_retries=api_settings.MAX_RETRIES,
             )
         return self._openai_client
 
@@ -58,14 +58,14 @@ class TranscriptionProcessor:
     def transcribe(
         self,
         audio_bytes: BytesIO,
-        vad_spans: List[DiarizationSegment],
-    ) -> List[TranscriptionSegment]:
+        vad_spans: list[DiarizationSegment],
+    ) -> list[TranscriptionSegment]:
         transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
 
         logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
 
         transcription_model = get_transcription_model()
-        transcription_segments: List[TranscriptionSegment] = []
+        transcription_segments: list[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(transcription_inputs):
             logger.debug(
@@ -104,7 +104,7 @@ class TranscriptionProcessor:
         self,
         audio: NDArray[np.float32],
         transcription_model: WhisperModel,
-    ) -> List[TranscriptionSegment]:
+    ) -> list[TranscriptionSegment]:
         if self._is_api_transcription_enabled():
             return self._transcribe_audio_chunk_api(audio)
         else:
@@ -112,14 +112,14 @@ class TranscriptionProcessor:
 
     def _transcribe_audio_chunk_local(
         self, audio: NDArray[np.float32], transcription_model: WhisperModel
-    ) -> List[TranscriptionSegment]:
+    ) -> list[TranscriptionSegment]:
         logger.debug("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
 
         segments, info = transcription_model.transcribe(
             audio,
-            language=transcription_settings.language,
-            word_timestamps=transcription_settings.word_timestamps,
-            initial_prompt="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
+            language=transcription_settings.LANGUAGE,
+            word_timestamps=transcription_settings.WORD_TIMESTAMPS,
+            initial_prompt=transcription_settings.INITIAL_PROMPT,
         )
 
         result = list(segments)
@@ -145,7 +145,7 @@ class TranscriptionProcessor:
     def _transcribe_audio_chunk_api(
         self,
         audio: NDArray[np.float32],
-    ) -> List[TranscriptionSegment]:
+    ) -> list[TranscriptionSegment]:
         import soundfile as sf
 
         audio_bytes = BytesIO()
@@ -155,11 +155,14 @@ class TranscriptionProcessor:
         try:
             client = self._get_openai_client()
 
+            prompt = transcription_settings.INITIAL_PROMPT or NotGiven()
+
             response = client.audio.transcriptions.create(
                 model=api_settings.TRANSCRIPTION_API_MODEL,
                 file=("audio.wav", audio_bytes, "audio/wav"),
                 language=api_settings.API_LANGUAGE,
                 response_format="verbose_json",
+                prompt=prompt,
                 timestamp_granularities=["segment"],
             )
 

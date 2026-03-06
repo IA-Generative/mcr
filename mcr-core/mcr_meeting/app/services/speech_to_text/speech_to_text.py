@@ -1,7 +1,6 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
 from io import BytesIO
-from typing import List
 
 from loguru import logger
 
@@ -14,6 +13,9 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     filter_noise_from_audio_bytes,
     normalize_audio_bytes_to_wav_bytes,
 )
+from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
+    SpellingCorrector,
+)
 from mcr_meeting.app.services.feature_flag_service import (
     get_feature_flag_client,
 )
@@ -22,6 +24,7 @@ from mcr_meeting.app.services.speech_to_text.diarization_processor import (
 )
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
+    remove_hallucinations,
 )
 from mcr_meeting.app.services.speech_to_text.transcription_processor import (
     TranscriptionProcessor,
@@ -65,8 +68,8 @@ class SpeechToTextPipeline:
 
     def post_process(
         self,
-        diarized_transcription_segments: List[DiarizedTranscriptionSegment],
-    ) -> List[DiarizedTranscriptionSegment]:
+        diarized_transcription_segments: list[DiarizedTranscriptionSegment],
+    ) -> list[DiarizedTranscriptionSegment]:
         """Post-process diarized transcription segments.
 
         This includes merging consecutive segments from the same speaker.
@@ -77,19 +80,29 @@ class SpeechToTextPipeline:
         Returns:
             List[DiarizedTranscriptionSegment]: The post-processed diarized transcription segments.
         """
+        feature_flag_client = get_feature_flag_client()
+
         if not diarized_transcription_segments:
             logger.warning("No transcription segments found")
             raise InvalidAudioFileError("No transcription segments found")
         merged_segments = merge_consecutive_segments_per_speaker(
             diarized_transcription_segments
         )
-        return merged_segments
+        cleaned_segments = remove_hallucinations(merged_segments)
+
+        if feature_flag_client.is_enabled("spelling_correction"):
+            logger.info("Spelling correction enabled, correcting segments")
+            corrector = SpellingCorrector()
+            cleaned_segments = corrector.correct(cleaned_segments)
+        else:
+            logger.info("Spelling correction disabled, skipping correction")
+        return cleaned_segments
 
     def transcribe_audio(
         self,
         audio_bytes: BytesIO,
-        vad_spans: List[DiarizationSegment],
-    ) -> List[TranscriptionSegment]:
+        vad_spans: list[DiarizationSegment],
+    ) -> list[TranscriptionSegment]:
         """Transcribe full audio bytes to text.
 
         Args:
@@ -106,7 +119,7 @@ class SpeechToTextPipeline:
     def diarize_audio(
         self,
         audio_bytes: BytesIO,
-    ) -> List[DiarizationSegment]:
+    ) -> list[DiarizationSegment]:
         """Perform speaker diarization on audio bytes
 
         Args:
@@ -120,7 +133,7 @@ class SpeechToTextPipeline:
     def run(
         self,
         audio_bytes: BytesIO,
-    ) -> List[DiarizedTranscriptionSegment]:
+    ) -> list[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
         logger.debug("Starting speech-to-text pipeline with pre-processing.")
@@ -135,7 +148,7 @@ class SpeechToTextPipeline:
             logger.debug("No diarization result. Returning empty transcription.")
             return []
 
-        vad_spans: List[DiarizationSegment] = get_vad_segments_from_diarization(
+        vad_spans: list[DiarizationSegment] = get_vad_segments_from_diarization(
             diarization_result
         )
 
@@ -147,8 +160,8 @@ class SpeechToTextPipeline:
             transcription_segments, diarization_result
         )
 
-        merged_segments = self.post_process(diarized_transcription_segments)
+        cleaned_segments = self.post_process(diarized_transcription_segments)
 
-        logger.debug("Final transcription segments: {}", merged_segments)
+        logger.debug("Final transcription segments: {}", cleaned_segments)
 
-        return merged_segments
+        return cleaned_segments

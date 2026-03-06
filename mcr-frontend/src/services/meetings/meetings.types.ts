@@ -128,3 +128,10 @@ export function isMeetingFailed(status: MeetingStatus): boolean {
 export interface TranscriptionWaitingTimeResponse {
   estimation_duration_minutes: number;
 }
+
+export const ReportType = ['DECISION_RECORD', 'DETAILED_SYNTHESIS'] as const;
+export type ReportType = (typeof ReportType)[number];
+
+export interface ReportGenerationRequest {
+  report_types: ReportType[];
+}

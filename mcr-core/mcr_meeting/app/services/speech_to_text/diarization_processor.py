@@ -1,6 +1,5 @@
 import tempfile
 from io import BytesIO
-from typing import List
 
 import httpx
 from loguru import logger
@@ -32,7 +31,12 @@ class DiarizationProcessor:
 
     def _get_http_client(self) -> httpx.Client:
         if self._http_client is None:
-            self._http_client = httpx.Client(timeout=api_settings.API_TIMEOUT)
+            self._http_client = httpx.Client(
+                timeout=api_settings.API_TIMEOUT,
+                transport=httpx.HTTPTransport(
+                    retries=api_settings.MAX_RETRIES,
+                ),
+            )
         return self._http_client
 
     def _is_api_diarization_enabled(self) -> bool:
@@ -49,7 +53,7 @@ class DiarizationProcessor:
     def diarize(
         self,
         audio_bytes: BytesIO,
-    ) -> List[DiarizationSegment]:
+    ) -> list[DiarizationSegment]:
         """Perform speaker diarization on audio bytes
 
         Args:
@@ -63,7 +67,7 @@ class DiarizationProcessor:
         else:
             return self._diarize_local(audio_bytes)
 
-    def _diarize_local(self, audio_bytes: BytesIO) -> List[DiarizationSegment]:
+    def _diarize_local(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
         """Diarize using local pyannote model"""
         diarization_pipeline = get_diarization_pipeline()
 
@@ -86,7 +90,7 @@ class DiarizationProcessor:
 
             return diarization_segments
 
-    def _diarize_api(self, audio_bytes: BytesIO) -> List[DiarizationSegment]:
+    def _diarize_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
         """Diarize using external API"""
         try:
             client = self._get_http_client()

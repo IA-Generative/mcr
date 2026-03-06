@@ -14,6 +14,7 @@ vi.mock('@/composables/use-toaster', () => ({
 // Mock du service des meetings
 const mockGenerateReport = vi.fn();
 const mockGetReport = vi.fn();
+const mockResetReport = vi.fn();
 
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
@@ -23,6 +24,10 @@ vi.mock('@/services/meetings/use-meeting', () => ({
     }),
     getReportMutation: (options: any) => ({
       mutate: mockGetReport,
+      ...options,
+    }),
+    resetReportMutation: (options: any) => ({
+      mutate: mockResetReport,
       ...options,
     }),
   }),

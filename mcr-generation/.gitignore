@@ -57,3 +57,5 @@ backup/*
 venv
 
 !.keep
+
+notebooks/*

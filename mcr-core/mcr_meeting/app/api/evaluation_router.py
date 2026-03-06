@@ -11,12 +11,13 @@ from fastapi import (
 )
 from fastapi.responses import PlainTextResponse
 
-from mcr_meeting.app.configs.base import ApiSettings
+from mcr_meeting.app.configs.base import ApiSettings, EvaluationSettings
 from mcr_meeting.app.services.transcription_task_service import (
     create_evaluation_task_service,
 )
 
 api_settings = ApiSettings()
+EVALUATION_SETTINGS = EvaluationSettings()
 router = APIRouter(prefix=api_settings.TRANSCRIPTION_API_PREFIX)
 
 
@@ -30,10 +31,10 @@ async def evaluate_transcription_from_zip_async(
     Evaluate ASR model from a zip file containing audio files and reference transcripts.
     The zip file should be as structured as follow:
     ```
-    inputs.zip
+    <any_name>.zip
         ├── raw_audios/
-        │   ├── audio1.mp3
-        │   ├── audio2.mp3
+        │   ├── audio1.mp3 (or .wav, ...)
+        │   ├── audio2.mp3 (or .wav, ...)
         │   └── ...
         └── reference_transcripts/
             ├── audio1.json
@@ -61,18 +62,23 @@ async def evaluate_transcription_from_zip_async(
         files = z.namelist()
 
         has_audio_dir = any(
-            f.startswith("inputs/raw_audios/") and f.endswith(".mp3") for f in files
+            "raw_audios/" in f
+            and any(
+                f.endswith(f".{fmt}")
+                for fmt in EVALUATION_SETTINGS.SUPPORTED_AUDIO_FORMATS
+            )
+            for f in files
         )
         has_ref_dir = any(
-            f.startswith("inputs/reference_transcripts/") and f.endswith(".json")
-            for f in files
+            "reference_transcripts/" in f and f.endswith(".json") for f in files
         )
 
     if not has_audio_dir or not has_ref_dir:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                "Zip file must contain 'raw_audios/' with .mp3 files and "
+                f"Zip file must contain 'raw_audios/' with "
+                f"{' or '.join('.' + fmt for fmt in EVALUATION_SETTINGS.SUPPORTED_AUDIO_FORMATS)} files and "
                 "'reference_transcripts/' with .json files at the root level."
             ),
         )

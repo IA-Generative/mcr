@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
 from pydantic import UUID4
@@ -58,7 +57,7 @@ def create_meeting_service(
 
 
 def get_meeting_service(
-    meeting_id: int, current_user_keycloak_uuid: Optional[UUID4] = None
+    meeting_id: int, current_user_keycloak_uuid: UUID4 | None = None
 ) -> Meeting:
     """
     Service to retrieve a meeting by its ID.
@@ -112,10 +111,10 @@ def update_meeting_status(meeting: Meeting, meeting_status: MeetingStatus) -> Me
 
 def get_meetings_service(
     user_keycloak_uuid: UUID,
-    search: Optional[str],
+    search: str | None,
     page: int,
     page_size: int,
-) -> List[Meeting]:
+) -> list[Meeting]:
     """
     Service pour récupérer une liste de réunions.
 

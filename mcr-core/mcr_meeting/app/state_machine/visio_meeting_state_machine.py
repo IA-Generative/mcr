@@ -1,7 +1,7 @@
 from statemachine import State, StateMachine
 
 from mcr_meeting.app.models import Meeting, MeetingStatus
-from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
+from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
 from mcr_meeting.app.statemachine_actions.meeting_actions import (
     after_complete_capture_handler,
     after_complete_report_handler,
@@ -59,16 +59,20 @@ class VisioMeetingStateMachine(StateMachine):
         | TRANSCRIPTION_FAILED.to(TRANSCRIPTION_PENDING)
     )
     START_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(TRANSCRIPTION_IN_PROGRESS)
-    COMPLETE_TRANSCRIPTION = (
-        TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_DONE)
-        | TRANSCRIPTION_DONE.to.itself(internal=True)  # type: ignore[no-untyped-call]
-        | REPORT_DONE.to(TRANSCRIPTION_DONE)
+    COMPLETE_TRANSCRIPTION = TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_DONE)
+    # We changed from an internal transition to a external transition because
+    # it is more visual on the generated graphs. At the time of change, the functionalities
+    # are the same because internal transition only skip on_enter_* and on_exit_*
+    # But it doesn't after after_* and before_* transitions actions
+    UPDATE_TRANSCRIPTION = TRANSCRIPTION_DONE.to.itself() | REPORT_DONE.to(  # type: ignore[no-untyped-call]
+        TRANSCRIPTION_DONE
     )
     FAIL_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(
         TRANSCRIPTION_FAILED
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
     START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
     COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
+    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE)
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
 
@@ -120,22 +124,32 @@ class VisioMeetingStateMachine(StateMachine):
             return
         update_status_handler(self.meeting, self.current_state_value)
 
+    def after_UPDATE_TRANSCRIPTION(self) -> None:
+        if self.meeting is None:
+            return
+        update_status_handler(self.meeting, self.current_state_value)
+
     def after_FAIL_TRANSCRIPTION(self) -> None:
         if self.meeting is None:
             return
         update_status_handler(self.meeting, self.current_state_value)
 
-    def after_START_REPORT(self) -> None:
+    def after_START_REPORT(self, report_type: ReportType) -> None:
         if self.meeting is None:
             return
-        after_start_report_handler(self.meeting, self.current_state_value)
+        after_start_report_handler(self.meeting, self.current_state_value, report_type)
 
-    def after_COMPLETE_REPORT(self, report_response: ReportGenerationResponse) -> None:
+    def after_COMPLETE_REPORT(self, report_response: ReportResponse) -> None:
         if self.meeting is None:
             return
         after_complete_report_handler(
             self.meeting, self.current_state_value, report_response
         )
+
+    def after_RESET_REPORT(self) -> None:
+        if self.meeting is None:
+            return
+        update_status_handler(self.meeting, self.current_state_value)
 
     def after_DELETE(self) -> None:
         if self.meeting is None:

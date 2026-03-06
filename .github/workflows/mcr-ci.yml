@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   filter-out-unmodified-services:
@@ -192,7 +192,7 @@ jobs:
         working-directory: mcr-core
         run: |
           uv venv --python=3.11
-          uv sync --all-extras
+          uv sync --group test --all-extras
 
       - name: Run Ruff format check
         working-directory: mcr-core
@@ -210,9 +210,24 @@ jobs:
         working-directory: mcr-core
         run: make type-check
 
-      - name: Run Tests
+      - name: Run Test + Coverage
         working-directory: mcr-core
-        run: make test
+        run: make test-coverage-ci
+
+      - name: Upload coverage.xml
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcr-core-coverage
+          path: mcr-core/coverage.xml
+
+      - name: Post coverage comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: MishaKav/pytest-coverage-comment@main
+        with:
+          pytest-xml-coverage-path: mcr-core/coverage.xml
+          title: mcr-core coverage
+          report-only-changed-files: true
 
   mcr-frontend-ci:
     needs: filter-out-unmodified-services

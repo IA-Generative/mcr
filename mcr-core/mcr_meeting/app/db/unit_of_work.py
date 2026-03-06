@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from contextlib import AbstractContextManager
 from types import TracebackType
-from typing import Callable, Self
+from typing import Self
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, SessionTransaction

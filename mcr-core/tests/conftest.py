@@ -1,8 +1,9 @@
 import os
 import tempfile
+from collections.abc import Generator, Iterator
 from datetime import datetime
 from types import SimpleNamespace
-from typing import Any, Dict, Generator, Iterator
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -98,7 +99,7 @@ def mock_s3_object_iterator(bucket_name: str) -> Iterator[S3Object]:
         )
 
 
-def mock_s3_delete_return(return_type: str) -> Dict[str, Any]:  # type: ignore[explicit-any]
+def mock_s3_delete_return(return_type: str) -> dict[str, Any]:  # type: ignore[explicit-any]
     match return_type:
         case "delete_error":
             return {

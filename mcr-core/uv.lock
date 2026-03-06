@@ -1450,24 +1450,6 @@ redis = [
 ]
 
 [[package]]
-name = "langchain"
-version = "0.3.27"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "langchain-core" },
-    { name = "langchain-text-splitters" },
-    { name = "langsmith" },
-    { name = "pydantic" },
-    { name = "pyyaml" },
-    { name = "requests" },
-    { name = "sqlalchemy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/83/f6/f4f7f3a56626fe07e2bb330feb61254dbdf06c506e6b59a536a337da51cf/langchain-0.3.27.tar.gz", hash = "sha256:aa6f1e6274ff055d0fd36254176770f356ed0a8994297d1df47df341953cec62", size = 10233809, upload-time = "2025-07-24T14:42:32.959Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f6/d5/4861816a95b2f6993f1360cfb605aacb015506ee2090433a71de9cca8477/langchain-0.3.27-py3-none-any.whl", hash = "sha256:7b20c4f338826acb148d885b20a73a16e410ede9ee4f19bb02011852d5f98798", size = 1018194, upload-time = "2025-07-24T14:42:30.23Z" },
-]
-
-[[package]]
 name = "langchain-core"
 version = "0.3.83"
 source = { registry = "https://pypi.org/simple" }
@@ -1488,14 +1470,14 @@ wheels = [
 
 [[package]]
 name = "langchain-text-splitters"
-version = "0.3.11"
+version = "0.3.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain-core" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/11/43/dcda8fd25f0b19cb2835f2f6bb67f26ad58634f04ac2d8eae00526b0fa55/langchain_text_splitters-0.3.11.tar.gz", hash = "sha256:7a50a04ada9a133bbabb80731df7f6ddac51bc9f1b9cab7fa09304d71d38a6cc", size = 46458, upload-time = "2025-08-31T23:02:58.316Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/52/d43ad77acae169210cc476cbc1e4ab37a701017c950211a11ab500fe7d7e/langchain_text_splitters-0.3.9.tar.gz", hash = "sha256:7cd1e5a3aaf609979583eeca2eb34177622570b8fa8f586a605c6b1c34e7ebdb", size = 45260, upload-time = "2025-07-24T14:38:45.14Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/0d/41a51b40d24ff0384ec4f7ab8dd3dcea8353c05c973836b5e289f1465d4f/langchain_text_splitters-0.3.11-py3-none-any.whl", hash = "sha256:cf079131166a487f1372c8ab5d0bfaa6c0a4291733d9c43a34a16ac9bcd6a393", size = 33845, upload-time = "2025-08-31T23:02:57.195Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/52/7638394b88bc15083fd2c3752a843784d9d2d110d68fed6437c8607fb749/langchain_text_splitters-0.3.9-py3-none-any.whl", hash = "sha256:cee0bb816211584ea79cc79927317c358543f40404bcfdd69e69ba3ccde54401", size = 33314, upload-time = "2025-07-24T14:38:43.953Z" },
 ]
 
 [[package]]
@@ -1674,6 +1656,20 @@ wheels = [
 ]
 
 [[package]]
+name = "markdowntodocx"
+version = "0.1.9.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pygments" },
+    { name = "python-docx" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/02/97/385f5c5c97ec04d288fee1fc7ca1b7ae3ff492ef8bdcab35831b404e201b/markdowntodocx-0.1.9.2.tar.gz", hash = "sha256:2497e72367dcafc7df4b67c5db8fed64a9f4ddd8a3607acdf45e573eab7eec89", size = 19578, upload-time = "2026-01-23T15:53:47.127Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/1a/34a13d8c727c6d7d8a21433a9d5bd4f32ea322024b41f6f641dcce0a9212/markdowntodocx-0.1.9.2-py3-none-any.whl", hash = "sha256:2b8ef48ed85e0d1154f48440ee430390e96d707cd3c97525c60e6b9ff2e9d978", size = 17583, upload-time = "2026-01-23T15:53:45.588Z" },
+]
+
+[[package]]
 name = "markupsafe"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
@@ -1741,7 +1737,6 @@ dependencies = [
     { name = "loguru" },
     { name = "mypy-boto3-s3" },
     { name = "numpy" },
-    { name = "openai" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "python-statemachine" },
@@ -1756,6 +1751,7 @@ api = [
     { name = "docxtpl" },
     { name = "dotenv" },
     { name = "fastapi", extra = ["standard"] },
+    { name = "markdowntodocx" },
     { name = "python-docx" },
     { name = "sentry-sdk", extra = ["fastapi"] },
     { name = "starlette" },
@@ -1767,7 +1763,7 @@ worker = [
     { name = "httpx" },
     { name = "instructor" },
     { name = "jiwer" },
-    { name = "langchain" },
+    { name = "langchain-text-splitters" },
     { name = "lightning" },
     { name = "llvmlite" },
     { name = "numba" },
@@ -1792,6 +1788,7 @@ dev = [
     { name = "ipykernel" },
     { name = "librosa" },
     { name = "pydot" },
+    { name = "pytest-cov" },
     { name = "ruff" },
     { name = "watchdog", extra = ["watchmedo"] },
 ]
@@ -1832,10 +1829,11 @@ requires-dist = [
     { name = "instructor", marker = "extra == 'worker'", specifier = "==1.9.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "jiwer", marker = "extra == 'worker'", specifier = ">=4.0.0" },
-    { name = "langchain", marker = "extra == 'worker'", specifier = "==0.3.27" },
+    { name = "langchain-text-splitters", marker = "extra == 'worker'", specifier = "==0.3.9" },
     { name = "lightning", marker = "extra == 'worker'", specifier = "==2.5.5" },
     { name = "llvmlite", marker = "extra == 'worker'", specifier = ">=0.44.0" },
     { name = "loguru", specifier = ">=0.7.3" },
+    { name = "markdowntodocx", marker = "extra == 'api'", specifier = ">=0.1.9.2" },
     { name = "mypy-boto3-s3", specifier = ">=1.40.26" },
     { name = "numba", marker = "extra == 'worker'", specifier = ">=0.61.0" },
     { name = "numpy", specifier = ">=2.2.6" },
@@ -1871,6 +1869,7 @@ dev = [
     { name = "ipykernel", specifier = ">=7.1.0" },
     { name = "librosa", specifier = ">=0.11.0" },
     { name = "pydot", specifier = ">=4.0.1" },
+    { name = "pytest-cov" },
     { name = "ruff" },
     { name = "watchdog", extras = ["watchmedo"], specifier = ">=6.0.0" },
 ]

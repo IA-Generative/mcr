@@ -11,19 +11,6 @@ from mcr_meeting.app.services.speech_to_text.participants_naming.participant_ext
 )
 
 
-def format_segments_for_llm(segments: list[DiarizedTranscriptionSegment]) -> str:
-    """
-    Helper to convert segments into a dialogue string.
-
-    Args:
-        segments (list[DiarizedTranscriptionSegment]): List of speaker transcriptions.
-
-    Returns:
-        str: Dialogue string.
-    """
-    return "\n".join([str(seg) for seg in segments])
-
-
 def replace_speaker_name_if_available(
     segments: list[DiarizedTranscriptionSegment], participants: list[Participant]
 ) -> None:
@@ -51,11 +38,8 @@ def enrich_segments_with_participants(
         None
     """
     try:
-        # formatting for LLM
-        dialogue_text = format_segments_for_llm(segments)
-
         extractor = ParticipantExtraction()
-        participants = extractor.extract(dialogue_text)
+        participants = extractor.extract(segments)
         replace_speaker_name_if_available(segments, participants)
 
         logger.debug("Extracted {} participants' names", len(participants))

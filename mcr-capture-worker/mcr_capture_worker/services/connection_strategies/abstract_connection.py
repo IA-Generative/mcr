@@ -67,9 +67,6 @@ class ConnectionStrategy(ABC):
     async def load_recording_script(self, page: Page) -> None:
         pass
 
-    async def disconnect_from_meeting(self, page: Page) -> None:
-        return
-
     def get_agent_name(self, meeting: Meeting) -> str:
         email = meeting.owner.email
 

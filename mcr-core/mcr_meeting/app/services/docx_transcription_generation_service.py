@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 from io import BytesIO
-from typing import Any, List, Optional
+from typing import Any
 
 from docx import Document as CreateDocument
 from docx.document import Document as Docx
@@ -53,7 +53,7 @@ class TemplatedDocxGenerator(ABC):
 
 class TranscriptionDocxGenerator(TemplatedDocxGenerator):
     def fill_templated_doc(
-        self, meeting_name: str, transcriptions: List[Transcription]
+        self, meeting_name: str, transcriptions: list[Transcription]
     ) -> None:
         self.set_title(meeting_name)
 
@@ -82,7 +82,7 @@ class TranscriptionDocxGenerator(TemplatedDocxGenerator):
 
 
 def generate_transcription_docx(
-    meeting_name: Optional[str], transcriptions: List[Transcription]
+    meeting_name: str | None, transcriptions: list[Transcription]
 ) -> BytesIO:
     """
     Generates a DOCX document containing the transcription of a meeting in a tabular format.

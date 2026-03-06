@@ -1,7 +1,6 @@
 """Utility functions for processing audio and transcription segments during Speech To Text pipeline."""
 
 from io import BytesIO
-from typing import List
 
 import soundfile as sf
 from loguru import logger
@@ -15,8 +14,8 @@ from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 def split_audio_on_timestamps(
     audio_bytes: BytesIO,
-    result_with_time: List[DiarizationSegment],
-) -> List[TranscriptionInput]:
+    result_with_time: list[DiarizationSegment],
+) -> list[TranscriptionInput]:
     """
     Split mono audio bytes into chunks based on diarization segments.
 
@@ -28,7 +27,7 @@ def split_audio_on_timestamps(
         List[TranscriptionInput]: List of audio chunks aligned with diarization segments.
     """
     data, sample_rate = sf.read(audio_bytes)  # already mono
-    transcription_inputs: List[TranscriptionInput] = []
+    transcription_inputs: list[TranscriptionInput] = []
 
     for segment in result_with_time:
         span = TimeSpan(segment.start, segment.end)

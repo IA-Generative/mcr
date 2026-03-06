@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 from celery.signals import task_failure, task_success
@@ -6,15 +6,12 @@ from langfuse import observe
 from loguru import logger
 
 from mcr_generation.app.configs.settings import ApiSettings
-from mcr_generation.app.schemas.base import Report
-from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks
-from mcr_generation.app.services.sections import (
-    MapReduceTopics,
-    RefineIntent,
-    RefineNextMeeting,
-    RefineParticipants,
-    format_next_meeting_for_report,
+from mcr_generation.app.schemas.base import BaseReport
+from mcr_generation.app.schemas.celery_types import (
+    MCRReportGenerationTasks,
+    ReportTypes,
 )
+from mcr_generation.app.services.report_generator import get_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
@@ -27,37 +24,19 @@ api_settings = ApiSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
-) -> Report:
-    refine_intent = RefineIntent()
-    refine_participants = RefineParticipants()
-    refine_next_meeting = RefineNextMeeting()
+    report_type: str = ReportTypes.DECISION_RECORD.value,
+) -> BaseReport:
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
-    intent = refine_intent.init_then_refine(chunks)
-    participants = refine_participants.init_then_refine(chunks)
-    next_meeting = refine_next_meeting.init_then_refine(chunks)
 
-    map_reduce = MapReduceTopics(
-        meeting_subject=intent.title,
-        speaker_mapping=participants,
-    )
-    content = map_reduce.map_reduce_all_steps(chunks)
-
-    report = Report(
-        title=intent.title,
-        objective=intent.objective,
-        next_meeting=format_next_meeting_for_report(next_meeting),
-        next_steps=content.next_steps,
-        participants=participants.participants,
-        topics_with_decision=content.topics,
-    )
-
-    return report
+    report_type_enum = ReportTypes(report_type)
+    generator = get_generator(report_type_enum)
+    return generator.generate(chunks)
 
 
 @task_success.connect
 def generate_report_from_docx_success(
-    sender: Any, result: Report, **kwargs: Any
+    sender: Any, result: BaseReport, **kwargs: Any
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API.
 
@@ -74,21 +53,7 @@ def generate_report_from_docx_success(
 
     meeting_id = sender.request.args[0]
 
-    payload_dict = {
-        "next_steps": result.next_steps,
-        "topics_with_decision": [
-            topic.model_dump() for topic in result.topics_with_decision
-        ],
-        "header": {
-            "title": result.title,
-            "objective": result.objective,
-            "next_meeting": result.next_meeting,
-            "participants": [
-                p.model_dump(exclude={"association_justification"})
-                for p in result.participants
-            ],
-        },
-    }
+    payload_dict = result.model_dump()
 
     with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
         response = client.post(
@@ -100,6 +65,6 @@ def generate_report_from_docx_success(
 
 @task_failure.connect
 def set_meeting_failed_status_on_error(
-    sender: Optional[Any] = None, **kwargs: Any
+    sender: Any | None = None, **kwargs: Any
 ) -> None:
     pass

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 import httpx
 from fastapi import (
@@ -18,6 +18,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingUpdate,
     MeetingWithPresignedUrl,
+    ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -35,6 +36,7 @@ from mcr_gateway.app.services.meeting_service import (
     get_meetings_service,
     get_report,
     init_meeting_capture_service,
+    reset_report_service,
     start_meeting_transcription_service,
     stop_meeting_capture_service,
     update_meeting_service,
@@ -274,7 +276,7 @@ async def stop_capture(
 
 @router.get(
     "/meetings",
-    response_model=List[Meeting],
+    response_model=list[Meeting],
     tags=["Meetings"],
 )
 async def get_meetings(
@@ -282,7 +284,7 @@ async def get_meetings(
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> List[Meeting]:
+) -> list[Meeting]:
     """
     Route pour interroger mcr-core et retourner la liste des réunions.
     """
@@ -384,6 +386,7 @@ async def get_meeting_report(
 )
 async def generate_meeting_report(
     meeting_id: int,
+    body: ReportGenerationRequest,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
 ) -> Response:
     """
@@ -391,12 +394,29 @@ async def generate_meeting_report(
 
     Args:
         meeting_id (int): The ID of the meeting.
+        body (ReportGenerationRequest): The report generation request containing report types.
 
     Returns:
         DOCX file of the transcription meeting
 
     """
     return await generate_report(
+        meeting_id=meeting_id,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+        body=body,
+    )
+
+
+@router.post(
+    "/meetings/{meeting_id}/report/reset",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Meetings"],
+)
+async def reset_meeting_report(
+    meeting_id: int,
+    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+) -> None:
+    await reset_report_service(
         meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
     )
 
@@ -404,7 +424,7 @@ async def generate_meeting_report(
 @router.get("/meetings/transcription/wait-time/estimation")
 async def get_queue_estimated_waiting_time(
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get the current global waiting time for the transcription queue.
 

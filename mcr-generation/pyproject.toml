@@ -39,5 +39,15 @@ exclude = ["**/*.ipynb"]
 # T20:  flake8-print -> No print statements
 # I:    isort -> Sorted imports
 # G:    flake8-logging-format -> logging format
-extend-select = ["T20", "I", "G"]
+# UP:   pyupgrade -> PEP approved code conventions
+extend-select = ["T20", "I", "G", "UP"]
 logger-objects = ["loguru.logger"]
+
+ignore = ["UP017", "UP008", "UP028", "UP046", "UP047"]
+
+[tool.pytest.ini_options]
+env_files = [
+    "../.env.local.docker",
+    "../.env.local.host",
+    "../.env.local.testing",
+]

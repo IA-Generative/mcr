@@ -65,17 +65,36 @@ db-downgrade:
 	uv sync --inexact
 	uv run alembic downgrade -1
 
+# Coverage configuration
+COVERAGE_MODULE ?= mcr_meeting
+COVERAGE_PATH_INTEGRATION ?= mcr_meeting/app/api
+COVERAGE_XML ?= coverage.xml
+COVERAGE_HTML_DIR ?= htmlcov
+
+# All tests + coverage (local/dev friendly)
 test-coverage:
-	@make test-coverage-integration
+	@uv sync --group test --all-extras --inexact
+	@uv run pytest . \
+		--cov=$(COVERAGE_MODULE) \
+		--cov-report=term-missing \
+		--cov-report=xml:$(COVERAGE_XML) \
+		--cov-report=html:$(COVERAGE_HTML_DIR)
 
-SERVICE_NAME = mcr-core
-TEST_TYPE = integration
-COVERAGE_PATH_INTEGRATION = mcr_meeting/app/api
-
+# Integration (API) tests only + coverage
 test-coverage-integration:
-	@uv sync --group test --quiet --inexact
-	@uv run pytest --cov=$(COVERAGE_PATH_INTEGRATION) --cov-report=term 2>&1 | \
-		grep -v "CoverageWarning" | grep TOTAL | awk '{print "$(SERVICE_NAME) $(TEST_TYPE) " $$4}'
+	@uv sync --group test --all-extras --inexact
+	@uv run pytest tests/api \
+		--cov=$(COVERAGE_PATH_INTEGRATION) \
+		--cov-report=term-missing \
+		--cov-report=xml:$(COVERAGE_XML)
+
+# CI-friendly: no html report, just term + xml artifact
+test-coverage-ci:
+	@uv sync --group test --all-extras --inexact
+	@uv run pytest . \
+		--cov=$(COVERAGE_MODULE) \
+		--cov-report=term-missing \
+		--cov-report=xml:$(COVERAGE_XML)
 
 eval:
 	uv sync --all-extras --inexact && \
@@ -83,8 +102,8 @@ eval:
 	uv run python -m mcr_meeting.evaluation.cli.cli
 
 metrics:
-	DATA_DIR=$(EVALUATION_DATA_DIR) OUT_DIR=$(EVALUATION_OUTPUT_DIR)
 	uv sync --all-extras --inexact && \
+	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) \
 	uv run python -m mcr_meeting.evaluation.cli.cli_generate_metrics
 
 # Before running this, make sure you have graphviz installed in your system.

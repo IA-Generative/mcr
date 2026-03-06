@@ -166,7 +166,10 @@ class TestASREvaluationPipeline:
         mock_stt_pipeline,
         mock_evaluation_input,
     ):
-        mock_evaluation_input.audio_bytes = None
+        mock_stt_instance = Mock()
+        mock_stt_instance.run.side_effect = Exception("Processing error")
+        mock_stt_pipeline.return_value = mock_stt_instance
+
         pipeline = ASREvaluationPipeline([mock_evaluation_input])
 
         with pytest.raises(ValueError, match="No files were successfully processed"):

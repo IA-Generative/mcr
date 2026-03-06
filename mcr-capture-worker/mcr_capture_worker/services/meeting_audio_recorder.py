@@ -1,7 +1,6 @@
 import asyncio
 import time
 from io import BytesIO
-from typing import Optional
 
 from loguru import logger
 from playwright.async_api import ConsoleMessage, Page, async_playwright
@@ -10,9 +9,6 @@ from mcr_capture_worker.clients.meeting_transition_client import MeetingApiClien
 from mcr_capture_worker.meeting_repository import get_meeting, get_meeting_with_owner
 from mcr_capture_worker.models.meeting_model import MeetingStatus
 from mcr_capture_worker.schemas.audio_capture_schema import OnDataAvailableBytesWrapper
-from mcr_capture_worker.services.connection_strategies import (
-    ConnectionStrategy,
-)
 from mcr_capture_worker.services.s3_service import (
     put_file_in_audio_folder,
 )
@@ -32,10 +28,8 @@ class MeetingAudioRecorder:
         self.meeting_id = meeting_id
         self.pending_uploads = UploadQueue()
         self.teardown_after_stop_is_finished = False
-        self.meeting_transition_client: Optional[MeetingApiClient] = None
-
-    def set_connection_strategy(self, connection_strategy: ConnectionStrategy) -> None:
-        self.connection_strategy = connection_strategy
+        self.meeting_transition_client: MeetingApiClient | None = None
+        self._connected_at: float | None = None
 
     async def start(self) -> None:
         """
@@ -51,11 +45,13 @@ class MeetingAudioRecorder:
             Exception: If any error occurs during browser automation or audio processing.
         """
         meeting = get_meeting_with_owner(self.meeting_id)
-        self.user_uuid = meeting.owner.keycloak_uuid
-        self.meeting_platform = meeting.name_platform
-
         if meeting is None:
             raise ValueError(f"Couldn't get meeting {self.meeting_id}")
+
+        self.user_uuid = meeting.owner.keycloak_uuid
+        self.meeting_platform = meeting.name_platform
+        self.connection_strategy = meeting.get_connection_strategy()
+        self.meeting_monitor = meeting.get_meeting_monitor()
 
         self.meeting_transition_client = MeetingApiClient(str(self.user_uuid))
         if self.meeting_transition_client is None:
@@ -77,6 +73,7 @@ class MeetingAudioRecorder:
 
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
+            self._connected_at = time.monotonic()
 
             await self.meeting_transition_client.start_capture_bot(self.meeting_id)
 
@@ -100,6 +97,16 @@ class MeetingAudioRecorder:
                 if not meeting or meeting.status != MeetingStatus.CAPTURE_IN_PROGRESS:
                     await self.stop_recording(page)
                     break
+
+                if await self._should_auto_disconnect(page):
+                    logger.info(
+                        "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
+                        self.meeting_id,
+                        capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S,
+                    )
+                    await self.stop_recording(page)
+                    break
+
                 # Continue capturing and processing audio chunks
                 # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
                 # A blocking loop would prevent Playwright from processing browser events,
@@ -112,6 +119,16 @@ class MeetingAudioRecorder:
                 e,
             )
             await self.browser.close()
+
+    async def _should_auto_disconnect(self, page: Page) -> bool:
+        if self._connected_at is not None:
+            elapsed_since_connect = time.monotonic() - self._connected_at
+            if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
+                return False
+
+        return await self.meeting_monitor.should_disconnect(
+            page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
+        )
 
     async def handle_audio_chunk(self, data: BytesIO) -> None:
         try:
@@ -186,7 +203,7 @@ class MeetingAudioRecorder:
     async def stop_recording(self, page: Page) -> None:
         await page.evaluate("window.stopRecording()")
         try:
-            await self.connection_strategy.disconnect_from_meeting(page)
+            await self.meeting_monitor.disconnect_from_meeting(page)
         except Exception:
             logger.error(
                 "Encountered error disconnecting from meeting: {}", self.meeting_id

@@ -14,7 +14,8 @@
     },
     "form": {
       "update": "Mettre à jour"
-    }
+    },
+    "or": "ou"
   },
   "header": {
     "app": {
@@ -284,14 +285,15 @@
     "report": {
       "generate": "Générer le compte-rendu",
       "download": "Télécharger le compte-rendu",
+      "reset": "Regénérer le compte-rendu",
       "disclaimer": {
         "title": "Choisissez le format",
         "description": "L'outil FCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
       },
       "type": {
         "cr1": "Relevé de décisions",
-        "cr2": "Format à venir",
-        "cr3": "@:meeting.report.type.cr2"
+        "cr2": "Synthèse détaillée",
+        "cr3": "Format à venir"
       },
       "report-pending": {
         "title": "L'écriture du compte-rendu est en cours...",
@@ -318,13 +320,48 @@
   },
   "meeting-v2": {
     "visio-form": {
+      "comu": {
+        "access_code": "Code d'accès",
+        "meeting_id": "ID de la réunion",
+        "meeting_id_error": "Un identifiant de réunion COMU doit être composé uniquement de chiffres",
+        "url": "URL modérateur",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur COMU",
+        "url_hint": "Exemple: https://webconf.comu.gouv.fr/meeting/987654?secret=abcDEF1234567890ffXYza"
+      },
+      "connection": {
+        "advice": "Consulter cet article {link} pour localiser votre URL modérateur ou vos identifiants.",
+        "link": "Bonnes pratiques MCR",
+        "title": "Veuillez renseigner une URL ou des identifiants de visioconférence*"
+      },
+      "errors": {
+        "id-no-password": "Un mot de passe est nécessaire quand un identifiant de réunion est fourni",
+        "no-field": "Veuillez fournir un URL de réunion ou un identifiant et un mot de passe",
+        "password-no-id": "Un identifiant de réunion est nécessaire quand un mot de passe est fourni"
+      },
       "meeting-title": {
-        "title": "Titre de votre réunion dans MCR",
+        "title": "Titre de votre réunion dans MCR*",
         "example": "Exemple : Réunion d'équipe 23/01/26"
       },
       "parameters": "Paramètres de votre visioconférence",
+      "submit": "Lancer la transcription",
       "title": "Je participe à une réunion en visioconférence",
-      "visio-tools": "Outil de visioconférence"
+      "visio": {
+        "url": "URL de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur Visio",
+        "url_hint": "Exemple: https://visio.numerique.gouv.fr/aaa-bbbb-ccc"
+      },
+      "webconf": {
+        "url": "URL de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur Webconf",
+        "url_hint": "Exemple: https://webconf.numerique.gouv.fr/reunion2301"
+      },
+      "webinaire": {
+        "connection_code": "Code de connexion",
+        "url": "URL modérateur de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur le Webinaire de l'État",
+        "url_hint": "Exemple:https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/000/creator/000/hash/0000000000000000000000000000000000000000"
+      },
+      "visio-tools": "Outil de visioconférence*"
     }
   },
   "members": {

@@ -1,5 +1,4 @@
 from enum import StrEnum
-from typing import Optional
 
 from pydantic import UUID4, BaseModel, EmailStr
 
@@ -20,12 +19,12 @@ class UserBase(BaseModel):
     Base schema for user-related data.
     """
 
-    keycloak_uuid: Optional[UUID4] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    entity_name: Optional[str] = None
-    email: Optional[EmailStr] = None
-    role: Optional[Role] = None
+    keycloak_uuid: UUID4 | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    entity_name: str | None = None
+    email: EmailStr | None = None
+    role: Role | None = None
 
 
 class UserCreate(UserBase):
@@ -37,7 +36,7 @@ class UserCreate(UserBase):
     last_name: str
     entity_name: str
     email: EmailStr
-    password: Optional[str] = None
+    password: str | None = None
 
 
 class UserUpdate(UserBase):
@@ -46,7 +45,7 @@ class UserUpdate(UserBase):
     """
 
     email: EmailStr
-    password: Optional[str] = None
+    password: str | None = None
     role: Role
 
 

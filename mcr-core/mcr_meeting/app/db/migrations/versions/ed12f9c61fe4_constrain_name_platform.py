@@ -6,7 +6,7 @@ Create Date: 2025-08-19 18:11:52.261542
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
@@ -15,9 +15,9 @@ from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 
 # revision identifiers, used by Alembic.
 revision: str = "ed12f9c61fe4"
-down_revision: Union[str, None] = "ad716383829e"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "ad716383829e"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 platform_name = sa.Enum(

@@ -1,7 +1,5 @@
 """Base settings class contains only important fields."""
 
-from typing import Optional
-
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -120,13 +118,17 @@ class WhisperTranscriptionSettings(BaseSettings):
     Configuration settings for Whisper Transcription
     """
 
-    language: Optional[str] = Field(
+    LANGUAGE: str | None = Field(
         default="fr",
         description="The language of the audio. If None, language detection will be performed.",
     )
-    word_timestamps: Optional[bool] = Field(
+    WORD_TIMESTAMPS: bool | None = Field(
         default=True,
         description="For the model to return word_timestamps or just segment timestamps.",
+    )
+    INITIAL_PROMPT: str | None = Field(
+        default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
+        description="Prompt passed to the transcription model",
     )
 
 
@@ -357,7 +359,55 @@ class TranscriptionApiSettings(BaseSettings):
     API_LANGUAGE: str = Field(
         default="fr", description="Language code for transcription"
     )
-    API_TIMEOUT: Optional[float] = Field(
+    API_TIMEOUT: float | None = Field(
         default=None,
         description="API request timeout in seconds, None means no timeout",
+    )
+    MAX_RETRIES: int = Field(
+        default=6,
+        description="""
+        Number of retries for API requests on network errors. 
+        Set to 6 so that the total retry time is over 1 minute (63s) 
+        with a backoff of 0.5s (base for httpx and openAI client)
+        This was set as the goal on 27/02/26
+        """,
+    )
+
+
+class EvaluationSettings(BaseSettings):
+    """
+    Configuration settings for evaluation parameters
+    """
+
+    SUPPORTED_AUDIO_FORMATS: list[str] = Field(
+        default=["mp3", "wav"], description="Supported audio formats for evaluation"
+    )
+
+
+class TranscriptionForbiddenSentences(BaseSettings):
+    """
+    Defines the sentences to remove from any transcription
+    """
+
+    FORBIDDEN_SENTENCES: list[str] = Field(
+        # Be careful, the order of the sentences matters. The first pattern to match will be the one removed.
+        # Longer patterns should be listed first.
+        # Example: if "Société Radio-Canada" is listed before "Sous-titrage Société Radio-Canada",
+        # the latter will never be removed.
+        default=[
+            "Le texte dans un langage naturel est un peu plus important pour le texte dans un langage naturel.",
+            "Le texte dans un langage naturel et du texte dans un langage naturel, sans répétition.",
+            "Le texte dans un langage naturel, sans répétition.",
+            "Merci d'avoir regardé cette vidéo !",
+            "Sous-titrage Société Radio-Canada",
+            "Société Radio-Canada",
+            "Sous-titrage FR 2021",
+            "Sous-titrage FR ?",
+            "Sous-titrage FR",
+            "Sous-titrage ST' 501",
+            "C'est parti !",
+            "...  ...",
+            "–",
+        ],
+        description="List of forbidden sentences to remove from any transcription",
     )

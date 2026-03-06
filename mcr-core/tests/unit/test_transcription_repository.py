@@ -1,4 +1,3 @@
-from typing import List
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,7 +8,7 @@ from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 
 
 @pytest.fixture
-def sample_input() -> List[SpeakerTranscription]:
+def sample_input() -> list[SpeakerTranscription]:
     return [
         SpeakerTranscription(
             meeting_id=1,
@@ -23,7 +22,7 @@ def sample_input() -> List[SpeakerTranscription]:
 
 
 def test_save_transcription_happy_path(
-    sample_input: List[SpeakerTranscription],
+    sample_input: list[SpeakerTranscription],
 ) -> None:
     db_mock = MagicMock()
 

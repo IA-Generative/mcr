@@ -1,5 +1,3 @@
-from typing import Optional
-
 import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import observe
@@ -24,7 +22,7 @@ class RefineParticipants:
     Seeds with the first chunk, then refines with subsequent chunks to extract participants.
     """
 
-    max_chunks: Optional[int] = None
+    max_chunks: int | None = None
 
     def __init__(
         self,

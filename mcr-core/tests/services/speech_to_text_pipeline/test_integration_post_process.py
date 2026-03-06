@@ -1,5 +1,7 @@
 """Test integration for the post process step."""
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
@@ -10,6 +12,27 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
 
 # Note: Fixtures mock_feature_flag_client and create_audio_buffer
 # are automatically imported from conftest.py in this directory
+
+
+@pytest.fixture(autouse=True)
+def mock_post_process_external_calls(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mock external calls made by post_process.
+
+    - get_feature_flag_client(): avoid real Unleash initialization/calls
+    - SpellingCorrector.correct(): return input segments unchanged
+    """
+
+    feature_flag_client = MagicMock()
+    feature_flag_client.is_enabled.return_value = True
+
+    monkeypatch.setattr(
+        "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client",
+        lambda: feature_flag_client,
+    )
+    monkeypatch.setattr(
+        "mcr_meeting.app.services.speech_to_text.speech_to_text.SpellingCorrector.correct",
+        lambda _self, segments: segments,
+    )
 
 
 @pytest.fixture

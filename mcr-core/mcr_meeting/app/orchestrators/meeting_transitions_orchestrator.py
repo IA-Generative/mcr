@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import UUID4
 
@@ -7,7 +7,7 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingEvent,
     MeetingPlatforms,
 )
-from mcr_meeting.app.schemas.report_generation import ReportGenerationResponse
+from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
 from mcr_meeting.app.services.meeting_service import get_meeting_service
 from mcr_meeting.app.services.transcription_task_service import (
     create_formatted_docx_transcription,
@@ -59,7 +59,7 @@ def fail_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
 
 
 def complete_capture(
-    meeting_id: int, user_keycloak_uuid: Optional[UUID4] = None
+    meeting_id: int, user_keycloak_uuid: UUID4 | None = None
 ) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
@@ -68,7 +68,7 @@ def complete_capture(
 
 
 def init_transcription(
-    meeting_id: int, user_keycloak_uuid: Optional[UUID4] = None
+    meeting_id: int, user_keycloak_uuid: UUID4 | None = None
 ) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
@@ -91,14 +91,23 @@ def complete_transcription(meeting_id: int) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
 
 
-def delete(meeting_id: int, user_keycloak_uuid: Optional[UUID4] = None) -> Meeting:
+def update_transcription(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
+    meeting = get_meeting_service(
+        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
+    )
+    return _apply_transition(meeting, MeetingEvent.UPDATE_TRANSCRIPTION)
+
+
+def delete(meeting_id: int, user_keycloak_uuid: UUID4 | None = None) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
     )
     return _apply_transition(meeting, MeetingEvent.DELETE)
 
 
-def start_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
+def start_report(
+    meeting_id: int, user_keycloak_uuid: UUID4, report_type: ReportType
+) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
     )
@@ -106,12 +115,19 @@ def start_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     if meeting.transcription_filename is None:
         create_formatted_docx_transcription(meeting=meeting)
 
-    return _apply_transition(meeting, MeetingEvent.START_REPORT)
+    return _apply_transition(
+        meeting, MeetingEvent.START_REPORT, report_type=report_type
+    )
 
 
-def complete_report(
-    meeting_id: int, report_response: ReportGenerationResponse
-) -> Meeting:
+def reset_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
+    meeting = get_meeting_service(
+        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
+    )
+    return _apply_transition(meeting, MeetingEvent.RESET_REPORT)
+
+
+def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting:
     meeting = get_meeting_service(meeting_id=meeting_id)
 
     return _apply_transition(

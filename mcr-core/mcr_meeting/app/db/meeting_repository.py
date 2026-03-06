@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from typing import List, Optional
 
 from sqlalchemy.orm import joinedload
 
@@ -74,8 +73,8 @@ def update_meeting(updated_meeting: Meeting) -> Meeting:
 
 
 def get_meetings(
-    user_id: int, search: Optional[str], page: int, page_size: int
-) -> List[Meeting]:
+    user_id: int, search: str | None, page: int, page_size: int
+) -> list[Meeting]:
     """
     Récupère une liste de réunions filtrées depuis la base de données.
 
@@ -124,7 +123,7 @@ def get_meeting_with_transcriptions(
     """
     db = get_db_session_ctx()
     # Requête principale pour récupérer la réunion avec les transcriptions
-    meeting: Optional[Meeting] = (
+    meeting: Meeting | None = (
         db.query(Meeting)
         .options(
             joinedload(Meeting.transcriptions)  # Chargement rapide des transcriptions

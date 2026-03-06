@@ -1,0 +1,48 @@
+# {{ title }}
+## Synthèse des échanges
+{% for summary_point in discussions_summary %}
+- {{ summary_point }}
+{% endfor %}
+
+## Points de discussion détaillés
+{% for discussion in detailed_discussions %}
+### {{ discussion.title }}
+{% if discussion.key_ideas %}
+**Points-clés :**
+{% for idea in discussion.key_ideas %}
+- {{ idea }}
+{% endfor %}
+{% endif %}
+
+{% if discussion.decisions %}
+**Décisions :**
+{% for decision in discussion.decisions %}
+- {{ decision }}
+{% endfor %}
+{% endif %}
+
+{% if discussion.actions %}
+**Actions :**
+{% for action in discussion.actions %}
+- {{ action }}
+{% endfor %}
+{% endif %}
+
+{% if discussion.focus_points %}
+**Points d'attention :**
+{% for point in discussion.focus_points %}
+- {{ point }}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
+## Récapitulatif final
+### À faire
+{% for item in to_do_list %}
+- {{ item }}
+{% endfor %}
+
+### À suivre
+{% for item in to_monitor_list %}
+- {{ item }}
+{% endfor %}

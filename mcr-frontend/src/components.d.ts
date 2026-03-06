@@ -18,6 +18,7 @@ declare module 'vue' {
     BotConnectionFailed: typeof import('./components/meeting/transcription/states/BotConnectionFailed.vue')['default']
     BotDisconnecting: typeof import('./components/meeting/transcription/states/BotDisconnecting.vue')['default']
     CaptureVisioInProgress: typeof import('./components/meeting/transcription/states/CaptureVisioInProgress.vue')['default']
+    ComuMeetingForm: typeof import('./components/meeting/visio-modal/ComuMeetingForm.vue')['default']
     CreateMeetingModal: typeof import('./components/meeting/modals/CreateMeetingModal.vue')['default']
     CreateVisioMeetingForm: typeof import('./components/meeting/CreateVisioMeetingForm.vue')['default']
     CreateVisioMeetingModal: typeof import('./components/meeting/modals/CreateVisioMeetingModal.vue')['default']
@@ -61,6 +62,7 @@ declare module 'vue' {
     RecordMeetingModal: typeof import('./components/meeting/modals/RecordMeetingModal.vue')['default']
     RecordMeetingStep1: typeof import('./components/meeting/forms/record-meeting/RecordMeetingStep1.vue')['default']
     RecordMeetingStep2: typeof import('./components/meeting/forms/record-meeting/RecordMeetingStep2.vue')['default']
+    ReportDownload: typeof import('./components/meeting/report/ReportDownload.vue')['default']
     ReportFormatSelection: typeof import('./components/meeting/report/ReportFormatSelection.vue')['default']
     ReportPending: typeof import('./components/meeting/report/ReportPending.vue')['default']
     RoundedActionButton: typeof import('./components/core/RoundedActionButton.vue')['default']
@@ -86,5 +88,9 @@ declare module 'vue' {
     TranscriptionPending: typeof import('./components/meeting/transcription/states/TranscriptionPending.vue')['default']
     TranscriptionWaitTime: typeof import('./components/meeting/transcription/TranscriptionWaitTime.vue')['default']
     VIcon: typeof import('@gouvminint/vue-dsfr')['VIcon']
+    VisioConnectionSeparator: typeof import('./components/meeting/visio-modal/VisioConnectionSeparator.vue')['default']
+    VisioMeetingForm: typeof import('./components/meeting/visio-modal/VisioMeetingForm.vue')['default']
+    WebconfMeetingForm: typeof import('./components/meeting/visio-modal/WebconfMeetingForm.vue')['default']
+    WebinaireMeetingForm: typeof import('./components/meeting/visio-modal/WebinaireMeetingForm.vue')['default']
   }
 }

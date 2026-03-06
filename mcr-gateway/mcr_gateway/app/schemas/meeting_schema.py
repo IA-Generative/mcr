@@ -1,6 +1,5 @@
 from datetime import datetime
-from enum import Enum
-from typing import Optional
+from enum import Enum, StrEnum
 
 from pydantic import BaseModel, field_serializer
 from pydantic_settings import SettingsConfigDict
@@ -39,13 +38,13 @@ class MeetingBase(BaseModel):
     """
 
     name: str
-    url: Optional[str] = None
+    url: str | None = None
     name_platform: str
     creation_date: datetime
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    meeting_password: Optional[str] = None
-    meeting_platform_id: Optional[str] = None
+    start_date: datetime | None = None
+    end_date: datetime | None = None
+    meeting_password: str | None = None
+    meeting_platform_id: str | None = None
 
     model_config = SettingsConfigDict(
         from_attributes=True,
@@ -106,3 +105,12 @@ class MeetingWithPresignedUrl(BaseModel):
 
     meeting: Meeting
     presigned_url: str
+
+
+class ReportType(StrEnum):
+    DECISION_RECORD = "DECISION_RECORD"
+    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+
+
+class ReportGenerationRequest(BaseModel):
+    report_types: list[ReportType]

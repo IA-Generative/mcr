@@ -30,6 +30,7 @@ api = [
     "sentry-sdk[fastapi]>=2.34.1",
     "alembic==1.16.4",
     "dotenv==0.9.9",
+    "markdowntodocx>=0.1.9.2",
 ]
 worker = [
     "pandas>=2.3.1",
@@ -51,7 +52,7 @@ worker = [
     "faster-whisper>=1.2.0",
     "openai==1.92.2",
     "instructor==1.9.0",
-    "langchain == 0.3.27",
+    "langchain-text-splitters == 0.3.9",
 ]
 
 [dependency-groups]
@@ -67,6 +68,7 @@ test = [
 dev = [
     "ruff",
     "debugpy",
+    "pytest-cov",
     "watchdog[watchmedo]>=6.0.0",
     "boto3-stubs[s3]>=1.40.36",
     "pydot>=4.0.1",
@@ -120,8 +122,11 @@ ignore_missing_imports = true
 # T20:  flake8-print -> No print statements
 # I:    isort -> Sorted imports
 # G:    flake8-logging-format -> logging format
-extend-select = ["T20", "I", "G"]
+# UP:   pyupgrade -> PEP approved code conventions
+extend-select = ["T20", "I", "G", "UP"]
 logger-objects = ["loguru.logger"]
+
+ignore = ["UP017", "UP008", "UP028", "UP046"]
 
 exclude = ["scripts/**", "notebooks/**"]
 

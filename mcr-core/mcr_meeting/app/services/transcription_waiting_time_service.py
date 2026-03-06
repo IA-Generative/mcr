@@ -93,9 +93,7 @@ class TranscriptionQueueEstimationService:
 
         if predicted_date is None:
             raise ValueError(
-                "Estimated end date is None for meeting {}".format(
-                    meeting_transition_record.meeting_id
-                )
+                f"Estimated end date is None for meeting {meeting_transition_record.meeting_id}"
             )
 
         if predicted_date.tzinfo is None:

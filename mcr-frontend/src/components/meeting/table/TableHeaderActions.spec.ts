@@ -22,6 +22,7 @@ vi.mock('@/composables/use-toaster', () => ({
 const mockCreateMeeting = vi.fn();
 const mockImportMeeting = vi.fn();
 const mockStartTranscription = vi.fn();
+const mockStartCapture = vi.fn();
 
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
@@ -34,6 +35,9 @@ vi.mock('@/services/meetings/use-meeting', () => ({
     }),
     startTranscriptionMutation: () => ({
       mutate: mockStartTranscription,
+    }),
+    startCaptureMutation: () => ({
+      mutateAsync: mockStartCapture,
     }),
   }),
 }));

@@ -1,6 +1,5 @@
 from io import BytesIO
 from pathlib import Path
-from typing import List
 
 from pydantic import BaseModel
 
@@ -8,7 +7,7 @@ from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSe
 
 
 class TranscriptionOutput(BaseModel):
-    segments: List[DiarizedTranscriptionSegment]
+    segments: list[DiarizedTranscriptionSegment]
 
     @property
     def text(self) -> str:
@@ -54,7 +53,9 @@ class EvaluationInput(BaseModel):
         arbitrary_types_allowed = True
 
 
-class MetricsPipelineInput(EvaluationInput):
+class MetricsPipelineInput(BaseModel):
+    uid: str
+    reference_transcription: TranscriptionOutput
     generated_transcription: TranscriptionOutput
 
 
@@ -63,6 +64,3 @@ class EvaluationOutput(BaseModel):
     reference_transcription: TranscriptionOutput
     generated_transcription: TranscriptionOutput
     metrics: EvaluationMetrics
-
-    class Config:
-        arbitrary_types_allowed = True

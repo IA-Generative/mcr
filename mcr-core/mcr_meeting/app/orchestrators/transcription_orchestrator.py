@@ -1,10 +1,8 @@
-from typing import Optional
-
 from fastapi import UploadFile
 from pydantic import UUID4
 
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    complete_transcription,
+    update_transcription,
 )
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
@@ -58,12 +56,12 @@ def upload_transcription_docx(
         filename=file.filename,
     )
 
-    complete_transcription(meeting_id=meeting_id)
+    update_transcription(meeting_id=meeting_id, user_keycloak_uuid=user_keycloak_uuid)
 
 
 def get_transcription_waiting_time(
     meeting_id: int,
-    user_keycloak_uuid: Optional[UUID4] = None,
+    user_keycloak_uuid: UUID4 | None = None,
 ) -> TranscriptionQueueStatusResponse:
     get_meeting_service(
         meeting_id=meeting_id,

@@ -1,5 +1,3 @@
-from typing import List, Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -10,7 +8,7 @@ class Intent(BaseModel):
     formulées en français, de manière concise et factuelle.
     """
 
-    title: Optional[str] = Field(
+    title: str | None = Field(
         None,
         description=(
             "Titre de la réunion. Doit être court, spécifique et cohérent avec le sujet dominant extrait ou déduit de la transcription"
@@ -18,7 +16,7 @@ class Intent(BaseModel):
         ),
     )
 
-    objective: Optional[str] = Field(
+    objective: str | None = Field(
         None,
         description=(
             "Objet principal de la réunion. Une phrase très concise résumant le but de la séance, "
@@ -26,7 +24,7 @@ class Intent(BaseModel):
         ),
     )
 
-    confidence: Optional[float] = Field(
+    confidence: float | None = Field(
         ge=0.0,
         le=1.0,
         description=(
@@ -36,7 +34,7 @@ class Intent(BaseModel):
         ),
     )
 
-    justification: Optional[str] = Field(
+    justification: str | None = Field(
         description=(
             "Justification brève expliquant pourquoi ce titre et cet objet ont été retenus. "
             "Doit citer les signaux clés de la transcription : mots-clés, thèmes récurrents, "
@@ -52,7 +50,7 @@ class NextMeeting(BaseModel):
     formulées en français, de manière concise et factuelle.
     """
 
-    date: Optional[str] = Field(
+    date: str | None = Field(
         None,
         description=(
             "Date prévue de la prochaine réunion au format 'JJ/MM/AAAA' ou en relatif (mardi prochain). "
@@ -60,7 +58,7 @@ class NextMeeting(BaseModel):
         ),
     )
 
-    time: Optional[str] = Field(
+    time: str | None = Field(
         None,
         description=(
             "Heure prévue de la prochaine réunion au format 'HH:MM' ou relatif (ex: 'même heure', 'en matinée'). "
@@ -68,14 +66,14 @@ class NextMeeting(BaseModel):
         ),
     )
 
-    purpose: Optional[str] = Field(
+    purpose: str | None = Field(
         None,
         description=(
             "Objet principal ou but de la prochaine réunion. Une phrase très concise résumant le but prévu, "
             "soit explicitement mentionné, soit déduit à partir des discussions dominantes."
         ),
     )
-    confidence: Optional[float] = Field(
+    confidence: float | None = Field(
         ge=0.0,
         le=1.0,
         description=(
@@ -84,7 +82,7 @@ class NextMeeting(BaseModel):
             "ou un manque d’informations explicites."
         ),
     )
-    justification: Optional[str] = Field(
+    justification: str | None = Field(
         description=(
             "Justification brève expliquant pourquoi ces informations ont été retenues. "
             "Doit citer les signaux clés de la transcription : mots-clés, thèmes récurrents, "
@@ -97,20 +95,21 @@ class Participant(BaseModel):
     speaker_id: str = Field(
         description="Identifiant unique du locuteur dans la transcription ex: LOCUTEUR_03.",
     )
-    name: Optional[str] = Field(
+    name: str | None = Field(
         None,
         description="Prenom et/ou nom déduit pour le locuteur à partir des interactions dans la transcription. Ex: 'Jean' ou 'Jean Dupont'.",
     )
-    role: Optional[str] = Field(
+    role: str | None = Field(
         None,
         description="Fonction/rôle si mentionné ou déduit (ex. PO, Tech Lead, Directeur financier).",
     )
-    confidence: Optional[float] = Field(
+    confidence: float | None = Field(
         ge=0.0,
         le=1.0,
         description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur.",
     )
-    association_justification: Optional[str] = Field(
+    association_justification: str | None = Field(
+        exclude=True,
         description=(
             "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id."
         ),
@@ -118,7 +117,7 @@ class Participant(BaseModel):
 
 
 class Participants(BaseModel):
-    participants: List[Participant] = Field(
+    participants: list[Participant] = Field(
         ...,
         description="Liste des participants identifiés dans la réunion avec un speaker_id unique avec leur nom ou role si disponible. Si aucun participant n'a pu être identifié, renvoyer une liste vide.",
     )
@@ -131,7 +130,7 @@ class Decision(BaseModel):
             "Décision extraite du texte, reformulée de manière claire et concise en spécifiant le responsable de la décision si explicite ou détecté."
         ),
     )
-    followup_actions: Optional[List[str]] = Field(
+    followup_actions: list[str] | None = Field(
         None,
         description=(
             "Liste des actions concrètes à entreprendre suite à la décision "
@@ -150,7 +149,7 @@ class Topic(BaseModel):
             "'Migration vers le cloud')."
         ),
     )
-    introduction_text: Optional[str] = Field(
+    introduction_text: str | None = Field(
         ...,
         description=(
             "Phrase introductive présentant le sujet et son contexte, "
@@ -167,7 +166,7 @@ class Topic(BaseModel):
             "ÉLIMINER toute redondance entre titre/introduction/détails/décision."
         ),
     )
-    main_decision: Optional[str] = Field(
+    main_decision: str | None = Field(
         None,
         description=(
             "Décision principale relative au sujet, incluant le décideur si connu et l'action de suivi si applicable. "
@@ -178,14 +177,32 @@ class Topic(BaseModel):
     )
 
 
-class Report(BaseModel):
-    """
-    Full report.
-    """
+class Header(BaseModel):
+    title: str | None
+    objective: str | None
+    participants: list[Participant]
+    next_meeting: str | None
 
-    title: Optional[str]
-    objective: Optional[str]
-    participants: List[Participant]
-    topics_with_decision: List[Topic]
-    next_steps: List[str]
-    next_meeting: Optional[str]
+
+class BaseReport(BaseModel):
+    header: Header
+
+
+class DecisionRecord(BaseReport):
+    topics_with_decision: list[Topic]
+    next_steps: list[str]
+
+
+class DetailedDiscussion(BaseModel):
+    title: str
+    key_ideas: list[str]
+    decisions: list[str]
+    actions: list[str]
+    focus_points: list[str]
+
+
+class DetailedSynthesis(BaseReport):
+    discussions_summary: list[str]
+    detailed_discussions: list[DetailedDiscussion]
+    to_do_list: list[str]
+    to_monitor_list: list[str]

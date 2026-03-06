@@ -25,7 +25,11 @@ format:
 	uv run ruff format
 	uv run ruff check --select I . --fix
 
-pre-commit: type-check lint format
+test:
+	uv sync --all-extras --inexact
+	uv run pytest .
+
+pre-commit: type-check lint format test
 
 SERVICE_NAME = mcr-generation
 TEST_TYPE = integration

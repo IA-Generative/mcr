@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -15,7 +15,7 @@ s3_settings = S3Settings()
 class S3Object(BaseModel):
     bucket_name: str = s3_settings.S3_BUCKET
     object_name: str = Field(alias="Key")
-    last_modified: Optional[datetime] = Field(alias="LastModified")
+    last_modified: datetime | None = Field(alias="LastModified")
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
@@ -54,7 +54,7 @@ class PresignedAudioFileRequest(BaseModel):
 
 
 class MultipartInitRequest(PresignedAudioFileRequest):
-    content_type: Optional[str] = None
+    content_type: str | None = None
 
 
 class MultipartBaseRequest(BaseModel):
