@@ -11,7 +11,7 @@ from mcr_meeting.app.services.s3_service import (
     get_report_object_name,
     put_file_to_s3,
 )
-from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
+from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 
 DEFAULT_REPORT_FILENAME = "report.docx"
 
