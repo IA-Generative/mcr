@@ -1,5 +1,7 @@
 from mimetypes import guess_type
 
+from fastapi import HTTPException, UploadFile, status
+
 # This is necessary because we use python 3.11 and some mimetypes are not registered in that version
 MAP_EXTRA_EXTENSIONS = {
     "audio/weba": "weba",
@@ -24,7 +26,6 @@ DOCX_MIME_TYPE = (
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 )
 
-
 def guess_mime_type(filename: str) -> str:
     ext = filename.split(".")[1]
     type = guess_type(url=filename)[0]
@@ -32,3 +33,5 @@ def guess_mime_type(filename: str) -> str:
         # If no extension is found, default to .raw
         type = REVERSE_MAP[ext]
     return type or "application/octet-stream"
+
+

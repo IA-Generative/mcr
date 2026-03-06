@@ -14,7 +14,7 @@ from mcr_meeting.app.schemas.S3_types import (
     S3ListObjectsPage,
     S3Object,
 )
-from mcr_meeting.app.utils.files_mime_types import guess_mime_type
+from mcr_meeting.app.utils.file_validation import guess_mime_type
 from mcr_meeting.app.utils.s3_client import s3_client, s3_external_client
 
 s3_settings = S3Settings()

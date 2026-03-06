@@ -33,8 +33,8 @@ from mcr_meeting.app.services.email.email_service import (
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
+from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, validate_docx_upload
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
-from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
 
 api_settings = ApiSettings()
 
