@@ -43,6 +43,9 @@ class MeetingMonitor(ABC):
             logger.warning("Could not read participant count: {}", e)
             return None
 
+    async def enforce_bot_muted(self, page: Page) -> None:
+        return
+
     async def disconnect_from_meeting(self, page: Page) -> None:
         return
 
