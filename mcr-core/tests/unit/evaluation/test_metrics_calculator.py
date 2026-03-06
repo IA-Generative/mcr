@@ -122,7 +122,7 @@ class TestFrenchTextNormalizer:
         assert french_text_normalizer("le probleme le") == "le probleme le"
 
     def test_sentence_with_mixed_duplicates(self):
-        # mirrors the example from the spec
+        # Multiple consecutive duplicates should be collapsed
         assert (
             french_text_normalizer("le le problème du du de de de cette")
             == "le probleme du de cette"
