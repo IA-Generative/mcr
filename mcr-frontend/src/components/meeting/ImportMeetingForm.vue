@@ -12,13 +12,7 @@
         v-model="filePath"
         v-bind="fileAttrs"
         :label="$t('meeting.import-form.fields.file.label')"
-        :hint="
-          $t(
-            isMultipartUploadEnabled()
-              ? 'meeting.import-form.fields.file.hint-with-multipart-upload-enabled'
-              : 'meeting.import-form.fields.file.hint',
-          )
-        "
+        :hint="$t('meeting.import-form.fields.file.hint-with-multipart-upload-enabled')"
         accept="video/*, audio/*"
         @change="(fileList) => handleFileChange(fileList)"
       />
@@ -76,7 +70,6 @@ import { toTypedSchema } from '@vee-validate/yup';
 import {
   importMeetingFieldsToMeetingDtoAndFile,
   ImportMeetingSchema,
-  isMultipartUploadEnabled,
 } from '@/components/meeting/forms/import-meeting/import-meeting.schema';
 import type { AddImportMeetingDtoAndFile } from '@/services/meetings/meetings.types';
 import { useVideo2audioConverter } from '@/utils/video2audioConverter';

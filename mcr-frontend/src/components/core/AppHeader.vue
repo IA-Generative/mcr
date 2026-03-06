@@ -35,9 +35,7 @@
       />
     </template>
   </DsfrHeader>
-  <DsfrNotice
-    :title="$t('header.notice.title')"
-  >
+  <DsfrNotice :title="$t('header.notice.title')">
     <template #desc>
       <i18n-t
         keypath="header.notice.desc"
