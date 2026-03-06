@@ -302,43 +302,6 @@ def test_delete_meeting_not_found(
     assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
-def test_meeting_create_and_generate_presigned_url(
-    meeting_client: PrefixedTestClient, user_fixture: User
-) -> None:
-    # Arrange
-    meeting_create = MeetingCreate(
-        name="Super important Meeting",
-        creation_date=datetime(2024, 9, 29, 16, 0),
-        name_platform="COMU",
-        url="https://webconf.comu.gouv.fr/meeting/306356457?secret=GF2e74BjOcDR1Bq6nvv5wA",
-    )
-
-    expected_result = Meeting(
-        name=meeting_create.name,
-        creation_date=meeting_create.creation_date,
-        name_platform=meeting_create.name_platform,
-        url=meeting_create.url,
-        id=3,
-    )
-
-    payload = {
-        "meeting_data": meeting_create.model_dump(),
-        "presigned_request": {"filename": "100.wav"},
-    }
-
-    # Act
-    headers = get_user_auth_header(user_fixture.keycloak_uuid)
-    response = meeting_client.post(
-        "/create_and_generate_presigned_url", json=payload, headers=headers
-    )
-
-    # Assert
-    json_data = response.json()
-
-    assert response.status_code == status.HTTP_200_OK
-    assert_json_equal_meeting_model(json_data["meeting"], expected_result)
-
-
 @pytest.mark.parametrize(
     "filename,expected_status",
     [

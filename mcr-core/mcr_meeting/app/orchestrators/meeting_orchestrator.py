@@ -3,9 +3,7 @@ from uuid import UUID
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
-    MeetingResponse,
     MeetingUpdate,
-    MeetingWithPresignedUrl,
 )
 from mcr_meeting.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -19,27 +17,6 @@ from mcr_meeting.app.services.meeting_service import (
     get_meetings_service,
     update_meeting_service,
 )
-
-
-async def create_meeting_with_presigned_url(
-    meeting_data: MeetingCreate,
-    presigned_request: PresignedAudioFileRequest,
-    user_keycloak_uuid: UUID,
-) -> MeetingWithPresignedUrl:
-    meeting = create_meeting_service(
-        meeting_data=meeting_data,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    presigned_url = await get_presigned_upload_url(
-        meeting_id=meeting.id,
-        presigned_request=presigned_request,
-    )
-
-    return MeetingWithPresignedUrl(
-        meeting=MeetingResponse.model_validate(meeting),
-        presigned_url=presigned_url,
-    )
 
 
 def create_meeting(

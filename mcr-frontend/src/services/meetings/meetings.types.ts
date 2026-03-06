@@ -112,11 +112,6 @@ export function isMeetingInProgress(status: MeetingStatus): boolean {
   );
 }
 
-export interface MeetingDtoWithPresignedUrl {
-  meeting: MeetingDto;
-  presigned_url: string;
-}
-
 export function isMeetingFailed(status: MeetingStatus): boolean {
   return (
     status === 'CAPTURE_FAILED' ||

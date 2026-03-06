@@ -155,8 +155,7 @@
           "download-in-progress": "Téléchargement en cours",
           "download-done": "Téléchargement terminé",
           "placeholder": "Aucun fichier sélectionné",
-          "hint": "Taille maximale : 200 Mo. Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov.",
-          "hint-with-multipart-upload-enabled": "Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov."
+          "hint": "Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov."
         },
         "name": "Titre de la réunion",
         "date": "Date de la réunion"
