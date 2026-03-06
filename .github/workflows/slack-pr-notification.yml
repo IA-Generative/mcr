@@ -4,10 +4,13 @@ on:
   pull_request:
     branches:
       - dev
-    types: [opened]
+    types: [opened, edited]
 
 jobs:
   notify:
+    if: >-
+      github.event.action == 'opened' ||
+      github.event.changes.base != null
     runs-on: ubuntu-latest
     steps:
       - name: Send Slack notification

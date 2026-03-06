@@ -18,8 +18,8 @@ from mcr_meeting.app.schemas.report_generation import (
 from mcr_meeting.app.services.report_task_service import (
     get_formatted_report_from_s3,
 )
+from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
-from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
 
 api_settings = ApiSettings()
 router = APIRouter(
