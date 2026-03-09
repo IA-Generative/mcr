@@ -37,7 +37,7 @@ worker = [
     "jiwer>=4.0.0",
     "ffmpeg-python>=0.2.0",
     "openai-whisper==20250625",
-    "transformers==4.52.4",
+    "transformers==5.3.0",
     "torch==2.7.1",
     "torchaudio==2.7.1",
     "pytorch-lightning==2.5.5",
@@ -50,9 +50,9 @@ worker = [
     "httpx>=0.28.1",
     "sentry-sdk[celery]>=2.34.1",
     "faster-whisper>=1.2.0",
-    "openai==1.92.2",
+    "openai==2.26.0",
     "instructor==1.9.0",
-    "langchain-text-splitters == 0.3.9",
+    "langchain-text-splitters == 1.1.1",
 ]
 
 [dependency-groups]
