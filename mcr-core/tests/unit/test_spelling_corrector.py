@@ -120,8 +120,8 @@ class TestSpellingCorrectorCorrect:
         )
         corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
             side_effect=[
-                "SEGMENT UN.<separator0>",
-                "SEGMENT DEUX.<separator1>SEGMENT TROIS.",
+                "SEGMENT UN.<separator1>",
+                "SEGMENT DEUX.<separator2>SEGMENT TROIS.",
             ]
         )
 
@@ -132,10 +132,10 @@ class TestSpellingCorrectorCorrect:
         assert result[1].text == " SEGMENT DEUX."
         assert result[2].text == "SEGMENT TROIS."
 
-    def test_should_return_original_segments_if_split_count_differs(
+    def test_should_replace_only_segments_with_available_corrected_text(
         self, corrector: SpellingCorrector
     ) -> None:
-        """Checks that original segments are returned when split count mismatches."""
+        """Checks that only mapped segment ids are replaced and missing ids are kept."""
         segments = [
             make_segment(id=0, text="Segment un."),
             make_segment(id=1, text="Segment deux."),
@@ -153,47 +153,130 @@ class TestSpellingCorrectorCorrect:
 
         result = corrector.correct(segments)
 
-        assert result == segments
+        assert result[0].text == "only-one-segment"
+        assert result[1].text == "Segment deux."
 
 
 class TestSpellingCorrectorSplitSegments:
     """Tests for SpellingCorrector._split_segments()."""
 
-    def test_should_split_text_on_numeric_separator_markers(
+    def test_should_map_numeric_separator_markers_to_following_text(
         self, corrector: SpellingCorrector
     ) -> None:
         chunks = [
-            Chunk(id=0, text="Segment un.<separator0>"),
-            Chunk(id=1, text="Segment deux.<separator1>Segment trois."),
+            Chunk(id=0, text="Segment un.<separator1>"),
+            Chunk(id=1, text="Segment deux.<separator2>Segment trois."),
         ]
 
-        result = corrector._split_segments(chunks)
+        result = corrector._split_segments(chunks=chunks, expected_segments_count=3)
 
-        assert result == ["Segment un.", " Segment deux.", "Segment trois."]
+        assert result == {0: "Segment un.", 1: " Segment deux.", 2: "Segment trois."}
 
-    def test_should_not_split_when_separator_has_no_numeric_id(
+    def test_should_map_missing_separator_ids_to_none(
         self, corrector: SpellingCorrector
     ) -> None:
         chunks = [
-            Chunk(id=0, text="Segment un.<separator>"),
-            Chunk(id=1, text="Segment deux."),
+            Chunk(id=0, text="Segment un.<separator1>Segment deux."),
+            Chunk(id=1, text="Segment trois."),
         ]
 
-        result = corrector._split_segments(chunks)
+        result = corrector._split_segments(chunks=chunks, expected_segments_count=4)
 
-        assert result == ["Segment un.<separator> Segment deux."]
+        assert result == {0: "Segment un.", 1: None, 2: None, 3: None}
 
-    def test_should_keep_leading_empty_segment_when_text_starts_with_separator(
+    def test_should_invalidate_previous_segment_when_separator_missing(
         self, corrector: SpellingCorrector
     ) -> None:
         chunks = [
-            Chunk(id=0, text="<separator0>Segment un."),
-            Chunk(id=1, text="Segment deux."),
+            Chunk(id=0, text="A<separator1>B<separator3>D"),
         ]
 
-        result = corrector._split_segments(chunks)
+        result = corrector._split_segments(chunks=chunks, expected_segments_count=4)
 
-        assert result == ["", "Segment un. Segment deux."]
+        assert result == {0: "A", 1: None, 2: None, 3: "D"}
+
+    def test_should_handle_last_separator_id_using_expected_count(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        chunks = [
+            Chunk(id=0, text="A<separator1>B<separator2>C<separator3>D"),
+        ]
+
+        result = corrector._split_segments(chunks=chunks, expected_segments_count=4)
+
+        assert result == {0: "A", 1: "B", 2: "C", 3: "D"}
+
+
+class TestSpellingCorrectorAssignAndInvalidateSegmentTexts:
+    """Tests for SpellingCorrector._assign_and_invalidate_segment_texts()."""
+
+    def test_should_assign_text_for_each_found_separator_id(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        parts = ["A", "1", "B", "2", "C"]
+        segment_texts: dict[int, str | None] = {0: "A", 1: None, 2: None}
+
+        corrector._assign_and_invalidate_segment_texts(
+            parts=parts,
+            segment_texts=segment_texts,
+            expected_segments_count=3,
+        )
+
+        assert segment_texts == {0: "A", 1: "B", 2: "C"}
+
+    def test_should_invalidate_previous_segment_when_one_separator_is_missing(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        parts = ["A", "1", "B", "3", "D"]
+        segment_texts: dict[int, str | None] = {0: "A", 1: None, 2: None, 3: None}
+
+        corrector._assign_and_invalidate_segment_texts(
+            parts=parts,
+            segment_texts=segment_texts,
+            expected_segments_count=4,
+        )
+
+        assert segment_texts == {0: "A", 1: None, 2: None, 3: "D"}
+
+
+class TestSpellingCorrectorReplaceCorrectedSegments:
+    """Tests for SpellingCorrector._replace_corrected_segments()."""
+
+    def test_should_replace_only_segments_with_non_none_corrected_text(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        segments = [
+            make_segment(id=0, text="Original 0", speaker="Alice"),
+            make_segment(id=1, text="Original 1", speaker="Bob"),
+            make_segment(id=2, text="Original 2", speaker="Carol"),
+        ]
+        segment_texts: dict[int, str | None] = {
+            0: "Corrected 0",
+            1: None,
+            2: "Corrected 2",
+        }
+
+        result = corrector._replace_corrected_segments(segments, segment_texts)
+
+        assert [segment.text for segment in result] == [
+            "Corrected 0",
+            "Original 1",
+            "Corrected 2",
+        ]
+
+    def test_should_keep_original_segment_instance_when_text_is_none(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        segments = [
+            make_segment(id=0, text="Original 0"),
+            make_segment(id=1, text="Original 1"),
+        ]
+        segment_texts: dict[int, str | None] = {0: "Corrected 0", 1: None}
+
+        result = corrector._replace_corrected_segments(segments, segment_texts)
+
+        assert result[0] is not segments[0]
+        assert result[1] is segments[1]
 
 
 class TestSpellingCorrectorFormatSegmentsForLlm:
@@ -211,12 +294,12 @@ class TestSpellingCorrectorFormatSegmentsForLlm:
 
         result = corrector._format_segments_for_llm(segments)
 
-        assert "<separator0>" in result
         assert "<separator1>" in result
         assert "<separator2>" in result
-        assert "<separator3>" not in result
-        assert result.index("<separator0>") < result.index("<separator1>")
+        assert "<separator3>" in result
+        assert "<separator4>" not in result
         assert result.index("<separator1>") < result.index("<separator2>")
+        assert result.index("<separator2>") < result.index("<separator3>")
 
     def test_should_strip_segments_and_keep_last_segment_without_separator(
         self, corrector: SpellingCorrector
@@ -229,4 +312,4 @@ class TestSpellingCorrectorFormatSegmentsForLlm:
 
         result = corrector._format_segments_for_llm(segments)
 
-        assert result == "Bonjour <separator0>Salut <separator1>Au revoir"
+        assert result == "Bonjour <separator1>Salut <separator2>Au revoir"
