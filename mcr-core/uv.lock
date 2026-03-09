@@ -1450,6 +1450,24 @@ redis = [
 ]
 
 [[package]]
+name = "langchain"
+version = "0.3.27"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "langchain-text-splitters" },
+    { name = "langsmith" },
+    { name = "pydantic" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "sqlalchemy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/83/f6/f4f7f3a56626fe07e2bb330feb61254dbdf06c506e6b59a536a337da51cf/langchain-0.3.27.tar.gz", hash = "sha256:aa6f1e6274ff055d0fd36254176770f356ed0a8994297d1df47df341953cec62", size = 10233809, upload-time = "2025-07-24T14:42:32.959Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f6/d5/4861816a95b2f6993f1360cfb605aacb015506ee2090433a71de9cca8477/langchain-0.3.27-py3-none-any.whl", hash = "sha256:7b20c4f338826acb148d885b20a73a16e410ede9ee4f19bb02011852d5f98798", size = 1018194, upload-time = "2025-07-24T14:42:30.23Z" },
+]
+
+[[package]]
 name = "langchain-core"
 version = "0.3.83"
 source = { registry = "https://pypi.org/simple" }
@@ -1736,7 +1754,6 @@ dependencies = [
     { name = "jinja2" },
     { name = "loguru" },
     { name = "mypy-boto3-s3" },
-    { name = "num2words" },
     { name = "numpy" },
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
@@ -1764,9 +1781,11 @@ worker = [
     { name = "httpx" },
     { name = "instructor" },
     { name = "jiwer" },
+    { name = "langchain" },
     { name = "langchain-text-splitters" },
     { name = "lightning" },
     { name = "llvmlite" },
+    { name = "num2words" },
     { name = "numba" },
     { name = "onnxruntime" },
     { name = "openai" },
@@ -1830,13 +1849,14 @@ requires-dist = [
     { name = "instructor", marker = "extra == 'worker'", specifier = "==1.9.0" },
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "jiwer", marker = "extra == 'worker'", specifier = ">=4.0.0" },
+    { name = "langchain", marker = "extra == 'worker'", specifier = "==0.3.27" },
     { name = "langchain-text-splitters", marker = "extra == 'worker'", specifier = "==0.3.9" },
     { name = "lightning", marker = "extra == 'worker'", specifier = "==2.5.5" },
     { name = "llvmlite", marker = "extra == 'worker'", specifier = ">=0.44.0" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "markdowntodocx", marker = "extra == 'api'", specifier = ">=0.1.9.2" },
     { name = "mypy-boto3-s3", specifier = ">=1.40.26" },
-    { name = "num2words", specifier = ">=0.5.13" },
+    { name = "num2words", marker = "extra == 'worker'", specifier = ">=0.5.13" },
     { name = "numba", marker = "extra == 'worker'", specifier = ">=0.61.0" },
     { name = "numpy", specifier = ">=2.2.6" },
     { name = "onnxruntime", marker = "extra == 'worker'", specifier = "==1.21.0" },
