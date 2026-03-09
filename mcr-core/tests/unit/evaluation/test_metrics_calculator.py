@@ -170,6 +170,15 @@ class TestMetricsCalculatorNormalization:
         assert result.wer == 0.0
         assert result.cer == 0.0
 
+    def test_consecutive_duplicates_in_prediction_not_ignored_in_scoring(self):
+        """A prediction with repeated words should be penalized."""
+        result = MetricsCalculator.calculate_transcription_metrics(
+            reference_text="le problème du du alors de de de cette question",
+            hypothesis_text="le le probleme du de cette question",
+        )
+        assert result.wer > 0.0
+        assert result.cer > 0.0
+
     def test_genuinely_different_words_produce_nonzero_wer(self):
         result = MetricsCalculator.calculate_transcription_metrics(
             reference_text="bonjour monde",
@@ -217,8 +226,8 @@ class TestMetricsCalculatorNormalization:
             id="eventually_with_markers",
         ),
         pytest.param(
-            "merci très bien + ensuite euh + jean-marc + * + ca va",
-            "Merci.  Merci.  Merci.  Merci.  Merci.  Très bien. Ensuite, Jean-Marc, ça va ?",
+            "merci très bien + ensuite euh + jean-marc + * + ca ca ca va",
+            "Merci.  Très bien. Ensuite, Jean-Marc, ça va ?",
             id="repeated_merci_collapsed",
         ),
         pytest.param(

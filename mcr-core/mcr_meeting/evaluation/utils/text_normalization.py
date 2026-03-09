@@ -42,7 +42,7 @@ def _replace_numbers_with_words(text: str, lang: str = "fr") -> str:
     return re.sub(r"\d+", repl, text)
 
 
-def french_text_normalizer(text: str) -> str:
+def french_text_normalizer(text: str, *, remove_repetitions: bool = True) -> str:
     """Normalize French text before metric computation.
 
     Applies the following transformations:
@@ -89,7 +89,8 @@ def french_text_normalizer(text: str) -> str:
 
     # Remove consecutive duplicate words (e.g. "le le" → "le", "de de de" → "de").
     # Applied after punctuation removal so only clean word tokens are compared.
-    text = re.sub(r"\b(\w+)(\s+\1)+\b", r"\1", text)
+    if remove_repetitions:
+        text = re.sub(r"\b(\w+)(\s+\1)+\b", r"\1", text)
 
     # Collapse multiple spaces and strip edges
     text = re.sub(r"\s+", " ", text).strip()
