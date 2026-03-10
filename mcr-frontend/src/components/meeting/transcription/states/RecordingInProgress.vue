@@ -4,29 +4,16 @@
     class="flex flex-col items-center gap-5"
   >
     <div
-      v-if="isRecording"
-      class="rounded-sm px-2 flex items-center gap-1 bg-[var(--warning-950-100)]"
+      class="rounded-sm px-2 flex items-center gap-1"
+      :class="isRecording ? 'status-badge--recording' : 'status-badge--paused'"
     >
       <VIcon
         name="ri-circle-fill"
         scale="1"
-        color="var(--warning-425-625)"
+        color="currentColor"
       />
-      <span class="text-base/6 font-bold text-center text-[var(--warning-425-625)]">
-        {{ $t('meeting.transcription.recording.status.in-progress').toUpperCase() }}
-      </span>
-    </div>
-    <div
-      v-else
-      class="rounded-sm px-2 flex items-center gap-1 bg-[var(--info-950-100)]"
-    >
-      <VIcon
-        name="ri-circle-fill"
-        scale="1"
-        color="var(--info-425-625)"
-      />
-      <span class="text-base/6 font-bold text-center text-[var(--info-425-625)]">
-        {{ $t('meeting.transcription.recording.status.paused').toUpperCase() }}
+      <span class="text-base/6 font-bold text-center">
+        {{ statusLabel }}
       </span>
     </div>
     <div class="flex flex-row items-center gap-2">
@@ -108,6 +95,12 @@ const { data: meetingQueryData } = getMeetingQuery(props.meetingId);
 
 const { saveRecordingProgress, clearRecordingProgress, loadRecordingProgress } =
   useLocalStorageRecording();
+
+const statusLabel = computed(() =>
+  isRecording.value
+    ? t('meeting.transcription.recording.status.in-progress').toUpperCase()
+    : t('meeting.transcription.recording.status.paused').toUpperCase(),
+);
 
 let chunkCounter = 0;
 
@@ -245,3 +238,15 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadHandler);
 });
 </script>
+
+<style scoped>
+.status-badge--recording {
+  background: var(--warning-950-100);
+  color: var(--warning-425-625);
+}
+
+.status-badge--paused {
+  background: var(--info-950-100);
+  color: var(--info-425-625);
+}
+</style>
