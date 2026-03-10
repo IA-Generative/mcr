@@ -53,6 +53,7 @@ worker = [
     "openai==1.92.2",
     "instructor==1.9.0",
     "langchain-text-splitters == 0.3.9",
+    "num2words>=0.5.13",
 ]
 
 [dependency-groups]
@@ -111,6 +112,7 @@ module = [
     "whisper_timestamped",
     "jiwer",
     "ffmpeg",
+    "num2words",
     "pyannote.*",
     "faster_whisper",
     "soundfile",
