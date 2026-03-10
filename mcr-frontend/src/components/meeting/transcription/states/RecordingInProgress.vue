@@ -24,7 +24,7 @@
         }}
       </h2>
     </div>
-    <div class="grid grid-cols-2 w-[60%] gap-4">
+    <div class="grid grid-cols-2 w-full max-w-xs gap-4">
       <RoundedActionButton
         v-if="!isRecording"
         icon="ri-play-circle-fill"
@@ -41,12 +41,16 @@
       </RoundedActionButton>
       <RoundedActionButton
         icon="ri-stop-circle-fill"
+        :disabled="!isOnline"
         @click="() => onClickStop()"
       >
         {{ $t('meeting.transcription.recording.actions.stop') }}
       </RoundedActionButton>
     </div>
-    <RecordMeetingFormNotice />
+    <RecordMeetingFormNotice
+      :is-online="isOnline"
+      class="w-full max-w-2xl"
+    />
   </div>
   <div v-else>
     <VIcon
@@ -64,6 +68,7 @@ import RoundedActionButton from '@/components/core/RoundedActionButton.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecorder } from '@/composables/use-recorder';
 import { useLocalStorageRecording } from '@/composables/use-local-storage-recording';
+import { useNetworkStatus } from '@/composables/use-network-status';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -80,6 +85,7 @@ const {
   audioInputLevel,
 } = useRecorder();
 const { t } = useI18n();
+const { isOnline } = useNetworkStatus();
 
 const isSendingLastAudioChunks = ref(false);
 
