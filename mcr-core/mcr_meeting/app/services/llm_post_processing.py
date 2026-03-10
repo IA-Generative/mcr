@@ -26,7 +26,6 @@ class LLMPostProcessing(ABC):
             ),
             mode=instructor.Mode.JSON,
         )
-        self.separator: str
 
     def _chunk_text(self, text: str) -> list[Chunk]:
         text_splitter = RecursiveCharacterTextSplitter(

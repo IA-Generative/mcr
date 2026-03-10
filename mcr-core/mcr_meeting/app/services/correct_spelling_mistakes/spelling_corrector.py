@@ -15,8 +15,6 @@ class CorrectedText(BaseModel):
 class SpellingCorrector(LLMPostProcessing):
     def __init__(self) -> None:
         super().__init__()
-        # Removed > on purpose so we can add its index for better splitting later
-        self.separator = "<separator"
 
     def correct(
         self, segments: list[DiarizedTranscriptionSegment]
@@ -61,7 +59,7 @@ class SpellingCorrector(LLMPostProcessing):
         """
         return (
             "".join(
-                segment.text.strip() + f" {self.separator}{i}>"
+                segment.text.strip() + f" <separator{i}>"
                 for i, segment in enumerate(segments[:-1], start=1)
             )
             + segments[-1].text.strip()
@@ -96,20 +94,23 @@ class SpellingCorrector(LLMPostProcessing):
         # The first part before any separator is the text of the first segment
         segment_texts[0] = parts[0] if parts else text
 
-        self._assign_and_invalidate_segment_texts(
+        found_separator_ids = self._fill_segment_texts_from_parts(
             parts=parts,
+            segment_texts=segment_texts,
+        )
+        self._invalidate_missing_separators(
+            found_separator_ids=found_separator_ids,
             segment_texts=segment_texts,
             expected_segments_count=expected_segments_count,
         )
 
         return segment_texts
 
-    def _assign_and_invalidate_segment_texts(
+    def _fill_segment_texts_from_parts(
         self,
         parts: list[str],
         segment_texts: dict[int, str | None],
-        expected_segments_count: int,
-    ) -> None:
+    ) -> set[int]:
         found_separator_ids: set[int] = set()
         for index in range(1, len(parts), 2):
             segment_id = int(parts[index])
@@ -117,6 +118,14 @@ class SpellingCorrector(LLMPostProcessing):
                 found_separator_ids.add(segment_id)
                 segment_texts[segment_id] = parts[index + 1]
 
+        return found_separator_ids
+
+    def _invalidate_missing_separators(
+        self,
+        found_separator_ids: set[int],
+        segment_texts: dict[int, str | None],
+        expected_segments_count: int,
+    ) -> None:
         for separator_id in range(1, expected_segments_count):
             if separator_id not in found_separator_ids:
                 segment_texts[separator_id] = None
@@ -134,14 +143,12 @@ class SpellingCorrector(LLMPostProcessing):
         for segment_id, segment in enumerate(segments):
             corrected_text = segment_texts.get(segment_id)
             if corrected_text is None:
-                logger.info(
+                logger.debug(
                     "No corrected text found for segment {}, keeping original text",
                     segment_id,
                 )
-                replaced_segments.append(segment)
             else:
-                replaced_segments.append(
-                    segment.model_copy(update={"text": corrected_text})
-                )
+                segment = segment.model_copy(update={"text": corrected_text})
+            replaced_segments.append(segment)
 
         return replaced_segments
