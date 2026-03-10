@@ -28,7 +28,7 @@ def _extract_name_candidate(line: str) -> str | None:
     return " ".join(words)
 
 
-def get_participants_from_chunks(chunks: list[Chunk]) -> Participants:
+def _extract_unique_names_in_order(chunks: list[Chunk]) -> list[str]:
     names_in_order: list[str] = []
     seen_names: set[str] = set()
 
@@ -39,6 +39,12 @@ def get_participants_from_chunks(chunks: list[Chunk]) -> Participants:
                 continue
             seen_names.add(name)
             names_in_order.append(name)
+
+    return names_in_order
+
+
+def get_participants_from_chunks(chunks: list[Chunk]) -> Participants:
+    names_in_order = _extract_unique_names_in_order(chunks)
 
     logger.info("Extracted participant names in order: {}", names_in_order)
 
