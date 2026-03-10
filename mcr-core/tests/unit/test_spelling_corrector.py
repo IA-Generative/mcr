@@ -207,8 +207,8 @@ class TestSpellingCorrectorSplitSegments:
         assert result == {0: "A", 1: "B", 2: "C", 3: "D"}
 
 
-class TestSpellingCorrectorAssignAndInvalidateSegmentTexts:
-    """Tests for SpellingCorrector._assign_and_invalidate_segment_texts()."""
+class TestSpellingCorrectorFillSegmentTextsFromParts:
+    """Tests for SpellingCorrector._fill_segment_texts_from_parts()."""
 
     def test_should_assign_text_for_each_found_separator_id(
         self, corrector: SpellingCorrector
@@ -216,27 +216,43 @@ class TestSpellingCorrectorAssignAndInvalidateSegmentTexts:
         parts = ["A", "1", "B", "2", "C"]
         segment_texts: dict[int, str | None] = {0: "A", 1: None, 2: None}
 
-        corrector._assign_and_invalidate_segment_texts(
+        found_separator_ids = corrector._fill_segment_texts_from_parts(
             parts=parts,
             segment_texts=segment_texts,
-            expected_segments_count=3,
         )
 
+        assert found_separator_ids == {1, 2}
         assert segment_texts == {0: "A", 1: "B", 2: "C"}
+
+
+class TestSpellingCorrectorInvalidateMissingSeparators:
+    """Tests for SpellingCorrector._invalidate_missing_separators()."""
 
     def test_should_invalidate_previous_segment_when_one_separator_is_missing(
         self, corrector: SpellingCorrector
     ) -> None:
-        parts = ["A", "1", "B", "3", "D"]
-        segment_texts: dict[int, str | None] = {0: "A", 1: None, 2: None, 3: None}
+        segment_texts: dict[int, str | None] = {0: "A", 1: "B", 2: None, 3: "D"}
 
-        corrector._assign_and_invalidate_segment_texts(
-            parts=parts,
+        corrector._invalidate_missing_separators(
+            found_separator_ids={1, 3},
             segment_texts=segment_texts,
             expected_segments_count=4,
         )
 
         assert segment_texts == {0: "A", 1: None, 2: None, 3: "D"}
+
+    def test_should_only_invalidate_missing_separator_when_first_separator_missing(
+        self, corrector: SpellingCorrector
+    ) -> None:
+        segment_texts: dict[int, str | None] = {0: "A", 1: "B", 2: "C"}
+
+        corrector._invalidate_missing_separators(
+            found_separator_ids={2},
+            segment_texts=segment_texts,
+            expected_segments_count=3,
+        )
+
+        assert segment_texts == {0: "A", 1: None, 2: "C"}
 
 
 class TestSpellingCorrectorReplaceCorrectedSegments:
