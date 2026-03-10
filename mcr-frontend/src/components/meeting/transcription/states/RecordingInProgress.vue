@@ -70,6 +70,8 @@ import { useRecorder } from '@/composables/use-recorder';
 import { useLocalStorageRecording } from '@/composables/use-local-storage-recording';
 import { useNetworkStatus } from '@/composables/use-network-status';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
+import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
+import { useChunkUpload } from '@/composables/use-chunk-upload';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -96,14 +98,12 @@ const props = defineProps<{
   meetingId: number;
 }>();
 
-const { startTranscriptionMutation, uploadFileWithPresignedUrlMutation, getMeetingQuery } =
-  useMeetings();
+const { startTranscriptionMutation, getMeetingQuery } = useMeetings();
 const { mutate: startTranscription } = startTranscriptionMutation();
-const { mutateAsync: uploadFile } = uploadFileWithPresignedUrlMutation();
 const { data: meetingQueryData } = getMeetingQuery(props.meetingId);
 
-const { saveRecordingProgress, clearRecordingProgress, loadRecordingProgress } =
-  useLocalStorageRecording();
+const { getChunkCountForMeeting } = useAudioChunkStore();
+const { saveAndEnqueueUpload, waitForAllUploads } = useChunkUpload(props.meetingId);
 
 const statusLabel = computed(() =>
   isRecording.value
@@ -129,8 +129,6 @@ function onClickStop() {
   openConfirmStopModal();
 }
 
-const pendingUploads: Promise<void>[] = [];
-
 async function handleDataChunkEvent(e: BlobEvent) {
   Sentry.startSpan(
     {
@@ -149,44 +147,16 @@ async function handleDataChunkEventCallback(e: BlobEvent) {
     Sentry.logger.fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - received event`,
   );
   const timestamp = Date.now();
-  updateAndSaveChunkCount();
-  const task = uploadFile(
-    {
-      meetingId: props.meetingId,
-      file: new File([e.data], `${timestamp}.weba`, {
-        type: 'audio/weba',
-      }),
-    },
-    {
-      onSuccess: () => {
-        Sentry.logger.info(
-          Sentry.logger.fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - uploaded to S3`,
-        );
-      },
-      onError: (error: Error) => {
-        Sentry.logger.error(
-          Sentry.logger
-            .fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - failed upload - ${error}`,
-        );
-      },
-    },
-  );
-  pendingUploads.push(task);
+  const filename = `${timestamp}.weba`;
+  chunkCounter += 1;
+
+  await saveAndEnqueueUpload(e.data, filename, isOnline.value);
 }
 
 async function handleOnStopEvent() {
   isSendingLastAudioChunks.value = true;
-  await Promise.allSettled(pendingUploads);
-  startTranscription(props.meetingId, {
-    onSuccess: () => {
-      clearRecordingProgress(props.meetingId);
-    },
-  });
-}
-
-function updateAndSaveChunkCount() {
-  chunkCounter += 1;
-  saveRecordingProgress(props.meetingId, chunkCounter);
+  await waitForAllUploads();
+  startTranscription(props.meetingId);
 }
 
 watch(
@@ -231,10 +201,11 @@ onBeforeRouteLeave(async () => {
   return isInactive.value || (await confirmAndNavigate());
 });
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('beforeunload', beforeUnloadHandler);
-  const alreadyRecordedChunks = loadRecordingProgress(props.meetingId);
-  chunkCounter = alreadyRecordedChunks ?? 0;
+
+  const alreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
+  chunkCounter = alreadyRecordedChunks;
 
   startRecording({
     onDataAvailableHandler: (e) => handleDataChunkEvent(e),
