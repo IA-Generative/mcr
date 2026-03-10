@@ -1,6 +1,6 @@
 <template>
   <button
-    class="flex flex-col items-center gap-2"
+    class="flex flex-col items-center justify-center gap-2"
     :class="disabled && 'cursor-not-allowed pointer-events-none'"
     :aria-disabled="disabled || undefined"
   >

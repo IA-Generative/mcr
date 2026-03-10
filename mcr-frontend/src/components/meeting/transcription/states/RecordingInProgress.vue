@@ -44,7 +44,7 @@
         :disabled="!isOnline"
         @click="() => onClickStop()"
       >
-        {{ $t('meeting.transcription.recording.actions.stop') }}
+        {{ $t('meeting.transcription.recording.actions.start-transcription') }}
       </RoundedActionButton>
     </div>
     <RecordMeetingFormNotice

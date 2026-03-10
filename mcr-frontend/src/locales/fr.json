@@ -260,7 +260,7 @@
         "actions": {
           "pause": "Mettre en pause",
           "resume": "Reprendre",
-          "stop": "Terminer"
+          "start-transcription": "Lancer ma transcription"
         }
       },
       "transcription-failed": {
