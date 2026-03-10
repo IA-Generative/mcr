@@ -84,6 +84,40 @@ describe('useChunkUpload', () => {
       addSpy.mockRestore();
     });
   });
+
+  describe('uploadPendingFromIdb', () => {
+    it('uploads all pending chunks from IDB', async () => {
+      await store.addChunk({ meetingId, filename: 'a.weba', blob: makeBlob() });
+      await store.addChunk({ meetingId, filename: 'b.weba', blob: makeBlob() });
+      const { uploadPendingFromIdb } = await getComposable();
+      await uploadPendingFromIdb();
+      expect(mockUploadFile).toHaveBeenCalledTimes(2);
+    });
+
+    it('calls markChunkUploaded for each successful upload', async () => {
+      await store.addChunk({ meetingId, filename: 'a.weba', blob: makeBlob() });
+      await store.addChunk({ meetingId, filename: 'b.weba', blob: makeBlob() });
+      const { uploadPendingFromIdb } = await getComposable();
+      await uploadPendingFromIdb();
+      const pending = await store.getPendingChunksForMeeting(meetingId);
+      expect(pending).toHaveLength(0);
+    });
+
+    it('does not throw when some uploads fail', async () => {
+      await store.addChunk({ meetingId, filename: 'a.weba', blob: makeBlob() });
+      await store.addChunk({ meetingId, filename: 'b.weba', blob: makeBlob() });
+      mockUploadFile.mockRejectedValueOnce(new Error('fail')).mockResolvedValueOnce(undefined);
+      const { uploadPendingFromIdb } = await getComposable();
+      await expect(uploadPendingFromIdb()).resolves.toBeUndefined();
+    });
+
+    it('returns without uploading when no pending chunks exist', async () => {
+      const { uploadPendingFromIdb } = await getComposable();
+      await uploadPendingFromIdb();
+      expect(mockUploadFile).not.toHaveBeenCalled();
+    });
+  });
+
   describe('waitForAllUploads', () => {
     it('resolves when all queued uploads complete', async () => {
       const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();

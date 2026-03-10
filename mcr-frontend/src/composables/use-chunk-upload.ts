@@ -6,7 +6,7 @@ export function useChunkUpload(meetingId: number) {
   const uploadQueue: Promise<void>[] = [];
   const uploadingChunkIds = new Set<number>();
 
-  const { addChunk, markChunkUploaded } = useAudioChunkStore();
+  const { addChunk, markChunkUploaded, getPendingChunksForMeeting } = useAudioChunkStore();
   const { uploadFileWithPresignedUrlMutation } = useMeetings();
   const { mutateAsync: uploadFile } = uploadFileWithPresignedUrlMutation();
 
@@ -49,9 +49,26 @@ export function useChunkUpload(meetingId: number) {
     }
   }
 
+  async function uploadPendingFromIdb(): Promise<void> {
+    const pendingChunks = await getPendingChunksForMeeting(meetingId);
+    if (!pendingChunks.length) return;
+    const tasks = pendingChunks
+      .filter((chunk) => !isAlreadyUploading(chunk.id))
+      .map((chunk) =>
+        doUpload(chunk.blob, chunk.filename, chunk.id!).catch((error) => {
+          Sentry.logger.error(
+            Sentry.logger
+              .fmt`Meeting ${meetingId} - IDB chunk ${chunk.filename} - retry upload failed - ${error}`,
+          );
+        }),
+      );
+    uploadQueue.push(...tasks);
+    await Promise.allSettled(tasks);
+  }
+
   async function waitForAllUploads(): Promise<void> {
     await Promise.allSettled(uploadQueue);
   }
 
-  return { saveAndEnqueueUpload, waitForAllUploads };
+  return { saveAndEnqueueUpload, uploadPendingFromIdb, waitForAllUploads };
 }
