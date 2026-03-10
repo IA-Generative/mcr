@@ -8,7 +8,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from mcr_generation.app.schemas.base import BaseReport, Header, Participant
+from mcr_generation.app.schemas.base import (
+    BaseReport,
+    Header,
+    Participant,
+    Participants,
+)
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 # Mock the sibling so __init__.py can import it without executing its body.
@@ -51,7 +56,7 @@ def mock_intent() -> MagicMock:
 
 
 @pytest.fixture
-def mock_participants() -> MagicMock:
+def mock_participants() -> Participants:
     participant = Participant(
         speaker_id="LOCUTEUR_00",
         name="Alice Martin",
@@ -59,9 +64,7 @@ def mock_participants() -> MagicMock:
         confidence=0.9,
         association_justification=None,
     )
-    participants = MagicMock()
-    participants.participants = [participant]
-    return participants
+    return Participants(participants=[participant])
 
 
 @pytest.fixture
@@ -76,16 +79,14 @@ def mock_next_meeting() -> MagicMock:
 
 def _patch_refiners(
     mock_refine_intent_cls: MagicMock,
-    mock_refine_participants_cls: MagicMock,
+    mock_get_participants: MagicMock,
     mock_refine_next_meeting_cls: MagicMock,
     mock_intent: MagicMock,
-    mock_participants: MagicMock,
+    mock_participants: Participants,
     mock_next_meeting: MagicMock,
 ) -> None:
     mock_refine_intent_cls.return_value.init_then_refine.return_value = mock_intent
-    mock_refine_participants_cls.return_value.init_then_refine.return_value = (
-        mock_participants
-    )
+    mock_get_participants.return_value = mock_participants
     mock_refine_next_meeting_cls.return_value.init_then_refine.return_value = (
         mock_next_meeting
     )
@@ -101,17 +102,17 @@ class TestGenerateHeader:
         self,
         chunks: list[Chunk],
         mock_intent: MagicMock,
-        mock_participants: MagicMock,
+        mock_participants: Participants,
         mock_next_meeting: MagicMock,
     ) -> None:
-        """Header fields are populated from the RefineIntent and RefineParticipants outputs."""
+        """Header fields are populated from intent refiner and participant extraction outputs."""
         formatted = "Revue backlog\nDate prévue: 15/03/2026"
 
         with (
             patch.object(_base_rg_module, "RefineIntent") as mock_refine_intent_cls,
             patch.object(
-                _base_rg_module, "RefineParticipants"
-            ) as mock_refine_participants_cls,
+                _base_rg_module, "get_participants_from_chunks"
+            ) as mock_get_participants,
             patch.object(
                 _base_rg_module, "RefineNextMeeting"
             ) as mock_refine_next_meeting_cls,
@@ -123,7 +124,7 @@ class TestGenerateHeader:
         ):
             _patch_refiners(
                 mock_refine_intent_cls,
-                mock_refine_participants_cls,
+                mock_get_participants,
                 mock_refine_next_meeting_cls,
                 mock_intent,
                 mock_participants,
@@ -142,15 +143,15 @@ class TestGenerateHeader:
         self,
         chunks: list[Chunk],
         mock_intent: MagicMock,
-        mock_participants: MagicMock,
+        mock_participants: Participants,
         mock_next_meeting: MagicMock,
     ) -> None:
         """When format_next_meeting_for_report returns None, next_meeting is None."""
         with (
             patch.object(_base_rg_module, "RefineIntent") as mock_refine_intent_cls,
             patch.object(
-                _base_rg_module, "RefineParticipants"
-            ) as mock_refine_participants_cls,
+                _base_rg_module, "get_participants_from_chunks"
+            ) as mock_get_participants,
             patch.object(
                 _base_rg_module, "RefineNextMeeting"
             ) as mock_refine_next_meeting_cls,
@@ -160,7 +161,7 @@ class TestGenerateHeader:
         ):
             _patch_refiners(
                 mock_refine_intent_cls,
-                mock_refine_participants_cls,
+                mock_get_participants,
                 mock_refine_next_meeting_cls,
                 mock_intent,
                 mock_participants,
@@ -175,15 +176,15 @@ class TestGenerateHeader:
         self,
         chunks: list[Chunk],
         mock_intent: MagicMock,
-        mock_participants: MagicMock,
+        mock_participants: Participants,
         mock_next_meeting: MagicMock,
     ) -> None:
-        """Each refiner's init_then_refine is called exactly once with the provided chunks."""
+        """Each extractor is called exactly once with the provided chunks."""
         with (
             patch.object(_base_rg_module, "RefineIntent") as mock_refine_intent_cls,
             patch.object(
-                _base_rg_module, "RefineParticipants"
-            ) as mock_refine_participants_cls,
+                _base_rg_module, "get_participants_from_chunks"
+            ) as mock_get_participants,
             patch.object(
                 _base_rg_module, "RefineNextMeeting"
             ) as mock_refine_next_meeting_cls,
@@ -193,7 +194,7 @@ class TestGenerateHeader:
         ):
             _patch_refiners(
                 mock_refine_intent_cls,
-                mock_refine_participants_cls,
+                mock_get_participants,
                 mock_refine_next_meeting_cls,
                 mock_intent,
                 mock_participants,
@@ -205,9 +206,7 @@ class TestGenerateHeader:
         mock_refine_intent_cls.return_value.init_then_refine.assert_called_once_with(
             chunks
         )
-        mock_refine_participants_cls.return_value.init_then_refine.assert_called_once_with(
-            chunks
-        )
+        mock_get_participants.assert_called_once_with(chunks)
         mock_refine_next_meeting_cls.return_value.init_then_refine.assert_called_once_with(
             chunks
         )
@@ -216,15 +215,15 @@ class TestGenerateHeader:
         self,
         chunks: list[Chunk],
         mock_intent: MagicMock,
-        mock_participants: MagicMock,
+        mock_participants: Participants,
         mock_next_meeting: MagicMock,
     ) -> None:
         """format_next_meeting_for_report receives the output of RefineNextMeeting."""
         with (
             patch.object(_base_rg_module, "RefineIntent") as mock_refine_intent_cls,
             patch.object(
-                _base_rg_module, "RefineParticipants"
-            ) as mock_refine_participants_cls,
+                _base_rg_module, "get_participants_from_chunks"
+            ) as mock_get_participants,
             patch.object(
                 _base_rg_module, "RefineNextMeeting"
             ) as mock_refine_next_meeting_cls,
@@ -234,7 +233,7 @@ class TestGenerateHeader:
         ):
             _patch_refiners(
                 mock_refine_intent_cls,
-                mock_refine_participants_cls,
+                mock_get_participants,
                 mock_refine_next_meeting_cls,
                 mock_intent,
                 mock_participants,
@@ -252,14 +251,13 @@ class TestGenerateHeader:
         mock_next_meeting: MagicMock,
     ) -> None:
         """When no participant is identified, participants list is empty."""
-        mock_participants = MagicMock()
-        mock_participants.participants = []
+        mock_participants = Participants(participants=[])
 
         with (
             patch.object(_base_rg_module, "RefineIntent") as mock_refine_intent_cls,
             patch.object(
-                _base_rg_module, "RefineParticipants"
-            ) as mock_refine_participants_cls,
+                _base_rg_module, "get_participants_from_chunks"
+            ) as mock_get_participants,
             patch.object(
                 _base_rg_module, "RefineNextMeeting"
             ) as mock_refine_next_meeting_cls,
@@ -269,7 +267,7 @@ class TestGenerateHeader:
         ):
             _patch_refiners(
                 mock_refine_intent_cls,
-                mock_refine_participants_cls,
+                mock_get_participants,
                 mock_refine_next_meeting_cls,
                 mock_intent,
                 mock_participants,
