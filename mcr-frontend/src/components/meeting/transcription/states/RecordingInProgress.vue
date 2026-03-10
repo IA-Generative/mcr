@@ -41,14 +41,14 @@
       </RoundedActionButton>
       <RoundedActionButton
         icon="ri-stop-circle-fill"
-        :disabled="!isOnline"
+        :disabled="effectiveOffline"
         @click="() => onClickStop()"
       >
         {{ $t('meeting.transcription.recording.actions.start-transcription') }}
       </RoundedActionButton>
     </div>
     <RecordMeetingFormNotice
-      :is-online="isOnline"
+      :is-online="!effectiveOffline"
       class="w-full max-w-2xl"
     />
   </div>
@@ -69,6 +69,7 @@ import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecorder } from '@/composables/use-recorder';
 import { useLocalStorageRecording } from '@/composables/use-local-storage-recording';
 import { useNetworkStatus } from '@/composables/use-network-status';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -86,6 +87,8 @@ const {
 } = useRecorder();
 const { t } = useI18n();
 const { isOnline } = useNetworkStatus();
+const isOfflineRecordingEnabled = useFeatureFlag('offline-recording');
+const effectiveOffline = computed(() => isOfflineRecordingEnabled.value && !isOnline.value);
 
 const isSendingLastAudioChunks = ref(false);
 
