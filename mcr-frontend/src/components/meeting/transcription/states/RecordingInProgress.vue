@@ -71,6 +71,7 @@ import { useNetworkStatus } from '@/composables/use-network-status';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
 import { useChunkUpload } from '@/composables/use-chunk-upload';
+import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -100,6 +101,7 @@ const props = defineProps<{
 const { startTranscriptionMutation, getMeetingQuery } = useMeetings();
 const { mutate: startTranscription } = startTranscriptionMutation();
 const { data: meetingQueryData } = getMeetingQuery(props.meetingId);
+const { cleanupMeetingChunks } = useAudioChunkCleanup();
 
 const { getChunkCountForMeeting, getPendingChunksForMeeting } = useAudioChunkStore();
 const { saveAndEnqueueUpload, uploadPendingFromIdb, waitForAllUploads } = useChunkUpload(
@@ -168,7 +170,9 @@ async function handleOnStopEvent() {
       );
     }
 
-    startTranscription(props.meetingId);
+    startTranscription(props.meetingId, {
+      onSuccess: () => cleanupMeetingChunks(props.meetingId),
+    });
   } finally {
     isSendingLastAudioChunks.value = false;
   }

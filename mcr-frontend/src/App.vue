@@ -6,6 +6,7 @@ import AppHeader from './components/core/AppHeader.vue';
 import AppFooter from './components/core/AppFooter.vue';
 import { useAuth } from './components/sign-in/use-auth';
 import { ModalsContainer } from 'vue-final-modal';
+import { useAudioChunkCleanup } from './composables/use-audio-chunk-cleanup';
 
 useScheme({ scheme: 'light' });
 
@@ -13,8 +14,11 @@ const toaster = useToaster();
 const auth = useAuth();
 provide('auth', auth);
 
+const { cleanupStaleChunks } = useAudioChunkCleanup();
+
 onMounted(async () => {
   await auth.currentUserQuery.refetch();
+  cleanupStaleChunks();
 });
 </script>
 
