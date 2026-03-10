@@ -67,7 +67,6 @@ import BaseModal from '@/components/core/BaseModal.vue';
 import RoundedActionButton from '@/components/core/RoundedActionButton.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecorder } from '@/composables/use-recorder';
-import { useLocalStorageRecording } from '@/composables/use-local-storage-recording';
 import { useNetworkStatus } from '@/composables/use-network-status';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
