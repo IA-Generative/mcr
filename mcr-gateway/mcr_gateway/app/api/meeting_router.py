@@ -31,6 +31,7 @@ from mcr_gateway.app.services.meeting_service import (
     generate_meeting_transcription_document,
     generate_presigned_url_service,
     generate_report,
+    get_meeting_audio_service,
     get_meeting_service,
     get_meetings_service,
     get_report,
@@ -419,4 +420,23 @@ async def get_queue_estimated_waiting_time(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Error getting queue estimated waiting time: {}", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/meetings/{meeting_id}/audio")
+async def get_meeting_audio(
+    meeting_id: int, current_user: TokenUser = Depends(authorize_user(Role.USER.value))
+) -> StreamingResponse:
+    try:
+        result = await get_meeting_audio_service(meeting_id, current_user.keycloak_uuid)
+        return result
+    except HTTPException as e:
+        logger.error(
+            "HTTP error getting meeting audio: {} - {}",
+            e.status_code,
+            e.detail,
+        )
+        raise e
+    except Exception as e:
+        logger.error("Error getting meeting audio: {}", str(e))
         raise HTTPException(status_code=500, detail=str(e))
