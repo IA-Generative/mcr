@@ -236,6 +236,14 @@
         "retry-button": "Réessayer"
       },
       "recording": {
+        "offline": {
+          "title": "Mode hors-ligne",
+          "keep-going": "L'enregistrement continue et votre audio est sauvegardé.",
+          "reconnect": {
+            "text": "Reconnectez-vous à internet et lancez la transcription {bold}",
+            "bold": "dans les 24 heures."
+          }
+        },
         "confirm-modal": {
           "title": "Êtes-vous sûr de vouloir terminer l'enregistrement\u00a0?",
           "button": "Terminer l'enregistrement"
@@ -252,7 +260,7 @@
         "actions": {
           "pause": "Mettre en pause",
           "resume": "Reprendre",
-          "stop": "Terminer"
+          "start-transcription": "Lancer ma transcription"
         }
       },
       "transcription-failed": {

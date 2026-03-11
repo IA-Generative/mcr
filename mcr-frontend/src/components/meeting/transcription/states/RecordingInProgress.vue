@@ -4,29 +4,16 @@
     class="flex flex-col items-center gap-5"
   >
     <div
-      v-if="isRecording"
-      class="rounded-sm px-2 flex items-center gap-1 bg-[var(--warning-950-100)]"
+      class="rounded-sm px-2 flex items-center gap-1"
+      :class="isRecording ? 'status-badge--recording' : 'status-badge--paused'"
     >
       <VIcon
         name="ri-circle-fill"
         scale="1"
-        color="var(--warning-425-625)"
+        color="currentColor"
       />
-      <span class="text-base/6 font-bold text-center text-[var(--warning-425-625)]">
-        {{ $t('meeting.transcription.recording.status.in-progress').toUpperCase() }}
-      </span>
-    </div>
-    <div
-      v-else
-      class="rounded-sm px-2 flex items-center gap-1 bg-[var(--info-950-100)]"
-    >
-      <VIcon
-        name="ri-circle-fill"
-        scale="1"
-        color="var(--info-425-625)"
-      />
-      <span class="text-base/6 font-bold text-center text-[var(--info-425-625)]">
-        {{ $t('meeting.transcription.recording.status.paused').toUpperCase() }}
+      <span class="text-base/6 font-bold text-center">
+        {{ statusLabel }}
       </span>
     </div>
     <div class="flex flex-row items-center gap-2">
@@ -37,7 +24,7 @@
         }}
       </h2>
     </div>
-    <div class="grid grid-cols-2 w-[60%] gap-4">
+    <div class="grid grid-cols-2 w-full max-w-xs gap-4">
       <RoundedActionButton
         v-if="!isRecording"
         icon="ri-play-circle-fill"
@@ -54,12 +41,16 @@
       </RoundedActionButton>
       <RoundedActionButton
         icon="ri-stop-circle-fill"
+        :disabled="effectiveOffline"
         @click="() => onClickStop()"
       >
-        {{ $t('meeting.transcription.recording.actions.stop') }}
+        {{ $t('meeting.transcription.recording.actions.start-transcription') }}
       </RoundedActionButton>
     </div>
-    <RecordMeetingFormNotice />
+    <RecordMeetingFormNotice
+      :is-online="!effectiveOffline"
+      class="w-full max-w-2xl"
+    />
   </div>
   <div v-else>
     <VIcon
@@ -77,6 +68,8 @@ import RoundedActionButton from '@/components/core/RoundedActionButton.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecorder } from '@/composables/use-recorder';
 import { useLocalStorageRecording } from '@/composables/use-local-storage-recording';
+import { useNetworkStatus } from '@/composables/use-network-status';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -93,6 +86,9 @@ const {
   audioInputLevel,
 } = useRecorder();
 const { t } = useI18n();
+const { isOnline } = useNetworkStatus();
+const isOfflineRecordingEnabled = useFeatureFlag('offline-recording');
+const effectiveOffline = computed(() => isOfflineRecordingEnabled.value && !isOnline.value);
 
 const isSendingLastAudioChunks = ref(false);
 
@@ -108,6 +104,12 @@ const { data: meetingQueryData } = getMeetingQuery(props.meetingId);
 
 const { saveRecordingProgress, clearRecordingProgress, loadRecordingProgress } =
   useLocalStorageRecording();
+
+const statusLabel = computed(() =>
+  isRecording.value
+    ? t('meeting.transcription.recording.status.in-progress').toUpperCase()
+    : t('meeting.transcription.recording.status.paused').toUpperCase(),
+);
 
 let chunkCounter = 0;
 
@@ -245,3 +247,15 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadHandler);
 });
 </script>
+
+<style scoped>
+.status-badge--recording {
+  background: var(--warning-950-100);
+  color: var(--warning-425-625);
+}
+
+.status-badge--paused {
+  background: var(--info-950-100);
+  color: var(--info-425-625);
+}
+</style>
