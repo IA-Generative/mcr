@@ -108,7 +108,8 @@ function setAudioDeviceId(id: string) {
 
 async function startRecording(options: RecordingOptions = {}) {
   if (!currentAudioId.value) {
-    throw new Error('Audio device ID must be set before recording. Call setAudioDeviceId() first.');
+    const devices = await getAudioInputDevices();
+    currentAudioId.value = getDefaultDeviceId(devices);
   }
 
   const mediaStream = await navigator.mediaDevices.getUserMedia({
