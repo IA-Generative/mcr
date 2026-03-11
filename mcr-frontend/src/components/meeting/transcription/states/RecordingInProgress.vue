@@ -226,6 +226,13 @@ onMounted(async () => {
 
   const totalAlreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
 
+  const pending = await getPendingChunksForMeeting(props.meetingId).catch(() => []);
+  const hasPendingChunks = pending.length > 0;
+
+  if (hasPendingChunks && isOnline.value) {
+    uploadPendingFromIdb();
+  }
+
   await startRecording({
     onDataAvailableHandler: (e) => handleDataChunkEvent(e),
     onStopEventHandler: () => handleOnStopEvent(),
