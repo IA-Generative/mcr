@@ -150,14 +150,14 @@ function getDefaultDeviceId(devices: MediaDeviceInfo[]): string {
 }
 
 function resumeRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   mediaRecorder.value.resume();
   stopwatch.start();
 }
 
 function stopRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   mediaRecorder.value.stop();
   stopwatch.reset(stopwatchSettings.offsetTimestamp, stopwatchSettings.autoStart);
@@ -174,7 +174,7 @@ function releaseAudioResources() {
 }
 
 function abortRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   _preventSendingAudio();
   stopRecording();
@@ -184,7 +184,7 @@ function abortRecording() {
 }
 
 function pauseRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   mediaRecorder.value.pause();
   stopwatch.pause();

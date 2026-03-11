@@ -224,14 +224,17 @@ onBeforeRouteLeave(async () => {
 onMounted(async () => {
   window.addEventListener('beforeunload', beforeUnloadHandler);
 
-  const alreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
-  chunkCounter = alreadyRecordedChunks;
+  const totalAlreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
 
-  startRecording({
+  await startRecording({
     onDataAvailableHandler: (e) => handleDataChunkEvent(e),
     onStopEventHandler: () => handleOnStopEvent(),
-    numberOfChunkAlreadyRecorded: chunkCounter,
+    numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
   });
+
+  if (totalAlreadyRecordedChunks) {
+    pauseRecording();
+  }
 });
 
 onUnmounted(() => {
