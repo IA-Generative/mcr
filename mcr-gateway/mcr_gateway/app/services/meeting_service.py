@@ -249,12 +249,13 @@ async def get_meetings_service(
         List[Meeting]: Liste des réunions correspondant au filtre.
     """
     try:
-        params: dict[str, str | int] = {}
+        params: dict[str, str | int] = {
+            "page": page,
+            "page_size": page_size,
+        }
 
         if search:
             params["search"] = search
-
-        params = {"page": page, "page_size": page_size}
 
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             response = await client.get("", params=params)
