@@ -58,12 +58,17 @@ class MeetingAudioRecorder:
             raise RuntimeError("MeetingTransitionClient is not initialized")
 
         async with async_playwright() as playwright:
+            browser_args = [
+                "--use-fake-device-for-media-stream",
+                "--use-fake-ui-for-media-stream",
+            ]
+            if capture_settings.FAKE_AUDIO_CAPTURE_FILE:
+                browser_args.append(
+                    f"--use-file-for-fake-audio-capture={capture_settings.FAKE_AUDIO_CAPTURE_FILE}"
+                )
             self.browser = await playwright.chromium.launch(
                 headless=capture_settings.BROWSER_HEADLESS,
-                args=[
-                    "--use-fake-device-for-media-stream",
-                    "--use-fake-ui-for-media-stream",
-                ],
+                args=browser_args,
             )
             context = await self.browser.new_context(
                 permissions=["microphone", "camera"],
@@ -107,6 +112,7 @@ class MeetingAudioRecorder:
                     await self.stop_recording(page)
                     break
 
+                await self.meeting_monitor.enforce_bot_muted(page)
                 # Continue capturing and processing audio chunks
                 # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
                 # A blocking loop would prevent Playwright from processing browser events,
