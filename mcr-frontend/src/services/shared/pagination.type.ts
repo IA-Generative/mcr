@@ -1,7 +1,7 @@
 export type PaginationQuery = {
-  // page: number;
+  page: number;
   search?: string;
-  // pageSize: number;
+  page_size: number;
 };
 
 export type PaginatedResponse<T> = {

@@ -40,12 +40,18 @@ const STOP_CAPTURE_SKIPPED = Symbol('STOP_CAPTURE_SKIPPED');
 
 const throttledGetAll = throttle(getAll, THROTTLING_INTERVAL, { leading: true, trailing: true });
 
-function getAllMeetingsQuery(search?: Ref<string | undefined>) {
+function getAllMeetingsQuery(params: {
+  search?: Ref<string | undefined>;
+  page: Ref<number>;
+  pageSize: Ref<number>;
+}) {
   return useQuery({
-    queryKey: [QUERY_KEYS.MEETINGS, search],
+    queryKey: [QUERY_KEYS.MEETINGS, params.search, params.page, params.pageSize],
     queryFn: () =>
       throttledGetAll({
-        search: search?.value,
+        search: params.search?.value,
+        page: params.page.value,
+        page_size: params.pageSize.value,
       }),
   });
 }
