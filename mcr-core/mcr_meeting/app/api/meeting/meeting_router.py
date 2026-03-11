@@ -14,9 +14,6 @@ from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     create_meeting as create_meeting_orchestrator,
 )
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    create_meeting_with_presigned_url as create_meeting_with_presigned_url_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     generate_presigned_audio_upload_url as generate_presigned_audio_upload_url_orchestrator,
 )
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
@@ -35,7 +32,6 @@ from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingResponse,
     MeetingUpdate,
-    MeetingWithPresignedUrl,
 )
 from mcr_meeting.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -68,29 +64,6 @@ def create_meeting(
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
     return MeetingResponse.model_validate(meeting)
-
-
-@router.post("/create_and_generate_presigned_url", tags=["Audio"])
-async def create_meeting_with_file(
-    meeting_data: MeetingCreate,
-    presigned_request: PresignedAudioFileRequest,
-    x_user_keycloak_uuid: UUID4 = Header(),
-) -> MeetingWithPresignedUrl:
-    """
-    Create a new meeting and return a presigned url to upload an audio file.
-
-    Args:
-        meeting_data (MeetingCreate): The meeting data to create.
-
-    Returns:
-        Meeting: The created meeting object.
-        str: Presigned URL for uploading an audio file.
-    """
-    return await create_meeting_with_presigned_url_orchestrator(
-        meeting_data=meeting_data,
-        presigned_request=presigned_request,
-        user_keycloak_uuid=x_user_keycloak_uuid,
-    )
 
 
 @router.get("/")

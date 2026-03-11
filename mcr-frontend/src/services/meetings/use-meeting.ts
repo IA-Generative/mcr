@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import {
   create,
-  createAndGetUploadUrl,
   generateMeetingTranscription,
   generateReport,
   generateUploadUrl,
@@ -20,7 +19,6 @@ import {
 } from './meetings.service';
 import { QUERY_KEYS } from '@/plugins/vue-query';
 import type {
-  AddImportMeetingDtoAndFile,
   AddMeetingDto,
   MeetingDto,
   MeetingStatus,
@@ -91,21 +89,6 @@ function addMeetingMutation() {
   return useMutation({
     mutationFn: (values: AddMeetingDto) => create(values),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] }),
-  });
-}
-
-function importMeetingMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (values: AddImportMeetingDtoAndFile) => {
-      const meetingWithPresignedUrl = await createAndGetUploadUrl(values.dto, values.file.name);
-      await uploadFileWithPresignedUrl(meetingWithPresignedUrl.presigned_url, values.file);
-      return meetingWithPresignedUrl;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] });
-    },
   });
 }
 
@@ -294,7 +277,6 @@ export function useMeetings() {
     getMeetingQuery,
     getAllMeetingsQuery,
     addMeetingMutation,
-    importMeetingMutation,
     deleteMeetingMutation,
     updateMeetingMutation,
     startCaptureMutation,

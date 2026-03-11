@@ -255,19 +255,6 @@ def no_validation(values: MeetingBase) -> None:
     return None
 
 
-class MeetingWithPresignedUrl(BaseModel):
-    """
-    Schema for a meeting with a presigned URL.
-
-    Attributes:
-        meeting (Meeting): The meeting details.
-        presigned_url (str): The presigned URL for accessing the meeting.
-    """
-
-    meeting: MeetingResponse
-    presigned_url: str
-
-
 class ComuUrlValidator:
     domains = [
         re.compile(r"webconf\.comu\.gouv\.fr"),

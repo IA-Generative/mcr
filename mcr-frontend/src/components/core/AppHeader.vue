@@ -35,10 +35,7 @@
       />
     </template>
   </DsfrHeader>
-  <DsfrNotice
-    v-if="isBetaEnabled"
-    :title="$t('header.notice.title')"
-  >
+  <DsfrNotice :title="$t('header.notice.title')">
     <template #desc>
       <i18n-t
         keypath="header.notice.desc"
@@ -63,15 +60,12 @@ import { useI18n } from 'vue-i18n';
 import { useAuth } from '../sign-in/use-auth';
 import { useUserStore } from '@/stores/useUserStore';
 import { computed } from 'vue';
-import { useFeatureFlag } from '@/composables/use-feature-flag.ts';
 
 const logoText = computed(() => [t('header.logo.text1'), t('header.logo.text2')]);
 const { t } = useI18n();
 
 const userStore = useUserStore();
 const { signOut } = inject('auth') as ReturnType<typeof useAuth>;
-
-const isBetaEnabled = useFeatureFlag('beta');
 
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {

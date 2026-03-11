@@ -4,7 +4,6 @@ import type { MultipartInitResponse, UploadTranscriptionParams } from './meeting
 import type {
   AddMeetingDto,
   MeetingDto,
-  MeetingDtoWithPresignedUrl,
   Part,
   ReportGenerationRequest,
   TranscriptionWaitingTimeResponse,
@@ -28,21 +27,6 @@ export async function create(payload: AddMeetingDto): Promise<MeetingDto> {
   return data;
 }
 
-export async function createAndGetUploadUrl(
-  meeting_payload: AddMeetingDto,
-  filename: string,
-): Promise<MeetingDtoWithPresignedUrl> {
-  const payload = {
-    meeting_data: meeting_payload,
-    presigned_request: { filename },
-  };
-  const { data } = await HttpService.post(
-    `${API_PATHS.MEETINGS}/create_and_generate_presigned_url`,
-    payload,
-  );
-  return data;
-}
-
 export async function generateUploadUrl(meetingId: number, filename: string): Promise<string> {
   const payload = { filename };
   const { data } = await HttpService.post(
@@ -57,18 +41,6 @@ export async function uploadFileWithPresignedUrl(url: string, file: File): Promi
     transformRequest: (data, headers) => {
       delete headers['Authorization'];
       headers['Content-Type'] = file.type;
-      return data;
-    },
-  });
-}
-
-export async function uploadMultipartPartWitPresignedUrl(
-  url: string,
-  blob: Blob,
-): Promise<AxiosResponse> {
-  return await HttpService.put(url, blob, {
-    transformRequest: (data, headers) => {
-      setFileHeaders(blob, headers);
       return data;
     },
   });
