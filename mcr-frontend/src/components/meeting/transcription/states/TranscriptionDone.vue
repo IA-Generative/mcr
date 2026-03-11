@@ -41,6 +41,7 @@ import useToaster from '@/composables/use-toaster';
 import { downloadFileFromAxios } from '@/utils/file';
 import { useI18n } from 'vue-i18n';
 import { sanitizeFilename } from '@/utils/formatters';
+import { isAxiosError } from 'axios';
 
 const props = defineProps<{
   meetingId: number;
@@ -69,8 +70,11 @@ const { mutate: uploadTranscription, isPending: isUploadPending } = uploadMutati
     toaster.addSuccessMessage(t('meeting.transcription.upload-success'));
   },
   onError: (err) => {
-    console.log(err);
-    toaster.addErrorMessage(t('error.default'));
+    if (isAxiosError(err) && err.response?.status === 415) {
+      toaster.addErrorMessage(t('meeting.transcription.upload-invalid-format'));
+    } else {
+      toaster.addErrorMessage(t('error.default'));
+    }
   },
 });
 

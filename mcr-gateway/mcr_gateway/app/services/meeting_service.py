@@ -333,7 +333,7 @@ async def update_meeting_transcription_service(
             "file": (
                 file.filename,
                 file_content,
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                file.content_type,
             )
         }
         async with get_meeting_http_client(user_keycloak_uuid) as client:

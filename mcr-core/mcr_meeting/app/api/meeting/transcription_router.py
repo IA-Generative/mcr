@@ -13,6 +13,7 @@ from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import (
     router_db_session_context_manager,
 )
+from mcr_meeting.app.exceptions.exceptions import InvalidFileError
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_transcription,
     fail_transcription,
@@ -33,8 +34,8 @@ from mcr_meeting.app.services.email.email_service import (
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
+from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, validate_docx_upload
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
-from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
 
 api_settings = ApiSettings()
 
@@ -91,7 +92,9 @@ async def upload_meeting_transcription(
         204 if the transcription has been added
 
     """
-    if not (file.content_type and file.content_type == DOCX_MIME_TYPE):
+    try:
+        await validate_docx_upload(file)
+    except InvalidFileError:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Invalid file type. Please upload a DOCX file.",

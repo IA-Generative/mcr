@@ -21,7 +21,7 @@ from mcr_meeting.app.services.s3_service import (
     put_file_to_s3,
 )
 from mcr_meeting.app.utils.celery_producer import celery_producer_app
-from mcr_meeting.app.utils.files_mime_types import DOCX_MIME_TYPE
+from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 
 DEFAULT_TRANSCRIPTION_FILENAME = "transcription.docx"
 
