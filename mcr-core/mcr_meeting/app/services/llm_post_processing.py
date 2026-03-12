@@ -27,9 +27,10 @@ class LLMPostProcessing(ABC):
             mode=instructor.Mode.JSON,
         )
 
-    def _chunk_text(self, text: str) -> list[Chunk]:
+    def _chunk_text(self, text: str, *, chunk_overlap: int = 0) -> list[Chunk]:
         text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self.chunk_config.CHUNK_SIZE,
+            chunk_overlap=chunk_overlap,
         )
 
         chunked_text = text_splitter.split_text(text)
