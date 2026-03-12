@@ -14,7 +14,8 @@
     "format:check": "prettier --check src/",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "pre-commit": "run-s type-check lint format"
   },
   "dependencies": {
     "@dsb-norge/vue-keycloak-js": "^3.0.2",
