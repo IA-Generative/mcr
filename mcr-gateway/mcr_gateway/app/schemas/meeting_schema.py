@@ -94,6 +94,13 @@ class MeetingUpdate(MeetingBase):
     pass
 
 
+class PaginatedMeetingsResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    page: int
+    data: list[Meeting]
+
+
 class ReportType(StrEnum):
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
