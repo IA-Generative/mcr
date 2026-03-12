@@ -25,7 +25,7 @@ def merge_consecutive_segments_per_speaker(
         List[DiarizedTranscriptionSegment]: A new list of DiarizedTranscriptionSegment objects with merged
             transcriptions for consecutive speakers.
     """
-    logger.info("Merging consecutive speaker segments...")
+    logger.debug("Merging consecutive speaker segments...")
     merged_transcriptions: list[DiarizedTranscriptionSegment] = []
 
     for i, (speaker, group) in enumerate(

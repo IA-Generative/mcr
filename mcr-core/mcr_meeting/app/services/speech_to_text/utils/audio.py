@@ -42,7 +42,7 @@ def split_audio_on_timestamps(
             )
         )
 
-    logger.info(
+    logger.debug(
         "Created {} transcription inputs from diarization segments",
         len(transcription_inputs),
     )

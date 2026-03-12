@@ -91,11 +91,11 @@ class SpeechToTextPipeline:
         cleaned_segments = remove_hallucinations(merged_segments)
 
         if feature_flag_client.is_enabled("spelling_correction"):
-            logger.info("Spelling correction enabled, correcting segments")
+            logger.debug("Spelling correction enabled, correcting segments")
             corrector = SpellingCorrector()
             cleaned_segments = corrector.correct(cleaned_segments)
         else:
-            logger.info("Spelling correction disabled, skipping correction")
+            logger.debug("Spelling correction disabled, skipping correction")
         return cleaned_segments
 
     def transcribe_audio(
@@ -136,7 +136,7 @@ class SpeechToTextPipeline:
     ) -> list[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
-        logger.debug("Starting speech-to-text pipeline with pre-processing.")
+        logger.debug("🏁 Starting speech-to-text pipeline with pre-processing.")
 
         pre_processed_audio_bytes = self.pre_process(audio_bytes)
 
@@ -145,7 +145,7 @@ class SpeechToTextPipeline:
         )
 
         if not diarization_result:
-            logger.debug("No diarization result. Returning empty transcription.")
+            logger.warning("No diarization result. Returning empty transcription.")
             return []
 
         vad_spans: list[DiarizationSegment] = get_vad_segments_from_diarization(
@@ -162,6 +162,12 @@ class SpeechToTextPipeline:
 
         cleaned_segments = self.post_process(diarized_transcription_segments)
 
-        logger.debug("Final transcription segments: {}", cleaned_segments)
+        first_words = (
+            " ".join(cleaned_segments[0].text.split()[:10]) if cleaned_segments else ""
+        )
+        logger.debug(
+            "✅ Speech-to-text pipeline completed for transcription starting with: [{}...]",
+            first_words,
+        )
 
         return cleaned_segments

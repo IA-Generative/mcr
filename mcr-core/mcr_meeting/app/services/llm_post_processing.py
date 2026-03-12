@@ -39,8 +39,6 @@ class LLMPostProcessing(ABC):
 
         chunks = [Chunk(id=idx, text=text) for idx, text in enumerate(chunked_text)]
 
-        logger.debug("chunks {}", chunks)
-
         return chunks
 
     @abstractmethod
