@@ -56,9 +56,11 @@ def test_get_meetings_success(
     json_data = response.json()
     assert response.status_code == status.HTTP_200_OK
 
-    assert len(json_data) == 2
-    assert isinstance(json_data, list)
-    for meeting_json in json_data:
+    assert json_data["total_items"] == 2
+    assert json_data["total_pages"] == 1
+    assert json_data["page"] == 1
+    assert len(json_data["data"]) == 2
+    for meeting_json in json_data["data"]:
         fixture = (
             meeting_fixture
             if meeting_json["id"] == meeting_fixture.id
@@ -95,9 +97,9 @@ def test_get_meetings_search_success(
     assert response.status_code == status.HTTP_200_OK
     json_data = response.json()
 
-    assert len(json_data) == 1
-    assert isinstance(json_data, list)
-    assert_json_equal_meeting_model(json_data[0], meeting_fixture)
+    assert json_data["total_items"] == 1
+    assert len(json_data["data"]) == 1
+    assert_json_equal_meeting_model(json_data["data"][0], meeting_fixture)
 
 
 def test_get_meetings_with_pagination_params(
@@ -115,7 +117,10 @@ def test_get_meetings_with_pagination_params(
     # Assert
     json_data = response.json()
     assert response.status_code == status.HTTP_200_OK
-    assert len(json_data) == 2
+    assert len(json_data["data"]) == 2
+    assert json_data["total_items"] == 2
+    assert json_data["total_pages"] == 1
+    assert json_data["page"] == 1
 
 
 def test_get_meetings_with_invalid_pagination(
@@ -132,7 +137,7 @@ def test_get_meetings_with_invalid_pagination(
     # Assert
     assert response.status_code == status.HTTP_200_OK
     json_data = response.json()
-    assert len(json_data) == 1  # page_size clamped to 1
+    assert len(json_data["data"]) == 1  # page_size clamped to 1
 
 
 def test_get_meetings_search_no_result(
@@ -149,7 +154,8 @@ def test_get_meetings_search_no_result(
     assert response.status_code == status.HTTP_200_OK
     json_data = response.json()
 
-    assert len(json_data) == 0
+    assert json_data["total_items"] == 0
+    assert len(json_data["data"]) == 0
 
 
 def test_get_meeting_by_id_success(
