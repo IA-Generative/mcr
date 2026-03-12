@@ -108,7 +108,8 @@ function setAudioDeviceId(id: string) {
 
 async function startRecording(options: RecordingOptions = {}) {
   if (!currentAudioId.value) {
-    throw new Error('Audio device ID must be set before recording. Call setAudioDeviceId() first.');
+    const devices = await getAudioInputDevices();
+    currentAudioId.value = getDefaultDeviceId(devices);
   }
 
   const mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -149,14 +150,14 @@ function getDefaultDeviceId(devices: MediaDeviceInfo[]): string {
 }
 
 function resumeRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   mediaRecorder.value.resume();
   stopwatch.start();
 }
 
 function stopRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   mediaRecorder.value.stop();
   stopwatch.reset(stopwatchSettings.offsetTimestamp, stopwatchSettings.autoStart);
@@ -173,7 +174,7 @@ function releaseAudioResources() {
 }
 
 function abortRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   _preventSendingAudio();
   stopRecording();
@@ -183,7 +184,7 @@ function abortRecording() {
 }
 
 function pauseRecording() {
-  if (!mediaRecorder.value || isInactive.value) return;
+  if (!mediaRecorder.value || mediaRecorder.value.state === 'inactive') return;
 
   mediaRecorder.value.pause();
   stopwatch.pause();

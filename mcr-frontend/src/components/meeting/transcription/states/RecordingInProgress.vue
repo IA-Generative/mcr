@@ -101,8 +101,10 @@ const { startTranscriptionMutation, getMeetingQuery } = useMeetings();
 const { mutate: startTranscription } = startTranscriptionMutation();
 const { data: meetingQueryData } = getMeetingQuery(props.meetingId);
 
-const { getChunkCountForMeeting } = useAudioChunkStore();
-const { saveAndEnqueueUpload, waitForAllUploads } = useChunkUpload(props.meetingId);
+const { getChunkCountForMeeting, getPendingChunksForMeeting } = useAudioChunkStore();
+const { saveAndEnqueueUpload, uploadPendingFromIdb, waitForAllUploads } = useChunkUpload(
+  props.meetingId,
+);
 
 const statusLabel = computed(() =>
   isRecording.value
@@ -154,9 +156,28 @@ async function handleDataChunkEventCallback(e: BlobEvent) {
 
 async function handleOnStopEvent() {
   isSendingLastAudioChunks.value = true;
-  await waitForAllUploads();
-  startTranscription(props.meetingId);
+  try {
+    await waitForAllUploads();
+    await uploadPendingFromIdb();
+
+    const stillPending = await getPendingChunksForMeeting(props.meetingId);
+    if (stillPending.length > 0) {
+      Sentry.logger.error(
+        Sentry.logger
+          .fmt`Meeting ${props.meetingId} - ${stillPending.length} chunks still pending after final sweep`,
+      );
+    }
+
+    startTranscription(props.meetingId);
+  } finally {
+    isSendingLastAudioChunks.value = false;
+  }
 }
+
+watch(isOnline, async (online) => {
+  if (!online) return;
+  await uploadPendingFromIdb();
+});
 
 watch(
   () => meetingQueryData.value?.status,
@@ -203,14 +224,24 @@ onBeforeRouteLeave(async () => {
 onMounted(async () => {
   window.addEventListener('beforeunload', beforeUnloadHandler);
 
-  const alreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
-  chunkCounter = alreadyRecordedChunks;
+  const totalAlreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
 
-  startRecording({
+  const pending = await getPendingChunksForMeeting(props.meetingId).catch(() => []);
+  const hasPendingChunks = pending.length > 0;
+
+  if (hasPendingChunks && isOnline.value) {
+    uploadPendingFromIdb();
+  }
+
+  await startRecording({
     onDataAvailableHandler: (e) => handleDataChunkEvent(e),
     onStopEventHandler: () => handleOnStopEvent(),
-    numberOfChunkAlreadyRecorded: chunkCounter,
+    numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
   });
+
+  if (totalAlreadyRecordedChunks) {
+    pauseRecording();
+  }
 });
 
 onUnmounted(() => {

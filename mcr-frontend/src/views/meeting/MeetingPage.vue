@@ -64,7 +64,7 @@ const { id } = route.params;
 const { getMeetingQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
 const { data: meeting, error, isError, isLoading } = getMeetingQuery(Number(id as string));
 const { mutate: updateMeeting } = updateMeetingMutation();
-const { mutate: deleteMeeting } = deleteMeetingMutation();
+const { mutateAsync: deleteMeeting } = deleteMeetingMutation();
 
 const { abortRecording } = useRecorder();
 
@@ -98,9 +98,9 @@ function openDeleteMeetingModal() {
     component: DeleteMeetingModal,
     attrs: {
       title: t('meeting.confirm-delete.title'),
-      onSuccess: () => {
-        deleteMeeting(meeting.value.id);
+      onSuccess: async () => {
         abortRecording();
+        await deleteMeeting(meeting.value.id);
         router.replace(ROUTES.MEETINGS.path);
       },
     },

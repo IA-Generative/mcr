@@ -82,8 +82,12 @@ function deleteMeetingMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => removeOne(id),
-    onSuccess: () => {
+    mutationFn: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
+      return removeOne(id);
+    },
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] });
     },
   });
