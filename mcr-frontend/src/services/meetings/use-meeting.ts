@@ -169,7 +169,6 @@ function startTranscriptionMutation() {
   return useMutation({
     mutationFn: (id: number) => startTranscription(id),
     onSuccess: (_, id) => {
-      console.log('setting meeting to TRANSCRIPTION_PENDING', id);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
     },
   });

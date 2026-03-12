@@ -29,26 +29,30 @@ describe('useAudioChunkStore', () => {
   describe('addChunk', () => {
     it('returns a numeric id', async () => {
       const chunkId = await store.addChunk(createFakeChunk(1));
+
       expect(typeof chunkId).toBe('number');
     });
 
     it('auto-sets status to pending', async () => {
       const chunkId = await store.addChunk(createFakeChunk(1));
+
       const chunk = await findChunkById(1, chunkId);
       expect(chunk?.status).toBe('pending');
     });
 
     it('auto-sets createdAt to current timestamp', async () => {
-      const before = Date.now();
+      const dateBeforeCreation = Date.now();
       const chunkId = await store.addChunk(createFakeChunk(1));
-      const after = Date.now();
+      const dateAfterCreation = Date.now();
+
       const chunk = await findChunkById(1, chunkId);
-      expect(chunk?.createdAt).toBeGreaterThanOrEqual(before);
-      expect(chunk?.createdAt).toBeLessThanOrEqual(after);
+      expect(chunk?.createdAt).toBeGreaterThanOrEqual(dateBeforeCreation);
+      expect(chunk?.createdAt).toBeLessThanOrEqual(dateAfterCreation);
     });
 
     it('stores the blob and filename correctly', async () => {
       const chunkId = await store.addChunk(createFakeChunk(1, '12345.weba'));
+
       const chunk = await findChunkById(1, chunkId);
       expect(chunk?.filename).toBe('12345.weba');
       expect(chunk?.blob).toBeDefined();
@@ -117,6 +121,77 @@ describe('useAudioChunkStore', () => {
     it('returns 0 when no chunks exist', async () => {
       const count = await store.getChunkCountForMeeting(999);
       expect(count).toBe(0);
+    });
+  });
+
+  describe('deleteAllChunksForMeeting', () => {
+    it('removes all chunks (pending + uploaded) for the meeting', async () => {
+      const id = await store.addChunk(createFakeChunk(1));
+      await store.addChunk(createFakeChunk(1));
+      await store.markChunkUploaded(id);
+      await store.deleteAllChunksForMeeting(1);
+      const count = await store.getChunkCountForMeeting(1);
+      expect(count).toBe(0);
+    });
+
+    it('does not affect chunks from other meetings', async () => {
+      await store.addChunk(createFakeChunk(1));
+      await store.addChunk(createFakeChunk(2));
+      await store.deleteAllChunksForMeeting(1);
+      const count = await store.getChunkCountForMeeting(2);
+      expect(count).toBe(1);
+    });
+  });
+
+  describe('deleteStaleChunks', () => {
+    it('removes chunks older than maxAgeMs regardless of status', async () => {
+      // Add chunks with old createdAt by directly manipulating via addChunk then updating
+      const id1 = await store.addChunk(createFakeChunk(1));
+      const id2 = await store.addChunk(createFakeChunk(1));
+      await store.markChunkUploaded(id2);
+
+      // Manually age the records by accessing IDB directly
+      const { openDB } = await import('idb');
+      const db = await openDB('mcr-audio-chunks', 1);
+      const tx = db.transaction('audio-chunks', 'readwrite');
+      for (const id of [id1, id2]) {
+        const record = await tx.store.get(id);
+        record.createdAt = Date.now() - 2 * 60 * 60 * 1000; // 2 hours ago
+        await tx.store.put(record);
+      }
+      await tx.done;
+      db.close();
+
+      await store.deleteStaleChunks(1 * 60 * 60 * 1000); // 1 hour TTL
+      const count = await store.getChunkCountForMeeting(1);
+      expect(count).toBe(0);
+    });
+
+    it('keeps chunks newer than maxAgeMs', async () => {
+      await store.addChunk(createFakeChunk(1));
+      await store.deleteStaleChunks(1 * 60 * 60 * 1000); // 1 hour TTL
+      const count = await store.getChunkCountForMeeting(1);
+      expect(count).toBe(1);
+    });
+
+    it('works across multiple meetings', async () => {
+      await store.addChunk(createFakeChunk(1));
+      await store.addChunk(createFakeChunk(2));
+
+      const { openDB } = await import('idb');
+      const db = await openDB('mcr-audio-chunks', 1);
+      const all = await db.getAll('audio-chunks');
+      const tx = db.transaction('audio-chunks', 'readwrite');
+      for (const record of all) {
+        record.createdAt = Date.now() - 2 * 60 * 60 * 1000;
+        await tx.store.put(record);
+      }
+      await tx.done;
+      db.close();
+
+      await store.deleteStaleChunks(1 * 60 * 60 * 1000);
+      expect(await store.getChunkCountForMeeting(1)).toBe(0);
+      expect(await store.getChunkCountForMeeting(2)).toBe(0);
     });
   });
 });

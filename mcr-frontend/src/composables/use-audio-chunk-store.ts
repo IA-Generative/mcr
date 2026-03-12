@@ -71,11 +71,36 @@ async function getChunkCountForMeeting(meetingId: number): Promise<number> {
   return all.length;
 }
 
+async function deleteAllChunksForMeeting(meetingId: number): Promise<void> {
+  const db = await getDb();
+  const all = await db.getAllFromIndex(STORE_NAME, 'by-meetingId', meetingId);
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  for (const record of all) {
+    tx.store.delete(record.id!);
+  }
+  await tx.done;
+}
+
+async function deleteStaleChunks(maxAgeMs: number): Promise<void> {
+  const db = await getDb();
+  const cutoff = Date.now() - maxAgeMs;
+  const all = await db.getAll(STORE_NAME);
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  for (const record of all) {
+    if (record.createdAt < cutoff) {
+      tx.store.delete(record.id!);
+    }
+  }
+  await tx.done;
+}
+
 export function useAudioChunkStore() {
   return {
     addChunk,
     markChunkUploaded,
-    getChunkCountForMeeting,
     getPendingChunksForMeeting,
+    getChunkCountForMeeting,
+    deleteAllChunksForMeeting,
+    deleteStaleChunks,
   };
 }
