@@ -79,12 +79,24 @@ const toaster = useToaster();
 
 const search = ref<string>('');
 
+const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
+  currentPage: 1,
+  pageSize: 10,
+});
+
 const { getAllMeetingsQuery } = useMeetings();
 const {
   data: meetings,
   isLoading: areMeetingsLoading,
   error: meetingsError,
-} = getAllMeetingsQuery(search);
+} = getAllMeetingsQuery({ search, page: currentPage, pageSize });
+
+const totalPages = computed(() => {
+  if (!meetings.value || meetings.value.length < pageSize.value) {
+    return currentPage.value;
+  }
+  return currentPage.value + 1;
+});
 
 const { data: globalTranscriptionWaitingTime } = useQuery({
   queryKey: ['global-transcription-waiting-time'],
@@ -98,9 +110,8 @@ const globalTranscriptionWaitingTimeGreaterThan24Hours = computed(() => {
   );
 });
 
-const { currentPage, totalPages, pageSize, setCurrentPage, setPageSize } = usePagination({
-  currentPage: 1,
-  pageSize: 10,
+watch(search, () => {
+  currentPage.value = 1;
 });
 
 watch(
