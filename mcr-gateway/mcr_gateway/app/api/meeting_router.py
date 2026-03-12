@@ -25,6 +25,7 @@ from mcr_gateway.app.schemas.S3_types import (
 )
 from mcr_gateway.app.schemas.user_schema import Role, TokenUser
 from mcr_gateway.app.services.authentification_service import authorize_user
+from mcr_gateway.app.services.feature_flag_service import is_get_meeting_audio_enabled
 from mcr_gateway.app.services.meeting_service import (
     create_meeting_service,
     delete_meeting_service,
@@ -423,7 +424,11 @@ async def get_queue_estimated_waiting_time(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/meetings/{meeting_id}/audio")
+@router.get(
+    "/meetings/{meeting_id}/audio",
+    dependencies=[Depends(is_get_meeting_audio_enabled)],
+    tags=["Audio"],
+)
 async def get_meeting_audio(
     meeting_id: int, current_user: TokenUser = Depends(authorize_user(Role.USER.value))
 ) -> StreamingResponse:
