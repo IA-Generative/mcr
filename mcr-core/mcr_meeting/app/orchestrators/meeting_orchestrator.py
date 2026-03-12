@@ -4,6 +4,7 @@ from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingUpdate,
+    PaginatedMeetings,
 )
 from mcr_meeting.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -44,7 +45,7 @@ def get_meetings(
     search: str | None,
     page: int,
     page_size: int,
-) -> list[Meeting]:
+) -> PaginatedMeetings:
     return get_meetings_service(
         user_keycloak_uuid=user_keycloak_uuid,
         search=search,

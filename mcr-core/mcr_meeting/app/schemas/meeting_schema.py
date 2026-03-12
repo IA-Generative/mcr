@@ -11,7 +11,14 @@ from pydantic import (
     model_validator,
 )
 
-from mcr_meeting.app.models import MeetingPlatforms, MeetingStatus
+from mcr_meeting.app.models import Meeting, MeetingPlatforms, MeetingStatus
+
+
+class PaginatedMeetings(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    items: list[Meeting]
+    total: int
 
 
 class MeetingBase(BaseModel):
@@ -92,6 +99,13 @@ class MeetingUpdate(MeetingBase):
     """
 
     pass
+
+
+class PaginatedMeetingsResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    page: int
+    data: list["MeetingResponse"]
 
 
 class MeetingResponse(MeetingBase):
