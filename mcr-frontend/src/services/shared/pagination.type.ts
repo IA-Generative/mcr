@@ -5,8 +5,8 @@ export type PaginationQuery = {
 };
 
 export type PaginatedResponse<T> = {
-  totalItems: number;
-  totalPages: number;
+  total_items: number;
+  total_pages: number;
   page: number;
   data: T[];
 };

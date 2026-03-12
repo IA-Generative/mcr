@@ -86,17 +86,13 @@ const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
 
 const { getAllMeetingsQuery } = useMeetings();
 const {
-  data: meetings,
+  data: paginatedMeetings,
   isLoading: areMeetingsLoading,
   error: meetingsError,
 } = getAllMeetingsQuery({ search, page: currentPage, pageSize });
 
-const totalPages = computed(() => {
-  if (!meetings.value || meetings.value.length < pageSize.value) {
-    return currentPage.value;
-  }
-  return currentPage.value + 1;
-});
+const meetings = computed(() => paginatedMeetings.value?.data ?? []);
+const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
 
 const { data: globalTranscriptionWaitingTime } = useQuery({
   queryKey: ['global-transcription-waiting-time'],
