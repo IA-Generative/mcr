@@ -17,6 +17,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     Meeting,
     MeetingCreate,
     MeetingUpdate,
+    PaginatedMeetingsResponse,
     ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
@@ -243,7 +244,7 @@ async def stop_capture(
 
 @router.get(
     "/meetings",
-    response_model=list[Meeting],
+    response_model=PaginatedMeetingsResponse,
     tags=["Meetings"],
 )
 async def get_meetings(
@@ -251,9 +252,9 @@ async def get_meetings(
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> list[Meeting]:
+) -> PaginatedMeetingsResponse:
     """
-    Route pour interroger mcr-core et retourner la liste des réunions.
+    Route pour interroger mcr-core et retourner la liste des réunions paginées.
     """
     return await get_meetings_service(
         search=search,

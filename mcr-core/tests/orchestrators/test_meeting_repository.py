@@ -25,13 +25,14 @@ def test_get_meetings_filters_deleted():
 
     deleted = MeetingFactory.create(owner=user, status=MeetingStatus.DELETED)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=1, page_size=10
     )
 
-    assert deleted.id not in {m.id for m in results}
+    assert deleted.id not in {m.id for m in paginated.items}
 
-    assert {m.id for m in results} == {active1.id, active2.id}
+    assert {m.id for m in paginated.items} == {active1.id, active2.id}
+    assert paginated.total == 2
 
 
 def test_get_meetings_with_search_filters_deleted():
@@ -48,13 +49,14 @@ def test_get_meetings_with_search_filters_deleted():
         owner=user, name="min_int_3", status=MeetingStatus.DELETED
     )
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search="min_int", page=1, page_size=10
     )
 
-    assert deleted.id not in {m.id for m in results}
+    assert deleted.id not in {m.id for m in paginated.items}
 
-    assert {m.id for m in results} == {active1.id, active2.id}
+    assert {m.id for m in paginated.items} == {active1.id, active2.id}
+    assert paginated.total == 2
 
 
 def test_get_meetings_pagination_defaults():
@@ -62,11 +64,12 @@ def test_get_meetings_pagination_defaults():
 
     MeetingFactory.create_batch(15, owner=user, status=MeetingStatus.IMPORT_PENDING)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=1, page_size=10
     )
 
-    assert len(results) == 10
+    assert len(paginated.items) == 10
+    assert paginated.total == 15
 
 
 def test_get_meetings_pagination_page_2():
@@ -74,11 +77,12 @@ def test_get_meetings_pagination_page_2():
 
     MeetingFactory.create_batch(15, owner=user, status=MeetingStatus.IMPORT_PENDING)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=2, page_size=10
     )
 
-    assert len(results) == 5
+    assert len(paginated.items) == 5
+    assert paginated.total == 15
 
 
 def test_get_meetings_pagination_custom_page_size():
@@ -86,11 +90,12 @@ def test_get_meetings_pagination_custom_page_size():
 
     MeetingFactory.create_batch(15, owner=user, status=MeetingStatus.IMPORT_PENDING)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=1, page_size=13
     )
 
-    assert len(results) == 13
+    assert len(paginated.items) == 13
+    assert paginated.total == 15
 
 
 def test_get_meetings_pagination_beyond_last_page():
@@ -98,11 +103,12 @@ def test_get_meetings_pagination_beyond_last_page():
 
     MeetingFactory.create_batch(5, owner=user, status=MeetingStatus.IMPORT_PENDING)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=100, page_size=10
     )
 
-    assert len(results) == 0
+    assert len(paginated.items) == 0
+    assert paginated.total == 5
 
 
 def test_get_meetings_pagination_negative_page():
@@ -110,12 +116,13 @@ def test_get_meetings_pagination_negative_page():
 
     MeetingFactory.create_batch(10, owner=user, status=MeetingStatus.IMPORT_PENDING)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=-1, page_size=10
     )
 
     # Negative page is clamped to 1, so returns results like page 1
-    assert len(results) == 10
+    assert len(paginated.items) == 10
+    assert paginated.total == 10
 
 
 def test_get_meetings_pagination_negative_page_size():
@@ -123,12 +130,13 @@ def test_get_meetings_pagination_negative_page_size():
 
     MeetingFactory.create_batch(12, owner=user, status=MeetingStatus.IMPORT_PENDING)
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid, search=None, page=1, page_size=-5
     )
 
     # Negative page_size is clamped to 1, so returns 1 result
-    assert len(results) == 1
+    assert len(paginated.items) == 1
+    assert paginated.total == 12
 
 
 def test_get_meetings_pagination_with_search():
@@ -142,20 +150,22 @@ def test_get_meetings_pagination_with_search():
         owner=user, name="other_meeting", status=MeetingStatus.IMPORT_PENDING
     )
 
-    results = get_meetings(
+    paginated = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid,
         search="pagination_test",
         page=1,
         page_size=10,
     )
 
-    assert len(results) == 10
+    assert len(paginated.items) == 10
+    assert paginated.total == 15
 
-    results_page2 = get_meetings(
+    paginated_page2 = get_meetings(
         user_keycloak_uuid=user.keycloak_uuid,
         search="pagination_test",
         page=2,
         page_size=10,
     )
 
-    assert len(results_page2) == 5
+    assert len(paginated_page2.items) == 5
+    assert paginated_page2.total == 15

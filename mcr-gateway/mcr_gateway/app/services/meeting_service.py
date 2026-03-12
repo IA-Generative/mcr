@@ -14,6 +14,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingBase,
     MeetingCreate,
     MeetingUpdate,
+    PaginatedMeetingsResponse,
     ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
@@ -236,7 +237,7 @@ async def get_meetings_service(
     search: str | None,
     page: int,
     page_size: int,
-) -> list[Meeting]:
+) -> PaginatedMeetingsResponse:
     """
     Service pour interroger mcr-core et récupérer la liste des réunions.
 
@@ -246,7 +247,7 @@ async def get_meetings_service(
         page_size (int): Nombre d'éléments par page.
 
     Returns:
-        List[Meeting]: Liste des réunions correspondant au filtre.
+        PaginatedMeetingsResponse: Réponse paginée contenant les réunions et les métadonnées.
     """
     try:
         params: dict[str, str | int] = {
@@ -260,8 +261,7 @@ async def get_meetings_service(
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             response = await client.get("", params=params)
             response.raise_for_status()
-            response_data = response.json()
-            return [Meeting(**item) for item in response_data]
+            return PaginatedMeetingsResponse(**response.json())
 
     except httpx.HTTPStatusError as e:
         raise HTTPException(

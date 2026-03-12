@@ -1,5 +1,5 @@
 import HttpService, { API_PATHS } from '../http/http.service';
-import type { PaginationQuery } from '../shared/pagination.type';
+import type { PaginatedResponse, PaginationQuery } from '../shared/pagination.type';
 import type { MultipartInitResponse, UploadTranscriptionParams } from './meetings.service.types';
 import type {
   AddMeetingDto,
@@ -13,7 +13,7 @@ import type { AxiosProgressEvent, AxiosResponse } from 'axios';
 
 const DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-export async function getAll(params: PaginationQuery): Promise<MeetingDto[]> {
+export async function getAll(params: PaginationQuery): Promise<PaginatedResponse<MeetingDto>> {
   const response = await HttpService.get(API_PATHS.MEETINGS, { params });
   return response.data;
 }

@@ -1,3 +1,5 @@
+import math
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -32,6 +34,7 @@ from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingResponse,
     MeetingUpdate,
+    PaginatedMeetingsResponse,
 )
 from mcr_meeting.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -72,7 +75,7 @@ def get_meetings(
     search: str = Query(None, description="Terme de recherche optionnel"),
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
-) -> list[MeetingResponse]:
+) -> PaginatedMeetingsResponse:
     """
     Route pour récupérer une liste de réunions filtrées.
 
@@ -82,17 +85,22 @@ def get_meetings(
         page_size (int): Nombre d'éléments par page.
 
     Returns:
-        List[Meeting]: Liste des réunions correspondant aux critères.
+        PaginatedMeetingsResponse: Réunions paginées avec métadonnées.
     """
     page = max(1, page)
     page_size = page_size if page_size > 0 else 1
-    meetings = get_meetings_orchestrator(
+    paginated = get_meetings_orchestrator(
         search=search,
         page=page,
         page_size=page_size,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
-    return [MeetingResponse.model_validate(m) for m in meetings]
+    return PaginatedMeetingsResponse(
+        total_items=paginated.total,
+        total_pages=max(1, math.ceil(paginated.total / page_size)),
+        page=page,
+        data=[MeetingResponse.model_validate(m) for m in paginated.items],
+    )
 
 
 @router.get("/{meeting_id}")
