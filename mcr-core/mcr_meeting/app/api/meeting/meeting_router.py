@@ -8,6 +8,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
@@ -20,6 +21,9 @@ from mcr_meeting.app.orchestrators.meeting_orchestrator import (
 )
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     get_meeting as get_meeting_orchestrator,
+)
+from mcr_meeting.app.orchestrators.meeting_orchestrator import (
+    get_meeting_audio as get_meeting_audio_orchestrator,
 )
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     get_meetings as get_meetings_orchestrator,
@@ -179,4 +183,15 @@ async def generate_presigned_url(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         presigned_request=presigned_request,
+    )
+
+
+@router.get("/{meeting_id}/audio")
+async def get_meeting_audio(
+    meeting_id: int,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> StreamingResponse:
+    return await get_meeting_audio_orchestrator(
+        meeting_id=meeting_id,
+        user_keycloak_uuid=x_user_keycloak_uuid,
     )

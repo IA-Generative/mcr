@@ -40,3 +40,7 @@ test = [
 dev = ["ruff", "debugpy"]
 typing = ["mypy"]
 tools = ["deptry"]
+
+[tool.pytest.ini_options]
+env_override_existing_values = 1
+env_files = ["../.env.local.docker", "../.env", "../.env.local.testing"]
