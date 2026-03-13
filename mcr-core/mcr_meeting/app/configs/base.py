@@ -250,12 +250,19 @@ class SMTPSettings(BaseSettings):
 
     model_config = SettingsConfigDict(case_sensitive=True)
 
-    SMTP_USERNAME: str = Field(description="SMTP username for authentication")
+    SMTP_USERNAME: str = Field(
+        default="", description="SMTP username for authentication"
+    )
     SMTP_SENDER: str = Field(description="Email address to send from")
     SMTP_ENDPOINT: str = Field(description="SMTP server endpoint")
     SMTP_PORT: int = Field(default=465, description="SMTP server port")
     SMTP_DEFAULT_PORT: int = Field(default=25, description="Default SMTP port")
-    SMTP_SECRET: str = Field(description="SMTP password/secret for authentication")
+    SMTP_SECRET: str = Field(
+        default="", description="SMTP password/secret for authentication"
+    )
+    SMTP_USE_SSL: bool = Field(
+        default=True, description="Use SSL/TLS for SMTP connection"
+    )
 
 
 class UnleashSettings(BaseSettings):
