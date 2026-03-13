@@ -4,29 +4,16 @@
     class="flex flex-col items-center gap-5"
   >
     <div
-      v-if="isRecording"
-      class="rounded-sm px-2 flex items-center gap-1 bg-[var(--warning-950-100)]"
+      class="rounded-sm px-2 flex items-center gap-1"
+      :class="isRecording ? 'status-badge--recording' : 'status-badge--paused'"
     >
       <VIcon
         name="ri-circle-fill"
         scale="1"
-        color="var(--warning-425-625)"
+        color="currentColor"
       />
-      <span class="text-base/6 font-bold text-center text-[var(--warning-425-625)]">
-        {{ $t('meeting.transcription.recording.status.in-progress').toUpperCase() }}
-      </span>
-    </div>
-    <div
-      v-else
-      class="rounded-sm px-2 flex items-center gap-1 bg-[var(--info-950-100)]"
-    >
-      <VIcon
-        name="ri-circle-fill"
-        scale="1"
-        color="var(--info-425-625)"
-      />
-      <span class="text-base/6 font-bold text-center text-[var(--info-425-625)]">
-        {{ $t('meeting.transcription.recording.status.paused').toUpperCase() }}
+      <span class="text-base/6 font-bold text-center">
+        {{ statusLabel }}
       </span>
     </div>
     <div class="flex flex-row items-center gap-2">
@@ -37,7 +24,7 @@
         }}
       </h2>
     </div>
-    <div class="grid grid-cols-2 w-[60%] gap-4">
+    <div class="grid grid-cols-2 w-full max-w-xs gap-4">
       <RoundedActionButton
         v-if="!isRecording"
         icon="ri-play-circle-fill"
@@ -54,12 +41,16 @@
       </RoundedActionButton>
       <RoundedActionButton
         icon="ri-stop-circle-fill"
+        :disabled="effectiveOffline"
         @click="() => onClickStop()"
       >
-        {{ $t('meeting.transcription.recording.actions.stop') }}
+        {{ $t('meeting.transcription.recording.actions.start-transcription') }}
       </RoundedActionButton>
     </div>
-    <RecordMeetingFormNotice />
+    <RecordMeetingFormNotice
+      :is-online="!effectiveOffline"
+      class="w-full max-w-2xl"
+    />
   </div>
   <div v-else>
     <VIcon
@@ -76,7 +67,11 @@ import BaseModal from '@/components/core/BaseModal.vue';
 import RoundedActionButton from '@/components/core/RoundedActionButton.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecorder } from '@/composables/use-recorder';
-import { useLocalStorageRecording } from '@/composables/use-local-storage-recording';
+import { useNetworkStatus } from '@/composables/use-network-status';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
+import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
+import { useChunkUpload } from '@/composables/use-chunk-upload';
+import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -93,6 +88,9 @@ const {
   audioInputLevel,
 } = useRecorder();
 const { t } = useI18n();
+const { isOnline } = useNetworkStatus();
+const isOfflineRecordingEnabled = useFeatureFlag('offline-recording');
+const effectiveOffline = computed(() => isOfflineRecordingEnabled.value && !isOnline.value);
 
 const isSendingLastAudioChunks = ref(false);
 
@@ -100,14 +98,21 @@ const props = defineProps<{
   meetingId: number;
 }>();
 
-const { startTranscriptionMutation, uploadFileWithPresignedUrlMutation, getMeetingQuery } =
-  useMeetings();
+const { startTranscriptionMutation, getMeetingQuery } = useMeetings();
 const { mutate: startTranscription } = startTranscriptionMutation();
-const { mutateAsync: uploadFile } = uploadFileWithPresignedUrlMutation();
 const { data: meetingQueryData } = getMeetingQuery(props.meetingId);
+const { cleanupMeetingChunks } = useAudioChunkCleanup();
 
-const { saveRecordingProgress, clearRecordingProgress, loadRecordingProgress } =
-  useLocalStorageRecording();
+const { getChunkCountForMeeting, getPendingChunksForMeeting } = useAudioChunkStore();
+const { saveAndEnqueueUpload, uploadPendingFromIdb, waitForAllUploads } = useChunkUpload(
+  props.meetingId,
+);
+
+const statusLabel = computed(() =>
+  isRecording.value
+    ? t('meeting.transcription.recording.status.in-progress').toUpperCase()
+    : t('meeting.transcription.recording.status.paused').toUpperCase(),
+);
 
 let chunkCounter = 0;
 
@@ -127,8 +132,6 @@ function onClickStop() {
   openConfirmStopModal();
 }
 
-const pendingUploads: Promise<void>[] = [];
-
 async function handleDataChunkEvent(e: BlobEvent) {
   Sentry.startSpan(
     {
@@ -147,45 +150,38 @@ async function handleDataChunkEventCallback(e: BlobEvent) {
     Sentry.logger.fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - received event`,
   );
   const timestamp = Date.now();
-  updateAndSaveChunkCount();
-  const task = uploadFile(
-    {
-      meetingId: props.meetingId,
-      file: new File([e.data], `${timestamp}.weba`, {
-        type: 'audio/weba',
-      }),
-    },
-    {
-      onSuccess: () => {
-        Sentry.logger.info(
-          Sentry.logger.fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - uploaded to S3`,
-        );
-      },
-      onError: (error: Error) => {
-        Sentry.logger.error(
-          Sentry.logger
-            .fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - failed upload - ${error}`,
-        );
-      },
-    },
-  );
-  pendingUploads.push(task);
+  const filename = `${timestamp}.weba`;
+  chunkCounter += 1;
+
+  await saveAndEnqueueUpload(e.data, filename, isOnline.value);
 }
 
 async function handleOnStopEvent() {
   isSendingLastAudioChunks.value = true;
-  await Promise.allSettled(pendingUploads);
-  startTranscription(props.meetingId, {
-    onSuccess: () => {
-      clearRecordingProgress(props.meetingId);
-    },
-  });
+  try {
+    await waitForAllUploads();
+    await uploadPendingFromIdb();
+
+    const stillPending = await getPendingChunksForMeeting(props.meetingId);
+    if (stillPending.length > 0) {
+      Sentry.logger.error(
+        Sentry.logger
+          .fmt`Meeting ${props.meetingId} - ${stillPending.length} chunks still pending after final sweep`,
+      );
+    }
+
+    startTranscription(props.meetingId, {
+      onSuccess: () => cleanupMeetingChunks(props.meetingId),
+    });
+  } finally {
+    isSendingLastAudioChunks.value = false;
+  }
 }
 
-function updateAndSaveChunkCount() {
-  chunkCounter += 1;
-  saveRecordingProgress(props.meetingId, chunkCounter);
-}
+watch(isOnline, async (online) => {
+  if (!online) return;
+  await uploadPendingFromIdb();
+});
 
 watch(
   () => meetingQueryData.value?.status,
@@ -229,19 +225,42 @@ onBeforeRouteLeave(async () => {
   return isInactive.value || (await confirmAndNavigate());
 });
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('beforeunload', beforeUnloadHandler);
-  const alreadyRecordedChunks = loadRecordingProgress(props.meetingId);
-  chunkCounter = alreadyRecordedChunks ?? 0;
 
-  startRecording({
+  const totalAlreadyRecordedChunks = await getChunkCountForMeeting(props.meetingId).catch(() => 0);
+
+  const pending = await getPendingChunksForMeeting(props.meetingId).catch(() => []);
+  const hasPendingChunks = pending.length > 0;
+
+  if (hasPendingChunks && isOnline.value) {
+    uploadPendingFromIdb();
+  }
+
+  await startRecording({
     onDataAvailableHandler: (e) => handleDataChunkEvent(e),
     onStopEventHandler: () => handleOnStopEvent(),
-    numberOfChunkAlreadyRecorded: chunkCounter,
+    numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
   });
+
+  if (totalAlreadyRecordedChunks) {
+    pauseRecording();
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadHandler);
 });
 </script>
+
+<style scoped>
+.status-badge--recording {
+  background: var(--warning-950-100);
+  color: var(--warning-425-625);
+}
+
+.status-badge--paused {
+  background: var(--info-950-100);
+  color: var(--info-425-625);
+}
+</style>

@@ -1,12 +1,12 @@
 export type PaginationQuery = {
-  // page: number;
+  page: number;
   search?: string;
-  // pageSize: number;
+  page_size: number;
 };
 
 export type PaginatedResponse<T> = {
-  totalItems: number;
-  totalPages: number;
+  total_items: number;
+  total_pages: number;
   page: number;
   data: T[];
 };

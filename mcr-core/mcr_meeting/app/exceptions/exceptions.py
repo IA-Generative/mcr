@@ -7,6 +7,10 @@ class MCRException(Exception):
     """Base exception for validation errors in MCR Meeting."""
 
 
+class InvalidFileError(MCRException):
+    """Raised when an invalid file is provided (a non-docx transcription for example)."""
+
+
 class InvalidAudioFileError(MCRException):
     """Raised when an invalid audio file is provided."""
 

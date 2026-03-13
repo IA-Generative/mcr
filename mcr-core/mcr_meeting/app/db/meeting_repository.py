@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import Query, joinedload
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import (
@@ -9,7 +9,7 @@ from mcr_meeting.app.exceptions.exceptions import (
 from mcr_meeting.app.models import Meeting, MeetingStatus, Transcription
 from mcr_meeting.app.utils.db_utils import update_model
 
-from ..schemas.meeting_schema import MeetingCreate
+from ..schemas.meeting_schema import MeetingCreate, PaginatedMeetings
 
 
 def save_meeting(user_id: int, meeting_data: MeetingCreate) -> Meeting:
@@ -72,9 +72,22 @@ def update_meeting(updated_meeting: Meeting) -> Meeting:
     return updated_meeting
 
 
+def _build_meetings_query(user_id: int, search: str | None) -> Query[Meeting]:
+    db = get_db_session_ctx()
+    query = db.query(Meeting).filter(
+        Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED
+    )
+    if search:
+        search_pattern = f"%{search}%"
+        query = query.filter(
+            Meeting.name.ilike(search_pattern),
+        )
+    return query
+
+
 def get_meetings(
     user_id: int, search: str | None, page: int, page_size: int
-) -> list[Meeting]:
+) -> PaginatedMeetings:
     """
     Récupère une liste de réunions filtrées depuis la base de données.
 
@@ -85,28 +98,23 @@ def get_meetings(
         page_size (int): Nombre d'éléments par page.
 
     Returns:
-        List[Meeting]: Liste des réunions correspondant aux critères.
+        PaginatedMeetings: Réunions paginées avec le nombre total.
     """
     page = max(1, page)
     page_size = page_size if page_size > 0 else 1
 
-    db = get_db_session_ctx()
-    query = db.query(Meeting).filter(
-        Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED
-    )
-    if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            Meeting.name.ilike(search_pattern),
-        )
+    query = _build_meetings_query(user_id, search)
+    total = query.count()
 
     offset = (page - 1) * page_size
-    return (
+    items = (
         query.order_by(Meeting.creation_date.desc())
         .offset(offset)
         .limit(page_size)
         .all()
     )
+
+    return PaginatedMeetings(items=items, total=total)
 
 
 def get_meeting_with_transcriptions(

@@ -17,7 +17,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     Meeting,
     MeetingCreate,
     MeetingUpdate,
-    MeetingWithPresignedUrl,
+    PaginatedMeetingsResponse,
     ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
@@ -27,7 +27,6 @@ from mcr_gateway.app.schemas.user_schema import Role, TokenUser
 from mcr_gateway.app.services.authentification_service import authorize_user
 from mcr_gateway.app.services.meeting_service import (
     create_meeting_service,
-    create_meeting_with_presigned_url_service,
     delete_meeting_service,
     generate_meeting_transcription_document,
     generate_presigned_url_service,
@@ -75,37 +74,6 @@ async def create_meeting(
             raise HTTPException(
                 status_code=500, detail="Service did not return a valid response"
             )
-        return result
-    except HTTPException as e:
-        logger.error("HTTPException occurred: {}", e.detail)
-        raise e
-
-
-@router.post(
-    "/meetings/create_and_generate_presigned_url",
-    tags=["Meetings", "Audio"],
-)
-async def create_meeting_with_file(
-    meeting_data: MeetingCreate,
-    presigned_request: PresignedAudioFileRequest,
-    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> MeetingWithPresignedUrl:
-    """
-    Create a new meeting and return a presigned url to upload an audio file.
-
-    Args:
-        meeting_data (MeetingCreate): The meeting data to create.
-
-    Returns:
-        Meeting: The created meeting object.
-        str: Presigned URL for uploading an audio file.
-    """
-    try:
-        result = await create_meeting_with_presigned_url_service(
-            meeting_data=meeting_data,
-            presigned_request=presigned_request,
-            user_keycloak_uuid=current_user.keycloak_uuid,
-        )
         return result
     except HTTPException as e:
         logger.error("HTTPException occurred: {}", e.detail)
@@ -276,7 +244,7 @@ async def stop_capture(
 
 @router.get(
     "/meetings",
-    response_model=list[Meeting],
+    response_model=PaginatedMeetingsResponse,
     tags=["Meetings"],
 )
 async def get_meetings(
@@ -284,9 +252,9 @@ async def get_meetings(
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> list[Meeting]:
+) -> PaginatedMeetingsResponse:
     """
-    Route pour interroger mcr-core et retourner la liste des réunions.
+    Route pour interroger mcr-core et retourner la liste des réunions paginées.
     """
     return await get_meetings_service(
         search=search,

@@ -14,12 +14,10 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingBase,
     MeetingCreate,
     MeetingUpdate,
-    MeetingWithPresignedUrl,
+    PaginatedMeetingsResponse,
     ReportGenerationRequest,
 )
-from mcr_gateway.app.schemas.S3_types import (
-    PresignedAudioFileRequest,
-)
+from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
 
 
 class MCRCoreCustomAuth(httpx.Auth):
@@ -68,48 +66,6 @@ async def create_meeting_service(
             response.raise_for_status()
             result = response.json()
             return Meeting(**result)
-
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
-        )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
-
-
-async def create_meeting_with_presigned_url_service(
-    meeting_data: MeetingCreate,
-    presigned_request: PresignedAudioFileRequest,
-    user_keycloak_uuid: UUID4,
-) -> MeetingWithPresignedUrl:
-    """
-    Service to create a new meeting with a presigned URL for the transcription file.
-    Args:
-        meeting_data (MeetingCreate): The data required to create a new meeting.
-        user_keycloak_uuid (UUID4): The ID of the user creating the meeting.
-    Returns:
-        Meeting: The newly created meeting object with a presigned URL for the transcription file.
-    """
-    try:
-        meeting_data_dict = update_dict_with_iso_dates(
-            meeting_data.model_dump(), meeting_data
-        )
-
-        payload = {
-            "meeting_data": meeting_data_dict,
-            "presigned_request": presigned_request.model_dump(),
-        }
-
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(
-                "create_and_generate_presigned_url", json=payload
-            )
-            response.raise_for_status()
-
-            created_meeting = response.json()
-            return MeetingWithPresignedUrl(**created_meeting)
 
     except httpx.HTTPStatusError as e:
         logger.error(
@@ -281,7 +237,7 @@ async def get_meetings_service(
     search: str | None,
     page: int,
     page_size: int,
-) -> list[Meeting]:
+) -> PaginatedMeetingsResponse:
     """
     Service pour interroger mcr-core et récupérer la liste des réunions.
 
@@ -291,21 +247,21 @@ async def get_meetings_service(
         page_size (int): Nombre d'éléments par page.
 
     Returns:
-        List[Meeting]: Liste des réunions correspondant au filtre.
+        PaginatedMeetingsResponse: Réponse paginée contenant les réunions et les métadonnées.
     """
     try:
-        params: dict[str, str | int] = {}
+        params: dict[str, str | int] = {
+            "page": page,
+            "page_size": page_size,
+        }
 
         if search:
             params["search"] = search
 
-        params = {"page": page, "page_size": page_size}
-
         async with get_meeting_http_client(user_keycloak_uuid) as client:
             response = await client.get("", params=params)
             response.raise_for_status()
-            response_data = response.json()
-            return [Meeting(**item) for item in response_data]
+            return PaginatedMeetingsResponse(**response.json())
 
     except httpx.HTTPStatusError as e:
         raise HTTPException(
@@ -378,7 +334,7 @@ async def update_meeting_transcription_service(
             "file": (
                 file.filename,
                 file_content,
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                file.content_type,
             )
         }
         async with get_meeting_http_client(user_keycloak_uuid) as client:

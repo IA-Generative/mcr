@@ -1,3 +1,5 @@
+import math
+
 from fastapi import (
     APIRouter,
     Depends,
@@ -12,9 +14,6 @@ from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     create_meeting as create_meeting_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    create_meeting_with_presigned_url as create_meeting_with_presigned_url_orchestrator,
 )
 from mcr_meeting.app.orchestrators.meeting_orchestrator import (
     generate_presigned_audio_upload_url as generate_presigned_audio_upload_url_orchestrator,
@@ -35,7 +34,7 @@ from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingResponse,
     MeetingUpdate,
-    MeetingWithPresignedUrl,
+    PaginatedMeetingsResponse,
 )
 from mcr_meeting.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -70,36 +69,13 @@ def create_meeting(
     return MeetingResponse.model_validate(meeting)
 
 
-@router.post("/create_and_generate_presigned_url", tags=["Audio"])
-async def create_meeting_with_file(
-    meeting_data: MeetingCreate,
-    presigned_request: PresignedAudioFileRequest,
-    x_user_keycloak_uuid: UUID4 = Header(),
-) -> MeetingWithPresignedUrl:
-    """
-    Create a new meeting and return a presigned url to upload an audio file.
-
-    Args:
-        meeting_data (MeetingCreate): The meeting data to create.
-
-    Returns:
-        Meeting: The created meeting object.
-        str: Presigned URL for uploading an audio file.
-    """
-    return await create_meeting_with_presigned_url_orchestrator(
-        meeting_data=meeting_data,
-        presigned_request=presigned_request,
-        user_keycloak_uuid=x_user_keycloak_uuid,
-    )
-
-
 @router.get("/")
 def get_meetings(
     x_user_keycloak_uuid: UUID4 = Header(),
     search: str = Query(None, description="Terme de recherche optionnel"),
     page: int = Query(1, description="Numéro de page"),
     page_size: int = Query(10, description="Nombre d'éléments par page"),
-) -> list[MeetingResponse]:
+) -> PaginatedMeetingsResponse:
     """
     Route pour récupérer une liste de réunions filtrées.
 
@@ -109,17 +85,22 @@ def get_meetings(
         page_size (int): Nombre d'éléments par page.
 
     Returns:
-        List[Meeting]: Liste des réunions correspondant aux critères.
+        PaginatedMeetingsResponse: Réunions paginées avec métadonnées.
     """
     page = max(1, page)
     page_size = page_size if page_size > 0 else 1
-    meetings = get_meetings_orchestrator(
+    paginated = get_meetings_orchestrator(
         search=search,
         page=page,
         page_size=page_size,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
-    return [MeetingResponse.model_validate(m) for m in meetings]
+    return PaginatedMeetingsResponse(
+        total_items=paginated.total,
+        total_pages=max(1, math.ceil(paginated.total / page_size)),
+        page=page,
+        data=[MeetingResponse.model_validate(m) for m in paginated.items],
+    )
 
 
 @router.get("/{meeting_id}")

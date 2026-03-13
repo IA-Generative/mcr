@@ -105,8 +105,9 @@ export default defineConfig(() => {
     test: {
       globals: true,
       environment: 'jsdom',
-      root: './src/',
-      setupFiles: ['./vitest.setup.ts'],
+      // root was './src/' which caused unplugin-auto-import and unplugin-vue-components
+      // to generate dts files in src/src/ instead of src/. Removed and adjusted setupFiles path.
+      setupFiles: ['./src/vitest.setup.ts'],
     },
-  }
-})
+  };
+});

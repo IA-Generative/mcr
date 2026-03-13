@@ -14,7 +14,8 @@
     "format:check": "prettier --check src/",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "pre-commit": "run-s type-check lint format"
   },
   "dependencies": {
     "@dsb-norge/vue-keycloak-js": "^3.0.2",
@@ -23,6 +24,7 @@
     "@ffmpeg/util": "^0.12.2",
     "@gouvfr/dsfr": "~1.14.1",
     "@gouvminint/vue-dsfr": "^8.8.0",
+    "@sentry/vue": "^10.7.0",
     "@tanstack/vue-query": "~5.55.4",
     "@tanstack/vue-query-devtools": "~5.55.4",
     "@vee-validate/yup": "^4.13.2",
@@ -32,11 +34,12 @@
     "date-fns": "^4.1.0",
     "focus-trap": "^7.5.4",
     "focus-trap-vue": "^4.0.3",
-    "unleash-proxy-client": "^3.7.8",
+    "idb": "^8.0.3",
     "keycloak-js": "^26.2.0",
     "lodash.throttle": "^4.1.1",
     "pinia": "^2.2.2",
     "sanitize-filename": "^1.6.3",
+    "unleash-proxy-client": "^3.7.8",
     "vee-validate": "^4.13.2",
     "vue": "^3.4.38",
     "vue-final-modal": "^4.5.5",
@@ -45,8 +48,7 @@
     "vue-router": "^4.4.3",
     "vue-timer-hook": "^1.0.84",
     "yup": "^1.4.0",
-    "yup-locales": "^1.2.28",
-    "@sentry/vue": "^10.7.0"
+    "yup-locales": "^1.2.28"
   },
   "devDependencies": {
     "@intlify/unplugin-vue-i18n": "^5.0.0",
@@ -70,6 +72,7 @@
     "eslint": "^8.57.0",
     "eslint-plugin-testing-library": "^7.3.0",
     "eslint-plugin-vue": "^9.28.0",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^25.0.0",
     "msw": "^2.4.4",
     "npm-run-all2": "^6.2.2",

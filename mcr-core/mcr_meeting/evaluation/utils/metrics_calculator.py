@@ -28,9 +28,21 @@ class MetricsCalculator:
         reference_text: str,
         hypothesis_text: str,
     ) -> TranscriptionMetrics:
-        """Calculate WER and CER metrics for a single file"""
-        normalized_reference_text = french_text_normalizer(reference_text)
-        normalized_hypothesis_text = french_text_normalizer(hypothesis_text)
+        """Calculate WER and CER metrics for a single file
+
+        Both reference and hypothesis texts are normalized before metric computation
+        using the `french_text_normalizer` function.
+
+        We remove consecutive duplicate words from the reference text but not from the hypothesis text,
+        since ASR systems may produce such repetitions as a common type of error (e.g. "le le", "de de de")
+        and we want to ensure that these are counted as errors rather than being normalized away in both texts.
+        """
+        normalized_reference_text = french_text_normalizer(
+            reference_text, remove_repetitions=True
+        )
+        normalized_hypothesis_text = french_text_normalizer(
+            hypothesis_text, remove_repetitions=False
+        )
         wer_score = wer(normalized_reference_text, normalized_hypothesis_text)
         cer_score = cer(normalized_reference_text, normalized_hypothesis_text)
         return TranscriptionMetrics(wer=round(wer_score, 4), cer=round(cer_score, 4))

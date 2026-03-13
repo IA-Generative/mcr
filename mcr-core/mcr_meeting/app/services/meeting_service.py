@@ -23,6 +23,7 @@ from ..db.meeting_repository import (
 from ..schemas.meeting_schema import (
     MeetingCreate,
     MeetingUpdate,
+    PaginatedMeetings,
 )
 
 
@@ -114,7 +115,7 @@ def get_meetings_service(
     search: str | None,
     page: int,
     page_size: int,
-) -> list[Meeting]:
+) -> PaginatedMeetings:
     """
     Service pour récupérer une liste de réunions.
 
@@ -124,7 +125,7 @@ def get_meetings_service(
         page_size (int): Nombre d'éléments par page.
 
     Returns:
-        List[Meeting]: Liste des réunions correspondant aux critères.
+        PaginatedMeetings: Réunions paginées avec le nombre total.
     """
     user = get_user_by_keycloak_uuid_service(user_keycloak_uuid)
 

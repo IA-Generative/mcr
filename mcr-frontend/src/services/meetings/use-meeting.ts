@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import {
   create,
-  createAndGetUploadUrl,
   generateMeetingTranscription,
   generateReport,
   generateUploadUrl,
@@ -20,7 +19,6 @@ import {
 } from './meetings.service';
 import { QUERY_KEYS } from '@/plugins/vue-query';
 import type {
-  AddImportMeetingDtoAndFile,
   AddMeetingDto,
   MeetingDto,
   MeetingStatus,
@@ -42,12 +40,18 @@ const STOP_CAPTURE_SKIPPED = Symbol('STOP_CAPTURE_SKIPPED');
 
 const throttledGetAll = throttle(getAll, THROTTLING_INTERVAL, { leading: true, trailing: true });
 
-function getAllMeetingsQuery(search?: Ref<string | undefined>) {
+function getAllMeetingsQuery(params: {
+  search?: Ref<string | undefined>;
+  page: Ref<number>;
+  pageSize: Ref<number>;
+}) {
   return useQuery({
-    queryKey: [QUERY_KEYS.MEETINGS, search],
+    queryKey: [QUERY_KEYS.MEETINGS, params.search, params.page, params.pageSize],
     queryFn: () =>
       throttledGetAll({
-        search: search?.value,
+        search: params.search?.value,
+        page: params.page.value,
+        page_size: params.pageSize.value,
       }),
   });
 }
@@ -78,8 +82,12 @@ function deleteMeetingMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => removeOne(id),
-    onSuccess: () => {
+    mutationFn: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
+      return removeOne(id);
+    },
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] });
     },
   });
@@ -91,21 +99,6 @@ function addMeetingMutation() {
   return useMutation({
     mutationFn: (values: AddMeetingDto) => create(values),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] }),
-  });
-}
-
-function importMeetingMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (values: AddImportMeetingDtoAndFile) => {
-      const meetingWithPresignedUrl = await createAndGetUploadUrl(values.dto, values.file.name);
-      await uploadFileWithPresignedUrl(meetingWithPresignedUrl.presigned_url, values.file);
-      return meetingWithPresignedUrl;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] });
-    },
   });
 }
 
@@ -176,7 +169,6 @@ function startTranscriptionMutation() {
   return useMutation({
     mutationFn: (id: number) => startTranscription(id),
     onSuccess: (_, id) => {
-      console.log('setting meeting to TRANSCRIPTION_PENDING', id);
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
     },
   });
@@ -294,7 +286,6 @@ export function useMeetings() {
     getMeetingQuery,
     getAllMeetingsQuery,
     addMeetingMutation,
-    importMeetingMutation,
     deleteMeetingMutation,
     updateMeetingMutation,
     startCaptureMutation,

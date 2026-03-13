@@ -155,8 +155,7 @@
           "download-in-progress": "Téléchargement en cours",
           "download-done": "Téléchargement terminé",
           "placeholder": "Aucun fichier sélectionné",
-          "hint": "Taille maximale : 200 Mo. Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov.",
-          "hint-with-multipart-upload-enabled": "Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov."
+          "hint": "Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov."
         },
         "name": "Titre de la réunion",
         "date": "Date de la réunion"
@@ -237,6 +236,14 @@
         "retry-button": "Réessayer"
       },
       "recording": {
+        "offline": {
+          "title": "Mode hors-ligne",
+          "keep-going": "L'enregistrement continue et votre audio est sauvegardé.",
+          "reconnect": {
+            "text": "Reconnectez-vous à internet et lancez la transcription {bold}",
+            "bold": "dans les 24 heures."
+          }
+        },
         "confirm-modal": {
           "title": "Êtes-vous sûr de vouloir terminer l'enregistrement\u00a0?",
           "button": "Terminer l'enregistrement"
@@ -253,7 +260,7 @@
         "actions": {
           "pause": "Mettre en pause",
           "resume": "Reprendre",
-          "stop": "Terminer"
+          "start-transcription": "Lancer ma transcription"
         }
       },
       "transcription-failed": {
@@ -268,6 +275,7 @@
       },
       "upload": "Envoyer la transcription modifiée",
       "upload-success": "Transcription envoyée avec succès",
+      "upload-invalid-format": "Le fichier envoyé n'est pas un document DOCX valide.",
       "format-accepted": "Format accepté : .docx",
       "modal-stop": {
         "title": "Êtes vous sûr de vouloir terminer la transcription\u00a0?"

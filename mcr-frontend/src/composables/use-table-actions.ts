@@ -15,12 +15,16 @@ export function useTableActions<T, U>({
 }: UseTableActionsParams<T, U>) {
   const queryClient = useQueryClient();
   const search = ref<string>();
+  const page = ref(1);
+  const pageSize = ref(10);
 
   const getDataQuery = useQuery({
-    queryKey: [queryKey, { search: search.value }],
+    queryKey: [queryKey, { search: search.value, page: page.value, page_size: pageSize.value }],
     queryFn: () =>
       getDataFn({
         search: search.value,
+        page: page.value,
+        page_size: pageSize.value,
       }),
   });
 

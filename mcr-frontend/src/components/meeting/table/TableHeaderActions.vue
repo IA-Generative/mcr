@@ -54,7 +54,6 @@ import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useMultipart } from '@/composables/use-multipart';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
-import { isAxiosError } from 'axios';
 import CreateVisioMeetingModal from '../modals/CreateVisioMeetingModal.vue';
 
 const props = defineProps<{
@@ -69,19 +68,12 @@ const emit = defineEmits<{
 const router = useRouter();
 const toaster = useToaster();
 
-const {
-  importMeetingMutation,
-  addMeetingMutation,
-  startTranscriptionMutation,
-  startCaptureMutation,
-} = useMeetings();
+const { addMeetingMutation, startTranscriptionMutation, startCaptureMutation } = useMeetings();
 const { uploadFile } = useMultipart();
-const { mutate: importMeeting, isPending: isImportMeetingPending } = importMeetingMutation();
 const { mutate: createMeeting, mutateAsync: createMeetingAsync } = addMeetingMutation();
 const { mutate: startTranscription } = startTranscriptionMutation();
 const { mutateAsync: startCaptureAsync } = startCaptureMutation();
 
-const isMultipartUploadEnabled = useFeatureFlag('multipart-file');
 const isVisioModalV2Enabled = useFeatureFlag('ux-modal-v2');
 const isMultipartUploadPending = ref(false);
 
@@ -95,9 +87,7 @@ const { open: openImportModal, close: closeImportModal } = useModal({
   component: ImportMeetingModal,
   attrs: {
     get isPending() {
-      return isMultipartUploadEnabled.value
-        ? isMultipartUploadPending.value
-        : isImportMeetingPending.value;
+      return isMultipartUploadPending.value;
     },
     onImportMeeting: async (values: AddImportMeetingDtoAndFile) =>
       await importMeetingStartTranscriptionAndRedirect(values),
@@ -169,18 +159,14 @@ async function importMeetingStartTranscriptionAndRedirect({
 
   const dtoWithDates = await updateDtoWithDates(dto, file);
 
-  if (isMultipartUploadEnabled.value) {
-    try {
-      isMultipartUploadPending.value = true;
-      await uploadFileWithMultipart(dtoWithDates, renamedFile);
-    } catch (error) {
-      console.error(error);
-      toaster.addErrorMessage(t('error.file-upload')!);
-    } finally {
-      isMultipartUploadPending.value = false;
-    }
-  } else {
-    uploadAllFileAtOnce({ dto: dtoWithDates, file: renamedFile });
+  try {
+    isMultipartUploadPending.value = true;
+    await uploadFileWithMultipart(dtoWithDates, renamedFile);
+  } catch (error) {
+    console.error(error);
+    toaster.addErrorMessage(t('error.file-upload')!);
+  } finally {
+    isMultipartUploadPending.value = false;
   }
 }
 
@@ -193,25 +179,6 @@ async function uploadFileWithMultipart(dto: AddImportMeetingDto, file: File): Pr
   } catch (e) {
     toaster.addErrorMessage(t('error.meeting-creation')!);
   }
-}
-
-async function uploadAllFileAtOnce(payload: {
-  dto: AddImportMeetingDto;
-  file: File;
-}): Promise<void> {
-  importMeeting(payload, {
-    onSuccess: (data) => {
-      closeImportModal();
-      startTranscriptionAndRedirect(data.meeting.id);
-    },
-    onError: (error) => {
-      if (isAxiosError(error) && error.response?.status === 415) {
-        toaster.addErrorMessage(t('meeting.import-form.errors.unsupported-format')!);
-      } else {
-        toaster.addErrorMessage(t('error.file-upload')!);
-      }
-    },
-  });
 }
 
 async function updateDtoWithDates(

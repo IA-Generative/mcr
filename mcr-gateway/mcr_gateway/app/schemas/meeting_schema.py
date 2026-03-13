@@ -94,17 +94,11 @@ class MeetingUpdate(MeetingBase):
     pass
 
 
-class MeetingWithPresignedUrl(BaseModel):
-    """
-    Schema for a meeting with a presigned URL.
-
-    Attributes:
-        meeting (Meeting): The meeting details.
-        presigned_url (str): The presigned URL for accessing the meeting.
-    """
-
-    meeting: Meeting
-    presigned_url: str
+class PaginatedMeetingsResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    page: int
+    data: list[Meeting]
 
 
 class ReportType(StrEnum):

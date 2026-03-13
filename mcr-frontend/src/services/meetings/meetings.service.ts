@@ -1,10 +1,9 @@
 import HttpService, { API_PATHS } from '../http/http.service';
-import type { PaginationQuery } from '../shared/pagination.type';
+import type { PaginatedResponse, PaginationQuery } from '../shared/pagination.type';
 import type { MultipartInitResponse, UploadTranscriptionParams } from './meetings.service.types';
 import type {
   AddMeetingDto,
   MeetingDto,
-  MeetingDtoWithPresignedUrl,
   Part,
   ReportGenerationRequest,
   TranscriptionWaitingTimeResponse,
@@ -14,7 +13,7 @@ import type { AxiosProgressEvent, AxiosResponse } from 'axios';
 
 const DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-export async function getAll(params: PaginationQuery): Promise<MeetingDto[]> {
+export async function getAll(params: PaginationQuery): Promise<PaginatedResponse<MeetingDto>> {
   const response = await HttpService.get(API_PATHS.MEETINGS, { params });
   return response.data;
 }
@@ -25,21 +24,6 @@ export async function removeOne(id: number) {
 
 export async function create(payload: AddMeetingDto): Promise<MeetingDto> {
   const { data } = await HttpService.post(`${API_PATHS.MEETINGS}`, payload);
-  return data;
-}
-
-export async function createAndGetUploadUrl(
-  meeting_payload: AddMeetingDto,
-  filename: string,
-): Promise<MeetingDtoWithPresignedUrl> {
-  const payload = {
-    meeting_data: meeting_payload,
-    presigned_request: { filename },
-  };
-  const { data } = await HttpService.post(
-    `${API_PATHS.MEETINGS}/create_and_generate_presigned_url`,
-    payload,
-  );
   return data;
 }
 
@@ -57,18 +41,6 @@ export async function uploadFileWithPresignedUrl(url: string, file: File): Promi
     transformRequest: (data, headers) => {
       delete headers['Authorization'];
       headers['Content-Type'] = file.type;
-      return data;
-    },
-  });
-}
-
-export async function uploadMultipartPartWitPresignedUrl(
-  url: string,
-  blob: Blob,
-): Promise<AxiosResponse> {
-  return await HttpService.put(url, blob, {
-    transformRequest: (data, headers) => {
-      setFileHeaders(blob, headers);
       return data;
     },
   });

@@ -29,10 +29,6 @@ vi.mock('@/services/meetings/use-meeting', () => ({
     addMeetingMutation: () => ({
       mutate: mockCreateMeeting,
     }),
-    importMeetingMutation: () => ({
-      mutate: mockImportMeeting,
-      isPending: { value: false },
-    }),
     startTranscriptionMutation: () => ({
       mutate: mockStartTranscription,
     }),

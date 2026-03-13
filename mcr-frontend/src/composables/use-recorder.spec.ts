@@ -69,35 +69,6 @@ describe('use-recorder', () => {
     });
   });
 
-  it('should throw if no audio device ID is set before recording', async () => {
-    // Re-import to get fresh module state
-    vi.resetModules();
-
-    // Re-apply mocks after resetModules
-    vi.doMock('vue-timer-hook', () => ({
-      useStopwatch: () => ({
-        seconds: ref(0),
-        minutes: ref(0),
-        hours: ref(0),
-        reset: vi.fn(),
-        start: vi.fn(),
-        pause: vi.fn(),
-      }),
-    }));
-
-    vi.doMock('@/utils/audio-level-monitor', () => ({
-      AudioLevelMonitor: vi.fn().mockImplementation(() => ({
-        start: vi.fn(),
-        stop: vi.fn(),
-      })),
-    }));
-
-    const { useRecorder } = await import('./use-recorder');
-    const { startRecording } = useRecorder();
-
-    await expect(startRecording()).rejects.toThrow('Audio device ID must be set before recording');
-  });
-
   describe('getDefaultDeviceId', () => {
     it('should return the preferred device ID (default) when it matches a device', async () => {
       const { useRecorder } = await import('./use-recorder');

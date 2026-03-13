@@ -11,7 +11,14 @@ from pydantic import (
     model_validator,
 )
 
-from mcr_meeting.app.models import MeetingPlatforms, MeetingStatus
+from mcr_meeting.app.models import Meeting, MeetingPlatforms, MeetingStatus
+
+
+class PaginatedMeetings(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    items: list[Meeting]
+    total: int
 
 
 class MeetingBase(BaseModel):
@@ -92,6 +99,13 @@ class MeetingUpdate(MeetingBase):
     """
 
     pass
+
+
+class PaginatedMeetingsResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    page: int
+    data: list["MeetingResponse"]
 
 
 class MeetingResponse(MeetingBase):
@@ -253,19 +267,6 @@ def validate_visio_meeting(values: MeetingBase) -> None:
 def no_validation(values: MeetingBase) -> None:
     """No validation is performed for this platform."""
     return None
-
-
-class MeetingWithPresignedUrl(BaseModel):
-    """
-    Schema for a meeting with a presigned URL.
-
-    Attributes:
-        meeting (Meeting): The meeting details.
-        presigned_url (str): The presigned URL for accessing the meeting.
-    """
-
-    meeting: MeetingResponse
-    presigned_url: str
 
 
 class ComuUrlValidator:
