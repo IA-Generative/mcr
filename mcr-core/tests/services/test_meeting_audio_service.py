@@ -27,16 +27,14 @@ class TestMeetingAudioService:
     """Test suite for the meeting_audio_service file."""
 
     @patch("mcr_meeting.app.services.meeting_audio_service.get_file_from_s3")
-    @patch(
-        "mcr_meeting.app.services.meeting_audio_service.get_extension_from_object_list"
-    )
+    @patch("mcr_meeting.app.services.meeting_audio_service.validate_object_list")
     @patch(
         "mcr_meeting.app.services.meeting_audio_service.get_objects_list_from_prefix"
     )
     def test_get_meeting_audio_service_success(
         self,
         mock_get_objects: Mock,
-        mock_get_extension: Mock,
+        mock_validate: Mock,
         mock_get_file: Mock,
         user_fixture: User,
     ):
@@ -48,7 +46,7 @@ class TestMeetingAudioService:
             last_modified=None,
         )
         mock_get_objects.return_value = iter([s3_obj])
-        mock_get_extension.return_value = (iter([s3_obj]), "weba")
+        mock_validate.return_value = iter([s3_obj])
         mock_get_file.return_value = BytesIO(b"fake_audio")
 
         # Act
@@ -91,16 +89,14 @@ class TestMeetingAudioService:
         )
 
     @patch("mcr_meeting.app.services.meeting_audio_service.get_file_from_s3")
-    @patch(
-        "mcr_meeting.app.services.meeting_audio_service.get_extension_from_object_list"
-    )
+    @patch("mcr_meeting.app.services.meeting_audio_service.validate_object_list")
     @patch(
         "mcr_meeting.app.services.meeting_audio_service.get_objects_list_from_prefix"
     )
     def test_get_meeting_audio_service_succeeds_if_creation_date_under_a_week(
         self,
         mock_get_objects: Mock,
-        mock_get_extension: Mock,
+        mock_validate: Mock,
         mock_get_file: Mock,
         user_fixture: User,
     ):
@@ -115,7 +111,7 @@ class TestMeetingAudioService:
             last_modified=None,
         )
         mock_get_objects.return_value = iter([s3_obj])
-        mock_get_extension.return_value = (iter([s3_obj]), "weba")
+        mock_validate.return_value = iter([s3_obj])
         mock_get_file.return_value = BytesIO(b"fake_audio")
 
         # Act
