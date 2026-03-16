@@ -8,9 +8,9 @@ from mcr_meeting.app.db.meeting_repository import get_meeting_by_id
 from mcr_meeting.app.exceptions.exceptions import ForbiddenAccessException
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.s3_service import (
-    get_extension_from_object_list,
     get_file_from_s3,
     get_objects_list_from_prefix,
+    validate_object_list,
 )
 
 MAX_DELAY_TO_GET_AUDIO = 7  # In days
@@ -33,7 +33,7 @@ def get_meeting_audio_service(
         )
 
     s3_chunk_iterator = get_objects_list_from_prefix(prefix=f"{meeting_id}/")
-    (validated_iterator, _) = get_extension_from_object_list(s3_chunk_iterator)
+    validated_iterator = validate_object_list(s3_chunk_iterator)
 
     return StreamingResponse(
         stream_audio_chunks(validated_iterator), media_type="audio/webm"
