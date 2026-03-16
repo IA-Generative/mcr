@@ -10,6 +10,27 @@ from mcr_meeting.app.configs.base import SMTPSettings
 logger = logging.getLogger(__name__)
 
 
+def _connect(settings: SMTPSettings) -> smtplib.SMTP:
+    server: smtplib.SMTP
+    if settings.SMTP_USE_SSL:
+        server = smtplib.SMTP_SSL(
+            settings.SMTP_ENDPOINT,
+            settings.SMTP_PORT,
+            timeout=30,
+        )
+    else:
+        server = smtplib.SMTP(
+            settings.SMTP_ENDPOINT,
+            settings.SMTP_PORT,
+            timeout=30,
+        )
+
+    if settings.SMTP_USERNAME and settings.SMTP_SECRET:
+        server.login(settings.SMTP_USERNAME, settings.SMTP_SECRET)
+
+    return server
+
+
 def send_email(
     to_email: str,
     subject: str,
@@ -27,22 +48,13 @@ def send_email(
 
     for attempt in range(1, max_retries + 1):
         try:
-            with smtplib.SMTP_SSL(
-                settings.SMTP_ENDPOINT,
-                settings.SMTP_PORT,
-                timeout=30,
-            ) as server:
-                server.login(
-                    settings.SMTP_USERNAME,
-                    settings.SMTP_SECRET,
-                )
+            msg = MIMEMultipart()
+            msg["From"] = settings.SMTP_SENDER
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            msg.attach(MIMEText(html, "html", "utf-8"))
 
-                msg = MIMEMultipart()
-                msg["From"] = settings.SMTP_SENDER
-                msg["To"] = to_email
-                msg["Subject"] = subject
-                msg.attach(MIMEText(html, "html", "utf-8"))
-
+            with _connect(settings) as server:
                 errors = server.sendmail(
                     settings.SMTP_SENDER,
                     [to_email],
