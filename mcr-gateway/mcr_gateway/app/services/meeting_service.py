@@ -451,7 +451,7 @@ async def get_meeting_audio_service(
 
             return StreamingResponse(
                 response.aiter_bytes(),
-                media_type="audio/wav",
+                media_type="audio/webm",
             )
 
     except httpx.HTTPStatusError as e:
