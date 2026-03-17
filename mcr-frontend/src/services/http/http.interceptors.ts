@@ -9,7 +9,11 @@ export function refreshTokenOnRequest(HttpService: AxiosInstance) {
       try {
         await refreshTokenForCurrentAndFollowingRequests(config);
       } catch (error) {
-        console.error('Failed to refresh token before request:', error);
+        const { keycloak } = useKeycloak();
+        if (!keycloak?.token || keycloak.isTokenExpired(0)) {
+          return Promise.reject(error);
+        }
+        setTokenForCurrentRequestConfig(config, keycloak.token);
       }
       return config;
     },
@@ -26,7 +30,10 @@ async function refreshTokenForCurrentAndFollowingRequests(
     return false;
   }
 
-  await keycloakInstance.updateToken(minValidity);
+  const refreshed = await keycloakInstance.updateToken(minValidity);
+  if (refreshed) {
+    console.log('[interceptor] Token was refreshed by interceptor (auto-refresh missed it)');
+  }
   const token = keycloakInstance.token;
 
   if (token) {

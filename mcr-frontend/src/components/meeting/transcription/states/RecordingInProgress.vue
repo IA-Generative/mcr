@@ -75,6 +75,7 @@ import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
+import useToaster from '@/composables/use-toaster';
 import * as Sentry from '@sentry/vue';
 
 const {
@@ -88,6 +89,7 @@ const {
   audioInputLevel,
 } = useRecorder();
 const { t } = useI18n();
+const toaster = useToaster();
 const { isOnline } = useNetworkStatus();
 const isOfflineRecordingEnabled = useFeatureFlag('offline-recording');
 const effectiveOffline = computed(() => isOfflineRecordingEnabled.value && !isOnline.value);
@@ -115,6 +117,7 @@ const statusLabel = computed(() =>
 );
 
 let chunkCounter = 0;
+let pendingChunkSave: Promise<void> = Promise.resolve();
 
 const { open: openConfirmStopModal } = useModal({
   component: BaseModal,
@@ -153,12 +156,14 @@ async function handleDataChunkEventCallback(e: BlobEvent) {
   const filename = `${timestamp}.weba`;
   chunkCounter += 1;
 
-  await saveAndEnqueueUpload(e.data, filename, isOnline.value);
+  pendingChunkSave = saveAndEnqueueUpload(e.data, filename, isOnline.value);
+  await pendingChunkSave;
 }
 
 async function handleOnStopEvent() {
   isSendingLastAudioChunks.value = true;
   try {
+    await pendingChunkSave;
     await waitForAllUploads();
     await uploadPendingFromIdb();
 
@@ -168,6 +173,8 @@ async function handleOnStopEvent() {
         Sentry.logger
           .fmt`Meeting ${props.meetingId} - ${stillPending.length} chunks still pending after final sweep`,
       );
+      toaster.addErrorMessage(t('meeting.transcription.recording.upload-failed'));
+      return;
     }
 
     startTranscription(props.meetingId, {
