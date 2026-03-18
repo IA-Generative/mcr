@@ -328,6 +328,10 @@
     }
   },
   "meeting-v2": {
+    "audio-player": {
+      "button": "Réécouter l'audio de la réunion",
+      "error": "L'audio de votre réunion n'a pas pu être obtenu."
+    },
     "visio-form": {
       "comu": {
         "access_code": "Code d'accès",

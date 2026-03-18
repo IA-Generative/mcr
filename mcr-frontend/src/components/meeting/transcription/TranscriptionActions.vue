@@ -4,6 +4,7 @@
     :meeting-id="meeting.id"
     :meeting-name="meeting.name"
     :meeting-status="meeting.status"
+    :creation-date="meeting.creation_date"
   />
 </template>
 
