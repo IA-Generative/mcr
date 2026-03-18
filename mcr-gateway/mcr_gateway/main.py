@@ -12,7 +12,7 @@ from mcr_gateway.setup.logger import setup_logging
 from mcr_gateway.setup.request_id_middleware import AddRequestIdMiddleware
 
 # Redirects the Gateway's Swagger route to domain/api/docs to make it available in all environments
-app = FastAPI(docs_url="/api/docs")
+app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")
 
 origins = ["http://localhost", "http://localhost:8000"]
 
