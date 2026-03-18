@@ -19,7 +19,7 @@ body:
   - type: textarea
     id: expected_outcomes
     attributes:
-      label: Expected outcomes
+      label: Validation checks
       description: Quels sont les résultats attendus une fois la feature livrée ?
       placeholder: |
         - Résultat 1
@@ -39,4 +39,4 @@ body:
         Risques / contraintes :
         Points ouverts :
     validations:
-      required: true
+      required: false
