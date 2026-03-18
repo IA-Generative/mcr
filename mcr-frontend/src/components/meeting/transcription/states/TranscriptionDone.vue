@@ -30,7 +30,7 @@
         {{ $t('meeting-v2.audio-player.button') }}
       </DsfrButton>
       <div
-        v-if="isMeetingAudioRequired && isMeetingRecent"
+        v-if="isGetAudioMeetingEnabled && isMeetingAudioRequired && isMeetingRecent"
         class="flex items-center justify-center w-full"
         :class="{ 'absolute top-full left-0 -mt-8': audioError }"
       >
@@ -49,6 +49,7 @@
         <audio
           v-else-if="audioSrc"
           controls
+          controlslist="nodownload"
           :src="audioSrc"
         ></audio>
       </div>
