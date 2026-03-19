@@ -1,5 +1,4 @@
 import type { RouteRecordRaw } from 'vue-router';
-// import Home from '@/views/HomePage.vue';
 import NotFoundPage from '@/views/errors/NotFoundPage.vue';
 import NotBetaTesterPage from '@/views/errors/NotBetaTesterPage.vue';
 import LoginErrorPage from '@/views/errors/LoginErrorPage.vue';
