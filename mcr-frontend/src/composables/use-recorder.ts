@@ -22,7 +22,7 @@ const isRecording = computed(() => {
   return recorderState.value === 'recording';
 });
 
-const isInactive = computed(() => {
+export const isInactive = computed(() => {
   return recorderState.value === 'inactive';
 });
 
