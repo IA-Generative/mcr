@@ -1,0 +1,40 @@
+name: "Défaut"
+description: Créer un ticket de bug
+title: "🐛 "
+labels: ["Bug"]
+type: bug
+body:
+  - type: textarea
+    id: error
+    attributes:
+      label: Problème fonctionnel
+      description: Screenshot, erreur, etc.
+    validations:
+      required: true
+
+  - type: textarea
+    id: pre_analyse
+    attributes:
+      label: Pre analyse
+      description: description du problème rencontré
+      placeholder: |
+        Meeting ID: 
+        Meeting type:
+        Meeting status:
+    validations:
+      required: false
+
+  - type: textarea
+    id: analyse
+    attributes:
+      label: Analyse
+      description: Reproduction / Logs erreurs (sentry, langfuse)
+    validations:
+      required: false
+
+  - type: textarea
+    id: resolution
+    attributes:
+      label: Piste de resolution
+    validations:
+      required: false

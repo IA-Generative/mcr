@@ -1,0 +1,32 @@
+name: "Retour utilisateur"
+description: Retour utilisateur
+title: "💬 User "
+labels: ["User"]
+type: bug
+body:
+  - type: textarea
+    id: user_information
+    attributes:
+      label: Infos user
+      description: Id de la réunion, mail de l'user
+      placeholder: |
+        Id de la réunion :  :
+        Mail de l'utilisateur :
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description ou screen du problème
+      description: description du problème rencontré
+    validations:
+      required: true
+
+  - type: textarea
+    id: next_steps
+    attributes:
+      label: Prochaines étapes
+      description: créer un ticket de bug, contacter l'user...
+    validations:
+      required: false
