@@ -45,7 +45,7 @@ def get_vad_segments_from_diarization(
         else:
             merged_segments.append(current)
     total_voiced_duration = sum(seg.end - seg.start for seg in merged_segments)
-    logger.info("Total voiced duration after VAD filtering: {}", total_voiced_duration)
+    logger.debug("Total voiced duration after VAD filtering: {}", total_voiced_duration)
 
     return merged_segments
 
@@ -118,8 +118,8 @@ def diarize_vad_transcription_segments(
         diarization_result[0].start, diarization_result[-1].end
     )
 
-    logger.info(
-        "Diarization segments range: start={} to end={}",
+    logger.debug(
+        "Matching transcription against diarization segments in the range: start={} to end={}",
         diarization_range.start,
         diarization_range.end,
     )
@@ -153,7 +153,7 @@ def diarize_vad_transcription_segments(
                 )
             )
         else:
-            logger.info(
+            logger.debug(
                 "No matching diarization segment found for transcription segment: start={}, end={}",
                 transcription_segment.start,
                 transcription_segment.end,

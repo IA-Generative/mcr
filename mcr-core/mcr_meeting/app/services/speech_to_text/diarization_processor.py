@@ -112,8 +112,6 @@ class DiarizationProcessor:
             response.raise_for_status()
             data = response.json()
 
-            logger.debug("Raw diarization API response: {}", data)
-
             # Parse response to DiarizationSegment format
             segments = []
             if "segments" in data:
@@ -128,12 +126,8 @@ class DiarizationProcessor:
                         )
                     )
 
-            logger.info("API diarization returned {} segments", len(segments))
-            if segments:
-                logger.debug(
-                    "First 3 diarization segments: {}",
-                    [(s.start, s.end, s.speaker) for s in segments[:3]],
-                )
+            logger.debug("API diarization returned {} segments", len(segments))
+
             return segments
 
         except Exception as e:

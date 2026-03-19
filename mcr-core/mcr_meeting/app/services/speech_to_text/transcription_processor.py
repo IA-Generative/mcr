@@ -62,17 +62,12 @@ class TranscriptionProcessor:
     ) -> list[TranscriptionSegment]:
         transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
 
-        logger.debug("Number of transcription inputs: {}", len(transcription_inputs))
+        logger.debug("Starting transcription of {} input audio chunks", len(transcription_inputs))
 
         transcription_model = get_transcription_model()
         transcription_segments: list[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(transcription_inputs):
-            logger.debug(
-                "Transcribing vad chunk: start={}, end={}",
-                chunk.diarization.start,
-                chunk.diarization.end,
-            )
             chunk_transcription_segments = self._transcribe_audio_chunk(
                 chunk.audio, transcription_model
             )
@@ -83,10 +78,6 @@ class TranscriptionProcessor:
                     chunk.diarization.end,
                 )
                 continue
-            logger.debug(
-                "Number of transcription segments in one chunk: {}",
-                len(chunk_transcription_segments),
-            )
 
             for segment in chunk_transcription_segments:
                 transcription_segments.append(
@@ -179,7 +170,6 @@ class TranscriptionProcessor:
                         )
                     )
 
-            logger.debug("API transcription returned {} segments", len(segments))
             return segments
 
         except Exception as e:
