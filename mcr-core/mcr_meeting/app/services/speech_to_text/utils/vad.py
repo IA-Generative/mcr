@@ -17,14 +17,14 @@ vad_settings = VADSettings()
 
 def get_vad_segments_from_diarization(
     diarization: list[DiarizationSegment],
-) -> list[DiarizationSegment]:
+) -> list[TimeSpan]:
     """Filter diarization segments using VAD parameters to remove short segments and merge close ones.
 
     Args:
         diarization (List[DiarizationSegment]): List of diarization segments.
 
     Returns:
-        List[DiarizationSegment]: Filtered list of diarization segments.
+        List[TimeSpan]: Filtered list of time spans (start/end only).
     """
     vad_segments = []
     for segment in diarization:
@@ -33,21 +33,21 @@ def get_vad_segments_from_diarization(
 
     if not vad_segments:
         return []
-    merged_segments = [vad_segments[0]]
-    for current in vad_segments[1:]:
-        previous = merged_segments[-1]
+    span_list = [TimeSpan(vad_segments[0].start, vad_segments[0].end)]
+    for segment in vad_segments[1:]:
+        current = TimeSpan(segment.start, segment.end)
+        previous = span_list[-1]
         if current.start - previous.end <= vad_settings.MAX_SILENCE_GAP:
-            merged_segments[-1] = DiarizationSegment(
+            span_list[-1] = TimeSpan(
                 start=previous.start,
                 end=max(previous.end, current.end),
-                speaker=previous.speaker,
             )
         else:
-            merged_segments.append(current)
-    total_voiced_duration = sum(seg.end - seg.start for seg in merged_segments)
+            span_list.append(current)
+    total_voiced_duration = sum(span.end - span.start for span in span_list)
     logger.debug("Total voiced duration after VAD filtering: {}", total_voiced_duration)
 
-    return merged_segments
+    return span_list
 
 
 def find_best_matching_diarization(
