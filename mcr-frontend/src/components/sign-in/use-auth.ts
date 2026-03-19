@@ -6,7 +6,6 @@ import { useKeycloak } from '@dsb-norge/vue-keycloak-js';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { ROUTES } from '@/router/routes';
-import { is401Error, is403Error } from '@/services/http/http.utils';
 import { useQuery } from '@tanstack/vue-query';
 import { isNewError, isNewUser } from '@/utils/auth';
 
@@ -20,6 +19,7 @@ export function useAuth() {
   const currentUserQuery = useQuery({
     queryKey: ['user'],
     queryFn: me,
+    refetchOnReconnect: false,
   });
 
   watch(
@@ -38,16 +38,9 @@ export function useAuth() {
     () => currentUserQuery.error.value,
     (newError, oldError) => {
       if (isNewError(newError, oldError)) {
-        if (is401Error(newError) || is403Error(newError)) {
-          toaster.addErrorMessage(t('error.default'));
-          router.push(ROUTES.NOT_TESTER.path);
-          userStore.setUser(null);
-          return;
-        } else {
-          toaster.addErrorMessage(t('error.default'));
-          router.push(ROUTES.LOGIN_ERROR.path);
-          return;
-        }
+        toaster.addErrorMessage(t('error.default'));
+        router.push(ROUTES.LOGIN_ERROR.path);
+        return;
       }
     },
   );
