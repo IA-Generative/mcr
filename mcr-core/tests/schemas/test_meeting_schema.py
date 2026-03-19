@@ -4,6 +4,7 @@ from mcr_meeting.app.schemas.meeting_schema import (
     ComuUrlValidator,
     VisioUrlValidator,
     WebConfUrlValidator,
+    WebexUrlValidator,
     WebinaireUrlValidator,
 )
 
@@ -259,4 +260,56 @@ visio_test_cases = [
 @pytest.mark.parametrize("name,url,should_match", visio_test_cases)
 def test_visio_url_validator(name: str, url: str, should_match: bool) -> None:
     validator = VisioUrlValidator()
+    assert validator.validate_url(url) == should_match, f"{name} failed"
+
+
+webex_test_cases = [
+    # Valid
+    (
+        "Valid URL",
+        "https://meet1753993399410-7507.webex.com/meet/pr27403357993",
+        True,
+    ),
+    (
+        "Valid URL",
+        "https://meet1753993399410-7507.webex.com/meet/pR",
+        True,
+    ),
+    (
+        "Valid URL",
+        "https://minint.webex.com/meet/vefCVfgEfZVfeg",
+        True,
+    ),
+    # Invalid
+    (
+        "Wrong domain",
+        "https://visio.numerique.gouv.eu/vefvfgefvzfeg",
+        False,
+    ),
+    (
+        "HTTP instead of HTTPS",
+        "http://meet1753993399410-7507.webex.com/meet/pr27403357993",
+        False,
+    ),
+    (
+        "Missing slug",
+        "https://meet1753993399410-7507.webex.com",
+        False,
+    ),
+    (
+        "Special character in slug",
+        "https://visio.numerique.gouv.fr/rh1~ec$",
+        False,
+    ),
+    (
+        "Trailing slash",
+        "https://meet1753993399410-7507.webex.com/meet/pr27403357993/",
+        False,
+    ),
+]
+
+
+@pytest.mark.parametrize("name,url,should_match", webex_test_cases)
+def test_webex_url_validator(name: str, url: str, should_match: bool) -> None:
+    validator = WebexUrlValidator()
     assert validator.validate_url(url) == should_match, f"{name} failed"
