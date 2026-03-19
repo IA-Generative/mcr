@@ -36,9 +36,6 @@ restart:
 
 rebuild:
 	docker compose down $(service)
-	@if [ "$(service)" = "frontend" ]; then \
-		docker volume rm mcr_frontend_node_modules; \
-	fi
 	docker compose build $(service)
 	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
 
