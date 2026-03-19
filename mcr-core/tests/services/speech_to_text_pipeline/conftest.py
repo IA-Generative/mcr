@@ -46,18 +46,18 @@ def mock_transcription_segments_normal() -> list[list[TranscriptionSegment]]:
     return [
         [
             TranscriptionSegment(id=0, start=0.0, end=1.5, text="1st segment"),
-            TranscriptionSegment(id=1, start=1.5, end=3.0, text="2nd segment"),
+            TranscriptionSegment(id=1, start=1.51, end=3.0, text="2nd segment"),
         ],
         [
             TranscriptionSegment(id=0, start=0.0, end=2.0, text="3rd segment"),
         ],
         [
             TranscriptionSegment(id=0, start=0.0, end=2.0, text="4th segment"),
-            TranscriptionSegment(id=0, start=2.0, end=3.0, text="5th segment"),
+            TranscriptionSegment(id=1, start=2.0, end=3.0, text="5th segment"),
         ],
         [
             TranscriptionSegment(id=0, start=0.2, end=1.1, text="6th segment"),
-            TranscriptionSegment(id=0, start=1.2, end=1.6, text="7th segment"),
+            TranscriptionSegment(id=1, start=1.2, end=1.6, text="7th segment"),
         ],
     ]
 

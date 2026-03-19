@@ -19,6 +19,7 @@ from mcr_meeting.app.services.speech_to_text.utils import (
     diarize_vad_transcription_segments,
     get_vad_segments_from_diarization,
 )
+from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 transcription_settings = WhisperTranscriptionSettings()
 
@@ -48,9 +49,7 @@ def run_the_code_to_test(
         logger.debug("No diarization result. Returning empty transcription.")
         return []
 
-    vad_spans: list[DiarizationSegment] = get_vad_segments_from_diarization(
-        diarization_result
-    )
+    vad_spans: list[TimeSpan] = get_vad_segments_from_diarization(diarization_result)
 
     transcription_segments = pipeline.transcribe_audio(
         pre_processed_audio_bytes, vad_spans
@@ -190,7 +189,7 @@ def test_integration_center_process_normal_flow(
     # verify content
     assert transcription_segments[0].id == 0
     assert transcription_segments[1].id == 0
-    assert transcription_segments[1].start == 1.5
+    assert transcription_segments[1].start == 1.51
     assert transcription_segments[1].end == 3.0
     assert transcription_segments[1].text == "2nd segment"
     assert transcription_segments[1].speaker == "Intervenant 1"
@@ -310,7 +309,7 @@ def test_integration_center_process_with_empty_chunks(
 
     # Mock model.transcribe(...) to return empty list for middle chunk
     mock_model = MagicMock()
-    # With gaps in diarization, we have 4 VAD chunks (last 2 diarization segments merged): need mock responses for each
+    # With gaps in diarization, we have 5 VAD chunks: need mock responses for each
     mock_model.transcribe.side_effect = [
         (iter(segments), MagicMock())
         for segments in mock_transcription_segments_with_empty
