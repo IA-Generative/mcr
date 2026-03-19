@@ -15,8 +15,8 @@ class MeetingApiClient:
     async def start_transcription(self, meeting_id: int) -> None:
         await self.client.post(f"/{meeting_id}/transcription/start")
 
-    async def fail_transcription(self, meeting_id: int) -> None:
+    async def mark_transcription_as_failed(self, meeting_id: int) -> None:
         await self.client.post(f"/{meeting_id}/transcription/fail")
 
-    async def end_transcription(self, meeting_id: int) -> None:
-        await self.client.post(f"/{meeting_id}/transcription/end")
+    async def mark_transcription_as_success(self, meeting_id: int) -> None:
+        await self.client.post(f"/{meeting_id}/transcription/success")

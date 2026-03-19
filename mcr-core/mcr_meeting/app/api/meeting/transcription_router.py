@@ -28,9 +28,6 @@ from mcr_meeting.app.orchestrators.transcription_orchestrator import (
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
 )
-from mcr_meeting.app.services.email.email_service import (
-    send_transcription_generation_success_email,
-)
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -122,16 +119,11 @@ async def fail_transcription_task(meeting_id: int) -> None:
     fail_transcription(meeting_id=meeting_id)
 
 
-@router.post("/{meeting_id}/transcription/end", status_code=status.HTTP_204_NO_CONTENT)
-async def end_transcription_task(meeting_id: int) -> None:
+@router.post(
+    "/{meeting_id}/transcription/success", status_code=status.HTTP_204_NO_CONTENT
+)
+async def success_transcription_task(meeting_id: int) -> None:
     complete_transcription(meeting_id=meeting_id)
-
-
-@router.post("/{meeting_id}/transcription/success")
-async def generate_meeting_transcription_success(
-    meeting_id: int,
-) -> None:
-    send_transcription_generation_success_email(meeting_id=meeting_id)
 
 
 @router.get("/{meeting_id}/transcription/wait-time")

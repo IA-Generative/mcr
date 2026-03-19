@@ -5,7 +5,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
-import httpx
 import sentry_sdk
 from celery import Celery, Task
 from celery.signals import task_failure, task_prerun, task_success, worker_process_init
@@ -15,7 +14,6 @@ from pyannote.audio import Pipeline
 
 from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
-    ApiSettings,
     CelerySettings,
     EvaluationSettings,
     SentrySettings,
@@ -51,7 +49,6 @@ setup_logging()
 s2t_settings = Speech2TextSettings()
 celerySettings = CelerySettings()
 service_settings = ServiceSettings()
-api_settings = ApiSettings()
 transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
 sentrySettings = SentrySettings()
 settings = Settings()
@@ -124,22 +121,16 @@ def transcribe(meeting_id: int) -> None:
         meeting = db.get(Meeting, meeting_id)
 
         if meeting is None:
-            logger.error("Meeting not found: {}", meeting_id)
-            return
-
-        client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
+            raise ValueError(f"Meeting not found: {meeting_id}")
 
         transcription_data = transcribe_meeting(meeting_id=meeting_id)
         logger.debug("transcription data {}", transcription_data)
 
-        if transcription_data:
-            save_transcription(transcription_data)
-            asyncio.run(client.end_transcription(meeting_id))
-            logger.info("Meeting {} updated to TRANSCRIPTION_DONE", meeting_id)
-        else:
-            asyncio.run(client.fail_transcription(meeting_id))
-            logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", meeting_id)
-        logger.info("task processed !")
+        if not transcription_data:
+            raise ValueError(f"Transcription returned no data for meeting {meeting_id}")
+
+        save_transcription(transcription_data)
+        logger.info("Transcription saved for meeting {}", meeting_id)
 
 
 @task_prerun.connect(sender=transcribe)
@@ -162,7 +153,7 @@ def set_meeting_in_progress_status(
 
 
 @task_success.connect(sender=transcribe)
-def generate_transcription_success(  # type: ignore[explicit-any]
+def handle_transcription_success(  # type: ignore[explicit-any]
     sender: Task[Any, Any],
     result: Any,
     **kwargs: Any,
@@ -181,15 +172,21 @@ def generate_transcription_success(  # type: ignore[explicit-any]
         logger.error("Unable to retrieve meeting_id in the success signal")
         return
 
-    logger.info("Transcription generation success signal received {}.", meeting_id)
-    with httpx.Client(base_url=service_settings.CORE_SERVICE_BASE_URL) as client:
-        client.post(
-            f"{api_settings.MEETING_API_PREFIX}/{meeting_id}/transcription/success"
-        ).raise_for_status()
+    logger.info("Transcription success signal received for meeting {}.", meeting_id)
+
+    with worker_db_session_context_manager() as db:
+        meeting = db.get(Meeting, meeting_id)
+        if meeting is None:
+            logger.error("Meeting not found in success signal: {}", meeting_id)
+            return
+        client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
+        asyncio.run(client.mark_transcription_as_success(meeting_id))
+
+    logger.info("Meeting {} updated to TRANSCRIPTION_DONE", meeting_id)
 
 
 @task_failure.connect(sender=transcribe)
-def set_meeting_failed_status_on_error(**kwargs: Any) -> None:  # type: ignore[explicit-any]
+def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-any]
     typed_kwargs = cast(CelerySignalArgs, kwargs)
 
     with worker_db_session_context_manager() as db:
@@ -201,7 +198,7 @@ def set_meeting_failed_status_on_error(**kwargs: Any) -> None:  # type: ignore[e
             return
 
         client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
-        asyncio.run(client.fail_transcription(meeting_id))
+        asyncio.run(client.mark_transcription_as_failed(meeting_id))
 
         logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", meeting_id)
 
