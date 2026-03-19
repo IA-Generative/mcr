@@ -2,7 +2,7 @@ name: "Retour utilisateur"
 description: Retour utilisateur
 title: "💬 User "
 labels: ["User"]
-
+type: bug
 body:
   - type: textarea
     id: user_information
