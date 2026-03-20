@@ -242,12 +242,11 @@ def validate_webconf_meeting(values: MeetingBase) -> None:
     Raises:
         ValueError: If the URL is in an invalid format."""
     webconf_url_validator = WebConfUrlValidator()
-    if values.url:
-        if not webconf_url_validator.validate_url(values.url):
-            raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-        return None
-    else:
+    if not values.url:
         raise ValueError("No connection information provided")
+    if not webconf_url_validator.validate_url(values.url):
+        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
+    return None
 
 
 def validate_visio_meeting(values: MeetingBase) -> None:
@@ -257,12 +256,11 @@ def validate_visio_meeting(values: MeetingBase) -> None:
     Raises:
         ValueError: If the URL is in an invalid format."""
     visio_url_validator = VisioUrlValidator()
-    if values.url:
-        if not visio_url_validator.validate_url(values.url):
-            raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-        return None
-    else:
+    if not values.url:
         raise ValueError("No connection information provided")
+    if not visio_url_validator.validate_url(values.url):
+        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
+    return None
 
 
 def validate_webex_meeting(values: MeetingBase) -> None:
