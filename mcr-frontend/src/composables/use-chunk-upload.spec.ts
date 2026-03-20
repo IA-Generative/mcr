@@ -44,25 +44,16 @@ describe('useChunkUpload', () => {
   describe('saveAndEnqueueUpload', () => {
     it('saves to IDB and uploads when online', async () => {
       const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();
-      await saveAndEnqueueUpload(makeBlob(), 'test.weba', true);
+      await saveAndEnqueueUpload(makeBlob(), 'test.weba');
       await waitForAllUploads();
       expect(mockUploadFile).toHaveBeenCalledTimes(1);
       const count = await store.getChunkCountForMeeting(meetingId);
       expect(count).toBe(1);
     });
 
-    it('saves to IDB but does not upload when offline', async () => {
-      const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();
-      await saveAndEnqueueUpload(makeBlob(), 'test.weba', false);
-      await waitForAllUploads();
-      expect(mockUploadFile).not.toHaveBeenCalled();
-      const pending = await store.getPendingChunksForMeeting(meetingId);
-      expect(pending).toHaveLength(1);
-    });
-
     it('marks chunk as uploaded on successful upload', async () => {
       const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();
-      await saveAndEnqueueUpload(makeBlob(), 'test.weba', true);
+      await saveAndEnqueueUpload(makeBlob(), 'test.weba');
       await waitForAllUploads();
       const pending = await store.getPendingChunksForMeeting(meetingId);
       expect(pending).toHaveLength(0);
@@ -71,14 +62,14 @@ describe('useChunkUpload', () => {
     it('does not throw when upload fails (error caught)', async () => {
       mockUploadFile.mockRejectedValueOnce(new Error('network error'));
       const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();
-      await saveAndEnqueueUpload(makeBlob(), 'test.weba', true);
+      await saveAndEnqueueUpload(makeBlob(), 'test.weba');
       await expect(waitForAllUploads()).resolves.toBeUndefined();
     });
 
     it('falls back to upload-only when IDB write fails', async () => {
       const addSpy = vi.spyOn(store, 'addChunk').mockRejectedValueOnce(new Error('quota'));
       const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();
-      await saveAndEnqueueUpload(makeBlob(), 'test.weba', true);
+      await saveAndEnqueueUpload(makeBlob(), 'test.weba');
       await waitForAllUploads();
       expect(mockUploadFile).toHaveBeenCalledTimes(1);
       addSpy.mockRestore();
@@ -121,8 +112,8 @@ describe('useChunkUpload', () => {
   describe('waitForAllUploads', () => {
     it('resolves when all queued uploads complete', async () => {
       const { saveAndEnqueueUpload, waitForAllUploads } = await getComposable();
-      await saveAndEnqueueUpload(makeBlob(), 'a.weba', true);
-      await saveAndEnqueueUpload(makeBlob(), 'b.weba', true);
+      await saveAndEnqueueUpload(makeBlob(), 'a.weba');
+      await saveAndEnqueueUpload(makeBlob(), 'b.weba');
       await expect(waitForAllUploads()).resolves.toBeUndefined();
       expect(mockUploadFile).toHaveBeenCalledTimes(2);
     });
