@@ -50,6 +50,7 @@ class MeetingPlatform(StrEnum):
     WEBINAIRE = "WEBINAIRE"
     WEBCONF = "WEBCONF"
     VISIO = "VISIO"
+    WEBEX = "WEBEX"
 
 
 class Meeting(Base):
@@ -157,3 +158,23 @@ class VisiofMeeting(Meeting):
         from mcr_capture_worker.services.meeting_monitors import VisioMeetingMonitor
 
         return VisioMeetingMonitor()
+
+
+class WebexMeeting(Meeting):
+    __mapper_args__ = {
+        "polymorphic_identity": MeetingPlatform.WEBEX,
+    }
+
+    def get_connection_strategy(self) -> "ConnectionStrategy":
+        from mcr_capture_worker.services.connection_strategies.webex_connection import (
+            WebexStrategy,
+        )
+
+        return WebexStrategy()
+
+    def get_meeting_monitor(self) -> "MeetingMonitor":
+        from mcr_capture_worker.services.meeting_monitors.webex_monitor import (
+            WebexMeetingMonitor,
+        )
+
+        return WebexMeetingMonitor()

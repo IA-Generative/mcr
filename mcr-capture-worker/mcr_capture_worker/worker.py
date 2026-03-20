@@ -39,6 +39,7 @@ def process_meeting() -> None:
 def main() -> None:
     setup_logging()
     setup_sentry()
+    logger.info("Le capture worker est évéillé")
     process_meeting()
 
     # In development mode, run the task every 2 seconds
