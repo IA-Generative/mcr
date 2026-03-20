@@ -31,7 +31,6 @@ import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { lookupComu } from '../lookup/lookup.service';
 import throttle from 'lodash.throttle';
-import { BASE_BACKOFF_MS, MAX_DELAY, MAX_RETRIES } from '@/config/meeting';
 import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
 
 const POLLING_INTERVAL = 10 * 1000; // 10 seconds
@@ -256,8 +255,6 @@ function uploadFileWithPresignedUrlMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] });
     },
-    retry: MAX_RETRIES,
-    retryDelay: (attemptIndex) => Math.min(BASE_BACKOFF_MS * 2 ** attemptIndex, MAX_DELAY),
   });
 }
 

@@ -1,18 +1,28 @@
+import { isRetryableError } from '@/services/http/http.utils';
 import type { VueQueryPluginOptions } from '@tanstack/vue-query';
+
+// Total wait time of ~30s (arbitrary)
+const MAX_RETRIES = 5;
 
 export const vueQueryPluginOptions: VueQueryPluginOptions = {
   queryClientConfig: {
     defaultOptions: {
       queries: {
         refetchOnWindowFocus: false,
-        // Right now we don't have requests that need to be retried
-        // That is because when a request fails, there is no reason that the next one would succeed
-        // Tanstack will still refetch on widow focus or network reconnect
         retry: false,
+      },
+      mutations: {
+        retry: shouldRetryGuard,
       },
     },
   },
 };
+
+function shouldRetryGuard(failureCount: number, error: Error) {
+  console.log(error);
+  if (!isRetryableError(error)) return false;
+  return failureCount < MAX_RETRIES;
+}
 
 export enum QUERY_KEYS {
   MEETINGS = 'meetings',
