@@ -120,6 +120,27 @@ def get_objects_list_from_prefix(prefix: str) -> Iterator[S3Object]:
         yield obj
 
 
+def validate_object_list(it: Iterator[S3Object]) -> Iterator[S3Object]:
+    """
+    Validate that the S3 object iterator is not empty.
+
+    Args:
+        it: Iterator of S3Object instances
+
+    Returns:
+        Reconstructed iterator with all original elements
+
+    Raises:
+        ValueError: If no objects are found in the iterator
+    """
+    try:
+        first_object = next(it)
+        return itertools.chain([first_object], it)
+    except StopIteration:
+        logger.error("No audio files found in S3 iterator")
+        raise ValueError("No audio files found for the specified meeting")
+
+
 def get_extension_from_object_list(
     it: Iterator[S3Object],
 ) -> tuple[Iterator[S3Object], str]:
@@ -135,15 +156,10 @@ def get_extension_from_object_list(
     Raises:
         ValueError: If no objects are found in the iterator
     """
-    try:
-        first_object = next(it)
-        file_extension = first_object.object_name.split(".")[-1]
-
-        return (itertools.chain([first_object], it), file_extension)
-
-    except StopIteration:
-        logger.error("No audio files found in S3 iterator")
-        raise ValueError("No audio files found for the specified meeting")
+    validated_it = validate_object_list(it)
+    first_object = next(validated_it)
+    file_extension = first_object.object_name.split(".")[-1]
+    return (itertools.chain([first_object], validated_it), file_extension)
 
 
 def put_file_to_s3(

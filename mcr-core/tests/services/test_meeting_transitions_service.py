@@ -300,7 +300,7 @@ def test_fail_transcription() -> None:
     assert result.status == MeetingStatus.TRANSCRIPTION_FAILED
 
 
-def test_complete_transcription() -> None:
+def test_complete_transcription(mock_send_email: MagicMock) -> None:
     """Test completing transcription transitions to TRANSCRIPTION_DONE."""
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
@@ -310,6 +310,7 @@ def test_complete_transcription() -> None:
     result = mts.complete_transcription(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_DONE
+    assert mock_send_email.call_count == 1
 
 
 def test_update_transcription(

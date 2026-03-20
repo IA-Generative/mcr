@@ -160,6 +160,7 @@ services:
       - SMTP_ENDPOINT=${SMTP_ENDPOINT}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_SECRET=${SMTP_SECRET}
+      - SMTP_USE_SSL=${SMTP_USE_SSL}
       - MCR_FRONTEND_URL=${MCR_FRONTEND_URL}
       - PARALLEL_PODS_COUNT=${PARALLEL_PODS_COUNT}
       - AVERAGE_TRANSCRIPTION_TIME_MINUTES=${AVERAGE_TRANSCRIPTION_TIME_MINUTES}
@@ -293,6 +294,16 @@ services:
       - DEV_POSTGRES_HOST=${DEV_POSTGRES_HOST}
       - GENERATION_API=${GENERATION_API}
       - ENV_MODE=${ENV_MODE}
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mcr-mailpit
+    restart: unless-stopped
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - mcr-network
 
   minio:
     image: minio/minio:latest

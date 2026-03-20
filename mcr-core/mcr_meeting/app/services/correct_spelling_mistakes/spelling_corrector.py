@@ -33,7 +33,7 @@ class SpellingCorrector(LLMPostProcessing):
             return []
 
         text = self._format_segments_for_llm(segments)
-        chunks = self._chunk_text(text)
+        chunks = self._chunk_text(text, chunk_overlap=0)
 
         for chunk in chunks:
             chunk.text = self._correct_chunk(chunk)

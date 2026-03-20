@@ -26,6 +26,7 @@ from mcr_meeting.app.services.docx_report_generation_service import (
 )
 from mcr_meeting.app.services.email.email_service import (
     send_report_generation_success_email,
+    send_transcription_generation_success_email,
 )
 from mcr_meeting.app.services.meeting_service import (
     update_meeting_end_date,
@@ -100,6 +101,15 @@ def after_start_transcription_handler(
         meeting_status=next_status,
         waiting_time_minutes=waiting_time_minutes,
     )
+
+
+def after_complete_transcription_handler(
+    meeting: Meeting, next_status: MeetingStatus
+) -> None:
+    with UnitOfWork():
+        update_meeting_status(meeting, next_status)
+
+    send_transcription_generation_success_email(meeting_id=meeting.id)
 
 
 def after_start_report_handler(

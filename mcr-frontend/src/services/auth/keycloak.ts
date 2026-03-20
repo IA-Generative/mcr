@@ -10,4 +10,5 @@ export const keycloakOptions: VueKeycloakOptions = {
     onLoad: 'login-required',
     checkLoginIframe: false,
   },
+  autoRefreshToken: false,
 };

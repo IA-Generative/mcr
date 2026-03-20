@@ -1,7 +1,10 @@
 import pytest
 
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.s3_service import get_extension_from_object_list
+from mcr_meeting.app.services.s3_service import (
+    get_extension_from_object_list,
+    validate_object_list,
+)
 
 
 class TestGetExtensionFromObjectList:
@@ -159,3 +162,46 @@ class TestGetExtensionFromObjectList:
             )
 
             assert file_extension == expected_extension, f"Failed for {object_name}"
+
+
+class TestValidateObjectList:
+    """Tests for the function validate_object_list."""
+
+    def test_should_raise_value_error_when_empty_iterator(self) -> None:
+        empty_iterator: list[S3Object] = []
+
+        with pytest.raises(
+            ValueError, match="No audio files found for the specified meeting"
+        ):
+            validate_object_list(iter(empty_iterator))
+
+    def test_should_return_single_object(self) -> None:
+        s3_object = S3Object(
+            bucket_name="test-bucket",
+            object_name="123/audio_chunk.weba",
+            last_modified="2023-01-01T00:00:00Z",
+        )
+
+        result = list(validate_object_list(iter([s3_object])))
+
+        assert len(result) == 1
+        assert result[0].object_name == "123/audio_chunk.weba"
+
+    def test_should_preserve_iterator_order(self) -> None:
+        s3_objects = [
+            S3Object(
+                bucket_name="test",
+                object_name=f"123/chunk_{i}.weba",
+                last_modified="2023-01-01T00:00:00Z",
+            )
+            for i in range(3)
+        ]
+
+        result = list(validate_object_list(iter(s3_objects)))
+
+        assert len(result) == 3
+        assert [obj.object_name for obj in result] == [
+            "123/chunk_0.weba",
+            "123/chunk_1.weba",
+            "123/chunk_2.weba",
+        ]

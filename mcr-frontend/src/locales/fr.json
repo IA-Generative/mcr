@@ -261,7 +261,8 @@
           "pause": "Mettre en pause",
           "resume": "Reprendre",
           "start-transcription": "Lancer ma transcription"
-        }
+        },
+        "upload-failed": "Certains extraits audio n'ont pas pu être envoyés. Vérifiez votre connexion et réessayez."
       },
       "transcription-failed": {
         "title": "Une erreur est survenue",
@@ -327,6 +328,10 @@
     }
   },
   "meeting-v2": {
+    "audio-player": {
+      "button": "Réécouter l'audio de la réunion",
+      "error": "L'audio de votre réunion n'a pas pu être obtenu."
+    },
     "visio-form": {
       "comu": {
         "access_code": "Code d'accès",

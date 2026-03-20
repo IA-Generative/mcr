@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from fastapi.responses import StreamingResponse
+
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
@@ -12,6 +14,7 @@ from mcr_meeting.app.schemas.S3_types import (
 from mcr_meeting.app.services.audio_upload_service import (
     get_presigned_upload_url,
 )
+from mcr_meeting.app.services.meeting_audio_service import get_meeting_audio_service
 from mcr_meeting.app.services.meeting_service import (
     create_meeting_service,
     get_meeting_service,
@@ -79,4 +82,14 @@ async def generate_presigned_audio_upload_url(
     return await get_presigned_upload_url(
         meeting_id=meeting_id,
         presigned_request=presigned_request,
+    )
+
+
+async def get_meeting_audio(
+    meeting_id: int,
+    user_keycloak_uuid: UUID,
+) -> StreamingResponse:
+    return get_meeting_audio_service(
+        meeting_id=meeting_id,
+        current_user_keycloak_uuid=user_keycloak_uuid,
     )

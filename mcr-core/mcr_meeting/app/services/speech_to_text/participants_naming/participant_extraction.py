@@ -41,7 +41,7 @@ class ParticipantExtraction(LLMPostProcessing):
         self, segments: list[DiarizedTranscriptionSegment]
     ) -> list[Participant]:
         text = self._format_segments_for_llm(segments)
-        chunks = self._chunk_text(text)
+        chunks = self._chunk_text(text, chunk_overlap=self.chunk_config.CHUNK_OVERLAP)
 
         if not chunks:
             logger.warning("No chunks found")
