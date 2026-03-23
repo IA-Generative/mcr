@@ -1,0 +1,36 @@
+mcr-core/mcr_meeting/app/schemas/celery_types.py
+  901f55bb5721e8c6 24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "db82da0d4d1d9653f5dc86ad4d89b33b86bbea2b",
+  "prompts": {
+    "901f55bb5721e8c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a3f8871-4521-4c17-98fa-b42ac316fdab",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 48,
+      "overriden_lines": 0
+    },
+    "cc605729761b49b2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "535a27a5-567b-4d98-9108-480ae25edf7f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 92,
+      "overriden_lines": 0
+    }
+  }
+}
