@@ -58,24 +58,17 @@ class MeetingAudioRecorder:
             raise RuntimeError("MeetingTransitionClient is not initialized")
 
         async with async_playwright() as playwright:
-            browser_args = [
-                "--use-fake-device-for-media-stream",
-                "--use-fake-ui-for-media-stream",
-                "--disable-dev-shm-usage",
-                "--no-sandbox",
-            ]
-            if capture_settings.FAKE_AUDIO_CAPTURE_FILE:
-                browser_args.append(
-                    f"--use-file-for-fake-audio-capture={capture_settings.FAKE_AUDIO_CAPTURE_FILE}"
-                )
-            self.browser = await playwright.chromium.launch(
-                channel="chrome",
+            self.browser = await playwright.firefox.launch(
                 headless=capture_settings.BROWSER_HEADLESS,
-                args=browser_args,
+                firefox_user_prefs={
+                    "media.navigator.streams.fake": True,
+                    "media.navigator.permission.disabled": True,
+                    "media.gmp-gmpopenh264.enabled": True,
+                    "media.gmp-gmpopenh264.version": "2.6.0",
+                },
             )
-            context = await self.browser.new_context(
-                permissions=["microphone", "camera"],
-            )
+
+            context = await self.browser.new_context()
             page = await context.new_page()
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
 
