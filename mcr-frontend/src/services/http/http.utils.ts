@@ -1,4 +1,4 @@
-import type { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { HttpStatusCode, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 export function setTokenForCurrentRequestConfig(
   config: InternalAxiosRequestConfig,
@@ -14,21 +14,31 @@ function getFullAuthHeader(token?: string) {
 }
 
 export function is403Error(error: unknown): boolean {
-  return isStatusError(error, 403);
+  return getStatusCode(error) === HttpStatusCode.Forbidden;
 }
 
 export function is404Error(error: unknown): boolean {
-  return isStatusError(error, 404);
+  return getStatusCode(error) === HttpStatusCode.NotFound;
 }
 
-export function is401Error(error: unknown): boolean {
-  return isStatusError(error, 401);
-}
-
-function isStatusError(error: unknown, status: number): boolean {
+function getStatusCode(error: unknown): number | undefined {
   if (error && typeof error === 'object' && 'response' in error) {
-    const err = error as AxiosError;
-    return err.response?.status === status;
+    return (error as AxiosError).response?.status;
   }
-  return false;
+  return undefined;
+}
+
+const RETRYABLE_STATUS_CODES: ReadonlySet<HttpStatusCode> = new Set([
+  HttpStatusCode.RequestTimeout,
+  HttpStatusCode.InternalServerError,
+  HttpStatusCode.BadGateway,
+  HttpStatusCode.ServiceUnavailable,
+  HttpStatusCode.GatewayTimeout,
+  HttpStatusCode.InsufficientStorage,
+]);
+
+export function isRetryableError(error: unknown): boolean {
+  const status = getStatusCode(error);
+  if (status === undefined) return false;
+  return RETRYABLE_STATUS_CODES.has(status);
 }

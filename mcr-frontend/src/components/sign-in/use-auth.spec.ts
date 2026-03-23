@@ -12,7 +12,9 @@ vi.mock('vue-i18n');
 vi.mock('vue-router');
 vi.mock('@tanstack/vue-query');
 
-vi.mock('axios', () => {
+vi.mock('axios', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('axios')>();
+
   const create = vi.fn(() => ({
     interceptors: {
       request: { use: vi.fn() },
@@ -22,6 +24,7 @@ vi.mock('axios', () => {
   }));
 
   return {
+    ...actual,
     default: { create },
     isAxiosError: vi.fn(),
   };
