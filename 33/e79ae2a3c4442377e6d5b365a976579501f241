@@ -1,0 +1,29 @@
+mcr-core/mcr_meeting/app/configs/base.py
+  901f55bb5721e8c6 201-204
+mcr-core/mcr_meeting/app/schemas/celery_types.py
+  901f55bb5721e8c6 24
+mcr-core/mcr_meeting/transcription_worker.py
+  901f55bb5721e8c6 34-37,210,284-296
+mcr-core/mcr_meeting/app/services/s3_service.py
+  901f55bb5721e8c6 229-232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "33e79ae2a3c4442377e6d5b365a976579501f241",
+  "prompts": {
+    "901f55bb5721e8c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a3f8871-4521-4c17-98fa-b42ac316fdab",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 27,
+      "overriden_lines": 0
+    }
+  }
+}
