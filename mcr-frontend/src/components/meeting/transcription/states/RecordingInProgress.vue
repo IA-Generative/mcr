@@ -156,7 +156,7 @@ async function handleDataChunkEventCallback(e: BlobEvent) {
   const filename = `${timestamp}.weba`;
   chunkCounter += 1;
 
-  pendingChunkSave = saveAndEnqueueUpload(e.data, filename, isOnline.value);
+  pendingChunkSave = saveAndEnqueueUpload(e.data, filename);
   await pendingChunkSave;
 }
 
@@ -184,11 +184,6 @@ async function handleOnStopEvent() {
     isSendingLastAudioChunks.value = false;
   }
 }
-
-watch(isOnline, async (online) => {
-  if (!online) return;
-  await uploadPendingFromIdb();
-});
 
 watch(
   () => meetingQueryData.value?.status,
