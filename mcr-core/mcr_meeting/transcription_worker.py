@@ -31,6 +31,10 @@ from mcr_meeting.app.models import (  # noqa: F401
 )
 from mcr_meeting.app.schemas.celery_types import CelerySignalArgs, MCRTranscriptionTasks
 from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
+from mcr_meeting.app.services.s3_service import (
+    get_evaluation_dataset_object_name,
+    get_file_from_s3,
+)
 from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
     get_gpu_name,
@@ -203,8 +207,7 @@ def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-a
         logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", meeting_id)
 
 
-@celery_worker.task(name=MCRTranscriptionTasks.EVALUATE, max_retries=3)
-def evaluate(zip_data: bytes) -> None:
+def _run_evaluation(zip_data: bytes) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
 
@@ -278,3 +281,16 @@ def evaluate(zip_data: bytes) -> None:
         output_dir.mkdir()
 
         pipeline.run_evaluation(output_dir=output_dir)
+
+
+@celery_worker.task(name=MCRTranscriptionTasks.EVALUATE, max_retries=3)
+def evaluate(zip_data: bytes) -> None:
+    _run_evaluation(zip_data)
+
+
+@celery_worker.task(name=MCRTranscriptionTasks.EVALUATE_FROM_S3, max_retries=3)
+def evaluate_from_s3(zip_name: str) -> None:
+    object_name = get_evaluation_dataset_object_name(zip_name)
+    logger.info("Downloading evaluation zip from S3: {}", object_name)
+    zip_buffer = get_file_from_s3(object_name)
+    _run_evaluation(zip_buffer.getvalue())
