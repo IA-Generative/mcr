@@ -1,0 +1,38 @@
+mcr-core/mcr_meeting/app/api/evaluation_router.py
+  901f55bb5721e8c6 13,17,26-29,31,100-127
+mcr-core/mcr_meeting/app/services/transcription_task_service.py
+  901f55bb5721e8c6 84-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "3b469fbd1c6ca3da8b1f9c261614df6931466d58",
+  "prompts": {
+    "901f55bb5721e8c6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7a3f8871-4521-4c17-98fa-b42ac316fdab",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 47,
+      "overriden_lines": 0
+    },
+    "cc605729761b49b2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "535a27a5-567b-4d98-9108-480ae25edf7f",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 92,
+      "overriden_lines": 0
+    }
+  }
+}
