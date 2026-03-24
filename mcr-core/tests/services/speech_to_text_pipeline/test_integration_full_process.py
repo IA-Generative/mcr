@@ -16,7 +16,7 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
             True,
             "diarization_result_multiple_speakers",
             "mock_transcription_segments_normal",
-            4,  # After post_process merging: chunk0(2→1) + chunk1(1) + chunk2(2→merged with chunk1) + chunk3(1) + chunk4(1) = 4
+            4,
             [
                 "Intervenant 1",  # Merged chunk 0
                 "Intervenant 2",  # Merged chunks 1+2
