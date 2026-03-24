@@ -81,3 +81,14 @@ def create_evaluation_task_service(zip_bytes: bytes) -> None:
     except Exception as e:
         logger.error("Error creating transcription task: {}", e)
         raise TaskCreationException(str(e))
+
+
+def create_evaluation_from_s3_task_service(zip_name: str) -> None:
+    try:
+        celery_producer_app.send_task(
+            MCRTranscriptionTasks.EVALUATE_FROM_S3, args=[zip_name]
+        )
+        logger.info("Evaluation from S3 task created for: {}", zip_name)
+
+    except Exception as e:
+        raise TaskCreationException(str(e))

@@ -198,6 +198,10 @@ class S3Settings(BaseSettings):
         default="evaluation",
         description="The folder in the S3 bucket where evaluation files are stored.",
     )
+    S3_EVALUATION_DATASET_FOLDER: str = Field(
+        default="evaluation/dataset",
+        description="The folder in the S3 bucket where evaluation dataset zip files are stored.",
+    )
     S3_TRANSCRIPTION_FOLDER: str = Field(
         default="transcription",
         description="The folder in the S3 bucket where transcription files are stored.",

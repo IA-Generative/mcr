@@ -21,6 +21,7 @@ class MCRTranscriptionTasks(MCRCeleryTask):
 
     TRANSCRIBE = f"{BASE_NAME}.transcribe"
     EVALUATE = f"{BASE_NAME}.evaluate"
+    EVALUATE_FROM_S3 = f"{BASE_NAME}.evaluate_from_s3"
 
     @classmethod
     def select_all_tasks(cls) -> str:
