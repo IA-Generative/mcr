@@ -1,6 +1,4 @@
-from asyncio import sleep
-
-from playwright.sync_api import Page
+from playwright.async_api import Page
 
 from mcr_capture_worker.models.meeting_model import Meeting
 from mcr_capture_worker.schemas.meeting_schema import is_meeting_with_url
@@ -10,6 +8,11 @@ from mcr_capture_worker.services.connection_strategies.abstract_connection impor
 
 
 class WebexStrategy(ConnectionStrategy):
+    MEETING_IFRAME_ID = "#unified-webclient-iframe"
+
+    def _meeting_frame(self, page: Page):
+        return page.frame_locator(self.MEETING_IFRAME_ID)
+
     async def connect_to_meeting(self, page: Page, meeting: Meeting) -> None:
         if not is_meeting_with_url(meeting):
             raise ValueError("Visio meeting doesn't have a valid url")
@@ -26,13 +29,17 @@ class WebexStrategy(ConnectionStrategy):
         # await sleep(10)
 
     async def set_bot_name(self, page, meeting):
-        locator = page.locator("mdc-input[data-test='Nom (obligatoire)'] input")
-        await locator.wait_for(state="visible")
+        frame = self._meeting_frame(page)
+        locator = frame.locator("input[autocomplete='name']")
+        await locator.wait_for(state="visible", timeout=20000)
         await locator.fill(self.get_agent_name(meeting))
 
     async def join_waiting_room_and_set_devices(self, page):
-        locator = page.locator("#join-button")
+        frame = self._meeting_frame(page)
+        locator = frame.locator("#join-button")
         await locator.wait_for(state="visible", timeout=20000)
+        await locator.click()
+        await locator.click()
         await locator.click()
 
     async def load_recording_script(self, page: Page) -> None:

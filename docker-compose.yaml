@@ -238,6 +238,7 @@ services:
       - mcr-network
 
   capture_worker:
+    platform: linux/amd64
     build:
       context: ./mcr-capture-worker
       target: dev

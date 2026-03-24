@@ -67,6 +67,7 @@ class MeetingAudioRecorder:
                     f"--use-file-for-fake-audio-capture={capture_settings.FAKE_AUDIO_CAPTURE_FILE}"
                 )
             self.browser = await playwright.chromium.launch(
+                channel="chrome",
                 headless=capture_settings.BROWSER_HEADLESS,
                 args=browser_args,
             )

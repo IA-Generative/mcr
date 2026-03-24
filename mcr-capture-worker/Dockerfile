@@ -20,10 +20,18 @@ WORKDIR /app
 COPY ./pyproject.toml .
 RUN uv sync
 
-# Install Playwright browsers
+# Install Google Chrome (includes native H.264 codec support)
+RUN apt-get update && apt-get install -y wget gnupg && \
+    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub \
+      | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+      > /etc/apt/sources.list.d/google-chrome.list && \
+    apt-get update && apt-get install -y google-chrome-stable && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Playwright Chromium dependencies
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 RUN mkdir -p /ms-playwright
-RUN uv run playwright install chromium
 RUN uv run playwright install-deps chromium
 
 COPY /mcr_capture_worker mcr_capture_worker
