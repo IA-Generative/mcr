@@ -388,6 +388,12 @@ class KeycloakExchangeSettings(BaseSettings):
     KEYCLOAK_CORE_CLIENT_ID: str = "mcr-core"
     KEYCLOAK_CORE_CLIENT_SECRET: str
 
+
+class DriveSettings(BaseSettings):
+    DRIVE_API_BASE_URL: str
+    DRIVE_FRONTEND_URL: str
+
+
 class TranscriptionForbiddenSentences(BaseSettings):
     """
     Defines the sentences to remove from any transcription
