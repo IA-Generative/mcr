@@ -136,7 +136,7 @@ def get_meeting_with_transcriptions(
         .options(
             joinedload(Meeting.transcriptions)  # Chargement rapide des transcriptions
         )
-        .join(Transcription)  # Jointure avec la table Transcription
+        .outerjoin(Transcription)
         .filter(
             Meeting.id == meeting_id,
             Meeting.status != MeetingStatus.DELETED,

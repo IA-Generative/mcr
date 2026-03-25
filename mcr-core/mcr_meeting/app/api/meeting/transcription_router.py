@@ -28,7 +28,9 @@ from mcr_meeting.app.orchestrators.transcription_orchestrator import (
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
 )
-from mcr_meeting.app.schemas.transcription_schema import TranscriptionSuccessPayload
+from mcr_meeting.app.schemas.transcription_schema import (
+    SpeakerTranscription,
+)
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -124,11 +126,9 @@ async def fail_transcription_task(meeting_id: int) -> None:
     "/{meeting_id}/transcription/success", status_code=status.HTTP_204_NO_CONTENT
 )
 async def success_transcription_task(
-    meeting_id: int, payload: TranscriptionSuccessPayload
+    meeting_id: int, payload: list[SpeakerTranscription]
 ) -> None:
-    handle_transcription_success(
-        meeting_id=meeting_id, transcriptions=payload.transcriptions
-    )
+    handle_transcription_success(meeting_id=meeting_id, transcriptions=payload)
 
 
 @router.get("/{meeting_id}/transcription/wait-time")

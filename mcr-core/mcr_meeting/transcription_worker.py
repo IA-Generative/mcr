@@ -23,7 +23,6 @@ from mcr_meeting.app.configs.base import (
     TranscriptionWaitingTimeSettings,
 )
 from mcr_meeting.app.db.db import worker_db_session_context_manager
-from mcr_meeting.app.db.transcription_repository import save_transcription
 
 # Import all models to ensure SQLAlchemy relationships are properly resolved
 from mcr_meeting.app.models import (  # noqa: F401
@@ -120,7 +119,7 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
 
 
 @celery_worker.task(name=MCRTranscriptionTasks.TRANSCRIBE, max_retries=3)
-def transcribe(meeting_id: int) -> None:
+def transcribe(meeting_id: int) -> list[dict[str, object]]:
     with worker_db_session_context_manager() as db:
         meeting = db.get(Meeting, meeting_id)
 
@@ -133,8 +132,9 @@ def transcribe(meeting_id: int) -> None:
         if not transcription_data:
             raise ValueError(f"Transcription returned no data for meeting {meeting_id}")
 
-        save_transcription(transcription_data)
-        logger.info("Transcription saved for meeting {}", meeting_id)
+        result = [item.model_dump() for item in transcription_data]
+        logger.info("Transcription completed for meeting {}", meeting_id)
+        return result
 
 
 @task_prerun.connect(sender=transcribe)
@@ -184,7 +184,9 @@ def handle_transcription_success(  # type: ignore[explicit-any]
             logger.error("Meeting not found in success signal: {}", meeting_id)
             return
         client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
-        asyncio.run(client.mark_transcription_as_success(meeting_id))
+        asyncio.run(
+            client.mark_transcription_as_success(meeting_id, transcription_data=result)
+        )
 
     logger.info("Meeting {} updated to TRANSCRIPTION_DONE", meeting_id)
 

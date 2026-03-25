@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from io import BytesIO
 from typing import BinaryIO
 
@@ -10,6 +11,7 @@ from mcr_meeting.app.exceptions.exceptions import (
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.services.docx_transcription_generation_service import (
+    HasSpeakerTranscription,
     generate_transcription_docx,
 )
 from mcr_meeting.app.services.meeting_service import (
@@ -28,7 +30,9 @@ DEFAULT_TRANSCRIPTION_FILENAME = "transcription.docx"
 
 async def retrieve_or_create_formatted_docx_transcription(meeting: Meeting) -> BytesIO:
     if meeting.transcription_filename is None:
-        docx_buffer = create_formatted_docx_transcription(meeting)
+        docx_buffer = create_formatted_docx_transcription(
+            meeting, meeting.transcriptions
+        )
     else:
         docx_buffer = get_formatted_transcription_from_s3(meeting)
 
@@ -46,8 +50,11 @@ def get_formatted_transcription_from_s3(meeting: Meeting) -> BytesIO:
     return get_file_from_s3(object_name)
 
 
-def create_formatted_docx_transcription(meeting: Meeting) -> BytesIO:
-    docx_buffer = generate_transcription_docx(meeting.name, meeting.transcriptions)
+def create_formatted_docx_transcription(
+    meeting: Meeting,
+    transcriptions: Sequence[HasSpeakerTranscription],
+) -> BytesIO:
+    docx_buffer = generate_transcription_docx(meeting.name, transcriptions)
     save_formatted_transcription_and_update_meeting_status(
         meeting_id=meeting.id, file_like_object=docx_buffer, filename="v0.docx"
     )

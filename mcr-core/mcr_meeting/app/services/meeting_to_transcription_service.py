@@ -125,6 +125,9 @@ def transcribe_meeting(
             for segment in diarized_transcription_segments
         ]
 
+        if not speaker_transcription_segments:
+            raise ValueError(f"Transcription returned no data for meeting {meeting_id}")
+
         return speaker_transcription_segments
 
     except Exception as transcription_error:
