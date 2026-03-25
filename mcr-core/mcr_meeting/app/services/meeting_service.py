@@ -70,7 +70,7 @@ def get_meeting_service(
         Meeting: The meeting object with the specified ID, or None if not found.
     """
 
-    meeting = get_meeting_by_id(meeting_id)
+    meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
 
     if (
         current_user_keycloak_uuid is not None

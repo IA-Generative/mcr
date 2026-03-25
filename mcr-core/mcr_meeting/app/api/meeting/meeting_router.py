@@ -36,6 +36,7 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
 )
 from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
+    MeetingDetailResponse,
     MeetingResponse,
     MeetingUpdate,
     PaginatedMeetingsResponse,
@@ -111,7 +112,7 @@ def get_meetings(
 def get_meeting(
     meeting_id: int,
     x_user_keycloak_uuid: UUID4 = Header(),
-) -> MeetingResponse:
+) -> MeetingDetailResponse:
     """Retrieve a meeting by ID.
     Returns:
         Meeting: The meeting with the specified ID.
@@ -120,7 +121,7 @@ def get_meeting(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
-    return MeetingResponse.model_validate(meeting)
+    return MeetingDetailResponse.model_validate(meeting)
 
 
 @router.put("/{meeting_id}")
