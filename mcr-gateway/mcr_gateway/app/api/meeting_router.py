@@ -17,6 +17,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     Meeting,
     MeetingCreate,
     MeetingUpdate,
+    MeetingWithDetails,
     PaginatedMeetingsResponse,
     ReportGenerationRequest,
 )
@@ -24,7 +25,7 @@ from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
 )
 from mcr_gateway.app.schemas.user_schema import Role, TokenUser
-from mcr_gateway.app.services.authentification_service import authorize_user
+from mcr_gateway.app.services.authentification_service import authorize_user, security
 from mcr_gateway.app.services.feature_flag_service import is_get_meeting_audio_enabled
 from mcr_gateway.app.services.meeting_service import (
     create_meeting_service,
@@ -115,13 +116,13 @@ async def generate_presigned_url(
 
 @router.get(
     "/meetings/{meeting_id}",
-    response_model=Meeting,
+    response_model=MeetingWithDetails,
     tags=["Meetings"],
 )
 async def get_meeting(
     meeting_id: int,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> Meeting:
+) -> MeetingWithDetails:
     """
     Endpoint to retrieve a meeting by its ID.
 
@@ -234,13 +235,16 @@ async def init_capture(
 async def stop_capture(
     meeting_id: int,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+    token: str = Depends(security),
 ) -> None:
     """
     Route pour arrêter la transcription d'une réunion en appelant le service mcr-core.
     """
     # Appelle le service pour arrêter la transcription
     await stop_meeting_capture_service(
-        meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
+        meeting_id=meeting_id,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+        access_token=token,
     )
 
 
@@ -274,9 +278,12 @@ async def get_meetings(
 async def start_meeting_transcription(
     meeting_id: int,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+    token: str = Depends(security),
 ) -> None:
     return await start_meeting_transcription_service(
-        meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
+        meeting_id=meeting_id,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+        access_token=token,
     )
 
 
