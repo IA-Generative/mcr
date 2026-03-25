@@ -31,27 +31,17 @@ def save_meeting(user_id: int, meeting_data: MeetingCreate) -> Meeting:
     return meeting
 
 
-def get_meeting_by_id(meeting_id: int) -> Meeting:
-    """
-    Retrieve a meeting by its ID from the database.
-
-    Args:
-        meeting_id (int): The ID of the meeting to retrieve.
-
-    Returns:
-        Meeting: The meeting object with the specified ID, or None if not found.
-    """
+def get_meeting_by_id(meeting_id: int, *, with_deliverables: bool = False) -> Meeting:
     db = get_db_session_ctx()
-    meeting = db.get(Meeting, meeting_id)
-    meeting = (
-        db.query(Meeting)
-        .filter(Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED)
-        .first()
+    query = db.query(Meeting).filter(
+        Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED
     )
+    if with_deliverables:
+        query = query.options(joinedload(Meeting.deliverables))
 
+    meeting = query.first()
     if meeting is None:
         raise NotFoundException(f"Meeting not found: id={meeting_id}")
-
     return meeting
 
 
