@@ -3,6 +3,7 @@ import type { PaginatedResponse, PaginationQuery } from '../shared/pagination.ty
 import type { MultipartInitResponse, UploadTranscriptionParams } from './meetings.service.types';
 import type {
   AddMeetingDto,
+  MeetingDetailDto,
   MeetingDto,
   Part,
   ReportGenerationRequest,
@@ -51,7 +52,7 @@ export async function update(id: number, payload: UpdateMeetingDto): Promise<Mee
   return data;
 }
 
-export async function getOne(id: number): Promise<MeetingDto> {
+export async function getOne(id: number): Promise<MeetingDetailDto> {
   const response = await HttpService.get(`${API_PATHS.MEETINGS}/${id}`);
   return response.data;
 }
