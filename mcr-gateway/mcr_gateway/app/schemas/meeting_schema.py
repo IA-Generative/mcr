@@ -101,6 +101,16 @@ class PaginatedMeetingsResponse(BaseModel):
     data: list[Meeting]
 
 
+class DeliverableResponse(BaseModel):
+    file_type: str
+    external_url: str | None = None
+    updated_at: datetime | None = None
+
+
+class MeetingWithDetails(Meeting):
+    deliverables: list[DeliverableResponse] = []
+
+
 class ReportType(StrEnum):
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
