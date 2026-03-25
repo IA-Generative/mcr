@@ -28,7 +28,7 @@ from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 DEFAULT_TRANSCRIPTION_FILENAME = "transcription.docx"
 
 
-async def retrieve_or_create_formatted_docx_transcription(meeting: Meeting) -> BytesIO:
+def retrieve_or_create_formatted_docx_transcription(meeting: Meeting) -> BytesIO:
     if meeting.transcription_filename is None:
         docx_buffer = create_formatted_docx_transcription(
             meeting, meeting.transcriptions
