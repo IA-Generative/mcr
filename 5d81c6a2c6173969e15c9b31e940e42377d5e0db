@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "5d81c6a2c6173969e15c9b31e940e42377d5e0db",
+  "prompts": {
+    "38e8e5b30cb9fff8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41e4f5a7-0326-402c-8f91-a755f0eeebcf",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 213,
+      "overriden_lines": 0
+    }
+  }
+}
