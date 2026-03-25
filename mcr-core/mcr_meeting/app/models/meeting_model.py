@@ -19,6 +19,7 @@ class MeetingPlatforms(StrEnum):
     WEBINAIRE = "WEBINAIRE"
     WEBCONF = "WEBCONF"
     VISIO = "VISIO"
+    WEBEX = "WEBEX"
     MCR_IMPORT = "MCR_IMPORT"
     MCR_RECORD = "MCR_RECORD"
 
