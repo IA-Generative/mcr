@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # Avoid circular imports but allow proper typing
+    from .deliverable_model import Deliverable
     from .transcription_model import Transcription
     from .user_model import User
 
@@ -129,6 +130,10 @@ class Meeting(Base):
         back_populates="meeting",
         cascade="all, delete",
         order_by="Transcription.transcription_index.asc()",
+    )
+
+    deliverables: Mapped[list["Deliverable"]] = relationship(
+        cascade="all, delete",
     )
 
     @property
