@@ -6,10 +6,35 @@
       'grid-cols-2 max-sm:grid-cols-1': meetingStatus !== 'REPORT_PENDING',
     }"
   >
-    <div class="flex flex-col gap-6 relative">
+    <div class="flex flex-col gap-4 items-center relative">
+      <template v-if="transcriptionDriveUrl">
+        <a
+          :href="transcriptionDriveUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="fr-btn fr-btn--icon-right fr-icon-external-link-line"
+        >
+          {{ $t('meeting.transcription.open-on-drive') }}
+        </a>
+        <a
+          href="#"
+          class="fr-link fr-link--sm"
+          @click.prevent="downloadTranscription(meetingId)"
+        >
+          {{ $t('meeting.transcription.download') }}
+          <VIcon
+            v-if="isPending"
+            name="ri-loader-3-line"
+            animation="spin"
+            scale="0.8"
+          />
+        </a>
+      </template>
+
       <DsfrButton
+        v-else
         no-outline
-        class="h-fit self-center"
+        class="h-fit"
         icon="fr-icon-download-fill"
         @click="() => downloadTranscription(meetingId)"
       >
@@ -80,13 +105,25 @@ import { isAxiosError } from 'axios';
 import HttpService, { API_PATHS } from '@/services/http/http.service';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { parseISO, differenceInDays } from 'date-fns';
+import type { DeliverableDto } from '@/services/meetings/meetings.types';
 
-const props = defineProps<{
-  meetingId: number;
-  meetingName: string;
-  meetingStatus: string;
-  creationDate: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    meetingId: number;
+    meetingName: string;
+    meetingStatus: string;
+    creationDate: string;
+    deliverables?: DeliverableDto[];
+  }>(),
+  { deliverables: () => [] },
+);
+
+const transcriptionDriveUrl = computed(() => {
+  const deliverable = props.deliverables.find(
+    (d) => d.file_type === 'TRANSCRIPTION' && d.external_url,
+  );
+  return deliverable?.external_url ?? null;
+});
 
 const MAX_DELAY_TO_FETCH_AUDIO = 7;
 const toaster = useToaster();

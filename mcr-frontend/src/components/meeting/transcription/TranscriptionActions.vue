@@ -5,11 +5,12 @@
     :meeting-name="meeting.name"
     :meeting-status="meeting.status"
     :creation-date="meeting.creation_date"
+    :deliverables="meeting.deliverables"
   />
 </template>
 
 <script setup lang="ts">
-import { type MeetingDto, type MeetingStatus } from '@/services/meetings/meetings.types';
+import { type MeetingDetailDto, type MeetingStatus } from '@/services/meetings/meetings.types';
 
 import NoneStateComponent from './states/TranscriptionNone.vue';
 import RecordingInProgressStateComponent from './states/RecordingInProgress.vue';
@@ -24,7 +25,7 @@ import TranscriptionInProgressStateComponent from './states/TranscriptionInProgr
 import BotDisconnectingComponent from '@/components/meeting/transcription/states/BotDisconnecting.vue';
 
 const props = defineProps<{
-  meeting: MeetingDto;
+  meeting: MeetingDetailDto;
 }>();
 
 const currentStateComponent = computed(() =>
