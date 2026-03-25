@@ -56,7 +56,20 @@ export interface RecordMeetingDto extends MeetingDtoBase {
   name_platform: RecordMeetingPlatforms;
 }
 
+export const DeliverableFileType = ['TRANSCRIPTION', 'REPORT'] as const;
+export type DeliverableFileType = (typeof DeliverableFileType)[number];
+
+export interface DeliverableDto {
+  file_type: DeliverableFileType;
+  external_url: string | null;
+  updated_at: string;
+}
+
 export type MeetingDto = OnlineMeetingDto | ImportMeetingDto | RecordMeetingDto;
+
+export type MeetingDetailDto = MeetingDto & {
+  deliverables: DeliverableDto[];
+};
 
 export type AddOnlineMeetingDto = Omit<
   OnlineMeetingDto,
