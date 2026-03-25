@@ -11,6 +11,7 @@ from mcr_meeting.app.schemas.transcription_schema import (
 )
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     filter_noise_from_audio_bytes,
+    is_audio_noisy,
     normalize_audio_bytes_to_wav_bytes,
 )
 from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
@@ -57,9 +58,15 @@ class SpeechToTextPipeline:
         """
         feature_flag_client = get_feature_flag_client()
         normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
-        # Apply noise filtering only if feature flag is enabled
+
+        if is_audio_noisy(
+            normalized_audio_bytes
+        ):  # TODO: Move inside the FF once the filter is reworked
+            logger.info("Noisy audio detected, applying noise filtering")
+        else:
+            logger.info("Clean audio detected, skipping noise filtering")
         if feature_flag_client.is_enabled("audio_noise_filtering"):
-            logger.debug("Noise filtering enabled")
+            logger.info("Audio noise filtering enabled, applying noise filtering")
             pre_processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
         else:
             logger.debug("Noise filtering disabled, skipping filtering step")

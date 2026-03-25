@@ -71,6 +71,76 @@ class AudioSettings(BaseSettings):
     )
 
 
+class NoiseDetectionSettings(BaseSettings):
+    """
+    Configuration settings for noise detection based on spectral flatness
+    """
+
+    NOISE_FLATNESS_THRESHOLD: float = Field(
+        default=0.05,
+        description="Spectral flatness threshold above which audio is considered noisy.",
+    )
+    MIN_SILENCE_DURATION: float = Field(
+        default=0.5,
+        description="Minimum silence segment duration in seconds for silence detection.",
+    )
+    SILENCE_THRESHOLD_OFFSET_DB: float = Field(
+        default=10.0,
+        description="Offset in dB below mean volume used as silence detection threshold.",
+    )
+    FRAME_SIZE: int = Field(
+        default=2048,
+        description="FFT frame size in samples for spectral flatness computation.",
+    )
+    HOP_SIZE: int = Field(
+        default=512,
+        description="Hop size in samples between consecutive FFT frames.",
+    )
+    SAMPLE_RATE: int = Field(
+        default=16000,
+        description="Sample rate in Hz for reading audio samples.",
+    )
+    TARGET_LUFS: float = Field(
+        default=-23.0,
+        description="Target loudness in LUFS for EBU R128 volume normalization.",
+    )
+    TRUE_PEAK: float = Field(
+        default=-1.5,
+        description="Maximum true peak level in dBTP for loudnorm.",
+    )
+    LOUDNESS_RANGE: float = Field(
+        default=11.0,
+        description="Target loudness range in LU for loudnorm.",
+    )
+    INT16_MAX: float = Field(
+        default=32768.0,
+        description="Maximum absolute value of a 16-bit signed integer, used to normalize audio samples to [-1.0, 1.0].",
+    )
+
+
+class VADSettings(BaseSettings):
+    """
+    Configuration settings for Voice Activity Detection (VAD)
+    """
+
+    VAD_MODEL: str = Field(
+        default="pyannote/voice-activity-detection",
+        description="Pretrained model name for voice activity detection.",
+    )
+    MIN_SPEECH_DURATION: float = Field(
+        default=0.35,
+        description="Minimum duration (in seconds) for a speech segment to be considered valid.",
+    )
+    MAX_SILENCE_GAP: float = Field(
+        default=0.3,
+        description="Maximum allowed gap of silence (in seconds) between speech segments to merge them (natural speech short pause between two spans belonging to the same sentence.).",
+    )
+    MIN_TOTAL_VOICED_DURATION: float = Field(
+        default=0.5,
+        description="Minimum total duration (in seconds) of voiced segments required to consider the audio as containing speech.",
+    )
+
+
 class PyannoteDiarizationParameters(BaseSettings):
     """
     Configuration settings for Pyannote Speaker Diarization
