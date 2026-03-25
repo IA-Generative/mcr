@@ -1,3 +1,4 @@
+from loguru import logger
 from playwright.async_api import Page
 
 from mcr_capture_worker.models.meeting_model import Meeting
@@ -39,8 +40,11 @@ class WebexStrategy(ConnectionStrategy):
         locator = frame.locator("#join-button")
         await locator.wait_for(state="visible", timeout=20000)
         await locator.click()
-        await locator.click()
-        await locator.click()
+
+    async def wait_for_webRTC_connection(self, page: Page) -> None:
+        logger.info(
+            "WEBEX: Skipping page-level MediaStream check (audio/video elements are inside the iframe)"
+        )
 
     async def load_recording_script(self, page: Page) -> None:
         pass
