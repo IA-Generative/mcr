@@ -68,6 +68,12 @@ services:
       - TRANSCRIPTION_API_KEY=${TRANSCRIPTION_API_KEY}
       - DIARIZATION_API_BASE_URL=${DIARIZATION_API_BASE_URL}
       - DIARIZATION_API_KEY=${DIARIZATION_API_KEY}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CORE_CLIENT_ID=${KEYCLOAK_CORE_CLIENT_ID}
+      - KEYCLOAK_CORE_CLIENT_SECRET=${KEYCLOAK_CORE_CLIENT_SECRET}
+      - DRIVE_API_BASE_URL=${DRIVE_API_BASE_URL}
+      - DRIVE_FRONTEND_URL=${DRIVE_FRONTEND_URL}
 
     ports:
       - "5672:5672"
@@ -134,6 +140,7 @@ services:
       - postgres
     networks:
       - mcr-network
+      - shared-network
     volumes:
       - ./mcr-core/mcr_meeting:/app/mcr_meeting
     develop:
@@ -173,6 +180,12 @@ services:
       - LEVEL=${LEVEL}
       - DISPLAY_REQUEST_ID=${DISPLAY_REQUEST_ID}
       - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CORE_CLIENT_ID=${KEYCLOAK_CORE_CLIENT_ID}
+      - KEYCLOAK_CORE_CLIENT_SECRET=${KEYCLOAK_CORE_CLIENT_SECRET}
+      - DRIVE_API_BASE_URL=${DRIVE_API_BASE_URL}
+      - DRIVE_FRONTEND_URL=${DRIVE_FRONTEND_URL}
 
   generation:
     build:
@@ -386,10 +399,13 @@ services:
         restart: true
     networks:
       - mcr-network
+      - shared-network
 
 networks:
   mcr-network:
     driver: bridge
+  shared-network:
+    external: true
 
 volumes:
   postgres_data:
