@@ -1,0 +1,37 @@
+mcr-core/mcr_meeting/transcription_worker.py
+  38e8e5b30cb9fff8 122,135-137,187-189
+mcr-core/mcr_meeting/app/services/transcription_task_service.py
+  38e8e5b30cb9fff8 1,14,34,54-55,57
+mcr-core/mcr_meeting/app/orchestrators/meeting_transitions_orchestrator.py
+  38e8e5b30cb9fff8 116
+mcr-core/mcr_meeting/app/db/meeting_repository.py
+  38e8e5b30cb9fff8 139
+mcr-core/mcr_meeting/app/orchestrators/transcription_orchestrator.py
+  38e8e5b30cb9fff8 5,11-14,20,29-39
+mcr-core/mcr_meeting/app/services/docx_transcription_generation_service.py
+  38e8e5b30cb9fff8 3,5,13-16,60,89
+mcr-core/mcr_meeting/app/schemas/transcription_schema.py
+  38e8e5b30cb9fff8 38-41
+mcr-core/mcr_meeting/app/client/meeting_client.py
+  38e8e5b30cb9fff8 21-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "61a9072ef39983858bda70931efb1248dde1a5aa",
+  "prompts": {
+    "38e8e5b30cb9fff8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "41e4f5a7-0326-402c-8f91-a755f0eeebcf",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 213,
+      "overriden_lines": 0
+    }
+  }
+}
