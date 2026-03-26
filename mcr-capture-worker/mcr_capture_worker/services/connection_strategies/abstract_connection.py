@@ -41,7 +41,9 @@ class ConnectionStrategy(ABC):
             await put_file_in_trace_folder(trace_content, meeting.id, "trace.zip")
             raise
         else:
-            await context.tracing.stop()
+            trace_content = await self.stop_trace_and_get_content(context)
+
+            await put_file_in_trace_folder(trace_content, meeting.id, "trace.zip")
 
     async def stop_trace_and_get_content(self, context: BrowserContext) -> BytesIO:
         with tempfile.NamedTemporaryFile(suffix=".zip") as tmpfile:

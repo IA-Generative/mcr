@@ -1,3 +1,5 @@
+from asyncio import sleep
+
 from loguru import logger
 from playwright.async_api import Page
 
@@ -18,36 +20,44 @@ class WebexStrategy(ConnectionStrategy):
         if not is_meeting_with_url(meeting):
             raise ValueError("Visio meeting doesn't have a valid url")
 
-        await page.goto(meeting.url)
-
-        # await sleep(10)
-        # await self._select_webex_browser_version(page)
-        # await sleep(10)
-
-        # await self._give_no_permissions(page)
-        # await sleep(10)
-        # await self._choose_no_microphone(page)
-        # await sleep(10)
+        await page.goto(meeting.url, wait_until="domcontentloaded")
+        try:
+            await self._select_webex_browser_version(page)
+        except:
+            pass
+        await self._dismiss_cookie_banner(page)
 
     async def set_bot_name(self, page, meeting):
         frame = self._meeting_frame(page)
         locator = frame.locator("input[autocomplete='name']")
-        await locator.wait_for(state="visible", timeout=20000)
+        await locator.wait_for(state="visible", timeout=30000)
         await locator.fill(self.get_agent_name(meeting))
 
     async def join_waiting_room_and_set_devices(self, page):
         frame = self._meeting_frame(page)
         locator = frame.locator("#join-button")
-        await locator.wait_for(state="visible", timeout=20000)
+        await locator.wait_for(state="visible", timeout=30000)
         await locator.click()
+        await sleep(2)
 
     async def wait_for_webRTC_connection(self, page: Page) -> None:
         logger.info(
-            "WEBEX: Skipping page-level MediaStream check (audio/video elements are inside the iframe)"
+            "WEBEX2: Skipping page-level MediaStream check (audio/video elements are inside the iframe)"
         )
 
     async def load_recording_script(self, page: Page) -> None:
-        pass
+        await page.add_init_script(
+            path="mcr_capture_worker/services/audio/wait_for_stream_strategy/audioRecorder.js"
+        )
+
+    async def _dismiss_cookie_banner(self, page: Page):
+        try:
+            reject_button = page.get_by_role("button", name="Reject")
+            await reject_button.wait_for(state="visible", timeout=5000)
+            await reject_button.click()
+            logger.info("WEBEX: Cookie banner dismissed")
+        except Exception:
+            logger.info("WEBEX: No cookie banner found, continuing")
 
     async def _select_webex_browser_version(self, page: Page):
         locator = page.get_by_role("button", name="Join from this browser")

@@ -61,6 +61,8 @@ class MeetingAudioRecorder:
             browser_args = [
                 "--use-fake-device-for-media-stream",
                 "--use-fake-ui-for-media-stream",
+                "--disable-dev-shm-usage",
+                "--no-sandbox",
             ]
             if capture_settings.FAKE_AUDIO_CAPTURE_FILE:
                 browser_args.append(
