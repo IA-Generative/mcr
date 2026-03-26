@@ -71,29 +71,6 @@ class AudioSettings(BaseSettings):
     )
 
 
-class VADSettings(BaseSettings):
-    """
-    Configuration settings for Voice Activity Detection (VAD)
-    """
-
-    VAD_MODEL: str = Field(
-        default="pyannote/voice-activity-detection",
-        description="Pretrained model name for voice activity detection.",
-    )
-    MIN_SPEECH_DURATION: float = Field(
-        default=0.35,
-        description="Minimum duration (in seconds) for a speech segment to be considered valid.",
-    )
-    MAX_SILENCE_GAP: float = Field(
-        default=0.3,
-        description="Maximum allowed gap of silence (in seconds) between speech segments to merge them (natural speech short pause between two spans belonging to the same sentence.).",
-    )
-    MIN_TOTAL_VOICED_DURATION: float = Field(
-        default=0.5,
-        description="Minimum total duration (in seconds) of voiced segments required to consider the audio as containing speech.",
-    )
-
-
 class PyannoteDiarizationParameters(BaseSettings):
     """
     Configuration settings for Pyannote Speaker Diarization
@@ -129,6 +106,14 @@ class WhisperTranscriptionSettings(BaseSettings):
     INITIAL_PROMPT: str | None = Field(
         default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
         description="Prompt passed to the transcription model",
+    )
+    MAX_CHUNK_DURATION: float = Field(
+        default=600.0,
+        description="Maximum duration in seconds for a single transcription chunk (~10 min).",
+    )
+    SPLIT_SEARCH_WINDOW_RATIO: float = Field(
+        default=0.2,
+        description="Fraction of max_chunk_duration at the end of a chunk where the algorithm searches for the best silence to split on.",
     )
 
 
