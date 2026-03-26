@@ -1,3 +1,4 @@
+from io import BytesIO
 from typing import Any
 from unittest.mock import MagicMock
 
@@ -15,29 +16,7 @@ from tests.factories import MeetingFactory
 
 
 @pytest.fixture
-def mock_send_email(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    send_email_mock = MagicMock()
-    monkeypatch.setattr(
-        "mcr_meeting.app.services.email.email_service.send_email",
-        send_email_mock,
-    )
-    return send_email_mock
-
-
-@pytest.fixture
-def mock_s3_put(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    put_mock = MagicMock()
-    monkeypatch.setattr(
-        "mcr_meeting.app.services.s3_service.s3_client.put_object",
-        put_mock,
-    )
-    return put_mock
-
-
-@pytest.fixture
 def mock_generate_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    from io import BytesIO
-
     generate_mock = MagicMock(return_value=BytesIO(b"fake docx content"))
     monkeypatch.setattr(
         "mcr_meeting.app.services.transcription_task_service.generate_transcription_docx",

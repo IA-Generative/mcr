@@ -22,6 +22,8 @@ from mcr_meeting.app.services.feature_flag_service import (
     get_feature_flag_client,
 )
 from mcr_meeting.main import app
+from tests.mocks.email_mocks import mock_send_email as mock_send_email  # noqa: F401
+from tests.mocks.s3_mocks import mock_s3_put as mock_s3_put  # noqa: F401
 
 # --- TEST DB SETUP ---
 # Use a temporary SQLite file for the test DB
