@@ -1,0 +1,27 @@
+mcr-core/mcr_meeting/app/api/meeting/transcription_router.py
+  67d4d84c2ef1a554 25,131
+mcr-core/mcr_meeting/app/orchestrators/transcription_orchestrator.py
+  67d4d84c2ef1a554 29
+mcr-core/tests/orchestrators/test_transcription_orchestrator.py
+  67d4d84c2ef1a554 70,88,104,123,139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "bee0c592f649396b6946a39f448a5b0344c2ebac",
+  "prompts": {
+    "67d4d84c2ef1a554": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "48f63b0a-4b49-417f-90c2-f650ea25af07",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 8,
+      "accepted_lines": 8,
+      "overriden_lines": 0
+    }
+  }
+}
