@@ -20,9 +20,9 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     start_transcription,
 )
 from mcr_meeting.app.orchestrators.transcription_orchestrator import (
+    finalize_transcription,
     get_or_create_transcription_docx,
     get_transcription_waiting_time,
-    finalize_transcription,
     upload_transcription_docx,
 )
 from mcr_meeting.app.schemas.transcription_queue_schema import (
