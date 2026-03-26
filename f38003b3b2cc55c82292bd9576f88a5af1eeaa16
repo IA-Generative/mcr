@@ -1,0 +1,23 @@
+mcr-core/tests/unit/test_extract_transcription_task_args.py
+  ae28b071981f5c21 1-61
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "f38003b3b2cc55c82292bd9576f88a5af1eeaa16",
+  "prompts": {
+    "ae28b071981f5c21": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "69cffa79-e5e4-4884-87de-fa2ac1e264d3",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 61,
+      "overriden_lines": 0
+    }
+  }
+}
