@@ -67,7 +67,7 @@ class TestHandleTranscriptionSuccess:
         mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
     ) -> None:
-        to.handle_transcription_success(
+        to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -85,7 +85,7 @@ class TestHandleTranscriptionSuccess:
         mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
     ) -> None:
-        to.handle_transcription_success(
+        to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -101,7 +101,7 @@ class TestHandleTranscriptionSuccess:
         mock_send_email: MagicMock,
         db_session: Session,
     ) -> None:
-        to.handle_transcription_success(
+        to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -120,7 +120,7 @@ class TestHandleTranscriptionSuccess:
         mock_send_email: MagicMock,
         db_session: Session,
     ) -> None:
-        to.handle_transcription_success(
+        to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -136,7 +136,7 @@ class TestHandleTranscriptionSuccess:
         mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
     ) -> None:
-        to.handle_transcription_success(
+        to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )

@@ -26,14 +26,12 @@ from mcr_meeting.app.services.transcription_waiting_time_service import (
 )
 
 
-def handle_transcription_success(
+def finalize_transcription(
     meeting_id: int,
     transcriptions: list[SpeakerTranscription],
 ) -> None:
     meeting = get_meeting_service(meeting_id=meeting_id)
-
     create_formatted_docx_transcription(meeting, transcriptions=transcriptions)
-
     complete_transcription(meeting_id=meeting_id)
 
 

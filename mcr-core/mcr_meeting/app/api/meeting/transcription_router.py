@@ -22,7 +22,7 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
 from mcr_meeting.app.orchestrators.transcription_orchestrator import (
     get_or_create_transcription_docx,
     get_transcription_waiting_time,
-    handle_transcription_success,
+    finalize_transcription,
     upload_transcription_docx,
 )
 from mcr_meeting.app.schemas.transcription_queue_schema import (
@@ -128,7 +128,7 @@ async def fail_transcription_task(meeting_id: int) -> None:
 async def success_transcription_task(
     meeting_id: int, payload: list[SpeakerTranscription]
 ) -> None:
-    handle_transcription_success(meeting_id=meeting_id, transcriptions=payload)
+    finalize_transcription(meeting_id=meeting_id, transcriptions=payload)
 
 
 @router.get("/{meeting_id}/transcription/wait-time")
