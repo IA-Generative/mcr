@@ -76,6 +76,8 @@ class NoiseDetectionSettings(BaseSettings):
     Configuration settings for noise detection based on spectral flatness
     """
 
+    # === PARAMETERS ===
+
     NOISE_FLATNESS_THRESHOLD: float = Field(
         default=0.05,
         description="Spectral flatness threshold above which audio is considered noisy.",
@@ -88,18 +90,6 @@ class NoiseDetectionSettings(BaseSettings):
         default=10.0,
         description="Offset in dB below mean volume used as silence detection threshold.",
     )
-    FRAME_SIZE: int = Field(
-        default=2048,
-        description="FFT frame size in samples for spectral flatness computation.",
-    )
-    HOP_SIZE: int = Field(
-        default=512,
-        description="Hop size in samples between consecutive FFT frames.",
-    )
-    SAMPLE_RATE: int = Field(
-        default=16000,
-        description="Sample rate in Hz for reading audio samples.",
-    )
     TARGET_LUFS: float = Field(
         default=-23.0,
         description="Target loudness in LUFS for EBU R128 volume normalization.",
@@ -111,6 +101,21 @@ class NoiseDetectionSettings(BaseSettings):
     LOUDNESS_RANGE: float = Field(
         default=11.0,
         description="Target loudness range in LU for loudnorm.",
+    )
+
+    # === CONSTANTS ===
+
+    FRAME_SIZE: int = Field(
+        default=2048,
+        description="FFT frame size in samples for spectral flatness computation.",
+    )
+    HOP_SIZE: int = Field(
+        default=512,
+        description="Hop size in samples between consecutive FFT frames.",
+    )
+    SAMPLE_RATE: int = Field(
+        default=16000,
+        description="Sample rate in Hz for reading audio samples.",
     )
     INT16_MAX: float = Field(
         default=32768.0,

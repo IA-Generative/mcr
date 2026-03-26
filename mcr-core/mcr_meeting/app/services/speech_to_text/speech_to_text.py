@@ -59,17 +59,20 @@ class SpeechToTextPipeline:
         feature_flag_client = get_feature_flag_client()
         normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
 
-        if is_audio_noisy(
-            normalized_audio_bytes
-        ):  # TODO: Move inside the FF once the filter is reworked
-            logger.info("Noisy audio detected, applying noise filtering")
+        is_noisy = is_audio_noisy(normalized_audio_bytes)
+        if is_noisy: # TODO: remove once FF is enabled
+            logger.info("Noisy audio detected")
         else:
-            logger.info("Clean audio detected, skipping noise filtering")
+            logger.info("Clean audio detected")
         if feature_flag_client.is_enabled("audio_noise_filtering"):
-            logger.info("Audio noise filtering enabled, applying noise filtering")
-            pre_processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
+            if is_noisy:
+                logger.info("Noisy audio detected, applying noise filtering")
+                pre_processed_bytes = filter_noise_from_audio_bytes(normalized_audio_bytes)
+            else: 
+                logger.info("Clean audio detected, not applying noise filtering")
+                pre_processed_bytes = normalized_audio_bytes
         else:
-            logger.debug("Noise filtering disabled, skipping filtering step")
+            logger.info("Noise filtering disabled, skipping filtering step")
             pre_processed_bytes = normalized_audio_bytes
 
         return pre_processed_bytes
