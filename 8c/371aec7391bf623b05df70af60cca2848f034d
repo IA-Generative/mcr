@@ -1,0 +1,27 @@
+mcr-core/mcr_meeting/app/statemachine_actions/meeting_actions.py
+  8c54d82ecea572dd 73-74
+mcr-core/tests/api/test_transcription_router.py
+  8c54d82ecea572dd 35-36,63-64
+mcr-core/mcr_meeting/transcription_worker.py
+  8c54d82ecea572dd 116,130,132,144-145,148,155,157,159,165,176-177,179-180
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "8c371aec7391bf623b05df70af60cca2848f034d",
+  "prompts": {
+    "8c54d82ecea572dd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "acc7d899-54f8-41e8-bbee-9fb581096014",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 2,
+      "accepted_lines": 20,
+      "overriden_lines": 0
+    }
+  }
+}
