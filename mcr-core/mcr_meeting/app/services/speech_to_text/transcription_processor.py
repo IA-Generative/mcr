@@ -156,7 +156,6 @@ class TranscriptionProcessor:
                 language=api_settings.API_LANGUAGE,
                 response_format="verbose_json",
                 prompt=prompt,
-                timestamp_granularities=["segment"],
             )
 
             # Convert API response to TranscriptionSegment format
