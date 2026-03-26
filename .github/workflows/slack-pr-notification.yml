@@ -13,6 +13,20 @@ jobs:
       github.event.changes.base != null
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve Slack user
+        id: slack-user
+        run: |
+          GITHUB_USER="${{ github.event.pull_request.user.login }}"
+          SLACK_ID=$(jq -r --arg user "$GITHUB_USER" '.[$user] // empty' .github/slack-users.json)
+          if [ -n "$SLACK_ID" ]; then
+            echo "mention=<@$SLACK_ID>" >> "$GITHUB_OUTPUT"
+          else
+            echo "mention=$GITHUB_USER" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Send Slack notification
         uses: slackapi/slack-github-action@v2.1.0
         with:
@@ -33,7 +47,7 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*Auteur:*\n${{ github.event.pull_request.user.login }}"
+                      "text": "*Auteur:*\n${{ steps.slack-user.outputs.mention }}"
                     },
                     {
                       "type": "mrkdwn",
