@@ -18,10 +18,10 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
             "mock_transcription_segments_normal",
             4,
             [
-                "Intervenant 1",  # Merged chunk 0
-                "Intervenant 2",  # Merged chunks 1+2
-                "Intervenant 1",  # Chunk 3
-                "Intervenant 2",  # Chunk 4
+                "Intervenant 1",  # Merged segments from chunk 0
+                "Intervenant 2",  # Merged segments from chunks 1+2
+                "Intervenant 1",  # From chunk 3
+                "Intervenant 2",  # From chunk 3
             ],
         ),
         (
