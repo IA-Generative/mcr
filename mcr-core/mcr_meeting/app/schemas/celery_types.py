@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any, TypedDict
+from typing import Any, NamedTuple, TypedDict
 
 from celery.app.task import Task
 
@@ -10,6 +10,38 @@ Task.__class_getitem__ = classmethod(lambda cls, *args, **kwargs: cls)  # type: 
 class CelerySignalArgs(TypedDict):
     task_id: int
     args: list[Any]  # type: ignore[explicit-any]
+
+
+class TranscriptionTaskArgs(NamedTuple):
+    meeting_id: int
+    owner_keycloak_uuid: str
+
+
+def extract_transcription_task_args(  # type: ignore[explicit-any]
+    kwargs: dict[str, Any],
+    sender: Any | None = None,
+) -> TranscriptionTaskArgs:
+    args: list[Any] | None = None  # type: ignore[explicit-any]
+
+    if "args" in kwargs and kwargs["args"]:
+        args = kwargs["args"]
+    elif (
+        sender is not None
+        and hasattr(sender, "request")
+        and hasattr(sender.request, "args")
+        and sender.request.args
+    ):
+        args = sender.request.args
+
+    if args is None or len(args) < 2:
+        raise ValueError(
+            "Unable to extract meeting_id and owner_keycloak_uuid from signal args"
+        )
+
+    return TranscriptionTaskArgs(
+        meeting_id=args[0],
+        owner_keycloak_uuid=args[1],
+    )
 
 
 class MCRCeleryTask(StrEnum):

@@ -3,7 +3,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Any, TypedDict
 
 import sentry_sdk
 from celery import Celery, Task
@@ -22,14 +22,10 @@ from mcr_meeting.app.configs.base import (
     Speech2TextSettings,
     TranscriptionWaitingTimeSettings,
 )
-from mcr_meeting.app.db.db import worker_db_session_context_manager
-from mcr_meeting.app.db.transcription_repository import save_transcription
-
-# Import all models to ensure SQLAlchemy relationships are properly resolved
-from mcr_meeting.app.models import (  # noqa: F401
-    Meeting,
+from mcr_meeting.app.schemas.celery_types import (
+    MCRTranscriptionTasks,
+    extract_transcription_task_args,
 )
-from mcr_meeting.app.schemas.celery_types import CelerySignalArgs, MCRTranscriptionTasks
 from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
 from mcr_meeting.app.services.s3_service import (
     get_evaluation_dataset_object_name,
@@ -120,40 +116,21 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
 
 
 @celery_worker.task(name=MCRTranscriptionTasks.TRANSCRIBE, max_retries=3)
-def transcribe(meeting_id: int) -> None:
-    with worker_db_session_context_manager() as db:
-        meeting = db.get(Meeting, meeting_id)
+def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, object]]:
+    transcription_data = transcribe_meeting(meeting_id=meeting_id)
 
-        if meeting is None:
-            raise ValueError(f"Meeting not found: {meeting_id}")
-
-        transcription_data = transcribe_meeting(meeting_id=meeting_id)
-        logger.debug("transcription data {}", transcription_data)
-
-        if not transcription_data:
-            raise ValueError(f"Transcription returned no data for meeting {meeting_id}")
-
-        save_transcription(transcription_data)
-        logger.info("Transcription saved for meeting {}", meeting_id)
+    result = [item.model_dump() for item in transcription_data]
+    logger.info("Transcription completed for meeting {}", meeting_id)
+    return result
 
 
 @task_prerun.connect(sender=transcribe)
-def set_meeting_in_progress_status(
-    **kwargs: CelerySignalArgs,
-) -> None:
-    typed_kwargs = cast(CelerySignalArgs, kwargs)
-    with worker_db_session_context_manager() as db:
-        meeting_id = typed_kwargs["args"][0]
-        meeting = db.get(Meeting, meeting_id)
+def set_meeting_in_progress_status(**kwargs: Any) -> None:  # type: ignore[explicit-any]
+    task_args = extract_transcription_task_args(kwargs)
 
-        if meeting is None:
-            logger.error("Meeting not found: {}", meeting_id)
-            return
-
-        client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
-
-        asyncio.run(client.start_transcription(meeting_id))
-        logger.info("Starting transcription for meeting ID: {}", meeting_id)
+    client = MeetingApiClient(task_args.owner_keycloak_uuid)
+    asyncio.run(client.start_transcription(task_args.meeting_id))
+    logger.info("Starting transcription for meeting ID: {}", task_args.meeting_id)
 
 
 @task_success.connect(sender=transcribe)
@@ -162,49 +139,36 @@ def handle_transcription_success(  # type: ignore[explicit-any]
     result: Any,
     **kwargs: Any,
 ) -> None:
-    meeting_id = None
-    if "args" in kwargs and kwargs["args"]:
-        meeting_id = kwargs["args"][0]
-    elif (
-        hasattr(sender, "request")
-        and hasattr(sender.request, "args")
-        and sender.request.args
-    ):
-        meeting_id = sender.request.args[0]
-
-    if meeting_id is None:
-        logger.error("Unable to retrieve meeting_id in the success signal")
+    try:
+        task_args = extract_transcription_task_args(kwargs, sender=sender)
+    except ValueError:
+        logger.error(
+            "Unable to retrieve meeting_id/owner_keycloak_uuid in the success signal"
+        )
         return
 
-    logger.info("Transcription success signal received for meeting {}.", meeting_id)
+    logger.info(
+        "Transcription success signal received for meeting {}.", task_args.meeting_id
+    )
 
-    with worker_db_session_context_manager() as db:
-        meeting = db.get(Meeting, meeting_id)
-        if meeting is None:
-            logger.error("Meeting not found in success signal: {}", meeting_id)
-            return
-        client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
-        asyncio.run(client.mark_transcription_as_success(meeting_id))
+    client = MeetingApiClient(task_args.owner_keycloak_uuid)
+    asyncio.run(
+        client.mark_transcription_as_success(
+            task_args.meeting_id, transcription_data=result
+        )
+    )
 
-    logger.info("Meeting {} updated to TRANSCRIPTION_DONE", meeting_id)
+    logger.info("Meeting {} updated to TRANSCRIPTION_DONE", task_args.meeting_id)
 
 
 @task_failure.connect(sender=transcribe)
 def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-any]
-    typed_kwargs = cast(CelerySignalArgs, kwargs)
+    task_args = extract_transcription_task_args(kwargs)
 
-    with worker_db_session_context_manager() as db:
-        meeting_id = typed_kwargs["args"][0]
-        meeting = db.get(Meeting, meeting_id)
+    client = MeetingApiClient(task_args.owner_keycloak_uuid)
+    asyncio.run(client.mark_transcription_as_failed(task_args.meeting_id))
 
-        if meeting is None:
-            logger.error("Meeting not found: {}", meeting_id)
-            return
-
-        client = MeetingApiClient(str(meeting.owner.keycloak_uuid))
-        asyncio.run(client.mark_transcription_as_failed(meeting_id))
-
-        logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", meeting_id)
+    logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", task_args.meeting_id)
 
 
 def _run_evaluation(zip_data: bytes) -> None:
