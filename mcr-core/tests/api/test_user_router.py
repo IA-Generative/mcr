@@ -56,7 +56,7 @@ def test_get_or_create_by_keycloak_create_action(
     assert json_data["keycloak_uuid"] == str(expected_result.keycloak_uuid)
 
 
-def assert_json_equal_model(json_data: dict[str, Any], user: User) -> None:
+def assert_json_equal_model(json_data: dict[str, Any], user: User) -> None:  # type: ignore[explicit-any]
     assert json_data["first_name"] == user.first_name
     assert json_data["last_name"] == user.last_name
     assert json_data["entity_name"] == user.entity_name

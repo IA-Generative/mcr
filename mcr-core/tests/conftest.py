@@ -1,6 +1,6 @@
 import os
 import tempfile
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from unittest.mock import Mock
 
 import pytest
@@ -114,7 +114,7 @@ def mock_celery_producer_app(
 
 
 @pytest.fixture
-def create_mock_feature_flag_client(mocker: MockerFixture):
+def create_mock_feature_flag_client(mocker: MockerFixture) -> Generator[Callable[[FeatureFlag, bool], Mock], None, None]:
     """Mock the feature flag client factory for testing.
 
     Returns a factory function that creates mock feature flag clients
