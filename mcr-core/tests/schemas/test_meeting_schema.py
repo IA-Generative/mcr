@@ -1,11 +1,16 @@
+from datetime import datetime
+
 import pytest
 
+from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.meeting_schema import (
     ComuUrlValidator,
+    MeetingBase,
     VisioUrlValidator,
     WebConfUrlValidator,
     WebexUrlValidator,
     WebinaireUrlValidator,
+    rewrite_comu_url_to_use_public_url,
 )
 
 comu_test_cases = [
@@ -313,3 +318,63 @@ webex_test_cases = [
 def test_webex_url_validator(name: str, url: str, should_match: bool) -> None:
     validator = WebexUrlValidator()
     assert validator.validate_url(url) == should_match, f"{name} failed"
+
+
+def _make_comu_meeting(url: str) -> MeetingBase:
+    return MeetingBase(
+        name="test",
+        url=url,
+        name_platform=MeetingPlatforms.COMU,
+        creation_date=datetime(2025, 1, 1),
+    )
+
+
+rewrite_comu_url_test_cases = [
+    (
+        "Strips fr-FR locale",
+        "https://webconf.comu.gouv.fr/fr-FR/meeting/040676208?secret=ABCdefGHIjkl_mnoPQRstu",
+        "https://webconf.comu.gouv.fr/meeting/040676208?secret=ABCdefGHIjkl_mnoPQRstu",
+    ),
+    (
+        "Strips en-US locale",
+        "https://webconf.comu.gouv.fr/en-US/meeting/040676208?secret=ABCdefGHIjkl_mnoPQRstu",
+        "https://webconf.comu.gouv.fr/meeting/040676208?secret=ABCdefGHIjkl_mnoPQRstu",
+    ),
+    (
+        "No locale - URL unchanged",
+        "https://webconf.comu.gouv.fr/meeting/040676208?secret=ABCdefGHIjkl_mnoPQRstu",
+        "https://webconf.comu.gouv.fr/meeting/040676208?secret=ABCdefGHIjkl_mnoPQRstu",
+    ),
+    (
+        "Internal domain rewritten and locale stripped",
+        "https://webconf.comu.interieur.rie.gouv.fr/fr-FR/meeting/123456?secret=ABCdefGHIjkl_mnoPQRstu",
+        "https://webconf.comu.gouv.fr/meeting/123456?secret=ABCdefGHIjkl_mnoPQRstu",
+    ),
+    (
+        "Internal domain rewritten without locale",
+        "https://webconf.comu.minint.fr/meeting/123456?secret=ABCdefGHIjkl_mnoPQRstu",
+        "https://webconf.comu.gouv.fr/meeting/123456?secret=ABCdefGHIjkl_mnoPQRstu",
+    ),
+]
+
+
+@pytest.mark.parametrize("name,input_url,expected_url", rewrite_comu_url_test_cases)
+def test_rewrite_comu_url_to_use_public_url(
+    name: str, input_url: str, expected_url: str
+) -> None:
+    meeting = _make_comu_meeting(input_url)
+    result = rewrite_comu_url_to_use_public_url(meeting)
+    assert result.url == expected_url, f"{name} failed"
+
+
+def test_rewrite_comu_url_with_none_url() -> None:
+    meeting = MeetingBase(
+        name="test",
+        url=None,
+        name_platform=MeetingPlatforms.COMU,
+        creation_date=datetime(2025, 1, 1),
+        meeting_password="123456",
+        meeting_platform_id="123456",
+    )
+    result = rewrite_comu_url_to_use_public_url(meeting)
+    assert result.url is None
