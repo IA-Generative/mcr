@@ -275,12 +275,12 @@ def test_update_meeting_invalid_input(
 
 
 def test_delete_meeting_success(
-    mock_minio: Mock,
+    mock_s3: Mock,
     meeting_client: PrefixedTestClient,
     meeting_fixture: Meeting,
     user_fixture: User,
 ) -> None:
-    mock_minio.get_paginator.return_value.paginate.return_value = [
+    mock_s3.get_paginator.return_value.paginate.return_value = [
         {"Contents": [{"Key": "audio.mp3", "LastModified": datetime.now()}]}
     ]
 
