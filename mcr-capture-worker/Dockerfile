@@ -20,11 +20,25 @@ WORKDIR /app
 COPY ./pyproject.toml .
 RUN uv sync
 
-# Install Playwright browsers
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-RUN mkdir -p /ms-playwright
-RUN uv run playwright install chromium
-RUN uv run playwright install-deps chromium
+RUN uv run playwright install firefox
+RUN uv run playwright install-deps firefox
+
+# Download OpenH264 GMP plugin (Cisco) for WebRTC H.264 support in Firefox
+# Architecture-aware: aarch64 vs x86_64
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends unzip && \
+    mkdir -p /opt/gmp-gmpopenh264/2.6.0 && \
+    ARCH=$(uname -m) && \
+    if [ "$ARCH" = "aarch64" ]; then \
+        OPENH264_URL="https://ciscobinary.openh264.org/openh264-linux64-aarch64-652bdb7719f30b52b08e506645a7322ff1b2cc6f.zip"; \
+    else \
+        OPENH264_URL="https://ciscobinary.openh264.org/openh264-linux64-652bdb7719f30b52b08e506645a7322ff1b2cc6f.zip"; \
+    fi && \
+    curl -sL "$OPENH264_URL" -o /tmp/openh264-gmp.zip && \
+    unzip /tmp/openh264-gmp.zip -d /opt/gmp-gmpopenh264/2.6.0/ && \
+    rm /tmp/openh264-gmp.zip && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+ENV MOZ_GMP_PATH=/opt/gmp-gmpopenh264/2.6.0
 
 COPY /mcr_capture_worker mcr_capture_worker
 
