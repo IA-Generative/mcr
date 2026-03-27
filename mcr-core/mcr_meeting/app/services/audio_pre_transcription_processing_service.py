@@ -13,6 +13,7 @@ from loguru import logger
 from mcr_meeting.app.configs.base import (
     AudioSettings,
     NoiseDetectionSettings,
+    NormalizedAudioVolumeSettings,
     Speech2TextSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
@@ -23,6 +24,7 @@ from mcr_meeting.setup.logger import log_ffmpeg_command
 s2t_settings = Speech2TextSettings()
 audio_settings = AudioSettings()
 noise_detection_settings = NoiseDetectionSettings()
+normalized_audio_volume_settings = NormalizedAudioVolumeSettings()
 sample_rate = audio_settings.SAMPLE_RATE
 nb_channels = audio_settings.NB_AUDIO_CHANNELS
 
@@ -244,9 +246,9 @@ def _detect_silences(
     return _parse_silence_intervals(stderr.decode("utf-8", errors="replace"))
 
 
-def _normalize_volume(wav_bytes: BytesIO) -> BytesIO:
+def two_pass_volume_normalization(wav_bytes: BytesIO) -> BytesIO:
     """Normalize volume using two-pass EBU R128 loudnorm."""
-    loudnorm_base = f"loudnorm=I={noise_detection_settings.TARGET_LUFS}:TP={noise_detection_settings.TRUE_PEAK}:LRA={noise_detection_settings.LOUDNESS_RANGE}"
+    loudnorm_base = f"loudnorm=I={normalized_audio_volume_settings.TARGET_LUFS}:TP={normalized_audio_volume_settings.TRUE_PEAK}:LRA={normalized_audio_volume_settings.LOUDNESS_RANGE}"
 
     # Pass 1: measure loudness statistics
     _, stderr = (
@@ -262,7 +264,7 @@ def _normalize_volume(wav_bytes: BytesIO) -> BytesIO:
         .output(
             "pipe:",
             format="wav",
-            ar=noise_detection_settings.SAMPLE_RATE,
+            ar=audio_settings.SAMPLE_RATE,
             af=(
                 f"{loudnorm_base}:"
                 f"measured_I={stats['input_i']}:"
@@ -289,7 +291,7 @@ def _read_audio_samples(
             format="s16le",
             acodec="pcm_s16le",
             ac=1,
-            ar=noise_detection_settings.SAMPLE_RATE,
+            ar=audio_settings.SAMPLE_RATE,
         )
         .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
     )
@@ -299,21 +301,22 @@ def _read_audio_samples(
     )
 
 
+def _seconds_to_samples(seconds: float) -> int:
+    """Convert a time position in seconds to a sample index."""
+    return int(seconds * audio_settings.SAMPLE_RATE)
+
+
 def compute_spectral_flatness_on_silences(
     wav_bytes: BytesIO,
 ) -> float | None:
     """Calculate the average spectral flatness over silence segments."""
-    normalized_wav_bytes = _normalize_volume(wav_bytes)
+    normalized_wav_bytes = two_pass_volume_normalization(wav_bytes)
     silences = _detect_silences(normalized_wav_bytes)
     samples = _read_audio_samples(normalized_wav_bytes)
 
     flatness_values = []
     for seg_start, seg_end in silences:
-        segment = samples[
-            int(seg_start * noise_detection_settings.SAMPLE_RATE) : int(
-                seg_end * noise_detection_settings.SAMPLE_RATE
-            )
-        ]
+        segment = samples[_seconds_to_samples(seg_start) : _seconds_to_samples(seg_end)]
         if len(segment) < noise_detection_settings.FRAME_SIZE:
             continue
         for start in range(
