@@ -226,6 +226,10 @@ def get_report_object_name(meeting_id: int, filename: str) -> str:
     return f"{s3_settings.S3_REPORT_FOLDER}/{meeting_id}/{filename}"
 
 
+def get_evaluation_dataset_object_name(filename: str) -> str:
+    return f"{s3_settings.S3_EVALUATION_DATASET_FOLDER}/{filename}"
+
+
 def get_audio_object_name(meeting_id: int, filename: str) -> str:
     return f"{s3_settings.S3_AUDIO_FOLDER}/{meeting_id}/{filename}"
 

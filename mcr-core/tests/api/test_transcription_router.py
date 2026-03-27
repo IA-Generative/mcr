@@ -32,7 +32,8 @@ class TestCreateTranscriptionTask:
         # Assert
         assert response.status_code == status.HTTP_204_NO_CONTENT
         mock_celery_producer_app.send_task.assert_called_once_with(
-            "transcription_worker.transcribe", args=[meeting.id]
+            "transcription_worker.transcribe",
+            args=[meeting.id, str(meeting.owner.keycloak_uuid)],
         )
 
     @pytest.mark.parametrize(
@@ -59,7 +60,8 @@ class TestCreateTranscriptionTask:
         assert "detail" in response_data
         assert "Celery connection failed" in response_data["detail"]
         mock_celery_producer_app.send_task.assert_called_once_with(
-            "transcription_worker.transcribe", args=[meeting.id]
+            "transcription_worker.transcribe",
+            args=[meeting.id, str(meeting.owner.keycloak_uuid)],
         )
 
     def test_get_meeting_transcription_waiting_time_should_return_200_when_authorized(

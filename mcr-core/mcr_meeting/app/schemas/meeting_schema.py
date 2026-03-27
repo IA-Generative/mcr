@@ -68,6 +68,7 @@ class MeetingBase(BaseModel):
             MeetingPlatforms.WEBINAIRE: validate_webinaire_meeting,
             MeetingPlatforms.WEBCONF: validate_webconf_meeting,
             MeetingPlatforms.VISIO: validate_visio_meeting,
+            MeetingPlatforms.WEBEX: validate_webex_meeting,
             MeetingPlatforms.MCR_IMPORT: no_validation,
             MeetingPlatforms.MCR_RECORD: no_validation,
         }
@@ -241,12 +242,11 @@ def validate_webconf_meeting(values: MeetingBase) -> None:
     Raises:
         ValueError: If the URL is in an invalid format."""
     webconf_url_validator = WebConfUrlValidator()
-    if values.url:
-        if not webconf_url_validator.validate_url(values.url):
-            raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-        return None
-    else:
+    if not values.url:
         raise ValueError("No connection information provided")
+    if not webconf_url_validator.validate_url(values.url):
+        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
+    return None
 
 
 def validate_visio_meeting(values: MeetingBase) -> None:
@@ -256,12 +256,20 @@ def validate_visio_meeting(values: MeetingBase) -> None:
     Raises:
         ValueError: If the URL is in an invalid format."""
     visio_url_validator = VisioUrlValidator()
-    if values.url:
-        if not visio_url_validator.validate_url(values.url):
-            raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-        return None
-    else:
+    if not values.url:
         raise ValueError("No connection information provided")
+    if not visio_url_validator.validate_url(values.url):
+        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
+    return None
+
+
+def validate_webex_meeting(values: MeetingBase) -> None:
+    webex_url_validator = WebexUrlValidator()
+    if not values.url:
+        raise ValueError("No connection information provided")
+    if not webex_url_validator.validate_url(values.url):
+        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
+    return None
 
 
 def no_validation(values: MeetingBase) -> None:
@@ -335,13 +343,26 @@ class VisioUrlValidator:
         return bool(self.url_regex.match(url))
 
 
+class WebexUrlValidator:
+    domain = re.compile(r"[A-Za-z0-9-]+\.webex\.com")
+    slug = re.compile(r"[A-Za-z0-9._-]{1,64}")
+
+    @property
+    def url_regex(self) -> re.Pattern[str]:
+        return re.compile(rf"^https://{self.domain.pattern}/meet/{self.slug.pattern}$")
+
+    def validate_url(self, url: str) -> bool:
+        return bool(self.url_regex.match(url))
+
+
 def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
     if meeting.url is None:
         return meeting
 
     parsed_url = urlparse(meeting.url)
     new_host = "webconf.comu.gouv.fr"
+    new_path = re.sub(r"^/[a-z]{2}-[A-Z]{2}", "", parsed_url.path)
 
-    meeting.url = str(urlunparse(parsed_url._replace(netloc=new_host)))
+    meeting.url = str(urlunparse(parsed_url._replace(netloc=new_host, path=new_path)))
 
     return meeting

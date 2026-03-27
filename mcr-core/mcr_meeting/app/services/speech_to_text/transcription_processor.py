@@ -18,13 +18,13 @@ from mcr_meeting.app.services.feature_flag_service import (
     FeatureFlag,
     get_feature_flag_client,
 )
-from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.audio import (
     split_audio_on_timestamps,
 )
 from mcr_meeting.app.services.speech_to_text.utils.models import (
     get_transcription_model,
 )
+from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 transcription_settings = WhisperTranscriptionSettings()
 api_settings = TranscriptionApiSettings()
@@ -58,11 +58,13 @@ class TranscriptionProcessor:
     def transcribe(
         self,
         audio_bytes: BytesIO,
-        vad_spans: list[DiarizationSegment],
+        vad_spans: list[TimeSpan],
     ) -> list[TranscriptionSegment]:
         transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
 
-        logger.debug("Starting transcription of {} input audio chunks", len(transcription_inputs))
+        logger.debug(
+            "Starting transcription of {} input audio chunks", len(transcription_inputs)
+        )
 
         transcription_model = get_transcription_model()
         transcription_segments: list[TranscriptionSegment] = []
@@ -74,8 +76,8 @@ class TranscriptionProcessor:
             if not chunk_transcription_segments:
                 logger.debug(
                     "No transcription for this chunk: start: {} - end: {}.",
-                    chunk.diarization.start,
-                    chunk.diarization.end,
+                    chunk.span.start,
+                    chunk.span.end,
                 )
                 continue
 
@@ -83,8 +85,8 @@ class TranscriptionProcessor:
                 transcription_segments.append(
                     TranscriptionSegment(
                         id=idx,
-                        start=segment.start + chunk.diarization.start,
-                        end=segment.end + chunk.diarization.start,
+                        start=segment.start + chunk.span.start,
+                        end=segment.end + chunk.span.start,
                         text=segment.text,
                     )
                 )
@@ -154,7 +156,6 @@ class TranscriptionProcessor:
                 language=api_settings.API_LANGUAGE,
                 response_format="verbose_json",
                 prompt=prompt,
-                timestamp_granularities=["segment"],
             )
 
             # Convert API response to TranscriptionSegment format

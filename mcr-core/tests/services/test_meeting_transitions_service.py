@@ -47,19 +47,6 @@ def _mock_save_formatted_report(monkeypatch: Any) -> MagicMock:
     return save_formatted_report_mock
 
 
-@pytest.fixture
-def mock_send_email(monkeypatch: Any) -> MagicMock:
-    """Mock email service to prevent actual emails during tests."""
-    send_email_mock = MagicMock()
-
-    monkeypatch.setattr(
-        "mcr_meeting.app.services.email.email_service.send_email",
-        send_email_mock,
-    )
-
-    return send_email_mock
-
-
 # ---------------------------------------------------------------------------
 # Tests – Capture
 # ---------------------------------------------------------------------------

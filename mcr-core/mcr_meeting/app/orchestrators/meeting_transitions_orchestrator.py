@@ -113,7 +113,7 @@ def start_report(
     )
 
     if meeting.transcription_filename is None:
-        create_formatted_docx_transcription(meeting=meeting)
+        create_formatted_docx_transcription(meeting, meeting.transcriptions)
 
     return _apply_transition(
         meeting, MeetingEvent.START_REPORT, report_type=report_type

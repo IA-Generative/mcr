@@ -37,16 +37,14 @@ export function useChunkUpload(meetingId: number) {
     uploadQueue.push(task);
   }
 
-  async function saveAndEnqueueUpload(blob: Blob, filename: string, isOnline: boolean) {
+  async function saveAndEnqueueUpload(blob: Blob, filename: string) {
     let chunkId: number | null = null;
     try {
       chunkId = await addChunk({ meetingId, filename, blob });
     } catch {
       /* IDB unavailable — continue without it */
     }
-    if (isOnline) {
-      enqueueUpload(blob, filename, chunkId);
-    }
+    enqueueUpload(blob, filename, chunkId);
   }
 
   async function uploadPendingFromIdb(): Promise<void> {

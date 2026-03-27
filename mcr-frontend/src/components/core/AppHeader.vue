@@ -58,14 +58,12 @@
 import type { DsfrHeaderProps } from '@gouvminint/vue-dsfr';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '../sign-in/use-auth';
-import { useUserStore } from '@/stores/useUserStore';
 import { computed } from 'vue';
 
 const logoText = computed(() => [t('header.logo.text1'), t('header.logo.text2')]);
 const { t } = useI18n();
 
-const userStore = useUserStore();
-const { signOut } = inject('auth') as ReturnType<typeof useAuth>;
+const { signOut, isLogged } = inject('auth') as ReturnType<typeof useAuth>;
 
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
@@ -93,7 +91,7 @@ const whenNotLoggedLinks: DsfrHeaderProps['quickLinks'] = [
 ];
 
 const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
-  if (userStore.isLogged) {
+  if (isLogged.value) {
     return whenLoggedLinks;
   } else {
     return whenNotLoggedLinks;

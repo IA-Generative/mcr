@@ -18,5 +18,10 @@ class MeetingApiClient:
     async def mark_transcription_as_failed(self, meeting_id: int) -> None:
         await self.client.post(f"/{meeting_id}/transcription/fail")
 
-    async def mark_transcription_as_success(self, meeting_id: int) -> None:
-        await self.client.post(f"/{meeting_id}/transcription/success")
+    async def mark_transcription_as_success(
+        self, meeting_id: int, transcription_data: list[dict[str, object]]
+    ) -> None:
+        await self.client.post(
+            f"/{meeting_id}/transcription/success",
+            data={"transcriptions": transcription_data},
+        )

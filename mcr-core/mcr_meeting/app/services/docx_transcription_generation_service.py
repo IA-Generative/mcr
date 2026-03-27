@@ -1,7 +1,8 @@
 import os
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from io import BytesIO
-from typing import Any
+from typing import Any, Protocol
 
 from docx import Document as CreateDocument
 from docx.document import Document as Docx
@@ -9,7 +10,10 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Pt
 from docx.text.paragraph import Paragraph
 
-from mcr_meeting.app.models import Transcription
+
+class HasSpeakerTranscription(Protocol):
+    speaker: str
+    transcription: str
 
 
 class TemplatedDocxGenerator(ABC):
@@ -53,7 +57,7 @@ class TemplatedDocxGenerator(ABC):
 
 class TranscriptionDocxGenerator(TemplatedDocxGenerator):
     def fill_templated_doc(
-        self, meeting_name: str, transcriptions: list[Transcription]
+        self, meeting_name: str, transcriptions: Sequence[HasSpeakerTranscription]
     ) -> None:
         self.set_title(meeting_name)
 
@@ -82,7 +86,7 @@ class TranscriptionDocxGenerator(TemplatedDocxGenerator):
 
 
 def generate_transcription_docx(
-    meeting_name: str | None, transcriptions: list[Transcription]
+    meeting_name: str | None, transcriptions: Sequence[HasSpeakerTranscription]
 ) -> BytesIO:
     """
     Generates a DOCX document containing the transcription of a meeting in a tabular format.

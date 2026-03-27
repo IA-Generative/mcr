@@ -20,13 +20,11 @@
   "dependencies": {
     "@dsb-norge/vue-keycloak-js": "^3.0.2",
     "@ffmpeg/ffmpeg": "^0.12.15",
-    "@ffmpeg/types": "^0.12.4",
     "@ffmpeg/util": "^0.12.2",
     "@gouvfr/dsfr": "~1.14.1",
     "@gouvminint/vue-dsfr": "^8.8.0",
     "@sentry/vue": "^10.7.0",
     "@tanstack/vue-query": "~5.55.4",
-    "@tanstack/vue-query-devtools": "~5.55.4",
     "@vee-validate/yup": "^4.13.2",
     "@vueuse/components": "^13.1.0",
     "@vueuse/core": "^13.1.0",
@@ -37,7 +35,6 @@
     "idb": "^8.0.3",
     "keycloak-js": "^26.2.0",
     "lodash.throttle": "^4.1.1",
-    "pinia": "^2.2.2",
     "sanitize-filename": "^1.6.3",
     "unleash-proxy-client": "^3.7.8",
     "vee-validate": "^4.13.2",
@@ -51,8 +48,10 @@
     "yup-locales": "^1.2.28"
   },
   "devDependencies": {
+    "@ffmpeg/types": "^0.12.4",
     "@intlify/unplugin-vue-i18n": "^5.0.0",
     "@rushstack/eslint-patch": "^1.10.4",
+    "@tanstack/vue-query-devtools": "~5.55.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/user-event": "^14.6.1",
     "@testing-library/vue": "^8.1.0",

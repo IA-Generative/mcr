@@ -15,18 +15,21 @@ from mcr_meeting.app.db.db import (
 )
 from mcr_meeting.app.exceptions.exceptions import InvalidFileError
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    complete_transcription,
     fail_transcription,
     init_transcription,
     start_transcription,
 )
 from mcr_meeting.app.orchestrators.transcription_orchestrator import (
+    finalize_transcription,
     get_or_create_transcription_docx,
     get_transcription_waiting_time,
     upload_transcription_docx,
 )
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
+)
+from mcr_meeting.app.schemas.transcription_schema import (
+    SpeakerTranscription,
 )
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
@@ -122,8 +125,10 @@ async def fail_transcription_task(meeting_id: int) -> None:
 @router.post(
     "/{meeting_id}/transcription/success", status_code=status.HTTP_204_NO_CONTENT
 )
-async def success_transcription_task(meeting_id: int) -> None:
-    complete_transcription(meeting_id=meeting_id)
+async def success_transcription_task(
+    meeting_id: int, payload: list[SpeakerTranscription]
+) -> None:
+    finalize_transcription(meeting_id=meeting_id, transcriptions=payload)
 
 
 @router.get("/{meeting_id}/transcription/wait-time")
