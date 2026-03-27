@@ -1,0 +1,23 @@
+mcr-core/mcr_meeting/app/schemas/meeting_schema.py
+  079f92a14d53413d 364,366
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "18ea2a32762800703937f3cf4ad341be76a584d0",
+  "prompts": {
+    "079f92a14d53413d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "93eb80de-9430-4c56-944a-89d1ba8960b4",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 76,
+      "total_deletions": 8,
+      "accepted_lines": 67,
+      "overriden_lines": 0
+    }
+  }
+}
