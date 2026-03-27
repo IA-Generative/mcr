@@ -129,7 +129,7 @@ EXPECTED_MARKDOWN = """\
 """
 
 
-def test_render_detailed_synthesis_markdown():
+def test_render_detailed_synthesis_markdown() -> None:
     synthesis = _build_fake_synthesis()
     data = {
         "title": synthesis.header.title or "",
@@ -139,7 +139,7 @@ def test_render_detailed_synthesis_markdown():
     assert result == EXPECTED_MARKDOWN
 
 
-def test_generate_detailed_synthesis_docx():
+def test_generate_detailed_synthesis_docx() -> None:
     from docx import Document
 
     from mcr_meeting.app.services.docx_report_generation_service import (

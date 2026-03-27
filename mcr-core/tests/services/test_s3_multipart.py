@@ -1,24 +1,27 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from mcr_meeting.app.services import s3_service
 
 
-@pytest.fixture
-def s3_settings_mock(monkeypatch):
-    class DummySettings:
-        S3_BUCKET = "test-bucket"
-        S3_TRANSCRIPTION_FOLDER = "transcriptions"
-        S3_REPORT_FOLDER = "reports"
-        S3_AUDIO_FOLDER = "audio"
+class DummySettings:
+    S3_BUCKET = "test-bucket"
+    S3_TRANSCRIPTION_FOLDER = "transcriptions"
+    S3_REPORT_FOLDER = "reports"
+    S3_AUDIO_FOLDER = "audio"
 
+
+@pytest.fixture
+def s3_settings_mock(monkeypatch: pytest.MonkeyPatch) -> DummySettings:
     monkeypatch.setattr(s3_service, "s3_settings", DummySettings())
     return DummySettings()
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_client")
-def test_create_multipart_upload_success(mock_s3_client, s3_settings_mock):
+def test_create_multipart_upload_success(
+    mock_s3_client: MagicMock, s3_settings_mock: MagicMock
+) -> None:
     from mcr_meeting.app.schemas.S3_types import MultipartInitRequest
 
     mock_s3_client.create_multipart_upload.return_value = {
@@ -33,28 +36,35 @@ def test_create_multipart_upload_success(mock_s3_client, s3_settings_mock):
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_client")
-def test_create_multipart_upload_failure(mock_s3_client):
+def test_create_multipart_upload_failure(mock_s3_client: MagicMock) -> None:
+    from mcr_meeting.app.schemas.S3_types import MultipartInitRequest
+
     mock_s3_client.create_multipart_upload.side_effect = Exception("fail")
+    req = MultipartInitRequest(filename="test-key.wav", content_type="audio/wav")
     with pytest.raises(Exception):
-        s3_service.create_multipart_upload("test-key", "audio/wav")
+        s3_service.create_multipart_upload(123, req)
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_external_client")
-def test_get_presigned_url_for_upload_part_success(mock_external_client):
+def test_get_presigned_url_for_upload_part_success(
+    mock_external_client: MagicMock,
+) -> None:
     mock_external_client.generate_presigned_url.return_value = "http://presigned-url"
     url = s3_service.get_presigned_url_for_upload_part("test-key", "uploadid", 1)
     assert url == "http://presigned-url"
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_external_client")
-def test_get_presigned_url_for_upload_part_failure(mock_external_client):
+def test_get_presigned_url_for_upload_part_failure(
+    mock_external_client: MagicMock,
+) -> None:
     mock_external_client.generate_presigned_url.side_effect = Exception("fail")
     with pytest.raises(Exception):
         s3_service.get_presigned_url_for_upload_part("test-key", "uploadid", 1)
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_client")
-def test_complete_multipart_upload_success(mock_s3_client):
+def test_complete_multipart_upload_success(mock_s3_client: MagicMock) -> None:
     from mcr_meeting.app.schemas.S3_types import (
         MultipartCompletePart,
         MultipartCompleteRequest,
@@ -73,21 +83,28 @@ def test_complete_multipart_upload_success(mock_s3_client):
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_client")
-def test_complete_multipart_upload_failure(mock_s3_client):
+def test_complete_multipart_upload_failure(mock_s3_client: MagicMock) -> None:
+    from mcr_meeting.app.schemas.S3_types import (
+        MultipartCompleteRequest,
+    )
+
     mock_s3_client.complete_multipart_upload.side_effect = Exception("fail")
+    req = MultipartCompleteRequest(
+        upload_id="uploadid", object_key="test-key", parts=[]
+    )
     with pytest.raises(Exception):
-        s3_service.complete_multipart_upload("test-key", "uploadid", [])
+        s3_service.complete_multipart_upload(req)
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_client")
-def test_abort_multipart_upload_success(mock_s3_client):
+def test_abort_multipart_upload_success(mock_s3_client: MagicMock) -> None:
     mock_s3_client.abort_multipart_upload.return_value = {}
     s3_service.abort_multipart_upload("test-key", "uploadid")
     mock_s3_client.abort_multipart_upload.assert_called_once()
 
 
 @patch("mcr_meeting.app.services.s3_service.s3_client")
-def test_abort_multipart_upload_failure(mock_s3_client):
+def test_abort_multipart_upload_failure(mock_s3_client: MagicMock) -> None:
     mock_s3_client.abort_multipart_upload.side_effect = Exception("fail")
     with pytest.raises(Exception):
         s3_service.abort_multipart_upload("test-key", "uploadid")

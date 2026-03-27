@@ -20,7 +20,7 @@ from mcr_meeting.evaluation.eval_types import (
 
 
 @pytest.fixture
-def mock_segments():
+def mock_segments() -> list[DiarizedTranscriptionSegment]:
     return [
         DiarizedTranscriptionSegment(
             id=1, start=0.0, end=1.0, text="Hello world", speaker="SPEAKER_00"
@@ -29,12 +29,14 @@ def mock_segments():
 
 
 @pytest.fixture
-def mock_transcription(mock_segments):
+def mock_transcription(
+    mock_segments: list[DiarizedTranscriptionSegment],
+) -> TranscriptionOutput:
     return TranscriptionOutput(segments=mock_segments)
 
 
 @pytest.fixture
-def mock_evaluation_input(mock_transcription):
+def mock_evaluation_input(mock_transcription: TranscriptionOutput) -> EvaluationInput:
     return EvaluationInput(
         uid="test_uid",
         audio_path=Path("/fake/path.wav"),
@@ -44,7 +46,7 @@ def mock_evaluation_input(mock_transcription):
 
 
 @pytest.fixture
-def mock_metrics():
+def mock_metrics() -> EvaluationMetrics:
     return EvaluationMetrics(
         uid="test_uid",
         wer=0.1,
@@ -56,7 +58,9 @@ def mock_metrics():
 
 
 @pytest.fixture
-def mock_evaluation_output(mock_transcription, mock_metrics):
+def mock_evaluation_output(
+    mock_transcription: TranscriptionOutput, mock_metrics: EvaluationMetrics
+) -> EvaluationOutput:
     return EvaluationOutput(
         uid="test_uid",
         reference_transcription=mock_transcription,
@@ -69,8 +73,11 @@ class TestASREvaluationPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
     def test_init(
-        self, mock_metrics_pipeline, mock_stt_pipeline, mock_evaluation_input
-    ):
+        self,
+        mock_metrics_pipeline: Mock,
+        mock_stt_pipeline: Mock,
+        mock_evaluation_input: EvaluationInput,
+    ) -> None:
         pipeline = ASREvaluationPipeline([mock_evaluation_input])
 
         assert pipeline.inputs == [mock_evaluation_input]
@@ -82,11 +89,11 @@ class TestASREvaluationPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
     def test_process_single_sample_success(
         self,
-        mock_metrics_pipeline,
-        mock_stt_pipeline,
-        mock_evaluation_input,
-        mock_segments,
-    ):
+        mock_metrics_pipeline: Mock,
+        mock_stt_pipeline: Mock,
+        mock_evaluation_input: EvaluationInput,
+        mock_segments: list[DiarizedTranscriptionSegment],
+    ) -> None:
         mock_stt_instance = Mock()
         mock_stt_instance.run.return_value = mock_segments
         mock_stt_pipeline.return_value = mock_stt_instance
@@ -107,8 +114,11 @@ class TestASREvaluationPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
     def test_process_single_sample_exception(
-        self, mock_metrics_pipeline, mock_stt_pipeline, mock_evaluation_input
-    ):
+        self,
+        mock_metrics_pipeline: Mock,
+        mock_stt_pipeline: Mock,
+        mock_evaluation_input: EvaluationInput,
+    ) -> None:
         mock_stt_instance = Mock()
         mock_stt_instance.run.side_effect = Exception("Processing error")
         mock_stt_pipeline.return_value = mock_stt_instance
@@ -125,12 +135,12 @@ class TestASREvaluationPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
     def test_run_evaluation_success(
         self,
-        mock_results_manager,
-        mock_metrics_pipeline_cls,
-        mock_stt_pipeline,
-        mock_evaluation_input,
-        mock_segments,
-    ):
+        mock_results_manager: Mock,
+        mock_metrics_pipeline_cls: Mock,
+        mock_stt_pipeline: Mock,
+        mock_evaluation_input: EvaluationInput,
+        mock_segments: list[DiarizedTranscriptionSegment],
+    ) -> None:
         mock_stt_instance = Mock()
         mock_stt_instance.run.return_value = mock_segments
         mock_stt_pipeline.return_value = mock_stt_instance
@@ -161,11 +171,11 @@ class TestASREvaluationPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
     def test_run_evaluation_no_successful_processing(
         self,
-        mock_results_manager,
-        mock_metrics_pipeline,
-        mock_stt_pipeline,
-        mock_evaluation_input,
-    ):
+        mock_results_manager: Mock,
+        mock_metrics_pipeline: Mock,
+        mock_stt_pipeline: Mock,
+        mock_evaluation_input: EvaluationInput,
+    ) -> None:
         mock_stt_instance = Mock()
         mock_stt_instance.run.side_effect = Exception("Processing error")
         mock_stt_pipeline.return_value = mock_stt_instance
@@ -178,7 +188,7 @@ class TestASREvaluationPipeline:
 
 class TestMetricsPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
-    def test_init(self, mock_metrics_calculator):
+    def test_init(self, mock_metrics_calculator: Mock) -> None:
         pipeline = MetricsPipeline()
 
         assert pipeline.timestamp is not None
@@ -186,8 +196,11 @@ class TestMetricsPipeline:
 
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
     def test_calculate_metrics_success(
-        self, mock_metrics_calculator, mock_transcription, mock_metrics
-    ):
+        self,
+        mock_metrics_calculator: Mock,
+        mock_transcription: TranscriptionOutput,
+        mock_metrics: EvaluationMetrics,
+    ) -> None:
         mock_calc_instance = Mock()
         mock_calc_instance.calculate_metrics.return_value = mock_metrics
         mock_metrics_calculator.return_value = mock_calc_instance
@@ -196,8 +209,6 @@ class TestMetricsPipeline:
 
         metrics_input = MetricsPipelineInput(
             uid="test_uid",
-            audio_path=Path("/fake/path.wav"),
-            audio_bytes=BytesIO(b"fake"),
             reference_transcription=mock_transcription,
             generated_transcription=mock_transcription,
         )
@@ -209,7 +220,9 @@ class TestMetricsPipeline:
         assert outputs[0].metrics == mock_metrics
 
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
-    def test_calculate_metrics_empty_inputs(self, mock_metrics_calculator):
+    def test_calculate_metrics_empty_inputs(
+        self, mock_metrics_calculator: Mock
+    ) -> None:
         pipeline = MetricsPipeline()
         with pytest.raises(ValueError, match="No evaluation inputs to process"):
             pipeline.calculate_metrics([])
@@ -217,8 +230,11 @@ class TestMetricsPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
     def test_save_metrics_success(
-        self, mock_results_manager, mock_metrics_calculator, mock_evaluation_output
-    ):
+        self,
+        mock_results_manager: Mock,
+        mock_metrics_calculator: Mock,
+        mock_evaluation_output: EvaluationOutput,
+    ) -> None:
         mock_rm_instance = Mock()
         mock_results_manager.return_value = mock_rm_instance
 
@@ -233,7 +249,7 @@ class TestMetricsPipeline:
         mock_rm_instance.save_results_to_s3.assert_called_once()
 
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
-    def test_save_metrics_empty_outputs(self, mock_metrics_calculator):
+    def test_save_metrics_empty_outputs(self, mock_metrics_calculator: Mock) -> None:
         pipeline = MetricsPipeline()
 
         with pytest.raises(ValueError, match="No evaluation outputs to process"):
@@ -243,11 +259,11 @@ class TestMetricsPipeline:
     @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
     def test_calculate_and_save_metrics(
         self,
-        mock_results_manager,
-        mock_metrics_calculator,
-        mock_transcription,
-        mock_metrics,
-    ):
+        mock_results_manager: Mock,
+        mock_metrics_calculator: Mock,
+        mock_transcription: TranscriptionOutput,
+        mock_metrics: EvaluationMetrics,
+    ) -> None:
         mock_calc_instance = Mock()
         mock_calc_instance.calculate_metrics.return_value = mock_metrics
         mock_metrics_calculator.return_value = mock_calc_instance
@@ -259,8 +275,6 @@ class TestMetricsPipeline:
 
         metrics_input = MetricsPipelineInput(
             uid="test_uid",
-            audio_path=Path("/fake/path.wav"),
-            audio_bytes=BytesIO(b"fake"),
             reference_transcription=mock_transcription,
             generated_transcription=mock_transcription,
         )

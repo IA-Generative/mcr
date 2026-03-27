@@ -1,6 +1,8 @@
 """Test integration of the full speech-to-text pipeline process."""
 
-from unittest.mock import MagicMock, patch
+from collections.abc import Callable
+from io import BytesIO
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -48,21 +50,21 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
     "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_full_process(
-    mock_get_diarization_pipeline,
-    mock_get_transcription_model,
-    mock_get_feature_flag_client_transcription,
-    mock_get_feature_flag_client_diarization,
-    mock_get_feature_flag_client_audio_filter,
-    create_audio_buffer,
-    create_mock_feature_flag_client,
+    mock_get_diarization_pipeline: MagicMock,
+    mock_get_transcription_model: MagicMock,
+    mock_get_feature_flag_client_transcription: MagicMock,
+    mock_get_feature_flag_client_diarization: MagicMock,
+    mock_get_feature_flag_client_audio_filter: MagicMock,
+    create_audio_buffer: Callable[[str], BytesIO],
+    create_mock_feature_flag_client: Callable[[str, bool], Mock],
     audio_format: str,
     feature_flag_enabled: bool,
     diarization_fixture: str,
     transcription_fixture: str,
     expected_segments_count: int,
     expected_speakers: list[str],
-    request,
-):
+    request: pytest.FixtureRequest,
+) -> None:
     """Test the full speech-to-text pipeline from raw audio to diarized transcription.
 
     This test verifies the complete flow:
@@ -86,7 +88,7 @@ def test_integration_full_process(
 
     # Setup: Mock feature flag for noise filtering (disabled for simplicity)
     mock_feature_flag_client_audio_filter = create_mock_feature_flag_client(
-        "audio_noise_filtering", enabled=feature_flag_enabled
+        "audio_noise_filtering", feature_flag_enabled
     )
     mock_get_feature_flag_client_audio_filter.return_value = (
         mock_feature_flag_client_audio_filter
@@ -94,7 +96,7 @@ def test_integration_full_process(
 
     # Setup: Mock feature flag for API diarization (disabled to use local diarization)
     mock_feature_flag_client_diarization = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
+        "api_based_diarization", False
     )
     mock_get_feature_flag_client_diarization.return_value = (
         mock_feature_flag_client_diarization
@@ -102,7 +104,7 @@ def test_integration_full_process(
 
     # Setup: Mock feature flag for API transcription (disabled to use local transcription)
     mock_feature_flag_client_transcription = create_mock_feature_flag_client(
-        "api_based_transcription", enabled=False
+        "api_based_transcription", False
     )
     mock_get_feature_flag_client_transcription.return_value = (
         mock_feature_flag_client_transcription
@@ -201,13 +203,13 @@ def test_integration_full_process(
     "mcr_meeting.app.services.speech_to_text.diarization_processor.get_diarization_pipeline"
 )
 def test_integration_full_process_empty_diarization(
-    mock_get_diarization_pipeline,
-    mock_get_feature_flag_client_transcription,
-    mock_get_feature_flag_client_diarization,
-    mock_get_feature_flag_client_audio_filter,
-    create_audio_buffer,
-    create_mock_feature_flag_client,
-):
+    mock_get_diarization_pipeline: MagicMock,
+    mock_get_feature_flag_client_transcription: MagicMock,
+    mock_get_feature_flag_client_diarization: MagicMock,
+    mock_get_feature_flag_client_audio_filter: MagicMock,
+    create_audio_buffer: Callable[[str], BytesIO],
+    create_mock_feature_flag_client: Callable[[str, bool], Mock],
+) -> None:
     """Test full pipeline when diarization returns no speakers.
 
     This test verifies that the pipeline correctly handles the edge case
@@ -215,7 +217,7 @@ def test_integration_full_process_empty_diarization(
     """
     # Setup: Mock feature flag for noise filtering
     mock_feature_flag_client_audio_filter = create_mock_feature_flag_client(
-        "audio_noise_filtering", enabled=False
+        "audio_noise_filtering", False
     )
     mock_get_feature_flag_client_audio_filter.return_value = (
         mock_feature_flag_client_audio_filter
@@ -223,7 +225,7 @@ def test_integration_full_process_empty_diarization(
 
     # Setup: Mock feature flag for API diarization (disabled to use local diarization)
     mock_feature_flag_client_diarization = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
+        "api_based_diarization", False
     )
     mock_get_feature_flag_client_diarization.return_value = (
         mock_feature_flag_client_diarization
@@ -231,7 +233,7 @@ def test_integration_full_process_empty_diarization(
 
     # Setup: Mock feature flag for API transcription (disabled to use local transcription)
     mock_feature_flag_client_transcription = create_mock_feature_flag_client(
-        "api_based_transcription", enabled=False
+        "api_based_transcription", False
     )
     mock_get_feature_flag_client_transcription.return_value = (
         mock_feature_flag_client_transcription
