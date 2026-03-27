@@ -24,12 +24,26 @@ class TimeSpan:
     def duration(self) -> float:
         return self.end - self.start
 
-    def overlaps(self, other: "TimeSpan") -> bool:
-        """Return True when the two spans overlap (non-empty intersection)."""
-        return not (self.end <= other.start or self.start >= other.end)
+    @property
+    def midpoint(self) -> float:
+        return (self.start + self.end) / 2.0
+
+    def touches_or_overlaps(self, other: "TimeSpan") -> bool:
+        """Return True when the two spans overlap or touch."""
+        return not (self.end < other.start or self.start > other.end)
 
     def overlap(self, other: "TimeSpan") -> float:
         """Return overlap length in seconds (0.0 when no overlap)."""
         start = max(self.start, other.start)
         end = min(self.end, other.end)
         return max(0.0, end - start)
+
+    def merge(self, other: "TimeSpan") -> "TimeSpan":
+        """Return a new TimeSpan covering both spans."""
+        return TimeSpan(min(self.start, other.start), max(self.end, other.end))
+
+    def gap_to(self, other: "TimeSpan") -> "TimeSpan | None":
+        """Return the silence gap between self and other, or None if they overlap/touch."""
+        if self.end >= other.start:
+            return None
+        return TimeSpan(self.end, other.start)

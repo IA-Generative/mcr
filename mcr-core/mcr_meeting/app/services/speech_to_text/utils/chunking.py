@@ -1,5 +1,7 @@
 """Compute large transcription chunks from diarization segments."""
 
+from collections.abc import Iterable
+
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
@@ -10,20 +12,20 @@ SPLIT_SEARCH_WINDOW_RATIO = _settings.SPLIT_SEARCH_WINDOW_RATIO
 
 
 def _merge_overlapping_intervals(
-    segments: list[DiarizationSegment],
+    spans: Iterable[TimeSpan],
 ) -> list[TimeSpan]:
-    """Merge overlapping diarization segments into non-overlapping TimeSpans."""
-    if not segments:
+    """Merge overlapping/touching TimeSpans into non-overlapping intervals."""
+    sorted_spans = sorted(spans, key=lambda s: s.start)
+    if not sorted_spans:
         return []
 
-    sorted_segments = sorted(segments, key=lambda s: s.start)
-    merged = [TimeSpan(sorted_segments[0].start, sorted_segments[0].end)]
+    merged = [sorted_spans[0]]
 
-    for seg in sorted_segments[1:]:
-        if seg.start <= merged[-1].end:
-            merged[-1] = TimeSpan(merged[-1].start, max(merged[-1].end, seg.end))
+    for span in sorted_spans[1:]:
+        if merged[-1].touches_or_overlaps(span):
+            merged[-1] = merged[-1].merge(span)
         else:
-            merged.append(TimeSpan(seg.start, seg.end))
+            merged.append(span)
 
     return merged
 
@@ -47,25 +49,20 @@ def _find_split_boundary(
     all_intervals = chunk_intervals + [next_interval]
 
     # Collect all silences (gaps between consecutive intervals)
-    best_gap_mid: float | None = None
-    best_gap_size = 0.0
+    best_gap: TimeSpan | None = None
 
     for j in range(len(all_intervals) - 1):
-        gap_start = all_intervals[j].end
-        if gap_start < window_start:
+        gap = all_intervals[j].gap_to(all_intervals[j + 1])
+        if gap is None or gap.start < window_start:
             continue
-        gap_end = all_intervals[j + 1].start
-        gap_size = gap_end - gap_start
-        gap_mid = (gap_start + gap_end) / 2.0
-        if gap_mid > window_end:
+        if gap.midpoint > window_end:
             continue
 
-        if gap_size > best_gap_size:
-            best_gap_size = gap_size
-            best_gap_mid = gap_mid
+        if best_gap is None or gap.duration > best_gap.duration:
+            best_gap = gap
 
-    if best_gap_mid is not None:
-        return best_gap_mid
+    if best_gap is not None:
+        return best_gap.midpoint
 
     # No gap at all — hard cut
     return window_end
@@ -92,7 +89,8 @@ def compute_transcription_chunks(
     if not diarization:
         return []
 
-    merged = _merge_overlapping_intervals(diarization)
+    spans = (TimeSpan(seg.start, seg.end) for seg in diarization)
+    merged = _merge_overlapping_intervals(spans)
 
     if not merged:
         return []
