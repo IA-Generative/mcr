@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-from pydub.generators import Sine
+from pydub.generators import Sine  # type: ignore[import-untyped]
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment

@@ -1,7 +1,8 @@
 """Test integration for the pre_process step."""
 
+from collections.abc import Callable
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import soundfile as sf
@@ -15,14 +16,14 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
 @pytest.mark.parametrize("audio_format", ["mp3", "mp4", "m4a", "wav", "mov"])
 @patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
 def test_integration_pre_process(
-    mock_get_feature_flag_client,
-    create_audio_buffer,
-    create_mock_feature_flag_client,
+    mock_get_feature_flag_client: MagicMock,
+    create_audio_buffer: Callable[[str], BytesIO],
+    create_mock_feature_flag_client: Callable[[str, bool], Mock],
     feature_flag_enabled: bool,
     audio_format: str,
-):
+) -> None:
     mock_feature_flag_client = create_mock_feature_flag_client(
-        FeatureFlag.AUDIO_NOISE_FILTERING, enabled=feature_flag_enabled
+        FeatureFlag.AUDIO_NOISE_FILTERING, feature_flag_enabled
     )
     mock_get_feature_flag_client.return_value = mock_feature_flag_client
     audio_buffer = create_audio_buffer(audio_format)

@@ -1,4 +1,4 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 from factory.alchemy import SQLAlchemyModelFactory
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ class BaseFactory(SQLAlchemyModelFactory, Generic[T]):
         sqlalchemy_session_persistence = "flush"  # Use flush instead of commit
 
     @classmethod
-    def _create(cls, model_class, *args, **kwargs) -> T:
+    def _create(cls, model_class: type[T], *args: Any, **kwargs: Any) -> T:  # type: ignore[explicit-any, no-untyped-def]
         """
         Create an instance using the session from context variable.
 
@@ -32,15 +32,15 @@ class BaseFactory(SQLAlchemyModelFactory, Generic[T]):
         obj = model_class(*args, **kwargs)
         session.add(obj)
         session.flush()  # Flush to get IDs without committing
-        return obj
+        return obj  # type: ignore[no-any-return]
 
-    def __call__(cls, *args, **kwargs) -> T:
-        return super().__call__(*args, **kwargs)
-
-    @classmethod
-    def create(cls, **kwargs) -> T:
-        return super().create(**kwargs)
+    def __call__(cls, *args: Any, **kwargs: Any) -> T:  # type: ignore[explicit-any, no-untyped-def]
+        return super().__call__(*args, **kwargs)  # type: ignore[no-any-return, misc]
 
     @classmethod
-    def build(cls, **kwargs) -> T:
-        return super().build(**kwargs)
+    def create(cls, **kwargs: Any) -> T:  # type: ignore[explicit-any, no-untyped-def]
+        return super().create(**kwargs)  # type: ignore[no-any-return]
+
+    @classmethod
+    def build(cls, **kwargs: Any) -> T:  # type: ignore[explicit-any, no-untyped-def]
+        return super().build(**kwargs)  # type: ignore[no-any-return]
