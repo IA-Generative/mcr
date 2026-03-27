@@ -78,11 +78,16 @@ import VisioMeetingForm from './visio-modal/VisioMeetingForm.vue';
 import { useForm, useIsFormValid } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/yup';
 import { visioMeetingFieldsToVisioMeetingDto, VisioMeetingSchema } from './meeting.schema';
+import WebexMeetingForm from './visio-modal/WebexMeetingForm.vue';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
+
+const isWebexEnabled = useFeatureFlag('webex');
 
 const platformLabels: Record<OnlineMeetingPlatforms, string> = {
   COMU: 'COMU',
-  WEBINAIRE: "Webinaire de l'État",
   WEBCONF: 'Webconf',
+  WEBEX: 'Webex',
+  WEBINAIRE: "Webinaire de l'État",
   VISIO: 'Visio',
 };
 
@@ -92,7 +97,9 @@ const { defineField, handleSubmit } = useForm({
 
 const [meetingTitle, meetingTitleAttrs] = defineField('name');
 
-const meetingPlatformOptions = OnlineMeetingPlatforms.map((platform) => ({
+const meetingPlatformOptions = OnlineMeetingPlatforms.filter(
+  (platform) => platform !== 'WEBEX' || isWebexEnabled.value,
+).map((platform) => ({
   value: platform,
   text: platformLabels[platform],
 }));
@@ -107,12 +114,17 @@ function getVisioToolComponent(selectedPlatform: Ref<OnlineMeetingPlatforms | nu
   switch (selectedPlatform.value) {
     case 'COMU':
       return ComuMeetingForm;
-    case 'VISIO':
-      return VisioMeetingForm;
     case 'WEBCONF':
       return WebconfMeetingForm;
+    case 'WEBEX':
+      if (isWebexEnabled.value) {
+        return WebexMeetingForm;
+      }
+      return null;
     case 'WEBINAIRE':
       return WebinaireMeetingForm;
+    case 'VISIO':
+      return VisioMeetingForm;
     default:
       return null;
   }

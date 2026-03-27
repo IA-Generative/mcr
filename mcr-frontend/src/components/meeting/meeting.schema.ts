@@ -63,6 +63,17 @@ export const visioUrlValidator = RegExp(
 
 export const visioIncompleteUrlValidator = RegExp(`${visioUrlPattern.domain.source}`);
 
+const webexUrlPattern = {
+  domain: /[A-Za-z0-9-]+\.webex\.com/,
+  slug: /[A-Za-z0-9._-]{1,64}/,
+};
+
+export const webexUrlValidator = RegExp(
+  `^https://${webexUrlPattern.domain.source}/meet/${webexUrlPattern.slug.source}$`,
+);
+
+export const webexIncompleteUrlValidator = RegExp(`${webexUrlPattern.domain.source}`);
+
 type PlatformUrlConfig = {
   name: OnlineMeetingPlatforms;
   validator: RegExp;
@@ -71,6 +82,7 @@ type PlatformUrlConfig = {
 };
 
 const isVisioEnabled = useFeatureFlag('visio');
+const isWebexEnabled = useFeatureFlag('webex');
 
 const platformConfigs = computed<PlatformUrlConfig[]>(() => {
   const configs: PlatformUrlConfig[] = [
@@ -101,13 +113,22 @@ const platformConfigs = computed<PlatformUrlConfig[]>(() => {
     });
   }
 
+  if (isWebexEnabled.value) {
+    configs.push({
+      name: 'WEBEX',
+      validator: webexUrlValidator,
+      errorValidator: webexIncompleteUrlValidator,
+      errorMessage: t('meeting.form.errors.url.invalid-webex-url'),
+    });
+  }
+
   return configs;
 });
 
 const notSupportedErrorMessage = computed(() =>
-  isVisioEnabled.value
-    ? t('meeting.form.errors.url.not-supported.visio-enabled')
-    : t('meeting.form.errors.url.not-supported.visio-disabled'),
+  isWebexEnabled.value
+    ? t('meeting.form.errors.url.not-supported.webex-enabled')
+    : t('meeting.form.errors.url.not-supported.webex-disabled'),
 );
 
 function validateUrl(url: string | null) {
