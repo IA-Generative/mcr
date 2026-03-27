@@ -58,7 +58,7 @@ def test_sign_multipart_part(
     # Arrange
     multipart_sign_part_request = MultipartSignPartRequest(
         upload_id="1",
-        object_key=get_audio_object_prefix(meeting_fixture.id),
+        object_key=get_audio_object_prefix(str(meeting_fixture.id)),
         part_number=1,
     )
     payload = multipart_sign_part_request.model_dump(mode="json")
@@ -88,7 +88,7 @@ def test_complete_multipart(
     multipart_complete_part_2 = MultipartCompletePart(part_number=2, etag="")
     multipart_complete_request = MultipartCompleteRequest(
         upload_id="1",
-        object_key=get_audio_object_prefix(meeting_fixture.id),
+        object_key=get_audio_object_prefix(str(meeting_fixture.id)),
         parts=[multipart_complete_part_1, multipart_complete_part_2],
     )
     payload = multipart_complete_request.model_dump(mode="json")
@@ -114,7 +114,7 @@ def test_abort_multipart(
     # Arrange
     multipart_abort_request = MultipartAbortRequest(
         upload_id="1",
-        object_key=get_audio_object_prefix(meeting_fixture.id),
+        object_key=get_audio_object_prefix(str(meeting_fixture.id)),
     )
     payload = multipart_abort_request.model_dump(mode="json")
 
