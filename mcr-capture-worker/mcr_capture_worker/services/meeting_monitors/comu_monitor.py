@@ -11,7 +11,7 @@ class ComuMeetingMonitor(MeetingMonitor):
         # Use >> to pierce the shadow DOM of mdc-badge
         badge_text = page.locator(
             '[data-test="participants-button"] mdc-badge >> mdc-text'
-        )
+        ).first
         text = await badge_text.text_content(timeout=5000)
         if text is None or not text.strip().isdigit():
             raise ValueError(f"Could not read participant count from badge: {text}")
