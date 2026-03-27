@@ -361,7 +361,8 @@ def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
 
     parsed_url = urlparse(meeting.url)
     new_host = "webconf.comu.gouv.fr"
+    new_path = re.sub(r"^/[a-z]{2}-[A-Z]{2}", "", parsed_url.path)
 
-    meeting.url = str(urlunparse(parsed_url._replace(netloc=new_host)))
+    meeting.url = str(urlunparse(parsed_url._replace(netloc=new_host, path=new_path)))
 
     return meeting
