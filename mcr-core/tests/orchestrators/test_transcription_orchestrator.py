@@ -64,7 +64,6 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
     ) -> None:
         to.finalize_transcription(
@@ -82,7 +81,7 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
+        mock_s3: MagicMock,
         mock_send_email: MagicMock,
     ) -> None:
         to.finalize_transcription(
@@ -90,14 +89,13 @@ class TestHandleTranscriptionSuccess:
             transcriptions=sample_transcriptions,
         )
 
-        mock_s3_put.assert_called_once()
+        mock_s3.put_object.assert_called_once()
 
     def test_updates_meeting_status_to_transcription_done(
         self,
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
         db_session: Session,
     ) -> None:
@@ -116,7 +114,6 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
         db_session: Session,
     ) -> None:
@@ -133,7 +130,6 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
         mock_send_email: MagicMock,
     ) -> None:
         to.finalize_transcription(

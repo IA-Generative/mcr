@@ -1,9 +1,6 @@
 import os
 import tempfile
-from collections.abc import Generator, Iterator
-from datetime import datetime
-from types import SimpleNamespace
-from typing import Any
+from collections.abc import Generator
 from unittest.mock import Mock
 
 import pytest
@@ -18,7 +15,6 @@ from mcr_meeting.app.db.db import (
     db_session_ctx,
     router_db_session_context_manager,
 )
-from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.feature_flag_service import (
     FeatureFlag,
     get_feature_flag_client,
@@ -27,7 +23,7 @@ from mcr_meeting.main import app
 from tests.mocks.email_mocks import mock_send_email as mock_send_email  # noqa: F401
 from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 from tests.mocks.in_memory_redis import InMemoryRedis
-from tests.mocks.s3_mocks import mock_s3_put as mock_s3_put  # noqa: F401
+from tests.mocks.s3_mocks import mock_s3 as mock_s3  # noqa: F401
 
 # --- TEST DB SETUP ---
 # Use a temporary SQLite file for the test DB
@@ -94,49 +90,6 @@ def in_memory_keycloak() -> Generator[InMemoryKeycloak, None, None]:
     token_exchange_module._keycloak = mock  # type: ignore[assignment]
     yield mock
     token_exchange_module._keycloak = original
-
-
-@pytest.fixture
-def mock_minio(request: pytest.FixtureRequest, mocker: MockerFixture) -> Mock:
-    bucket_name = "my_bucket"
-    should_error_on_delete = getattr(request, "param", "default")
-    mock_minio = mocker.patch("mcr_meeting.app.services.s3_service.s3_client")
-    mock_minio.put_object.return_value = SimpleNamespace(
-        bucket_name=bucket_name,
-        object_name="my/super/file",
-    )
-
-    mock_minio.list_objects.return_value = mock_s3_object_iterator(bucket_name)
-    mock_minio.delete_objects.return_value = mock_s3_delete_return(
-        should_error_on_delete
-    )
-
-    return mock_minio
-
-
-def mock_s3_object_iterator(bucket_name: str) -> Iterator[S3Object]:
-    for i in range(3):
-        yield S3Object(
-            bucket_name=bucket_name,
-            object_name=f"file{i}.txt",
-            last_modified=datetime(2025, 1, i + 1),
-        )
-
-
-def mock_s3_delete_return(return_type: str) -> dict[str, Any]:  # type: ignore[explicit-any]
-    match return_type:
-        case "delete_error":
-            return {
-                "Errors": [
-                    {
-                        "Key": "audio.mp3",
-                        "Code": "InternalError",
-                        "Message": "Simulated delete failure",
-                    }
-                ]
-            }
-        case _:
-            return {"Deleted": [{"Key": "audio.mp3"}]}
 
 
 @pytest.fixture
