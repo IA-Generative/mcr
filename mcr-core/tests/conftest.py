@@ -114,7 +114,9 @@ def mock_celery_producer_app(
 
 
 @pytest.fixture
-def create_mock_feature_flag_client(mocker: MockerFixture) -> Generator[Callable[[FeatureFlag, bool], Mock], None, None]:
+def create_mock_feature_flag_client(
+    mocker: MockerFixture,
+) -> Generator[Callable[..., Mock], None, None]:  # type: ignore[explicit-any]
     """Mock the feature flag client factory for testing.
 
     Returns a factory function that creates mock feature flag clients

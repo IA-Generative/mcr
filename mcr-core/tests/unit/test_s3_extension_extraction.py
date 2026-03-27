@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 from mcr_meeting.app.schemas.S3_types import S3Object
@@ -25,7 +27,7 @@ class TestGetExtensionFromObjectList:
         s3_object = S3Object(
             bucket_name="test-bucket",
             object_name="123/audio_chunk.weba",
-            last_modified="2023-01-01T00:00:00Z",
+            last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
         )
         reconstructed_iterator, file_extension = get_extension_from_object_list(
             iter([s3_object])
@@ -42,17 +44,17 @@ class TestGetExtensionFromObjectList:
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_1.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             ),
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_2.weba",
-                last_modified="2023-01-01T00:01:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:01:00+00:00"),
             ),
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_3.mp3",
-                last_modified="2023-01-01T00:02:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:02:00+00:00"),
             ),
         ]
 
@@ -72,7 +74,7 @@ class TestGetExtensionFromObjectList:
         s3_object = S3Object(
             bucket_name="test-bucket",
             object_name="123/audio_chunk_no_ext",
-            last_modified="2023-01-01T00:00:00Z",
+            last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
         )
 
         reconstructed_iterator, file_extension = get_extension_from_object_list(
@@ -86,7 +88,7 @@ class TestGetExtensionFromObjectList:
         s3_object = S3Object(
             bucket_name="test-bucket",
             object_name="123/audio.chunk.test.weba",
-            last_modified="2023-01-01T00:00:00Z",
+            last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
         )
 
         reconstructed_iterator, file_extension = get_extension_from_object_list(
@@ -100,7 +102,7 @@ class TestGetExtensionFromObjectList:
         s3_object = S3Object(
             bucket_name="test-bucket",
             object_name="123/audio_chunk.",
-            last_modified="2023-01-01T00:00:00Z",
+            last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
         )
 
         reconstructed_iterator, file_extension = get_extension_from_object_list(
@@ -115,17 +117,17 @@ class TestGetExtensionFromObjectList:
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk_1.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             ),
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk_2.weba",
-                last_modified="2023-01-01T00:01:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:01:00+00:00"),
             ),
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk_3.weba",
-                last_modified="2023-01-01T00:02:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:02:00+00:00"),
             ),
         ]
 
@@ -154,7 +156,7 @@ class TestGetExtensionFromObjectList:
             s3_object = S3Object(
                 bucket_name="test-bucket",
                 object_name=object_name,
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             )
 
             reconstructed_iterator, file_extension = get_extension_from_object_list(
@@ -179,7 +181,7 @@ class TestValidateObjectList:
         s3_object = S3Object(
             bucket_name="test-bucket",
             object_name="123/audio_chunk.weba",
-            last_modified="2023-01-01T00:00:00Z",
+            last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
         )
 
         result = list(validate_object_list(iter([s3_object])))
@@ -192,7 +194,7 @@ class TestValidateObjectList:
             S3Object(
                 bucket_name="test",
                 object_name=f"123/chunk_{i}.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             )
             for i in range(3)
         ]
