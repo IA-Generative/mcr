@@ -1,7 +1,7 @@
 import os
 import tempfile
 import uuid
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from contextvars import Token
 from datetime import datetime, timezone
 from typing import Any
@@ -42,19 +42,19 @@ class PrefixedTestClient:
             # No session in context, that's okay
             pass
 
-    def get(self, path: str, **kwargs: Any) -> Response:
+    def get(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.get(f"{self.prefix}{path}", **kwargs)
 
-    def post(self, path: str, **kwargs: Any) -> Response:
+    def post(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.post(f"{self.prefix}{path}", **kwargs)
 
-    def put(self, path: str, **kwargs: Any) -> Response:
+    def put(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.put(f"{self.prefix}{path}", **kwargs)
 
-    def delete(self, path: str, **kwargs: Any) -> Response:
+    def delete(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.delete(f"{self.prefix}{path}", **kwargs)
 
@@ -65,18 +65,8 @@ def user_client() -> PrefixedTestClient:
 
 
 @pytest.fixture
-def member_client() -> PrefixedTestClient:
-    return PrefixedTestClient(TestClient(app), api_settings.MEMBER_API_PREFIX)
-
-
-@pytest.fixture
 def meeting_client() -> PrefixedTestClient:
     return PrefixedTestClient(TestClient(app), api_settings.MEETING_API_PREFIX)
-
-
-@pytest.fixture
-def participants_client() -> PrefixedTestClient:
-    return PrefixedTestClient(TestClient(app), api_settings.PARTICIPANTS_API_PREFIX)
 
 
 @pytest.fixture
@@ -230,8 +220,12 @@ def meeting_2_fixture(db_session: Session) -> Meeting:
 
 
 @pytest.fixture
-def meeting_factory(db_session, user_fixture):
-    def _create_meeting(status=MeetingStatus.NONE, **kwargs):
+def meeting_factory(  # type: ignore[explicit-any]
+    db_session: Session, user_fixture: User
+) -> Callable[..., Meeting]:
+    def _create_meeting(  # type: ignore[explicit-any]
+        status: MeetingStatus = MeetingStatus.NONE, **kwargs: Any
+    ) -> Meeting:
         meeting = Meeting(
             user_id=user_fixture.id,
             name="Dynamic meeting",
