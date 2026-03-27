@@ -91,6 +91,7 @@ declare module 'vue' {
     VisioConnectionSeparator: typeof import('./components/meeting/visio-modal/VisioConnectionSeparator.vue')['default']
     VisioMeetingForm: typeof import('./components/meeting/visio-modal/VisioMeetingForm.vue')['default']
     WebconfMeetingForm: typeof import('./components/meeting/visio-modal/WebconfMeetingForm.vue')['default']
+    WebexMeetingForm: typeof import('./components/meeting/visio-modal/WebexMeetingForm.vue')['default']
     WebinaireMeetingForm: typeof import('./components/meeting/visio-modal/WebinaireMeetingForm.vue')['default']
   }
 }
