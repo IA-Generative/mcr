@@ -1,0 +1,23 @@
+mcr-capture-worker/mcr_capture_worker/services/meeting_monitors/comu_monitor.py
+  5b54cd8a0fc27621 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.19",
+  "base_commit_sha": "1aa69e0984547312e021777b0332055167abae73",
+  "prompts": {
+    "5b54cd8a0fc27621": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "42915a44-9b56-47f5-a298-e7d0e2fae602",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
