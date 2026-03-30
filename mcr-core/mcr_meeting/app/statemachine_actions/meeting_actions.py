@@ -176,6 +176,17 @@ def after_complete_report_handler(
             raise MCRException("Invalid report_response type")
         save_formatted_report(meeting_id=meeting.id, file_like_object=docx_buffer)
 
+    try:
+        store_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=str(meeting.owner.keycloak_uuid),
+            file_bytes=docx_buffer.getvalue(),
+            file_type=DeliverableFileType.REPORT,
+            filename=f"Compte_Rendu_{meeting.name}.docx",
+        )
+    except Exception:
+        logger.exception("Failed to upload report to Drive for meeting {}", meeting.id)
+
     send_report_generation_success_email(meeting_id=meeting.id)
 
 
