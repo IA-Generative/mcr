@@ -1,0 +1,42 @@
+mcr-gateway/mcr_gateway/app/services/lookup_service.py
+  64e7ec49222e7096 7-10
+mcr-gateway/mcr_gateway/app/schemas/lookup_schema.py
+  64e7ec49222e7096 1
+mcr-frontend/src/components/meeting/CreateVisioMeetingForm.vue
+  64e7ec49222e7096 20,28,54,56,58,68,78,88-89,91-92,98-100,103,106,108-117,122,124,129,131,140-142,144,148-154,158,164,167,169,184,189,191,196,203,207,212,216
+mcr-core/mcr_meeting/app/services/lookup_service.py
+  64e7ec49222e7096 15-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "d86e98336698aee0579507588e79bff5cdca4f34",
+  "prompts": {
+    "64e7ec49222e7096": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "682e235e-fa04-4360-ada1-9c67cde00b0d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 65,
+      "overriden_lines": 0
+    },
+    "9060bf791c3f08c8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a1814bc-3589-4e98-93b0-2d0b73d0054b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
