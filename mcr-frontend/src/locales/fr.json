@@ -35,6 +35,7 @@
       "user-guide": "Guide utilisateur",
       "sign-in": "Se connecter",
       "sign-out": "Se déconnecter",
+      "drive": "Mon Drive",
       "useful-tips": "Documentation",
       "mirai-services": {
         "main-button": "Applications MIrAI",
@@ -320,6 +321,7 @@
     "report": {
       "generate": "Générer le compte-rendu",
       "download": "Télécharger le compte-rendu",
+      "open-on-drive": "Voir le compte-rendu sur MyMirai",
       "reset": "Regénérer le compte-rendu",
       "disclaimer": {
         "title": "Choisissez le format",
