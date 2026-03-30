@@ -1,4 +1,7 @@
-from playwright.async_api import Page
+import re
+
+from loguru import logger
+from playwright.async_api import FrameLocator, Page
 
 from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor import (
     MeetingMonitor,
@@ -6,8 +9,26 @@ from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor impor
 
 
 class WebexMeetingMonitor(MeetingMonitor):
-    async def enforce_bot_muted(self, page: Page) -> None:
-        pass
+    MEETING_IFRAME_ID = "#unified-webclient-iframe"
+    PARTICIPANTS_TOGGLE_BUTTON_SELECTOR = "[data-test='participants-toggle-button']"
+
+    def _get_meeting_frame(self, page: Page) -> FrameLocator:
+        return page.frame_locator(self.MEETING_IFRAME_ID)
 
     async def _get_participant_count(self, page: Page) -> int:
-        return 2  # Temporary value to please the type-check validation
+        frame = self._get_meeting_frame(page)
+        await self._ensure_participants_panel_open(frame)
+        heading = frame.locator("mdc-text[tagname='h2']", has_text="Participants")
+        await heading.first.wait_for(state="visible", timeout=5000)
+        text = await heading.first.text_content()
+        match = re.search(r"\((\d+)\)", text or "")
+        if not match:
+            raise ValueError(f"Could not read participant count from: {text}")
+        return int(match.group(1))
+
+    async def _ensure_participants_panel_open(self, frame: FrameLocator) -> None:
+        button = frame.locator(self.PARTICIPANTS_TOGGLE_BUTTON_SELECTOR)
+        aria = await button.get_attribute("aria-expanded")
+        if aria == "false":
+            await button.click()
+            logger.info("Participants panel opened")
