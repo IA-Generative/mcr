@@ -1,0 +1,38 @@
+mcr-gateway/mcr_gateway/app/schemas/lookup_schema.py
+  64e7ec49222e7096 1
+mcr-gateway/mcr_gateway/app/services/lookup_service.py
+  64e7ec49222e7096 7-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "3ad7e3e3197405b6f9d904de58e5fe8343d7bc75",
+  "prompts": {
+    "64e7ec49222e7096": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "682e235e-fa04-4360-ada1-9c67cde00b0d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 5,
+      "overriden_lines": 0
+    },
+    "9060bf791c3f08c8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8a1814bc-3589-4e98-93b0-2d0b73d0054b",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 114,
+      "overriden_lines": 0
+    }
+  }
+}
