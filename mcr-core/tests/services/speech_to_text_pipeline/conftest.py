@@ -2,6 +2,8 @@
 
 from collections.abc import Callable
 from io import BytesIO
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 from pydub.generators import Sine
@@ -11,6 +13,26 @@ from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 
 M = WhisperTranscriptionSettings().MAX_CHUNK_DURATION
+
+
+@pytest.fixture
+def mock_noise_detection_dependencies():
+    with (
+        patch(
+            "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
+        ) as mock_get_ff_client,
+        patch(
+            "mcr_meeting.app.services.speech_to_text.speech_to_text.is_audio_noisy"
+        ) as mock_is_noisy,
+        patch(
+            "mcr_meeting.app.services.speech_to_text.speech_to_text.filter_noise_from_audio_bytes"
+        ) as mock_filter_noise,
+    ):
+        mock_get_ff_client.return_value.is_enabled.return_value = True
+        yield SimpleNamespace(
+            mock_is_noisy=mock_is_noisy,
+            mock_filter_noise=mock_filter_noise,
+        )
 
 
 @pytest.fixture
