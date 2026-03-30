@@ -18,6 +18,7 @@ from mcr_meeting.app.schemas.report_generation import (
 from mcr_meeting.app.services.report_task_service import (
     get_formatted_report_from_s3,
 )
+from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -65,6 +66,7 @@ async def generate_meeting_report(
     meeting_id: int,
     body: ReportGenerationRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
+    x_user_access_token: str | None = Header(default=None),
 ) -> None:
     """
     Create the report
@@ -82,6 +84,7 @@ async def generate_meeting_report(
         user_keycloak_uuid=x_user_keycloak_uuid,
         report_type=body.report_types[0],
     )
+    ensure_offline_token(str(x_user_keycloak_uuid), x_user_access_token)
 
 
 @router.post("/{meeting_id}/report/success")
