@@ -1,7 +1,7 @@
 -r base.txt
 coverage~=7.2
 pytest~=7.3
-pytest-cov~=4.0
+pytest-cov~=7.1
 pytest-runner~=6.0
 pytest-asyncio~=0.21
 werkzeug~=2.3
