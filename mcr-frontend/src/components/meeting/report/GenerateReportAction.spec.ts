@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import GenerateReportAction from '@/components/meeting/report/GenerateReportAction.vue';
 import { renderWithPlugins } from '@/vitest.setup';
-import type { MeetingDto } from '@/services/meetings/meetings.types';
+import type { MeetingDetailDto } from '@/services/meetings/meetings.types';
 
 // Mock du composable useToaster
 const mockAddErrorMessage = vi.fn();
@@ -56,12 +56,13 @@ describe('GenerateReportAction', () => {
       name_platform: 'MCR_RECORD',
       status: 'TRANSCRIPTION_DONE',
       creation_date: '2021-01-01',
+      deliverables: [],
     };
 
     // Act
     renderWithPlugins(GenerateReportAction, {
       props: {
-        meeting: mockMeeting as MeetingDto,
+        meeting: mockMeeting as MeetingDetailDto,
       },
     });
 
@@ -90,12 +91,13 @@ describe('GenerateReportAction', () => {
       name_platform: 'MCR_RECORD',
       creation_date: '2021-01-01',
       status: 'TRANSCRIPTION_DONE',
+      deliverables: [],
     };
 
     // Act
     renderWithPlugins(GenerateReportAction, {
       props: {
-        meeting: mockMeeting as MeetingDto,
+        meeting: mockMeeting as MeetingDetailDto,
       },
     });
 
@@ -122,12 +124,13 @@ describe('GenerateReportAction', () => {
       name_platform: 'MCR_RECORD',
       creation_date: '2021-01-01',
       status: 'REPORT_DONE',
+      deliverables: [],
     };
 
     // Act
     renderWithPlugins(GenerateReportAction, {
       props: {
-        meeting: mockMeeting as MeetingDto,
+        meeting: mockMeeting as MeetingDetailDto,
       },
     });
 

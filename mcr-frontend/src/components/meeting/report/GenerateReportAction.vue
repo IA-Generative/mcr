@@ -1,6 +1,7 @@
 <template>
   <component
     :is="currentStateComponent"
+    :deliverables="meeting.deliverables"
     @on-generate="(reportType: ReportType) => onGetOrGenerateReport(reportType)"
     @on-reset="onResetReport"
   />
@@ -9,7 +10,7 @@
 <script setup lang="ts">
 import useToaster from '@/composables/use-toaster';
 import {
-  type MeetingDto,
+  type MeetingDetailDto,
   type MeetingStatus,
   type ReportType,
 } from '@/services/meetings/meetings.types';
@@ -23,7 +24,7 @@ import ReportPending from './ReportPending.vue';
 import { sanitizeFilename } from '@/utils/formatters';
 
 const props = defineProps<{
-  meeting: MeetingDto;
+  meeting: MeetingDetailDto;
 }>();
 
 const toaster = useToaster();
