@@ -4,50 +4,12 @@ import re
 
 from loguru import logger
 
-from mcr_meeting.app.configs.base import VADSettings
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
 )
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
-
-vad_settings = VADSettings()
-
-
-def get_vad_segments_from_diarization(
-    diarization: list[DiarizationSegment],
-) -> list[TimeSpan]:
-    """Filter diarization segments using VAD parameters to remove short segments and merge close ones.
-
-    Args:
-        diarization (List[DiarizationSegment]): List of diarization segments.
-
-    Returns:
-        List[TimeSpan]: Filtered list of time spans (start/end only).
-    """
-    vad_segments = []
-    for segment in diarization:
-        if segment.end - segment.start > vad_settings.MIN_SPEECH_DURATION:
-            vad_segments.append(segment)
-
-    if not vad_segments:
-        return []
-    span_list = [TimeSpan(vad_segments[0].start, vad_segments[0].end)]
-    for segment in vad_segments[1:]:
-        current = TimeSpan(segment.start, segment.end)
-        previous = span_list[-1]
-        if current.start - previous.end <= vad_settings.MAX_SILENCE_GAP:
-            span_list[-1] = TimeSpan(
-                start=previous.start,
-                end=max(previous.end, current.end),
-            )
-        else:
-            span_list.append(current)
-    total_voiced_duration = sum(span.end - span.start for span in span_list)
-    logger.debug("Total voiced duration after VAD filtering: {}", total_voiced_duration)
-
-    return span_list
 
 
 def find_best_matching_diarization(

@@ -31,8 +31,8 @@ from mcr_meeting.app.services.speech_to_text.transcription_processor import (
 )
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
+    compute_transcription_chunks,
     diarize_vad_transcription_segments,
-    get_vad_segments_from_diarization,
 )
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
@@ -102,19 +102,19 @@ class SpeechToTextPipeline:
     def transcribe_audio(
         self,
         audio_bytes: BytesIO,
-        vad_spans: list[TimeSpan],
+        chunk_spans: list[TimeSpan],
     ) -> list[TranscriptionSegment]:
         """Transcribe full audio bytes to text.
 
         Args:
             audio_bytes (BytesIO): The input audio bytes.
-            vad_spans (List[TimeSpan]): The VAD segments to split the audio into for transcription.
+            chunk_spans (List[TimeSpan]): The time spans to split the audio into for transcription.
 
         Returns:
             List[TranscriptionSegment]: A list of TranscriptionSegment objects containing the transcription results with speaker labels.
         """
         return self.transcription_processor.transcribe(
-            audio_bytes=audio_bytes, vad_spans=vad_spans
+            audio_bytes=audio_bytes, chunk_spans=chunk_spans
         )
 
     def diarize_audio(
@@ -149,12 +149,12 @@ class SpeechToTextPipeline:
             logger.warning("No diarization result. Returning empty transcription.")
             return []
 
-        vad_spans: list[TimeSpan] = get_vad_segments_from_diarization(
+        transcription_chunk_spans: list[TimeSpan] = compute_transcription_chunks(
             diarization_result
         )
 
         transcription_segments = self.transcribe_audio(
-            pre_processed_audio_bytes, vad_spans
+            pre_processed_audio_bytes, transcription_chunk_spans
         )
 
         diarized_transcription_segments = diarize_vad_transcription_segments(
