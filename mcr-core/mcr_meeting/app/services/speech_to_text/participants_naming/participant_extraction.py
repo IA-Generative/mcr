@@ -1,3 +1,5 @@
+import json
+
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -76,6 +78,7 @@ class ParticipantExtraction(LLMPostProcessing):
         return self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
             response_model=list[Participant],
+            temperature=0,
             messages=[
                 {
                     "role": "user",
@@ -86,14 +89,18 @@ class ParticipantExtraction(LLMPostProcessing):
 
     def _refine(self, current: list[Participant], chunk: Chunk) -> list[Participant]:
         # Use REFINE_PROMPT_TEMPLATE
+        current_json = json.dumps(
+            [p.model_dump() for p in current], ensure_ascii=False, indent=2
+        )
         return self.client.chat.completions.create(
             model=self.settings.LLM_MODEL_NAME,
             response_model=list[Participant],
+            temperature=0,
             messages=[
                 {
                     "role": "user",
                     "content": REFINE_PROMPT_TEMPLATE.format(
-                        current_json=current, chunk_text=chunk.text
+                        current_json=current_json, chunk_text=chunk.text
                     ),
                 }
             ],
