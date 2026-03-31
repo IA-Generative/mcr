@@ -298,6 +298,8 @@ class CelerySettings(BaseSettings):
     REDIS_PORT: int
     REDIS_VHOST_TASK_DB: int = 0
     REDIS_VHOST_RESULT_DB: int = 1
+    REDIS_TOKEN_STORE_DB: int = 2
+    REDIS_TOKEN_TTL_SECONDS: int = 2_592_000  # 30 days
 
     @property
     def CELERY_BROKER_URL(self) -> str:
@@ -456,6 +458,18 @@ class EvaluationSettings(BaseSettings):
     SUPPORTED_AUDIO_FORMATS: list[str] = Field(
         default=["mp3", "wav"], description="Supported audio formats for evaluation"
     )
+
+
+class KeycloakExchangeSettings(BaseSettings):
+    KEYCLOAK_URL: str
+    KEYCLOAK_REALM: str
+    KEYCLOAK_CORE_CLIENT_ID: str = "mcr-core"
+    KEYCLOAK_CORE_CLIENT_SECRET: str
+
+
+class DriveSettings(BaseSettings):
+    DRIVE_API_BASE_URL: str
+    DRIVE_FRONTEND_URL: str
 
 
 class TranscriptionForbiddenSentences(BaseSettings):

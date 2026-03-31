@@ -13,6 +13,7 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_capture,
     init_capture,
 )
+from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
 
 api_settings = ApiSettings()
 router = APIRouter(
@@ -44,6 +45,7 @@ async def init_meeting_capture(
 async def stop_meeting_capture(
     meeting_id: int,
     x_user_keycloak_uuid: UUID4 = Header(),
+    x_user_access_token: str | None = Header(default=None),
 ) -> Response:
     """
     Stop meeting capture.
@@ -56,5 +58,6 @@ async def stop_meeting_capture(
 
     """
     complete_capture(meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid)
+    ensure_offline_token(str(x_user_keycloak_uuid), x_user_access_token)
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

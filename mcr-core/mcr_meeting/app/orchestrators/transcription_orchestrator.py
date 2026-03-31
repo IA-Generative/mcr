@@ -44,7 +44,7 @@ async def get_or_create_transcription_docx(
         current_user_keycloak_uuid=user_keycloak_uuid,
     )
 
-    docx_buffer = await retrieve_or_create_formatted_docx_transcription(meeting)
+    docx_buffer = retrieve_or_create_formatted_docx_transcription(meeting)
 
     filename = f"Transcription_{meeting.name}.docx"
 

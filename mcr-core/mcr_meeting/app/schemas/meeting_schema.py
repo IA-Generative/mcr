@@ -366,3 +366,15 @@ def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
     meeting.url = str(urlunparse(parsed_url._replace(netloc=new_host, path=new_path)))
 
     return meeting
+
+
+class DeliverableResponse(BaseModel):
+    file_type: str
+    external_url: str | None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class MeetingDetailResponse(MeetingResponse):
+    deliverables: list[DeliverableResponse] = []

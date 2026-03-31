@@ -31,6 +31,7 @@ from mcr_meeting.app.schemas.transcription_queue_schema import (
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
+from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -106,8 +107,14 @@ async def upload_meeting_transcription(
 
 
 @router.post("/{meeting_id}/transcription/init", status_code=status.HTTP_204_NO_CONTENT)
-async def init_transcription_task(meeting_id: int) -> None:
+async def init_transcription_task(
+    meeting_id: int,
+    x_user_keycloak_uuid: UUID4 | None = Header(default=None),
+    x_user_access_token: str | None = Header(default=None),
+) -> None:
     init_transcription(meeting_id=meeting_id)
+    if x_user_keycloak_uuid is not None:
+        ensure_offline_token(str(x_user_keycloak_uuid), x_user_access_token)
 
 
 @router.post(
