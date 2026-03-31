@@ -1,0 +1,17 @@
+[
+  {"speaker_id": "LOCUTEUR_01", "name": "Thomas"},
+  {"speaker_id": "LOCUTEUR_02", "name": "Camille"},
+  {"speaker_id": "LOCUTEUR_03", "name": "Julien"},
+  {"speaker_id": "LOCUTEUR_04", "name": "Sophie"},
+  {"speaker_id": "LOCUTEUR_05", "name": "Marc"},
+  {"speaker_id": "LOCUTEUR_06", "name": "\u00c9lise"},
+  {"speaker_id": "LOCUTEUR_07", "name": "Pierre"},
+  {"speaker_id": "LOCUTEUR_08", "name": "Nathalie"},
+  {"speaker_id": "LOCUTEUR_09", "name": "Jean-Alexis"},
+  {"speaker_id": "LOCUTEUR_10", "name": "Lucie"},
+  {"speaker_id": "LOCUTEUR_11", "name": "H\u00e9l\u00e8ne"},
+  {"speaker_id": "LOCUTEUR_12", "name": "Paul"},
+  {"speaker_id": "LOCUTEUR_13", "name": "Marie-Christelle"},
+  {"speaker_id": "LOCUTEUR_14", "name": "R\u00e9mi"},
+  {"speaker_id": "LOCUTEUR_15", "name": "V\u00e9ronique"}
+]
