@@ -23,5 +23,5 @@ class MeetingApiClient:
     ) -> None:
         await self.client.post(
             f"/{meeting_id}/transcription/success",
-            data={"transcriptions": transcription_data},
+            data=transcription_data,
         )
