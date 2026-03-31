@@ -140,7 +140,6 @@ services:
       - postgres
     networks:
       - mcr-network
-      - shared-network
     volumes:
       - ./mcr-core/mcr_meeting:/app/mcr_meeting
     develop:
@@ -247,6 +246,7 @@ services:
       - VITE_SENTRY_FRONTEND_DSN=${VITE_SENTRY_FRONTEND_DSN}
       - VITE_UNLEASH_URL=${VITE_UNLEASH_URL}
       - VITE_UNLEASH_CLIENT_KEY=${VITE_UNLEASH_CLIENT_KEY}
+      - VITE_DRIVE_URL=${VITE_DRIVE_URL}
     networks:
       - mcr-network
 
@@ -399,13 +399,10 @@ services:
         restart: true
     networks:
       - mcr-network
-      - shared-network
 
 networks:
   mcr-network:
     driver: bridge
-  shared-network:
-    external: true
 
 volumes:
   postgres_data:
