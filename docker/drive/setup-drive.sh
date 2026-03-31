@@ -55,6 +55,10 @@ write_or_replace "OIDC_RS_CLIENT_ID" "drive" "$DRIVE_COMMON_LOCAL"
 write_or_replace "OIDC_RS_CLIENT_SECRET" "drive-local-secret" "$DRIVE_COMMON_LOCAL"
 write_or_replace "OIDC_RS_ALLOWED_AUDIENCES" '"mcr,mcr-gateway,mcr-core"' "$DRIVE_COMMON_LOCAL"
 write_or_replace "AWS_S3_DOMAIN_REPLACE" "http://drive-minio:9000" "$DRIVE_COMMON_LOCAL"
+# Drive's default WOPI_CLIENTS includes onlyoffice (documentserver-de), whose
+# developer-edition license expires and breaks the .docx viewer. Pin to Collabora
+# (free CODE image) until OnlyOffice is replaced with the Community Edition.
+write_or_replace "WOPI_CLIENTS" '"collabora"' "$DRIVE_COMMON_LOCAL"
 
 echo "Drive env configured."
 
