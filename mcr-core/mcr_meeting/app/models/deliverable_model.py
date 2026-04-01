@@ -12,6 +12,11 @@ class DeliverableFileType(StrEnum):
     REPORT = "REPORT"
 
 
+class VoteType(StrEnum):
+    POSITIVE = "POSITIVE"
+    NEGATIVE = "NEGATIVE"
+
+
 class Deliverable(Base):
     __tablename__ = "deliverable"
 
@@ -28,4 +33,10 @@ class Deliverable(Base):
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
+    )
+    vote_type: Mapped[VoteType | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+    vote_comment: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )
