@@ -6,8 +6,11 @@
       'grid-cols-2 max-sm:grid-cols-1': meetingStatus !== 'REPORT_PENDING',
     }"
   >
-    <div class="flex flex-col gap-4 items-center relative">
-      <template v-if="transcriptionDriveUrl">
+    <div class="flex flex-col gap-10 items-center relative">
+      <div
+        v-if="transcriptionDriveUrl"
+        class="flex flex-col gap-2 items-center"
+      >
         <a
           :href="transcriptionDriveUrl"
           target="_blank"
@@ -29,7 +32,7 @@
             scale="0.8"
           />
         </a>
-      </template>
+      </div>
 
       <DsfrButton
         v-else

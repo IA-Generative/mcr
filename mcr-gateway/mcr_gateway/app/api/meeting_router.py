@@ -365,6 +365,7 @@ async def generate_meeting_report(
     meeting_id: int,
     body: ReportGenerationRequest,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+    token: str = Depends(security),
 ) -> Response:
     """
     Get the transcription DOCX file of a given meeting
@@ -381,6 +382,7 @@ async def generate_meeting_report(
         meeting_id=meeting_id,
         user_keycloak_uuid=current_user.keycloak_uuid,
         body=body,
+        access_token=token,
     )
 
 

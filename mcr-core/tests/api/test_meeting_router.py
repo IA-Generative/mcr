@@ -9,6 +9,7 @@ from fastapi import status
 from pydantic import UUID4
 
 from mcr_meeting.app.models import Meeting, User
+from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, MeetingUpdate
 
 from .conftest import PrefixedTestClient
@@ -19,7 +20,7 @@ def test_create_meeting(meeting_client: PrefixedTestClient, user_fixture: User) 
     meeting_create = MeetingCreate(
         name="Super important Meeting",
         creation_date=datetime(2024, 9, 29, 16, 0),
-        name_platform="COMU",
+        name_platform=MeetingPlatforms.COMU,
         url="https://webconf.comu.gouv.fr/meeting/306356457?secret=GF2e74BjOcDR1Bq6nvv5wA",
     )
     expected_result = Meeting(
@@ -202,7 +203,7 @@ def test_update_meeting_success(
     meeting_update = MeetingUpdate(
         name="Updated Team Meeting",
         creation_date=datetime(2024, 9, 29, 16, 0),
-        name_platform="COMU",
+        name_platform=MeetingPlatforms.COMU,
         url="https://webconf.comu.gouv.fr/meeting/306356457?secret=GF2e74BjOcDR1Bq6nvv5wA",
         meeting_password="123456",
         meeting_platform_id="123456",
@@ -234,7 +235,7 @@ def test_update_meeting_not_found(
     meeting_update = MeetingUpdate(
         name="Updated Team Meeting",
         creation_date=datetime(2024, 9, 29, 16, 0),
-        name_platform="COMU",
+        name_platform=MeetingPlatforms.COMU,
         url="https://webconf.comu.gouv.fr/meeting/306356457?secret=GF2e74BjOcDR1Bq6nvv5wA",
         meeting_password="123456",
         meeting_platform_id="123456",
@@ -275,12 +276,12 @@ def test_update_meeting_invalid_input(
 
 
 def test_delete_meeting_success(
-    mock_minio: Mock,
+    mock_s3: Mock,
     meeting_client: PrefixedTestClient,
     meeting_fixture: Meeting,
     user_fixture: User,
 ) -> None:
-    mock_minio.get_paginator.return_value.paginate.return_value = [
+    mock_s3.get_paginator.return_value.paginate.return_value = [
         {"Contents": [{"Key": "audio.mp3", "LastModified": datetime.now()}]}
     ]
 
@@ -332,7 +333,7 @@ def test_meeting_generate_presigned_url(
     assert response.status_code == expected_status
 
 
-def assert_json_equal_meeting_model(
+def assert_json_equal_meeting_model(  # type: ignore[explicit-any]
     json_data: dict[str, Any], meeting: Meeting
 ) -> None:
     assert json_data["name"] == meeting.name

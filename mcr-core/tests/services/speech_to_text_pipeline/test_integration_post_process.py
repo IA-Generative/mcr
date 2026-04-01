@@ -64,7 +64,7 @@ def diarized_transcription_segments_simple() -> list[DiarizedTranscriptionSegmen
 
 
 @pytest.fixture
-def diarized_transcription_segments_consecutive():
+def diarized_transcription_segments_consecutive() -> list[DiarizedTranscriptionSegment]:
     """Case with consecutive segments from same speaker to test merging."""
     return [
         DiarizedTranscriptionSegment(
@@ -99,7 +99,7 @@ def diarized_transcription_segments_consecutive():
 
 
 @pytest.fixture
-def diarized_transcription_segments_empty():
+def diarized_transcription_segments_empty() -> list[DiarizedTranscriptionSegment]:
     """Empty case to test error handling."""
     return []
 
@@ -121,8 +121,8 @@ def test_integration_post_process(
     expected_count: int,
     expected_first_speaker: str,
     expected_merged_text: str,
-    request,
-):
+    request: pytest.FixtureRequest,
+) -> None:
     """Test that post-processing works normally.
 
     This test verifies the merge_consecutive_segments_per_speaker function:
@@ -171,14 +171,14 @@ def test_integration_post_process(
         assert segment.id == i, f"Expected transcription_index {i}, got {segment.id}"
 
 
-def test_integration_post_process_empty_segments():
+def test_integration_post_process_empty_segments() -> None:
     """Test that post-processing raises an error with empty segments."""
 
-    transcription_with_speech = []
+    transcription_with_speech: list[DiarizedTranscriptionSegment] = []
     speech_to_text_pipeline = SpeechToTextPipeline()
 
     with pytest.raises(InvalidAudioFileError) as exc_info:
-        _merged_segments = speech_to_text_pipeline.post_process(
+        speech_to_text_pipeline.post_process(
             transcription_with_speech,
         )
 

@@ -14,24 +14,7 @@
           size: 'sm',
         }"
         class="max-sm:self-end"
-        :buttons="[
-          {
-            label: $t('header.links.mirai-services.portal'),
-            onClick: () => redirectTo('https://mirai.interieur.gouv.fr/'),
-          },
-          {
-            label: $t('header.links.mirai-services.chat'),
-            onClick: () => redirectTo('https://chat.mirai.interieur.gouv.fr/'),
-          },
-          {
-            label: $t('header.links.mirai-services.resumer'),
-            onClick: () => redirectTo('https://resume.mirai.interieur.gouv.fr/'),
-          },
-          {
-            label: $t('header.links.mirai-services.ocr'),
-            onClick: () => redirectTo('https://ocr.mirai.interieur.gouv.fr/'),
-          },
-        ]"
+        :buttons="miraiDropdownButtons"
       />
     </template>
   </DsfrHeader>
@@ -65,6 +48,8 @@ const { t } = useI18n();
 
 const { signOut, isLogged } = inject('auth') as ReturnType<typeof useAuth>;
 
+const driveUrl = (window as any).VITE_DRIVE_URL || import.meta.env.VITE_DRIVE_URL;
+
 const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
     label: t('header.links.useful-tips'),
@@ -97,6 +82,33 @@ const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
     return whenNotLoggedLinks;
   }
 });
+
+const miraiDropdownButtons = [
+  {
+    label: t('header.links.mirai-services.portal'),
+    onClick: () => redirectTo('https://mirai.interieur.gouv.fr/'),
+  },
+  {
+    label: t('header.links.mirai-services.chat'),
+    onClick: () => redirectTo('https://chat.mirai.interieur.gouv.fr/'),
+  },
+  {
+    label: t('header.links.mirai-services.resumer'),
+    onClick: () => redirectTo('https://resume.mirai.interieur.gouv.fr/'),
+  },
+  {
+    label: t('header.links.mirai-services.ocr'),
+    onClick: () => redirectTo('https://ocr.mirai.interieur.gouv.fr/'),
+  },
+  ...(driveUrl
+    ? [
+        {
+          label: t('header.links.drive'),
+          onClick: () => redirectTo(driveUrl),
+        },
+      ]
+    : []),
+];
 
 function redirectTo(url: string): void {
   window.open(url, '_blank', 'noopener, noreferrer');

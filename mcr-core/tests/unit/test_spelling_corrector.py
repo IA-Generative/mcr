@@ -45,13 +45,13 @@ class TestSpellingCorrectorCorrect:
         original_text = "Je suis allez au magasin."
         segment = make_segment(id=0, text=original_text)
 
-        corrector._format_segments_for_llm = MagicMock(  # type: ignore[attr-defined]
+        corrector._format_segments_for_llm = MagicMock(  # type: ignore[method-assign]
             return_value="formatted"
         )
-        corrector._chunk_text = MagicMock(  # type: ignore[attr-defined]
+        corrector._chunk_text = MagicMock(  # type: ignore[method-assign]
             return_value=[Chunk(id=0, text="chunk")]
         )
-        corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
+        corrector._correct_chunk = MagicMock(  # type: ignore[method-assign]
             return_value="Je suis allé au magasin."
         )
 
@@ -66,13 +66,13 @@ class TestSpellingCorrectorCorrect:
         segment = make_segment(id=0, text="Je suis allez au magasin.")
         corrected = "Je suis allé au magasin."
 
-        corrector._format_segments_for_llm = MagicMock(  # type: ignore[attr-defined]
+        corrector._format_segments_for_llm = MagicMock(  # type: ignore[method-assign]
             return_value="formatted"
         )
-        corrector._chunk_text = MagicMock(  # type: ignore[attr-defined]
+        corrector._chunk_text = MagicMock(  # type: ignore[method-assign]
             return_value=[Chunk(id=0, text="chunk")]
         )
-        corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
+        corrector._correct_chunk = MagicMock(  # type: ignore[method-assign]
             return_value=corrected
         )
 
@@ -87,13 +87,13 @@ class TestSpellingCorrectorCorrect:
         """Checks that speaker, id, start, end are preserved on returned segments."""
         segment = make_segment(id=42, text="Bonjour.", speaker="Alice")
 
-        corrector._format_segments_for_llm = MagicMock(  # type: ignore[attr-defined]
+        corrector._format_segments_for_llm = MagicMock(  # type: ignore[method-assign]
             return_value="formatted"
         )
-        corrector._chunk_text = MagicMock(  # type: ignore[attr-defined]
+        corrector._chunk_text = MagicMock(  # type: ignore[method-assign]
             return_value=[Chunk(id=0, text="chunk")]
         )
-        corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
+        corrector._correct_chunk = MagicMock(  # type: ignore[method-assign]
             return_value="Bonjour."
         )
 
@@ -112,13 +112,13 @@ class TestSpellingCorrectorCorrect:
             make_segment(id=2, text="Segment trois."),
         ]
 
-        corrector._format_segments_for_llm = MagicMock(  # type: ignore[attr-defined]
+        corrector._format_segments_for_llm = MagicMock(  # type: ignore[method-assign]
             return_value="formatted"
         )
-        corrector._chunk_text = MagicMock(  # type: ignore[attr-defined]
+        corrector._chunk_text = MagicMock(  # type: ignore[method-assign]
             return_value=[Chunk(id=0, text="chunk-1"), Chunk(id=1, text="chunk-2")]
         )
-        corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
+        corrector._correct_chunk = MagicMock(  # type: ignore[method-assign]
             side_effect=[
                 "SEGMENT UN.<separator1>",
                 "SEGMENT DEUX.<separator2>SEGMENT TROIS.",
@@ -127,7 +127,7 @@ class TestSpellingCorrectorCorrect:
 
         result = corrector.correct(segments)
 
-        assert corrector._correct_chunk.call_count == 2  # type: ignore[attr-defined]
+        assert corrector._correct_chunk.call_count == 2  # type: ignore[method-assign]
         assert result[0].text == "SEGMENT UN."
         assert result[1].text == " SEGMENT DEUX."
         assert result[2].text == "SEGMENT TROIS."
@@ -141,13 +141,13 @@ class TestSpellingCorrectorCorrect:
             make_segment(id=1, text="Segment deux."),
         ]
 
-        corrector._format_segments_for_llm = MagicMock(  # type: ignore[attr-defined]
+        corrector._format_segments_for_llm = MagicMock(  # type: ignore[method-assign]
             return_value="formatted"
         )
-        corrector._chunk_text = MagicMock(  # type: ignore[attr-defined]
+        corrector._chunk_text = MagicMock(  # type: ignore[method-assign]
             return_value=[Chunk(id=0, text="chunk")]
         )
-        corrector._correct_chunk = MagicMock(  # type: ignore[attr-defined]
+        corrector._correct_chunk = MagicMock(  # type: ignore[method-assign]
             return_value="only-one-segment"
         )
 

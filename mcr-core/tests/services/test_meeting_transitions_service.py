@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any
 from unittest.mock import MagicMock, Mock
 from uuid import UUID
 
@@ -35,7 +34,7 @@ def user_keycloak_uuid(orchestrator_user: User) -> UUID:
 
 
 @pytest.fixture
-def _mock_save_formatted_report(monkeypatch: Any) -> MagicMock:
+def _mock_save_formatted_report(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     save_formatted_report_mock = MagicMock()
 
     monkeypatch.setattr(
