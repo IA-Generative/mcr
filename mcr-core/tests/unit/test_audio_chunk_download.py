@@ -1,3 +1,4 @@
+from datetime import datetime
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
@@ -31,7 +32,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_1.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             )
         ]
 
@@ -64,17 +65,17 @@ class TestDownloadAndConcatenateS3AudioChunks:
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_1.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             ),
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_2.weba",
-                last_modified="2023-01-01T00:01:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:01:00+00:00"),
             ),
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/audio_chunk_3.weba",
-                last_modified="2023-01-01T00:02:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:02:00+00:00"),
             ),
         ]
 
@@ -104,17 +105,17 @@ class TestDownloadAndConcatenateS3AudioChunks:
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk1.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             ),
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk2.weba",
-                last_modified="2023-01-01T00:01:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:01:00+00:00"),
             ),
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk3.weba",
-                last_modified="2023-01-01T00:02:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:02:00+00:00"),
             ),
         ]
 
@@ -139,7 +140,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
             S3Object(
                 bucket_name="test-bucket",
                 object_name="123/single_chunk.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             )
         ]
 
@@ -168,7 +169,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
             S3Object(
                 bucket_name="test-bucket",
                 object_name=f"123/chunk_{i}.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             )
             for i in range(num_chunks)
         ]
@@ -206,7 +207,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
                 S3Object(
                     bucket_name="test-bucket",
                     object_name="123/test_chunk.weba",
-                    last_modified="2023-01-01T00:00:00Z",
+                    last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
                 )
             ]
 
@@ -235,12 +236,12 @@ class TestDownloadAndConcatenateS3AudioChunks:
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk1.weba",
-                last_modified="2023-01-01T00:00:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:00:00+00:00"),
             ),
             S3Object(
                 bucket_name="test",
                 object_name="123/chunk2.weba",
-                last_modified="2023-01-01T00:01:00Z",
+                last_modified=datetime.fromisoformat("2023-01-01T00:01:00+00:00"),
             ),
         ]
 

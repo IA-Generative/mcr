@@ -399,6 +399,7 @@ async def generate_report(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
     body: ReportGenerationRequest,
+    access_token: str | None = None,
 ) -> Response:
     """
     Get the transcription DOCX file of a given meeting
@@ -412,7 +413,7 @@ async def generate_report(
 
     """
     try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
+        async with get_meeting_http_client(user_keycloak_uuid, access_token) as client:
             response = await client.post(
                 url=f"{meeting_id}/report",
                 json=body.model_dump(),

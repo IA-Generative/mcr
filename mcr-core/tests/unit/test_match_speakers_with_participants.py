@@ -15,7 +15,7 @@ class TestFormatSegmentsForLLM:
 
     def test_should_return_empty_string_when_no_segments(self) -> None:
         """Checks that format_segments_for_llm returns an empty string when no segments are provided."""
-        segments = []
+        segments: list[DiarizedTranscriptionSegment] = []
         result = self.participant_extraction._format_segments_for_llm(segments)
         assert result == ""
 
@@ -128,7 +128,7 @@ class TestReplaceSpeakerNameIfAvailable:
 
     def test_should_handle_empty_segments(self) -> None:
         """Checks that no error occurs when segments list is empty."""
-        segments = []
+        segments: list[DiarizedTranscriptionSegment] = []
         participants = [
             Participant(
                 speaker_id="SPEAKER_01",
@@ -147,7 +147,7 @@ class TestReplaceSpeakerNameIfAvailable:
                 id=1, speaker="SPEAKER_01", text="Hello", start=0.0, end=1.0
             )
         ]
-        participants = []
+        participants: list[Participant] = []
         replace_speaker_name_if_available(segments, participants)
         assert segments[0].speaker == "SPEAKER_01"
 

@@ -67,6 +67,7 @@ test = [
     "pytest-mock",
     "pydub>=0.25.1",
     "factory-boy>=3.3.3",
+    "types-factory-boy>=0.4.1",
 ]
 dev = [
     "ruff",
@@ -106,6 +107,11 @@ exclude = [
 init_forbid_extra = true
 init_typed = true
 warn_required_dynamic_aliases = true
+
+[[tool.mypy.overrides]]
+# Factory-boy factories require Any for declaration attributes (Faker, SubFactory, etc.)
+module = ["tests.factories.*"]
+disallow_any_explicit = false
 
 [[tool.mypy.overrides]]
 # This ignore type check on untyped imported modules.

@@ -102,6 +102,54 @@ def test_refresh_token_rotation_is_persisted(
     assert get_refresh_token(user_uuid) == "new-rotated-refresh-token"
 
 
+def test_report_is_uploaded_to_drive_after_completion(
+    in_memory_redis: InMemoryRedis,
+    in_memory_keycloak: InMemoryKeycloak,
+    in_memory_drive: InMemoryDriveClient,
+    db_session: None,
+) -> None:
+    meeting = MeetingFactory.create()
+    user_uuid = str(meeting.owner.keycloak_uuid)
+    in_memory_redis.set(f"drive_token:{user_uuid}", "stored-refresh-token")
+
+    store_deliverable(
+        meeting_id=meeting.id,
+        user_keycloak_uuid=user_uuid,
+        file_bytes=b"report-docx-content",
+        file_type=DeliverableFileType.REPORT,
+        filename="Compte_Rendu_Test.docx",
+    )
+
+    deliverables = _query_deliverables(meeting.id)
+    assert len(deliverables) == 1
+    assert deliverables[0].file_type == DeliverableFileType.REPORT
+    assert deliverables[0].external_url == "https://drive.example.com/documents/42/"
+
+
+def test_report_deliverable_has_external_url(
+    in_memory_redis: InMemoryRedis,
+    in_memory_keycloak: InMemoryKeycloak,
+    in_memory_drive: InMemoryDriveClient,
+    db_session: None,
+) -> None:
+    meeting = MeetingFactory.create()
+    user_uuid = str(meeting.owner.keycloak_uuid)
+    in_memory_redis.set(f"drive_token:{user_uuid}", "stored-refresh-token")
+
+    store_deliverable(
+        meeting_id=meeting.id,
+        user_keycloak_uuid=user_uuid,
+        file_bytes=b"report-content",
+        file_type=DeliverableFileType.REPORT,
+        filename="Compte_Rendu_Test.docx",
+    )
+
+    deliverables = _query_deliverables(meeting.id)
+    assert len(deliverables) == 1
+    assert deliverables[0].external_url is not None
+    assert deliverables[0].external_url.startswith("https://")
+
+
 def test_drive_upload_failure_does_not_raise(
     in_memory_redis: InMemoryRedis,
     in_memory_drive: InMemoryDriveClient,
