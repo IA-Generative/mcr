@@ -1,0 +1,21 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.22",
+  "base_commit_sha": "d0728af5fde4d9c9bc6a697b994a23310e44b915",
+  "prompts": {
+    "b87c844a4aef935c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ebfe2186-f50f-4820-b5f4-af0f6e8ca257",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>",
+      "messages": [],
+      "total_additions": 101,
+      "total_deletions": 17,
+      "accepted_lines": 88,
+      "overriden_lines": 0
+    }
+  }
+}
