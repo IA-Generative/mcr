@@ -1,36 +1,27 @@
 import httpx
 from fastapi import HTTPException
 from loguru import logger
+from pydantic import UUID4
 
 from mcr_gateway.app.configs.config import settings
-
-from ..schemas.lookup_schema import ComuMeetingLookup, ComuMeetingLookupResponse
+from mcr_gateway.app.schemas.lookup_schema import (
+    ComuMeetingLookup,
+    ComuMeetingLookupResponse,
+)
+from mcr_gateway.app.services.meeting_service import MCRCoreCustomAuth
 
 
 async def lookup_comu_meeting_service(
     comu_meeting_data: ComuMeetingLookup,
+    user_keycloak_uuid: UUID4,
 ) -> ComuMeetingLookupResponse:
-    """
-    Service to lookup a comu meeting and gather metadata about it.
-
-    Args:
-        comu_meeting_data (UserCreate): The data required to call the API.
-
-    Returns:
-        ComuMeetingLookupResponse: The gathered metadata about the meeting.
-
-    Raises:
-        https.HTTPStatusError: If the API returns an error status code.
-    """
     try:
-        async with httpx.AsyncClient() as client:
-            payload = {
-                "numericId": comu_meeting_data.comu_meeting_id,
-                "secret": comu_meeting_data.secret,
-            }
+        async with httpx.AsyncClient(
+            base_url=settings.LOOKUP_SERVICE_URL,
+            auth=MCRCoreCustomAuth(user_keycloak_uuid),
+        ) as client:
             response = await client.post(
-                settings.COMU_LOOKUP_URL,
-                json=payload,
+                "", json=comu_meeting_data.model_dump(exclude_none=True)
             )
             response.raise_for_status()
             return ComuMeetingLookupResponse(**response.json())

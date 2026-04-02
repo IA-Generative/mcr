@@ -29,7 +29,7 @@ import { type Ref } from 'vue';
 import type { ExtraMutationOptions } from '@/utils/types';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
-import { lookupComu } from '../lookup/lookup.service';
+import { lookupComu, lookupComuByPasscode } from '../lookup/lookup.service';
 import throttle from 'lodash.throttle';
 import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
 
@@ -263,9 +263,23 @@ const throttledLookupComu = throttle(lookupComu, THROTTLING_INTERVAL, {
   trailing: true,
 });
 
+const throttledLookupComuByPasscode = throttle(lookupComuByPasscode, THROTTLING_INTERVAL, {
+  leading: true,
+  trailing: true,
+});
+
 function lookupMeetingUrlMutation(options?: ExtraMutationOptions<typeof lookupComu>) {
   return useMutation({
     mutationFn: throttledLookupComu,
+    ...options,
+  });
+}
+
+function lookupMeetingByPasscodeMutation(
+  options?: ExtraMutationOptions<typeof lookupComuByPasscode>,
+) {
+  return useMutation({
+    mutationFn: throttledLookupComuByPasscode,
     ...options,
   });
 }
@@ -295,6 +309,7 @@ export function useMeetings() {
     generateReportMutation,
     resetReportMutation,
     lookupMeetingUrlMutation,
+    lookupMeetingByPasscodeMutation,
     getMeetingTranscriptionWaitTime,
   };
 }

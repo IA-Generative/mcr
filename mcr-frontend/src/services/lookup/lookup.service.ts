@@ -1,9 +1,15 @@
 import { t } from '@/plugins/i18n';
 import HttpService, { API_PATHS } from '../http/http.service';
-import type { LookupDto, LookupResponseDto } from './lookup.types';
-// import { useI18n } from 'vue-i18n';
+import type { LookupByPasscodeDto, LookupDto, LookupResponseDto } from './lookup.types';
 
 export async function lookupComu(comuMeeting: LookupDto): Promise<LookupResponseDto> {
+  const { data } = await HttpService.post(API_PATHS.LOOKUP, comuMeeting);
+  return data;
+}
+
+export async function lookupComuByPasscode(
+  comuMeeting: LookupByPasscodeDto,
+): Promise<LookupResponseDto> {
   const { data } = await HttpService.post(API_PATHS.LOOKUP, comuMeeting);
   return data;
 }
