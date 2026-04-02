@@ -1,0 +1,36 @@
+mcr-frontend/src/components/meeting/CreateVisioMeetingForm.vue
+  64e7ec49222e7096 106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "79dcedcc18b352dc811494995c2d0a1778d50a49",
+  "prompts": {
+    "64e7ec49222e7096": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "682e235e-fa04-4360-ada1-9c67cde00b0d",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 7,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    },
+    "7392df32952cc7ff": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "2bc3e07a-ea13-48dc-88a9-e6b0871efeac",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Alexandre Morin <alexandre.morin@ext.bpifrance.fr>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 0,
+      "overriden_lines": 0
+    }
+  }
+}
