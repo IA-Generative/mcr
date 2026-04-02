@@ -5,7 +5,7 @@
       :subtitle="$t('meetings_v2.hero.subtitle')"
     />
 
-    <div class="flex flex-row gap-[18px]">
+    <div class="tile-container">
       <DsfrTile
         class="tile"
         :horizontal="true"
@@ -50,8 +50,32 @@ const isWebexEnabled = useFeatureFlag('webex');
 </script>
 
 <style scoped>
+.tile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
 .tile {
-  width: 363px;
-  height: 176px;
+  width: 95vw;
+  height: 20vh;
+}
+
+@media (min-width: 440px) {
+  .tile {
+    width: 95vw;
+    height: 15vh;
+  }
+}
+
+@media (min-width: 1040px) {
+  .tile-container {
+    flex-direction: row;
+  }
+
+  .tile {
+    width: 30vw;
+    height: 20vh;
+  }
 }
 </style>
