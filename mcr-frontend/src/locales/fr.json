@@ -334,6 +334,10 @@
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
     },
+    "tile-import": {
+      "title": "J'importe un fichier audio ou vidéo",
+      "subtitle": "Importez un fichier au format : .mp3, .wav, .m4a, .mp4, .mov."
+    },
     "visio-form": {
       "comu": {
         "access_code": "Code d'accès",
