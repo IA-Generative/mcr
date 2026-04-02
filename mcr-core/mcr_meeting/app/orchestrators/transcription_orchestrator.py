@@ -1,9 +1,14 @@
 from fastapi import UploadFile
 from pydantic import UUID4
 
+from mcr_meeting.app.exceptions.exceptions import InvalidFileError
+from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableFileType
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_transcription,
     update_transcription,
+)
+from mcr_meeting.app.schemas.deliverable_schema import (
+    VoteRequest,
 )
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
@@ -11,6 +16,10 @@ from mcr_meeting.app.schemas.transcription_queue_schema import (
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
     TranscriptionDocxResult,
+)
+from mcr_meeting.app.services.deliverable_storage_service import (
+    get_deliverable_service,
+    update_deliverable_vote,
 )
 from mcr_meeting.app.services.meeting_service import (
     get_meeting_service,
@@ -90,4 +99,22 @@ def get_transcription_waiting_time(
 
     return TranscriptionQueueStatusResponse(
         estimation_duration_minutes=waiting_time_minutes
+    )
+
+
+def update_transcription_vote(
+    meeting_id: int, current_user_keycloak_uuid: UUID4, vote_request: VoteRequest
+) -> Deliverable:
+    deliverable_transcription = get_deliverable_service(
+        meeting_id=meeting_id,
+        current_user_keycloak_uuid=current_user_keycloak_uuid,
+        file_type=DeliverableFileType.TRANSCRIPTION,
+    )
+    if (
+        deliverable_transcription.vote_type is not None
+        and deliverable_transcription.vote_comment is not None
+    ):
+        raise InvalidFileError("Vote already exists for this transcription deliverable")
+    return update_deliverable_vote(
+        deliverable=deliverable_transcription, vote_request=vote_request
     )

@@ -13,7 +13,11 @@ from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import (
     router_db_session_context_manager,
 )
-from mcr_meeting.app.exceptions.exceptions import InvalidFileError
+from mcr_meeting.app.exceptions.exceptions import (
+    ForbiddenAccessException,
+    InvalidFileError,
+    NotFoundException,
+)
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     fail_transcription,
     init_transcription,
@@ -24,6 +28,12 @@ from mcr_meeting.app.orchestrators.transcription_orchestrator import (
     get_or_create_transcription_docx,
     get_transcription_waiting_time,
     upload_transcription_docx,
+)
+from mcr_meeting.app.orchestrators.transcription_orchestrator import (
+    update_transcription_vote as update_transcription_vote_orchestrator,
+)
+from mcr_meeting.app.schemas.deliverable_schema import (
+    VoteRequest,
 )
 from mcr_meeting.app.schemas.transcription_queue_schema import (
     TranscriptionQueueStatusResponse,
@@ -174,3 +184,36 @@ async def get_queue_estimated_waiting_time() -> TranscriptionQueueStatusResponse
     return TranscriptionQueueStatusResponse(
         estimation_duration_minutes=TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
     )
+
+
+@router.post("/{meeting_id}/transcription/vote", status_code=status.HTTP_204_NO_CONTENT)
+def update_transcription_vote(
+    meeting_id: int, current_user_keycloak_uuid: UUID4, vote_request: VoteRequest
+) -> None:
+    """
+    Endpoint to update the vote of a transcription deliverable.
+
+
+    Raises:
+        HTTPException: 404 if the transcription does not exist
+        HTTPException: 403 if the user is not authorized to access this meeting
+        HTTPException: 409 if a vote already exists for this transcription deliverable
+    """
+    try:
+        update_transcription_vote_orchestrator(
+            meeting_id=meeting_id,
+            current_user_keycloak_uuid=current_user_keycloak_uuid,
+            vote_request=vote_request,
+        )
+    except NotFoundException:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Transcription deliverable not found for meeting id {meeting_id}",
+        )
+    except ForbiddenAccessException:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"User with UUID {current_user_keycloak_uuid} is not authorized to access meeting id {meeting_id}",
+        )
+    except InvalidFileError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
