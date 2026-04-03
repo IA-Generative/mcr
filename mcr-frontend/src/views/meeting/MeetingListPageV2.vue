@@ -36,7 +36,7 @@
       />
     </div>
   </div>
-  <div class="fr-container py-5 flex w-full flex-col gap-10 bg-[#F5F5FE]">
+  <div class="fr-container py-5 flex w-full flex-col gap-10 bg-[--blue-france-975-75]">
     <PageFrontMatterV2
       :title="$t('meetings_v2.table.new-title')"
       :subtitle="$t('meetings_v2.table.new-subtitle')"
@@ -48,13 +48,18 @@
       data-testid="alert-availability"
       >
       <p>
-        <span class="fr-icon-volume-up-line" aria-hidden="true"></span>
         {{ $t('meetings_v2.availability-alert-description.audio') }}
+        <span style="font-weight: bold"> 
+          {{MAX_DELAY_TO_FETCH_AUDIO}} {{ $t('meetings_v2.availability-alert-description.audio-bold') }} 
+        </span>
       </p>
       <p>
-        <span class="fr-icon-article-fill" aria-hidden="true"></span>
-      {{ $t('meetings_v2.availability-alert-description.pre-warning') }}
-      <span class="fr-icon-warning-line" aria-hidden="true"></span>
+        {{ $t('meetings_v2.availability-alert-description.pre-warning-pre-bold') }}
+        <span style="font-weight: bold"> 
+          {{MAX_DELAY_TO_FETCH_DELIVERABLE}} {{ $t('meetings_v2.availability-alert-description.pre-warning-bold') }} 
+        </span>
+        {{ $t('meetings_v2.availability-alert-description.pre-warning-post-bold') }}
+        <span class="fr-icon-warning-line" aria-hidden="true" style="color:var(--blue-france-sun-113-625)"></span>
         {{ $t('meetings_v2.availability-alert-description.post-warning') }}
     </p>
       
@@ -72,10 +77,12 @@ import selfTrainingSvgPath from '@dsfr-artwork/pictograms/digital/self-training.
 
 const isWebexEnabled = useFeatureFlag('webex');
 import { ref, onMounted } from 'vue'
+import {MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE} from '@/config/meeting';
 
 const SESSION_KEY = 'dsfr-alert-closed'
 const showAlert = ref(true)
 const alertClosedValue = "CLOSED_ALERT"
+
 
 onMounted(() => {
   const alreadyClosed = sessionStorage.getItem(SESSION_KEY)
@@ -120,3 +127,4 @@ function closeAlert() {
   }
 }
 </style>
+
