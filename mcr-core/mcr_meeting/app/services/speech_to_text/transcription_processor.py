@@ -156,6 +156,17 @@ class TranscriptionProcessor:
                 language=api_settings.API_LANGUAGE,
                 response_format="verbose_json",
                 prompt=prompt,
+                temperature=[0.0,0.1,0.2,0.4,0.6,0.8,1.0],
+                extra_body={
+                    "vad_filter": True,
+                    "vad_parameters": {
+                        "threshold": 0.4,
+                        "min_silence_duration_ms": 700,
+                        "speech_pad_ms": 600,
+                        "min_speech_duration_ms": 200,
+                        "max_speech_duration_s": float("inf"),
+                    },
+                },
             )
 
             # Convert API response to TranscriptionSegment format
