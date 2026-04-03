@@ -82,7 +82,7 @@ describe('MeetingListPage v2', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents.",
+        'Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents.',
       ),
     ).toBeInTheDocument();
   });
@@ -100,7 +100,7 @@ describe('MeetingListPage v2', () => {
     renderWithPlugins(MeetingListPageV2);
     const alertInfo = screen.getByRole('alertInfo');
     expect(alertInfo).toBeInTheDocument();
-    const closeButton = within(alertInfo).getByRole('button', { name: "Fermer le message" });
+    const closeButton = within(alertInfo).getByRole('button', { name: 'Fermer le message' });
     expect(closeButton).toBeInTheDocument();
     closeButton.click();
     await nextTick();
@@ -114,9 +114,3 @@ describe('MeetingListPage v2', () => {
     expect(screen.queryByRole('alertInfo')).toBeNull();
   });
 });
-
-
-
-
-
-

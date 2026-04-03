@@ -108,7 +108,6 @@ import { parseISO, differenceInDays } from 'date-fns';
 import type { DeliverableDto } from '@/services/meetings/meetings.types';
 import { MAX_DELAY_TO_FETCH_AUDIO } from '@/config/meeting';
 
-
 const props = withDefaults(
   defineProps<{
     meetingId: number;
