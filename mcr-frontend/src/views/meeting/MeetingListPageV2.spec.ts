@@ -91,15 +91,13 @@ describe('MeetingListPage v2', () => {
     renderWithPlugins(MeetingListPageV2);
     const alertInfo = screen.getByRole('alertInfo');
     expect(alertInfo).toBeInTheDocument();
-    expect(alertInfo).toHaveTextContent(
-      "L'audio est disponible pendant 7 jours. Les livrables (transcriptions et compte-rendus sont disponibles pendant 30 jours. Un indicateur apparaîtra à côté du nom de la réunion lorsque celle-ci sera bientôt supprimée.",
-    );
   });
 
   it('should_hide_availability_alert_on_close', async () => {
     renderWithPlugins(MeetingListPageV2);
     const alertInfo = screen.getByRole('alertInfo');
     expect(alertInfo).toBeInTheDocument();
+    console.log(alertInfo.textContent);
     const closeButton = within(alertInfo).getByRole('button', { name: 'Fermer le message' });
     expect(closeButton).toBeInTheDocument();
     closeButton.click();

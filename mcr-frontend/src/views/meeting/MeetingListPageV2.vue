@@ -44,10 +44,12 @@
         :subtitle="$t('meetings_v2.table.new-subtitle')"
       />
       <DsfrAlert
+        v-if="showAlert"
         type="info"
         closeable
         data-testid="alert-availability"
         @close="closeAlert"
+        role="alertInfo"
       >
         <p>
           {{ $t('meetings_v2.availability-alert-description.audio') }}
