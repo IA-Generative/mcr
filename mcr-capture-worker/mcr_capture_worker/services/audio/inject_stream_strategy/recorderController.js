@@ -14,13 +14,14 @@
       const { stream, graph } = window.StreamUtils.createMixedAudioStream();
       this.mixedGraph = graph;
 
-      try { await this.mixedGraph.ac.resume?.(); } catch {}
+      await window.StreamUtils.resumeAudioContext(graph);
 
       this.createAndStartMediaRecorder(stream);
 
       const intervalMs = window.AudioConfig?.STREAM_CHECK_INTERVAL_MS ?? 2000;
       this.streamMonitorIntervalId = setInterval(() => {
         if (this.isStopping) return;
+        this.mixedGraph?._scanAndAttachAll?.();
         // Silence if no source; otherwise stop the silence
         if (this.mixedGraph?.sources?.size === 0) {
           this.mixedGraph?._ensureSilence?.();
@@ -41,7 +42,6 @@
       const isRecording = this.mediaRecorder && this.mediaRecorder.state === "recording";
       if (isRecording) {
         this.mediaRecorder.stop();
-        console.log("Audio capture stopped.");
       } else {
         console.warn("No active recording to stop.");
       }
@@ -59,7 +59,6 @@
 
     createAndStartMediaRecorder(stream) {
       this.currentStreamId = stream.id;
-      console.log("Starting MediaRecorder with mixed stream:", stream.id);
 
       const options = { mimeType: window.AudioConfig.RECORDER_MIME_TYPE };
 
