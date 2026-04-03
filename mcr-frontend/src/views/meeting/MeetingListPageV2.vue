@@ -35,9 +35,10 @@
         "
       />
     </div>
-  </div>
-  <div class="fr-container py-5 flex w-full flex-col gap-10">
-    <div class="fr-container bg-[--blue-france-975-75]">
+  </div>    
+
+  <div class="w-full bg-[--blue-france-975-75]">
+    <div class="fr-container py-5 flex w-full flex-col gap-10">
       <PageFrontMatterV2
         :title="$t('meetings_v2.table.new-title')"
         :subtitle="$t('meetings_v2.table.new-subtitle')"
@@ -50,14 +51,14 @@
         >
         <p>
           {{ $t('meetings_v2.availability-alert-description.audio') }}
-          <span style="font-weight: bold"> 
-            {{MAX_DELAY_TO_FETCH_AUDIO}} {{ $t('meetings_v2.availability-alert-description.audio-bold') }} 
+          <span style="font-weight: bold">
+            {{MAX_DELAY_TO_FETCH_AUDIO}} {{ $t('meetings_v2.availability-alert-description.audio-bold') }}
           </span>
         </p>
         <p>
           {{ $t('meetings_v2.availability-alert-description.pre-warning-pre-bold') }}
-          <span style="font-weight: bold"> 
-            {{MAX_DELAY_TO_FETCH_DELIVERABLE}} {{ $t('meetings_v2.availability-alert-description.pre-warning-bold') }} 
+          <span style="font-weight: bold">
+            {{MAX_DELAY_TO_FETCH_DELIVERABLE}} {{ $t('meetings_v2.availability-alert-description.pre-warning-bold') }}
           </span>
           {{ $t('meetings_v2.availability-alert-description.pre-warning-post-bold') }}
           <span class="fr-icon-warning-line" aria-hidden="true" style="color:var(--blue-france-sun-113-625)"></span>
