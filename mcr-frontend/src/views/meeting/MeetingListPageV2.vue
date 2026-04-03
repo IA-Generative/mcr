@@ -81,19 +81,19 @@ import {MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE} from '@/config
 
 const SESSION_KEY = 'dsfr-alert-closed'
 const showAlert = ref(true)
-const alertClosedValue = "CLOSED_ALERT"
+const CLOSED_ALERT_VALUE = "CLOSED_ALERT"
 
 
 onMounted(() => {
   const alreadyClosed = sessionStorage.getItem(SESSION_KEY)
-  if (alreadyClosed && alreadyClosed == alertClosedValue) {
+  if (alreadyClosed && alreadyClosed == CLOSED_ALERT_VALUE) {
     showAlert.value = false
   }
 })
 
 function closeAlert() {
   showAlert.value = false
-  sessionStorage.setItem(SESSION_KEY, alertClosedValue)
+  sessionStorage.setItem(SESSION_KEY, CLOSED_ALERT_VALUE)
 }
 </script>
 
