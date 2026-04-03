@@ -65,6 +65,12 @@ class MeetingAudioRecorder:
                     "media.navigator.permission.disabled": True,
                     "media.gmp-gmpopenh264.enabled": True,
                     "media.gmp-gmpopenh264.version": "2.6.0",
+                    "media.autoplay.default": 0,
+                    "media.autoplay.block-webaudio": False,
+                    "media.autoplay.blocking_policy": 0,
+                    "dom.audiocontext.testing": True,
+                    "security.sandbox.content.level": 0,
+                    "media.cubeb.sandbox": False,
                 },
             )
 
@@ -72,19 +78,20 @@ class MeetingAudioRecorder:
             page = await context.new_page()
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
 
+            page.on("console", self.handle_console_message)
+
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
+            await self.connection_strategy.post_connect_setup(page)
             self._connected_at = time.monotonic()
 
             await self.meeting_transition_client.start_capture_bot(self.meeting_id)
 
-            page.on("console", self.handle_console_message)
-
-            await page.expose_function(
+            await context.expose_function(
                 "sendOnDataavailableToWorker", self.handle_data_available
             )
-            await page.expose_function("sendOnStartToWorker", self.handle_start)
-            await page.expose_function("sendOnStopToWorker", self.handle_stop)
+            await context.expose_function("sendOnStartToWorker", self.handle_start)
+            await context.expose_function("sendOnStopToWorker", self.handle_stop)
             time.sleep(3)
 
             await self.start_recording(page)
@@ -171,6 +178,7 @@ class MeetingAudioRecorder:
         self.pending_uploads.append(
             self.handle_audio_chunk(BytesIO(bytes(data["js_bytes"])))
         )
+        logger.info("Handle date available")
 
     async def handle_stop(self) -> None:
         await self.end_capture_if_in_progress()
@@ -203,7 +211,8 @@ class MeetingAudioRecorder:
         logger.info("Recording started...")
 
     async def stop_recording(self, page: Page) -> None:
-        await page.evaluate("window.stopRecording()")
+        target = self.connection_strategy.get_js_execution_target(page)
+        await target.evaluate("window.stopRecording()")
         try:
             await self.meeting_monitor.disconnect_from_meeting(page)
         except Exception:
