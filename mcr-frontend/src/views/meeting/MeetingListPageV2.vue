@@ -46,8 +46,8 @@
       <DsfrAlert
         type="info"
         closeable
-        @close="closeAlert"
         data-testid="alert-availability"
+        @close="closeAlert"
       >
         <p>
           {{ $t('meetings_v2.availability-alert-description.audio') }}
