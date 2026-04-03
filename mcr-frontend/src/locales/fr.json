@@ -107,6 +107,15 @@
       "title": "Je participe à une réunion en visioconférence",
       "subtitle-without-webex": "Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio).",
       "subtitle-with-webex": "Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio, Webex)."
+    },
+    "table": {
+      "new-title": "Mes réunions MCR",
+      "new-subtitle": "Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents."
+    },
+    "availability-alert-description": {
+      "audio": "L'audio est disponible pendant 7 jours.",
+      "pre-warning": "Les livrables (transcriptions et compte-rendus) sont disponibles pendant 30 jours. Un indicateur",
+      "post-warning": "apparaîtra à côté du nom de la réunion lorsque celle-ci sera bientôt supprimée."
     }
   },
   "meeting": {

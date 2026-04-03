@@ -36,6 +36,30 @@
       />
     </div>
   </div>
+  <div class="fr-container py-5 flex w-full flex-col gap-10 bg-[#F5F5FE]">
+    <PageFrontMatterV2
+      :title="$t('meetings_v2.table.new-title')"
+      :subtitle="$t('meetings_v2.table.new-subtitle')"
+    />
+    <DsfrAlert
+      type="info"
+      closeable
+      @close="closeAlert"
+      data-testid="alert-availability"
+      >
+      <p>
+        <span class="fr-icon-volume-up-line" aria-hidden="true"></span>
+        {{ $t('meetings_v2.availability-alert-description.audio') }}
+      </p>
+      <p>
+        <span class="fr-icon-article-fill" aria-hidden="true"></span>
+      {{ $t('meetings_v2.availability-alert-description.pre-warning') }}
+      <span class="fr-icon-warning-line" aria-hidden="true"></span>
+        {{ $t('meetings_v2.availability-alert-description.post-warning') }}
+    </p>
+      
+</DsfrAlert>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -47,6 +71,23 @@ import podcastSvgPath from '@dsfr-artwork/pictograms/leisure/podcast.svg?url';
 import selfTrainingSvgPath from '@dsfr-artwork/pictograms/digital/self-training.svg?url';
 
 const isWebexEnabled = useFeatureFlag('webex');
+import { ref, onMounted } from 'vue'
+
+const SESSION_KEY = 'dsfr-alert-closed'
+const showAlert = ref(true)
+const alertClosedValue = "CLOSED_ALERT"
+
+onMounted(() => {
+  const alreadyClosed = sessionStorage.getItem(SESSION_KEY)
+  if (alreadyClosed && alreadyClosed == alertClosedValue) {
+    showAlert.value = false
+  }
+})
+
+function closeAlert() {
+  showAlert.value = false
+  sessionStorage.setItem(SESSION_KEY, alertClosedValue)
+}
 </script>
 
 <style scoped>
