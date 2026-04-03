@@ -65,6 +65,12 @@ class MeetingAudioRecorder:
                     "media.navigator.permission.disabled": True,
                     "media.gmp-gmpopenh264.enabled": True,
                     "media.gmp-gmpopenh264.version": "2.6.0",
+                    "media.autoplay.default": 0,
+                    "media.autoplay.block-webaudio": False,
+                    "media.autoplay.blocking_policy": 0,
+                    "dom.audiocontext.testing": True,
+                    "security.sandbox.content.level": 0,
+                    "media.cubeb.sandbox": False,
                 },
             )
 
