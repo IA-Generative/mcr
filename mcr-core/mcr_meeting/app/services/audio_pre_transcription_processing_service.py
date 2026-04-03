@@ -96,16 +96,17 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
     """
     Apply noise reduction and audio enhancement filters to audio bytes.
 
-    Applies FFmpeg audio filters based on the provided filter string.
+    Applies FFmpeg audio filters, then performs two-pass EBU R128 loudnorm
+    normalization for more reliable loudness processing.
 
     Args:
         input_bytes (BytesIO): Raw audio bytes to be filtered.
-        filters (str): FFmpeg audio filter string to apply.
     Returns:
-        BytesIO: Filtered audio bytes.
+        BytesIO: Filtered and loudness-normalized audio bytes.
     """
     s2t_settings = Speech2TextSettings()
     filters = s2t_settings.NOISE_FILTERS
+    loudnorm = s2t_settings.NOISE_LOUDNORM
 
     logger.info("Applying noise reduction filters: {}", filters)
 
@@ -113,19 +114,19 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
     stream = ffmpeg.input("pipe:0", format="wav", err_detect="ignore_err")
 
     try:
-        # Apply audio filters - maintain WAV format with correct sample rate and channels
+        # Step 1: Apply noise filters (without loudnorm)
         stream = stream.output(
             "pipe:1",
             format="wav",
-            ar=sample_rate,  # Maintain audio sample rate
-            ac=nb_channels,  # Maintain audio channels
-            af=filters,  # Audio filter string
+            ar=sample_rate,
+            ac=nb_channels,
+            af=filters,
         )
 
         stream = stream.overwrite_output().global_args("-loglevel", "warning")
         log_ffmpeg_command(stream)
 
-        output, stderr_output = stream.run(
+        filtered_output, stderr_output = stream.run(
             input=input_bytes.getvalue(),
             capture_stdout=True,
             capture_stderr=True,
@@ -135,7 +136,39 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
                 "FFmpeg stderr (noise filtering): {}",
                 stderr_output.decode(errors="ignore"),
             )
+
+        # Step 2: Two-pass loudnorm — Pass 1: measure loudness statistics
+        logger.info("Loudnorm pass 1 (measure): {}", loudnorm)
+        _, stderr_pass1 = (
+            ffmpeg.input("pipe:0", format="wav")
+            .output("pipe:", format="null", af=f"{loudnorm}:print_format=json")
+            .run(input=filtered_output, capture_stdout=True, capture_stderr=True)
+        )
+        stats = _parse_loudnorm_stats(stderr_pass1.decode("utf-8", errors="replace"))
+
+        # Step 3: Two-pass loudnorm — Pass 2: apply with measured values
+        logger.info("Loudnorm pass 2 (apply): measured_I={}, measured_TP={}", stats["input_i"], stats["input_tp"])
+        output, _ = (
+            ffmpeg.input("pipe:0", format="wav")
+            .output(
+                "pipe:",
+                format="wav",
+                ar=sample_rate,
+                ac=nb_channels,
+                af=(
+                    f"{loudnorm}:"
+                    f"measured_I={stats['input_i']}:"
+                    f"measured_TP={stats['input_tp']}:"
+                    f"measured_LRA={stats['input_lra']}:"
+                    f"measured_thresh={stats['input_thresh']}:"
+                    f"offset={stats['target_offset']}:"
+                    f"linear=true"
+                ),
+            )
+            .run(input=filtered_output, capture_stdout=True, capture_stderr=True)
+        )
         return BytesIO(output)
+
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
         raise InvalidAudioFileError(
