@@ -24,3 +24,8 @@ export const config = {
 export const getRetryDelay = (attemptIndex: number): number => {
   return BASE_BACKOFF_MS * Math.pow(2, attemptIndex - 1);
 };
+
+export const MAX_DELAY_TO_FETCH_AUDIO = 7;
+export const MAX_DELAY_TO_FETCH_DELIVERABLE = 30;
+
+
