@@ -94,6 +94,19 @@
     "hero": {
       "title": "Faire un compte-rendu",
       "subtitle": "Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée)."
+    },
+    "tile-import": {
+      "title": "J'importe un fichier audio ou vidéo",
+      "subtitle": "Importez un fichier au format : .mp3, .wav, .m4a, .mp4, .mov."
+    },
+    "tile-record": {
+      "title": "J'enregistre une réunion en présentiel",
+      "subtitle": "Activez votre micro et parlez à tour de rôle, en direct."
+    },
+    "tile-visio": {
+      "title": "Je participe à une réunion en visioconférence",
+      "subtitle-without-webex": "Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio).",
+      "subtitle-with-webex": "Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio, Webex)."
     }
   },
   "meeting": {
