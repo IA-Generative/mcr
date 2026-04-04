@@ -1,4 +1,4 @@
-.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage
+.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage sync-env setup-hooks
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
 
@@ -15,6 +15,8 @@ help:
 	@echo "pre-commit                : Run the all 3 previous command in all python packages."
 	@echo "coverage                  : Run test coverage in all python packages."
 	@echo "start-playwright-with-gui : Stop playwright docker service and run the bot locally with a browser gui."
+	@echo "sync-env                  : Pull latest secrets from Vault into .env"
+	@echo "setup-hooks               : Enable optional git hooks from .githooks/"
 
 define CALL_TARGET_CMD_ON_ALL_PKGS
 	for pkg in $(PACKAGES); do \
@@ -50,6 +52,13 @@ format:
 
 pre-commit:
 	$(call CALL_TARGET_CMD_ON_ALL_PKGS, pre-commit)
+
+sync-env:
+	@bash scripts/sync-env.sh
+
+setup-hooks:
+	git config core.hooksPath .githooks
+	@echo "Git hooks enabled from .githooks/"
 
 start-playwright-with-gui:
 	@docker compose down capture_worker

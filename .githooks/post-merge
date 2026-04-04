@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Optional hook: syncs .env from Vault after git pull / merge.
+# Enable with: make setup-hooks
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+"$SCRIPT_DIR/scripts/sync-env.sh" 2>/dev/null || {
+  echo "[vault] sync-env skipped (Vault unavailable or not authenticated)"
+}
+
+exit 0
