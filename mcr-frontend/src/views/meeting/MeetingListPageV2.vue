@@ -74,6 +74,35 @@
         </p>
       </DsfrAlert>
     </div>
+
+    <div class="fr-container flex flex-col">
+      <DsfrDataTable
+        title=""
+        :headers-row="headers"
+        no-caption
+        :rows="rows"
+        :pagination="true"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total-pages="totalPages"
+        @on-page-change="setCurrentPage"
+        @on-page-size-change="setPageSize"
+      >
+        <template #cell="{ colKey, cell }">
+          <RouterLink
+            v-if="colKey === 'title'"
+            :to="`${ROUTES.MEETINGS.path}/${asTitleCell(cell).id}`"
+          >
+            {{ asTitleCell(cell).name }}
+          </RouterLink>
+          <TableActions
+            v-else-if="colKey === 'actions'"
+            :on-delete="() => deleteMeetingModal(asMeeting(cell).id)"
+            :on-edit="() => editMeetingModal(asMeeting(cell).id)"
+          />
+        </template>
+      </DsfrDataTable>
+    </div>
   </div>
 </template>
 
@@ -84,14 +113,108 @@ import { t } from '@/plugins/i18n';
 import videoSvgPath from '@dsfr-artwork/pictograms/leisure/video.svg?url';
 import podcastSvgPath from '@dsfr-artwork/pictograms/leisure/podcast.svg?url';
 import selfTrainingSvgPath from '@dsfr-artwork/pictograms/digital/self-training.svg?url';
+import useToaster from '@/composables/use-toaster';
+import { usePagination } from '@/composables/use-pagination';
 
 const isWebexEnabled = useFeatureFlag('webex');
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
+import { formatMeetingDate } from '@/utils/formatters';
 import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
+import { useMeetings } from '@/services/meetings/use-meeting';
+import { RouterLink } from 'vue-router';
+import { ROUTES } from '@/router/routes';
+import type { MeetingDto, UpdateMeetingDto } from '@/services/meetings/meetings.types';
+import { useModal } from 'vue-final-modal';
+import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
+import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
+import TableActions from '@/components/table/TableActions.vue';
+import { useI18n } from 'vue-i18n';
 
 const SESSION_KEY = 'dsfr-alert-closed';
 const showAlert = ref(true);
 const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
+
+const toaster = useToaster();
+
+const headers = [
+  { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-[15%]' } },
+  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: 'w-[40%]' } },
+  {
+    key: 'transcription',
+    label: t('meetings_v2.table.columns.transcription'),
+    headerAttrs: { class: 'w-[20%]' },
+  },
+  {
+    key: 'report',
+    label: t('meetings_v2.table.columns.report'),
+    headerAttrs: { class: 'w-[15%]' },
+  },
+  {
+    key: 'actions',
+    label: t('meetings_v2.table.columns.actions'),
+    headerAttrs: { class: 'w-[10%]' },
+  },
+];
+
+const rows = computed(() =>
+  meetings.value.map((meeting) => ({
+    date: formatMeetingDate(meeting.creation_date),
+    title: { name: meeting.name, id: meeting.id },
+    transcription: '',
+    report: '',
+    actions: meeting,
+  })),
+);
+const search = ref<string>('');
+const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
+  currentPage: 0,
+  pageSize: 10,
+});
+
+const { t: tI18n } = useI18n();
+const { getAllMeetingsQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
+const { mutate: updateMeeting } = updateMeetingMutation();
+const { mutate: deleteMeeting } = deleteMeetingMutation();
+
+function editMeetingModal(id: number) {
+  const meeting = meetings.value.find((m) => m.id === id);
+  const { open } = useModal({
+    component: EditMeetingModal,
+    attrs: {
+      itemSelected: meeting,
+      onUpdateMeeting: (values: UpdateMeetingDto) => updateMeeting({ id, payload: values }),
+    },
+  });
+  open();
+}
+
+function asTitleCell(cell: unknown): { name: string; id: number } {
+  return cell as { name: string; id: number };
+}
+
+function asMeeting(cell: unknown): MeetingDto {
+  return cell as MeetingDto;
+}
+
+function deleteMeetingModal(id: number) {
+  const { open } = useModal({
+    component: DeleteMeetingModal,
+    attrs: {
+      title: tI18n('meeting.confirm-delete.title'),
+      onSuccess: () => deleteMeeting(id),
+    },
+  });
+  open();
+}
+const { data: paginatedMeetings, error: meetingsError } = getAllMeetingsQuery({
+  search,
+  page: currentPage,
+  pageSize,
+});
+
+const meetings = computed(() => paginatedMeetings.value?.data ?? []);
+
+const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
 
 onMounted(() => {
   const alreadyClosed = sessionStorage.getItem(SESSION_KEY);
@@ -104,6 +227,16 @@ function closeAlert() {
   showAlert.value = false;
   sessionStorage.setItem(SESSION_KEY, CLOSED_ALERT_VALUE);
 }
+
+watch(
+  meetingsError,
+  (error) => {
+    if (error) {
+      toaster.addErrorMessage(t('error.meetings-loading'));
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <style scoped>

@@ -110,7 +110,19 @@
     },
     "table": {
       "new-title": "Mes réunions MCR",
-      "new-subtitle": "Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents."
+      "new-subtitle": "Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents.",
+      "actions": {
+        "add-visio": "Utiliser une URL de visio",
+        "add-import": "Importer un fichier audio ou vidéo",
+        "add-record": "Démarrer une réunion en présentiel"
+      },
+      "columns": {
+        "date": "Date de création",
+        "title": "Titre de réunion",
+        "transcription": "Transcription",
+        "report": "Compte-rendu",
+        "actions": "Actions"
+      }
     },
     "availability-alert-description": {
       "audio": "🔈 L'audio est disponible pendant",
