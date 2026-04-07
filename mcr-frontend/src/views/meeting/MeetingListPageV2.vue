@@ -48,21 +48,21 @@
         type="info"
         closeable
         data-testid="alert-availability"
-        @close="closeAlert"
         role="alertInfo"
+        @close="closeAlert"
       >
         <p>
           {{ $t('meetings_v2.availability-alert-description.audio') }}
           <span style="font-weight: bold">
             {{ MAX_DELAY_TO_FETCH_AUDIO }}
-            {{ $t('meetings_v2.availability-alert-description.audio-bold') }}
+            {{ $t('meetings_v2.availability-alert-description.days') }}
           </span>
         </p>
         <p>
           {{ $t('meetings_v2.availability-alert-description.pre-warning-pre-bold') }}
           <span style="font-weight: bold">
             {{ MAX_DELAY_TO_FETCH_DELIVERABLE }}
-            {{ $t('meetings_v2.availability-alert-description.pre-warning-bold') }}
+            {{ $t('meetings_v2.availability-alert-description.days') }}
           </span>
           {{ $t('meetings_v2.availability-alert-description.pre-warning-post-bold') }}
           <span

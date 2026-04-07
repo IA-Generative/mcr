@@ -114,9 +114,8 @@
     },
     "availability-alert-description": {
       "audio": "🔈 L'audio est disponible pendant",
-      "audio-bold": "jours.",
+      "days": "jours.",
       "pre-warning-pre-bold": "📄 Les livrables (transcriptions et compte-rendus) sont disponibles pendant",
-      "pre-warning-bold": "jours.",
       "pre-warning-post-bold": "Un indicateur",
       "post-warning": "apparaîtra à côté du nom de la réunion lorsque celle-ci sera bientôt supprimée."
     }

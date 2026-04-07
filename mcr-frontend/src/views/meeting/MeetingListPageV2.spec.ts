@@ -97,7 +97,6 @@ describe('MeetingListPage v2', () => {
     renderWithPlugins(MeetingListPageV2);
     const alertInfo = screen.getByRole('alertInfo');
     expect(alertInfo).toBeInTheDocument();
-    console.log(alertInfo.textContent);
     const closeButton = within(alertInfo).getByRole('button', { name: 'Fermer le message' });
     expect(closeButton).toBeInTheDocument();
     closeButton.click();
