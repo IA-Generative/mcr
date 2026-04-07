@@ -255,6 +255,7 @@ services:
       context: ./mcr-capture-worker
       target: dev
     container_name: mcr-capture-worker
+    user: "1000:1000"
     volumes:
       - ./mcr-capture-worker/mcr_capture_worker:/app/mcr_capture_worker
     develop:
@@ -262,6 +263,7 @@ services:
         - action: rebuild
           path: ./mcr-capture-worker/pyproject.toml
     environment:
+      - HOME=/tmp
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}

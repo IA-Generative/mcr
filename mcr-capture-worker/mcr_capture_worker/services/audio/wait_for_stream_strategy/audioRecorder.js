@@ -8,7 +8,7 @@ function startRecording() {
   if (!(audioStream instanceof MediaStream)) {
     console.error(
       "getAudioStreamRTC() did not return a MediaStream:",
-      audioStream
+      audioStream,
     );
     return;
   }
