@@ -468,8 +468,8 @@ class KeycloakExchangeSettings(BaseSettings):
 
 
 class DriveSettings(BaseSettings):
-    DRIVE_API_BASE_URL: str
-    DRIVE_FRONTEND_URL: str
+    DRIVE_API_BASE_URL: str = ""
+    DRIVE_FRONTEND_URL: str = ""
 
 
 class TranscriptionForbiddenSentences(BaseSettings):
