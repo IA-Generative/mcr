@@ -211,8 +211,7 @@ class MeetingAudioRecorder:
         logger.info("Recording started...")
 
     async def stop_recording(self, page: Page) -> None:
-        target = self.connection_strategy.get_js_execution_target(page)
-        await target.evaluate("window.stopRecording()")
+        await page.evaluate("window.stopRecording()")
         try:
             await self.meeting_monitor.disconnect_from_meeting(page)
         except Exception:
