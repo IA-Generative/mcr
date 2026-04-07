@@ -106,6 +106,7 @@ import HttpService, { API_PATHS } from '@/services/http/http.service';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { parseISO, differenceInDays } from 'date-fns';
 import type { DeliverableDto } from '@/services/meetings/meetings.types';
+import { MAX_DELAY_TO_FETCH_AUDIO } from '@/config/meeting';
 
 const props = withDefaults(
   defineProps<{
@@ -125,7 +126,6 @@ const transcriptionDriveUrl = computed(() => {
   return deliverable?.external_url ?? null;
 });
 
-const MAX_DELAY_TO_FETCH_AUDIO = 7;
 const toaster = useToaster();
 const { t } = useI18n();
 const { downloadMutation, uploadMutation } = useMeetings();
