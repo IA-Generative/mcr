@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     MCR_FRONTEND_URL: str
     DEBUG: bool = False
     ENV_MODE: str = Field(description="Environment mode")
+    COMU_LOOKUP_URL: str = Field(default="https://webconf.comu.gouv.fr/api/lookup")
 
     @field_validator("ENV_MODE")
     def validate_env_mode(cls, v: str) -> str:
@@ -291,6 +292,7 @@ class ApiSettings(BaseSettings):
     FEATURE_FLAG_API_PREFIX: str = "/api/feature-flag"
     MEETING_API_PREFIX: str = "/api/meetings"
     TRANSCRIPTION_API_PREFIX: str = "/api/transcription"
+    LOOKUP_API_PREFIX: str = "/api/lookup"
 
 
 class CelerySettings(BaseSettings):

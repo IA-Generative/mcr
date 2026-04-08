@@ -3,6 +3,11 @@ export type LookupDto = {
   secret: string;
 };
 
+export type LookupByPasscodeDto = {
+  comu_meeting_id: string;
+  passcode: string;
+};
+
 export type LookupResponseDto = {
   name: string;
 };

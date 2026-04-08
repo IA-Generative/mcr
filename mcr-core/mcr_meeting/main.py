@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from mcr_meeting.app.api.evaluation_router import router as evaluation_router
 from mcr_meeting.app.api.feature_flag_router import router as feature_flag_router
+from mcr_meeting.app.api.lookup_router import router as lookup_router
 from mcr_meeting.app.api.meeting.capture_bot_router import router as capture_bot_router
 from mcr_meeting.app.api.meeting.capture_router import router as capture_router
 from mcr_meeting.app.api.meeting.meeting_multipart_router import (
@@ -50,6 +51,7 @@ app.add_exception_handler(MCRException, mcr_exception_handler)  # type: ignore[a
 app.add_exception_handler(ValueError, value_error_handler)  # type: ignore[arg-type]
 
 app.include_router(meeting_router)
+app.include_router(lookup_router)
 app.include_router(capture_bot_router)
 app.include_router(capture_router)
 app.include_router(user_router)

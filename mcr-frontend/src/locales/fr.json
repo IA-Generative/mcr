@@ -209,7 +209,6 @@
       "update": "@:common.form.update",
       "errors": {
         "url": {
-          "not-found": "L'URL entré n'a pas pu être validée, vérifiez l'url ou utiliser l'identifiant/mot de passe",
           "not-supported": {
             "webex-enabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire, Webconf, Visio ou Webex. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR.",
             "webex-disabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire, Webconf ou Visio. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR."
@@ -219,7 +218,8 @@
           "invalid-comu-parsing": "L'URL COMU est invalide, il ne contient pas d'identifiant/mot de passe ni de secret.",
           "invalid-visio-url": "URL Visio invalide détectée. Format attendu: https://visio.numerique.gouv.fr/aaa-bbbb-ccc.",
           "invalid-webex-url": "URL Webex invalide détectée. Format attendu: https://fake.webex.com/meet/fake-slug"
-        }
+        },
+        "lookup-warning": "Les informations de la réunion n'ont pas pu être validées."
       }
     },
     "transcription": {
