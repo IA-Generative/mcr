@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from loguru import logger
 
-from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
+from mcr_meeting.app.configs.base import TranscriptionApiSettings
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
@@ -21,7 +21,7 @@ from mcr_meeting.app.services.speech_to_text.utils import (
 )
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
-transcription_settings = WhisperTranscriptionSettings()
+transcription_settings = TranscriptionApiSettings()
 M = transcription_settings.MAX_CHUNK_DURATION
 
 

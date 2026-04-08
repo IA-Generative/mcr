@@ -186,14 +186,6 @@ class WhisperTranscriptionSettings(BaseSettings):
         default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
         description="Prompt passed to the transcription model",
     )
-    MAX_CHUNK_DURATION: float = Field(
-        default=600.0,
-        description="Maximum duration in seconds for a single transcription chunk (~10 min).",
-    )
-    SPLIT_SEARCH_WINDOW_RATIO: float = Field(
-        default=0.2,
-        description="Fraction of max_chunk_duration at the end of a chunk where the algorithm searches for the best silence to split on.",
-    )
 
 
 class Speech2TextSettings(BaseSettings):
@@ -449,6 +441,14 @@ class TranscriptionApiSettings(BaseSettings):
         with a backoff of 0.5s (base for httpx and openAI client)
         This was set as the goal on 27/02/26
         """,
+    )
+    MAX_CHUNK_DURATION: float = Field(
+        default=600.0,
+        description="Maximum duration in seconds for a single transcription chunk (~10 min).",
+    )
+    SPLIT_SEARCH_WINDOW_RATIO: float = Field(
+        default=0.2,
+        description="Fraction of max_chunk_duration at the end of a chunk where the algorithm searches for the best silence to split on.",
     )
 
 
