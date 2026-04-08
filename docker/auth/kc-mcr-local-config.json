@@ -58,7 +58,7 @@
           "value": "ChangeMe"
         }
       ],
-      "realmRoles": ["user"],
+      "realmRoles": ["user", "default-roles-mirai"],
       "groups": ["mcr-admin"]
     },
     {
@@ -75,7 +75,7 @@
           "value": "ChangeMe"
         }
       ],
-      "realmRoles": ["user"]
+      "realmRoles": ["user", "default-roles-mirai"]
     },
     {
       "id": "7f5f6c21-9e2d-4a7f-b7d8-44c89a5f3f11",
@@ -91,7 +91,7 @@
           "value": "ChangeMe"
         }
       ],
-      "realmRoles": ["user"],
+      "realmRoles": ["user", "default-roles-mirai"],
       "groups": ["mcr-tester-group"]
     }
   ],
@@ -741,6 +741,20 @@
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "aaa11111-aud-map-mcr-to-mcrcore",
+          "name": "mcr-core-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "mcr-core",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
       "defaultClientScopes": [
         "web-origins",
         "acr",
@@ -786,6 +800,54 @@
       "authenticationFlowBindingOverrides": {},
       "fullScopeAllowed": true,
       "nodeReRegistrationTimeout": -1,
+      "protocolMappers": [
+        {
+          "id": "bbb22222-aud-map-mcrcore-to-drive",
+          "name": "drive-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "drive",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "a1b2c3d4-e5f6-7890-abcd-drive0client",
+      "clientId": "drive",
+      "name": "drive",
+      "description": "Confidential client for Drive integration",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "drive-local-secret",
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:8071/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      },
+      "fullScopeAllowed": true,
       "defaultClientScopes": [
         "web-origins",
         "acr",
@@ -836,7 +898,119 @@
         "phone",
         "offline_access",
         "microprofile-jwt"
-      ]
+      ],
+      "authorizationSettings": {
+        "allowRemoteResourceManagement": false,
+        "policyEnforcementMode": "ENFORCING",
+        "decisionStrategy": "UNANIMOUS",
+        "scopes": [
+          { "name": "view" },
+          { "name": "manage" },
+          { "name": "configure" },
+          { "name": "map-roles" },
+          { "name": "map-roles-client-scope" },
+          { "name": "map-roles-composite" },
+          { "name": "token-exchange" }
+        ],
+        "resources": [
+          {
+            "name": "client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "Client",
+            "ownerManagedAccess": false,
+            "scopes": [
+              { "name": "view" },
+              { "name": "manage" },
+              { "name": "configure" },
+              { "name": "map-roles" },
+              { "name": "map-roles-client-scope" },
+              { "name": "map-roles-composite" },
+              { "name": "token-exchange" }
+            ]
+          }
+        ],
+        "policies": [
+          {
+            "name": "mcr-token-exchange-policy",
+            "type": "client",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "clients": "[\"mcr\"]"
+            }
+          },
+          {
+            "name": "token-exchange.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"token-exchange\"]",
+              "applyPolicies": "[\"mcr-token-exchange-policy\"]"
+            }
+          },
+          {
+            "name": "view.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"view\"]"
+            }
+          },
+          {
+            "name": "manage.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"manage\"]"
+            }
+          },
+          {
+            "name": "configure.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"configure\"]"
+            }
+          },
+          {
+            "name": "map-roles.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"map-roles\"]"
+            }
+          },
+          {
+            "name": "map-roles-client-scope.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"map-roles-client-scope\"]"
+            }
+          },
+          {
+            "name": "map-roles-composite.permission.client.b1c2d3e4-f5a6-7890-abcd-ef1234567890",
+            "type": "scope",
+            "logic": "POSITIVE",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"client.resource.b1c2d3e4-f5a6-7890-abcd-ef1234567890\"]",
+              "scopes": "[\"map-roles-composite\"]"
+            }
+          }
+        ]
+      }
     },
     {
       "id": "1ffede7a-f9af-4ca4-aece-4079aa90f092",

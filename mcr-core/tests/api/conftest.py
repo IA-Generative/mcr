@@ -1,10 +1,9 @@
 import os
 import tempfile
 import uuid
-from collections.abc import Generator, Iterator
+from collections.abc import Callable, Generator
 from contextvars import Token
 from datetime import datetime, timezone
-from types import SimpleNamespace
 from typing import Any
 from unittest.mock import Mock
 
@@ -22,7 +21,6 @@ from mcr_meeting.app.db.db import (
     router_db_session_context_manager,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus, Role, User
-from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
 from mcr_meeting.main import app
 
@@ -44,19 +42,19 @@ class PrefixedTestClient:
             # No session in context, that's okay
             pass
 
-    def get(self, path: str, **kwargs: Any) -> Response:
+    def get(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.get(f"{self.prefix}{path}", **kwargs)
 
-    def post(self, path: str, **kwargs: Any) -> Response:
+    def post(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.post(f"{self.prefix}{path}", **kwargs)
 
-    def put(self, path: str, **kwargs: Any) -> Response:
+    def put(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.put(f"{self.prefix}{path}", **kwargs)
 
-    def delete(self, path: str, **kwargs: Any) -> Response:
+    def delete(self, path: str, **kwargs: Any) -> Response:  # type: ignore[explicit-any]
         self._expire_session()
         return self.client.delete(f"{self.prefix}{path}", **kwargs)
 
@@ -67,18 +65,8 @@ def user_client() -> PrefixedTestClient:
 
 
 @pytest.fixture
-def member_client() -> PrefixedTestClient:
-    return PrefixedTestClient(TestClient(app), api_settings.MEMBER_API_PREFIX)
-
-
-@pytest.fixture
 def meeting_client() -> PrefixedTestClient:
     return PrefixedTestClient(TestClient(app), api_settings.MEETING_API_PREFIX)
-
-
-@pytest.fixture
-def participants_client() -> PrefixedTestClient:
-    return PrefixedTestClient(TestClient(app), api_settings.PARTICIPANTS_API_PREFIX)
 
 
 @pytest.fixture
@@ -232,8 +220,12 @@ def meeting_2_fixture(db_session: Session) -> Meeting:
 
 
 @pytest.fixture
-def meeting_factory(db_session, user_fixture):
-    def _create_meeting(status=MeetingStatus.NONE, **kwargs):
+def meeting_factory(  # type: ignore[explicit-any]
+    db_session: Session, user_fixture: User
+) -> Callable[..., Meeting]:
+    def _create_meeting(  # type: ignore[explicit-any]
+        status: MeetingStatus = MeetingStatus.NONE, **kwargs: Any
+    ) -> Meeting:
         meeting = Meeting(
             user_id=user_fixture.id,
             name="Dynamic meeting",
@@ -248,49 +240,6 @@ def meeting_factory(db_session, user_fixture):
         return meeting
 
     return _create_meeting
-
-
-@pytest.fixture
-def mock_minio(request: pytest.FixtureRequest, mocker: MockerFixture) -> Mock:
-    bucket_name = "my_bucket"
-    should_error_on_delete = getattr(request, "param", "default")
-    mock_minio = mocker.patch("mcr_meeting.app.services.s3_service.s3_client")
-    mock_minio.put_object.return_value = SimpleNamespace(
-        bucket_name=bucket_name,
-        object_name="my/super/file",
-    )
-
-    mock_minio.list_objects.return_value = mock_s3_object_iterator(bucket_name)
-    mock_minio.delete_objects.return_value = mock_s3_delete_return(
-        should_error_on_delete
-    )
-
-    return mock_minio
-
-
-def mock_s3_object_iterator(bucket_name: str) -> Iterator[S3Object]:
-    for i in range(3):
-        yield S3Object(
-            bucket_name=bucket_name,
-            object_name=f"file{i}.txt",
-            last_modified=datetime(2025, 1, i + 1),
-        )
-
-
-def mock_s3_delete_return(return_type: str):
-    match return_type:
-        case "delete_error":
-            return {
-                "Errors": [
-                    {
-                        "Key": "audio.mp3",
-                        "Code": "InternalError",
-                        "Message": "Simulated delete failure",
-                    }
-                ]
-            }
-        case _:
-            return {"Deleted": [{"Key": "audio.mp3"}]}
 
 
 @pytest.fixture

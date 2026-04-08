@@ -1,0 +1,64 @@
+# Override for running Drive alongside MCR
+# Copied to ../drive/compose.override.yml by docker/drive/setup-drive.sh
+# Remaps conflicting ports and adds shared-network for cross-stack communication
+# Disables Drive's own Keycloak stack (uses MCR's Keycloak via nginx proxy)
+#
+# Requires Docker Compose v2.24+ for the !override tag
+
+services:
+  redis:
+    ports: !override
+      - "6380:6379"
+
+  minio:
+    container_name: drive-minio
+    ports: !override
+      - "9002:9000"
+      - "9003:9001"
+    networks:
+      default:
+      shared-network:
+        aliases:
+          - drive-minio
+
+  app-dev:
+    container_name: drive-backend
+    networks:
+      - lasuite
+      - default
+      - shared-network
+
+  celery-dev:
+    networks:
+      - default
+      - lasuite
+
+  # Disable Drive's Keycloak stack — we use MCR's Keycloak
+  keycloak:
+    profiles: ["standalone"]
+
+  kc_postgresql:
+    profiles: ["standalone"]
+
+  # Enable nginx — proxies MCR's Keycloak + S3 uploads
+  nginx:
+    container_name: drive-nginx
+    depends_on: !override
+      - app-dev
+    ports: !override
+      - "8084:8083"
+    networks:
+      default: {}
+      shared-network:
+        aliases:
+          - drive-nginx
+
+networks:
+  # Override lasuite from external to local — Drive's base compose expects it
+  # to connect to other La Suite services, but we don't need that here.
+  # Doing so allow docker to auto-create it
+  lasuite:
+    name: lasuite-network
+    driver: bridge
+  shared-network:
+    external: true
