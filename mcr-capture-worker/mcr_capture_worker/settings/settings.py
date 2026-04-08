@@ -62,6 +62,10 @@ class CaptureSettings(BaseSettings):
         300,
         description="Time in seconds the bot waits alone in a meeting before auto-disconnecting",
     )
+    TEARDOWN_TIMEOUT: int = Field(
+        30,
+        description="Time in seconds the bot waits to be disconnected after stop recording before forcing browser to close",
+    )
 
     model_config = SettingsConfigDict(
         from_attributes=True, case_sensitive=True, env_file=".env", extra="allow"
