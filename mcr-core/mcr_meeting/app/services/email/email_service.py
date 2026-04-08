@@ -1,4 +1,4 @@
-import logging
+from loguru import logger
 
 from mcr_meeting.app.client.smtp_client import send_email
 from mcr_meeting.app.configs.base import Settings
@@ -10,7 +10,6 @@ from mcr_meeting.app.services.email.templates import (
 )
 from mcr_meeting.app.services.email.types import MeetingInfo
 
-logger = logging.getLogger(__name__)
 settings = Settings()
 
 
