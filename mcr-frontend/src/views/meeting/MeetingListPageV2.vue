@@ -83,16 +83,12 @@
         :rows="rows"
       >
         <template #header="{ key, label }">
-          <div class="w-full">
+          <div class="w-full flex gap-1 items-center">
             {{ label }}
-
             <DsfrTooltip
               v-if="key === 'report'"
               :content="t('meetings_v2.table.columns.report-tooltip')"
-              on-hover
-              style="text-decoration: none"
             >
-              <button class="fr-btn--tooltip"></button>
             </DsfrTooltip>
           </div>
         </template>
