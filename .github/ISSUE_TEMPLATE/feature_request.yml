@@ -1,7 +1,7 @@
 name: "Feature"
 description: Proposer une nouvelle fonctionnalité
 title: "[FEATURE] "
-labels: ["feature"]
+type: "feature"
 
 body:
   - type: textarea
@@ -26,7 +26,7 @@ body:
         - Résultat 2
         - Critères de succès mesurables
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: technical_strategy
