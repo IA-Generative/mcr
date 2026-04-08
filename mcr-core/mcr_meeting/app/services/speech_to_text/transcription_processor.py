@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 
 import numpy as np
@@ -149,23 +150,21 @@ class TranscriptionProcessor:
             client = self._get_openai_client()
 
             prompt = transcription_settings.INITIAL_PROMPT or NotGiven()
+            language = transcription_settings.LANGUAGE or NotGiven()
+            temperature = transcription_settings.TEMPERATURE or NotGiven()
+            vad_filter = transcription_settings.VAD_FILTER or NotGiven()
+            vad_parameters = transcription_settings.VAD_PARAMETERS or NotGiven()
 
             response = client.audio.transcriptions.create(
                 model=api_settings.TRANSCRIPTION_API_MODEL,
                 file=("audio.wav", audio_bytes, "audio/wav"),
-                language=api_settings.API_LANGUAGE,
+                language=language,
                 response_format="verbose_json",
                 prompt=prompt,
-                temperature=[0.0,0.1,0.2,0.4,0.6,0.8,1.0],
                 extra_body={
-                    "vad_filter": True,
-                    "vad_parameters": {
-                        "threshold": 0.4,
-                        "min_silence_duration_ms": 700,
-                        "speech_pad_ms": 600,
-                        "min_speech_duration_ms": 200,
-                        "max_speech_duration_s": float("inf"),
-                    },
+                    "temperature": temperature,
+                    "vad_filter": vad_filter,
+                    "vad_parameters": json.dumps(vad_parameters),
                 },
             )
 
