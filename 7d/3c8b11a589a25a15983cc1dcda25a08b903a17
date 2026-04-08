@@ -1,0 +1,25 @@
+scripts/lint-changed.sh
+  6d8406ad23994258 1-190
+scripts/ruff-check-file.sh
+  6d8406ad23994258 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "7d3c8b11a589a25a15983cc1dcda25a08b903a17",
+  "prompts": {
+    "6d8406ad23994258": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6dfa70f7-353c-41d6-ab8f-c53cb9f69530",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 211,
+      "overriden_lines": 0
+    }
+  }
+}
