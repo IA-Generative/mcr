@@ -46,6 +46,7 @@ declare module 'vue' {
     DsfrTag: typeof import('@gouvminint/vue-dsfr')['DsfrTag']
     DsfrTile: typeof import('@gouvminint/vue-dsfr')['DsfrTile']
     DsfrToggleSwitch: typeof import('@gouvminint/vue-dsfr')['DsfrToggleSwitch']
+    DsfrTooltip: typeof import('@gouvminint/vue-dsfr')['DsfrTooltip']
     EditMeetingModal: typeof import('./components/meeting/modals/EditMeetingModal.vue')['default']
     EditNameMeetingForm: typeof import('./components/meeting/forms/EditNameMeetingForm.vue')['default']
     GenerateReportAction: typeof import('./components/meeting/report/GenerateReportAction.vue')['default']

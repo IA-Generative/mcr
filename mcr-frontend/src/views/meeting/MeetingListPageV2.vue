@@ -81,13 +81,22 @@
         :headers-row="headers"
         no-caption
         :rows="rows"
-        :pagination="true"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :total-pages="totalPages"
-        @on-page-change="setCurrentPage"
-        @on-page-size-change="setPageSize"
       >
+        <template #header="{ key, label }">
+          <div class="w-full">
+            {{ label }}
+
+            <DsfrTooltip
+              v-if="key === 'report'"
+              :content="t('meetings_v2.table.columns.report-tooltip')"
+              on-hover
+              style="text-decoration: none"
+            >
+              <button class="fr-btn--tooltip"></button>
+            </DsfrTooltip>
+          </div>
+        </template>
+
         <template #cell="{ colKey, cell }">
           <RouterLink
             v-if="colKey === 'title'"
@@ -102,6 +111,14 @@
           />
         </template>
       </DsfrDataTable>
+      <TablePagination
+        class="self-end"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :total-pages="totalPages"
+        @on-page-change="setCurrentPage"
+        @on-page-size-change="setPageSize"
+      />
     </div>
   </div>
 </template>
@@ -114,7 +131,6 @@ import videoSvgPath from '@dsfr-artwork/pictograms/leisure/video.svg?url';
 import podcastSvgPath from '@dsfr-artwork/pictograms/leisure/podcast.svg?url';
 import selfTrainingSvgPath from '@dsfr-artwork/pictograms/digital/self-training.svg?url';
 import useToaster from '@/composables/use-toaster';
-import { usePagination } from '@/composables/use-pagination';
 
 const isWebexEnabled = useFeatureFlag('webex');
 import { ref, onMounted, computed, watch } from 'vue';
@@ -128,7 +144,9 @@ import { useModal } from 'vue-final-modal';
 import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
 import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
 import TableActions from '@/components/table/TableActions.vue';
+import TablePagination from '@/components/table/TablePagination.vue';
 import { useI18n } from 'vue-i18n';
+import { usePagination } from '@/composables/use-pagination';
 
 const SESSION_KEY = 'dsfr-alert-closed';
 const showAlert = ref(true);
@@ -142,12 +160,12 @@ const headers = [
   {
     key: 'transcription',
     label: t('meetings_v2.table.columns.transcription'),
-    headerAttrs: { class: 'w-[20%]' },
+    headerAttrs: { class: 'w-[15%]' },
   },
   {
     key: 'report',
     label: t('meetings_v2.table.columns.report'),
-    headerAttrs: { class: 'w-[15%]' },
+    headerAttrs: { class: 'w-[20%]' },
   },
   {
     key: 'actions',
@@ -166,9 +184,10 @@ const rows = computed(() =>
   })),
 );
 const search = ref<string>('');
+
 const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
-  currentPage: 0,
-  pageSize: 10,
+  currentPage: 1,
+  pageSize: 5,
 });
 
 const { t: tI18n } = useI18n();
@@ -176,6 +195,15 @@ const { getAllMeetingsQuery, updateMeetingMutation, deleteMeetingMutation } = us
 const { mutate: updateMeeting } = updateMeetingMutation();
 const { mutate: deleteMeeting } = deleteMeetingMutation();
 
+// Type casting in functions to avoid repeating it in the template
+function asTitleCell(cell: unknown): { name: string; id: number } {
+  return cell as { name: string; id: number };
+}
+function asMeeting(cell: unknown): MeetingDto {
+  return cell as MeetingDto;
+}
+
+// Code for actions modals : EDIT and DELETE
 function editMeetingModal(id: number) {
   const meeting = meetings.value.find((m) => m.id === id);
   const { open } = useModal({
@@ -187,15 +215,6 @@ function editMeetingModal(id: number) {
   });
   open();
 }
-
-function asTitleCell(cell: unknown): { name: string; id: number } {
-  return cell as { name: string; id: number };
-}
-
-function asMeeting(cell: unknown): MeetingDto {
-  return cell as MeetingDto;
-}
-
 function deleteMeetingModal(id: number) {
   const { open } = useModal({
     component: DeleteMeetingModal,
@@ -206,6 +225,7 @@ function deleteMeetingModal(id: number) {
   });
   open();
 }
+
 const { data: paginatedMeetings, error: meetingsError } = getAllMeetingsQuery({
   search,
   page: currentPage,
