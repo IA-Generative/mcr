@@ -81,6 +81,7 @@
         :headers-row="headers"
         no-caption
         :rows="rows"
+        :sortable-rows="['date', 'title']"
       >
         <template #header="{ key, label }">
           <div class="w-full flex gap-1 items-center">
@@ -151,8 +152,8 @@ const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
 const toaster = useToaster();
 
 const headers = [
-  { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-[15%]' } },
-  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: 'w-[40%]' } },
+  { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-[20%]' } },
+  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: 'w-[35%]' } },
   {
     key: 'transcription',
     label: t('meetings_v2.table.columns.transcription'),
