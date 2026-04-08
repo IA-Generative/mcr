@@ -1,7 +1,7 @@
 name: "User Story"
 description: Décrire un besoin utilisateur sous forme de user story
 title: "ETQ"
-labels: ["user story"]
+type: "task"
 
 body:
   - type: textarea
@@ -31,7 +31,7 @@ body:
         - [ ] Gestion des erreurs
         - [ ] Logging / monitoring (si applicable)
     validations:
-      required: true
+      required: false
 
   - type: textarea
     id: tech
@@ -47,4 +47,4 @@ body:
         Tests à prévoir :
         Risques / dépendances :
     validations:
-      required: true
+      required: false
