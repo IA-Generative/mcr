@@ -1,0 +1,23 @@
+CLAUDE.md
+  6d8406ad23994258 81-108,119-120,123,125-131
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.2.5",
+  "base_commit_sha": "6bde2ac049f098e9cbbc1be5bd42170739290db5",
+  "prompts": {
+    "6d8406ad23994258": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6dfa70f7-353c-41d6-ab8f-c53cb9f69530",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 281,
+      "total_deletions": 14,
+      "accepted_lines": 281,
+      "overriden_lines": 0
+    }
+  }
+}
