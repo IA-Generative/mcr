@@ -3,7 +3,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.exceptions.exceptions import (
+    InvalidAudioFileError,
+    NoAudioFoundError,
+)
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.services.meeting_to_transcription_service import (
     fetch_audio_bytes,
@@ -19,13 +22,15 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
     )
-    def test_should_raise_invalid_audio_file_error_when_no_audio_files_found(
+    def test_should_raise_no_audio_found_error_when_no_audio_files_found(
         self, mock_get_objects_list: Mock
     ) -> None:
-        """Checks that fetch_audio_bytes raises ValueError when no audio files are found."""
+        """Checks that fetch_audio_bytes raises NoAudioFoundError when no audio files are found."""
         mock_get_objects_list.return_value = iter([])
 
-        with pytest.raises(ValueError, match="No audio files found for meeting 123"):
+        with pytest.raises(
+            NoAudioFoundError, match="No audio files found for meeting 123"
+        ):
             fetch_audio_bytes(meeting_id=123)
 
         mock_get_objects_list.assert_called_once_with(prefix="123/")
@@ -39,11 +44,13 @@ class TestFetchAudioBytes:
     def test_should_raise_invalid_audio_file_error_when_audio_processing_fails(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Checks that fetch_audio_bytes raises Exception when audio processing fails."""
+        """Checks that fetch_audio_bytes raises InvalidAudioFileError when audio processing fails."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = InvalidAudioFileError("Processing failed")
 
-        with pytest.raises(Exception, match="Audio processing failed for meeting 123"):
+        with pytest.raises(
+            InvalidAudioFileError, match="Failed to fetch audio bytes for meeting 123"
+        ):
             fetch_audio_bytes(meeting_id=123)
 
     @patch(
@@ -52,16 +59,18 @@ class TestFetchAudioBytes:
     @patch(
         "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
-    def test_should_raise_invalid_audio_file_error_when_extension_extraction_fails(
+    def test_should_raise_invalid_audio_file_error_when_unexpected_value_error_occurs(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Checks that fetch_audio_bytes raises ValueError when extension extraction fails."""
+        """Checks that fetch_audio_bytes wraps unexpected ValueError as InvalidAudioFileError."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = ValueError(
             "No audio files found for the specified meeting"
         )
 
-        with pytest.raises(ValueError, match="No audio files found for meeting 123"):
+        with pytest.raises(
+            InvalidAudioFileError, match="Failed to fetch audio bytes for meeting 123"
+        ):
             fetch_audio_bytes(meeting_id=123)
 
     @patch(
@@ -73,12 +82,12 @@ class TestFetchAudioBytes:
     def test_should_raise_invalid_audio_file_error_when_unexpected_error_occurs(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
     ) -> None:
-        """Checks that fetch_audio_bytes raises Exception for any unexpected error."""
+        """Checks that fetch_audio_bytes wraps unexpected errors as InvalidAudioFileError."""
         mock_get_objects_list.return_value = iter([Mock()])
         mock_assemble.side_effect = RuntimeError("Unexpected error")
 
         with pytest.raises(
-            Exception, match="Failed to fetch audio bytes for meeting 123"
+            InvalidAudioFileError, match="Failed to fetch audio bytes for meeting 123"
         ):
             fetch_audio_bytes(meeting_id=123)
 
@@ -145,7 +154,7 @@ class TestFetchAudioBytes:
         for error in error_test_cases:
             mock_assemble.side_effect = error
 
-            with pytest.raises(Exception):
+            with pytest.raises(InvalidAudioFileError):
                 fetch_audio_bytes(meeting_id=123)
 
     @patch(
@@ -197,14 +206,14 @@ class TestFetchAudioBytes:
         mock_get_objects_list.return_value = iter([])
 
         meeting_id = 42
-        with pytest.raises(ValueError):
+        with pytest.raises(NoAudioFoundError):
             fetch_audio_bytes(meeting_id=meeting_id)
 
         mock_get_objects_list.assert_called_once_with(prefix="42/")
 
         for test_id in [1, 999, 123456]:
             mock_get_objects_list.reset_mock()
-            with pytest.raises(ValueError):
+            with pytest.raises(NoAudioFoundError):
                 fetch_audio_bytes(meeting_id=test_id)
             mock_get_objects_list.assert_called_once_with(prefix=f"{test_id}/")
 
