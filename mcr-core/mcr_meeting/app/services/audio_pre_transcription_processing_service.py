@@ -16,7 +16,10 @@ from mcr_meeting.app.configs.base import (
     NormalizedAudioVolumeSettings,
     Speech2TextSettings,
 )
-from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.exceptions.exceptions import (
+    InvalidAudioFileError,
+    NoAudioFoundError,
+)
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.s3_service import get_file_from_s3
 from mcr_meeting.setup.logger import log_ffmpeg_command
@@ -177,7 +180,7 @@ def download_and_concatenate_s3_audio_chunks_into_bytes(
             ) from chunk_error
 
     if chunk_count == 0:
-        raise ValueError("No audio chunks found in iterator")
+        raise NoAudioFoundError("No audio chunks found in iterator")
 
     audio_buffer.seek(0)
     return audio_buffer

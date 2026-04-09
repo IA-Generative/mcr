@@ -6,7 +6,10 @@ from io import BytesIO
 
 from loguru import logger
 
-from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.exceptions.exceptions import (
+    InvalidAudioFileError,
+    NoAudioFoundError,
+)
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
@@ -53,29 +56,21 @@ def fetch_audio_bytes(
         )
         return audio_bytes
 
-    except ValueError as no_files_error:
+    except NoAudioFoundError as no_files_error:
         logger.error(
             "No audio files found for meeting {}: {}", meeting_id, no_files_error
         )
-        raise ValueError(
-            f"No audio files found for meeting {meeting_id}: {no_files_error}"
-        )
-    except InvalidAudioFileError as audio_processing_error:
-        logger.error(
-            "Audio processing failed for meeting {}: {}",
-            meeting_id,
-            audio_processing_error,
-        )
-        raise InvalidAudioFileError(
-            f"Audio processing failed for meeting {meeting_id}: {audio_processing_error}"
-        )
+        raise NoAudioFoundError(
+            f"No audio files found for meeting {meeting_id}"
+        ) from no_files_error
+
     except Exception as fetch_error:
         logger.error(
             "Failed to fetch audio bytes for meeting {}: {}", meeting_id, fetch_error
         )
-        raise Exception(
+        raise InvalidAudioFileError(
             f"Failed to fetch audio bytes for meeting {meeting_id}: {fetch_error}"
-        )
+        ) from fetch_error
 
 
 def transcribe_meeting(
@@ -93,47 +88,28 @@ def transcribe_meeting(
         None: If transcription fails or no audio is available.
     """
 
-    try:
-        full_audio_bytes = fetch_audio_bytes(meeting_id)
+    full_audio_bytes = fetch_audio_bytes(meeting_id)
 
-        if not full_audio_bytes:
-            logger.error("Could not fetch audio bytes for meeting {}", meeting_id)
-            raise InvalidAudioFileError(
-                f"Could not fetch audio bytes for meeting {meeting_id}"
-            )
+    diarized_transcription_segments = speech_to_text_pipeline.run(full_audio_bytes)
 
-        diarized_transcription_segments = speech_to_text_pipeline.run(full_audio_bytes)
+    feature_flag_client = get_feature_flag_client()
 
-        feature_flag_client = get_feature_flag_client()
+    if feature_flag_client.is_enabled("speaker_identification"):
+        logger.info("Speaker identification enabled, enriching segments")
+        enrich_segments_with_participants(diarized_transcription_segments)
+    else:
+        logger.info("Speaker identification disabled, skipping enrichment")
 
-        if feature_flag_client.is_enabled("speaker_identification"):
-            logger.info("Speaker identification enabled, enriching segments")
-            enrich_segments_with_participants(diarized_transcription_segments)
-        else:
-            logger.info("Speaker identification disabled, skipping enrichment")
-
-        # Convert merged DiarizedTranscriptionSegment to SpeakerTranscription for return
-        speaker_transcription_segments = [
-            SpeakerTranscription(
-                meeting_id=meeting_id,
-                transcription_index=segment.id,
-                speaker=segment.speaker,
-                transcription=segment.text,
-                start=segment.start,
-                end=segment.end,
-            )
-            for segment in diarized_transcription_segments
-        ]
-
-        if not speaker_transcription_segments:
-            raise ValueError(f"Transcription returned no data for meeting {meeting_id}")
-
-        return speaker_transcription_segments
-
-    except Exception as transcription_error:
-        logger.exception(
-            "Transcription failed for meeting {}: {}", meeting_id, transcription_error
+    speaker_transcription_segments = [
+        SpeakerTranscription(
+            meeting_id=meeting_id,
+            transcription_index=segment.id,
+            speaker=segment.speaker,
+            transcription=segment.text,
+            start=segment.start,
+            end=segment.end,
         )
-        raise InvalidAudioFileError(
-            f"Transcription failed for meeting {meeting_id}"
-        ) from transcription_error
+        for segment in diarized_transcription_segments
+    ]
+
+    return speaker_transcription_segments
