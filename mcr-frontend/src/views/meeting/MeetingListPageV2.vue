@@ -184,7 +184,7 @@ const search = ref<string>('');
 
 const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
   currentPage: 1,
-  pageSize: 5,
+  pageSize: 10,
 });
 
 const { t: tI18n } = useI18n();
