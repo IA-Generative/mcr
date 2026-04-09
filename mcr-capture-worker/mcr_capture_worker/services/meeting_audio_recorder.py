@@ -222,7 +222,15 @@ class MeetingAudioRecorder:
         logger.info("Recording stopped...")
 
     async def wait_for_teardown_to_finish(self) -> None:
+        deadline = time.monotonic() + capture_settings.TEARDOWN_TIMEOUT
         while not self.teardown_after_stop_is_finished:
+            if time.monotonic() >= deadline:
+                logger.warning(
+                    "Teardown timed out for meeting: {} — forcing browser close",
+                    self.meeting_id,
+                )
+                await self.browser.close()
+                return
             await asyncio.sleep(1)
 
     def mark_teardown_as_finished(self) -> None:

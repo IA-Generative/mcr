@@ -30,6 +30,7 @@ class MeetingStatus(StrEnum):
     - CAPTURE_FAILED: Capture encountered an issue and failed.
     - TRANSCRIPTION_FAILED: Transcription encountered an issue and failed.
     - CAPTURE_DONE: Capture completed successfully.
+    - DELETED: Meeting was deleted.
     """
 
     NONE = "NONE"
@@ -43,6 +44,7 @@ class MeetingStatus(StrEnum):
     TRANSCRIPTION_DONE = "TRANSCRIPTION_DONE"
     CAPTURE_FAILED = "CAPTURE_FAILED"
     CAPTURE_DONE = "CAPTURE_DONE"
+    DELETED = "DELETED"
 
 
 class MeetingPlatform(StrEnum):
