@@ -228,10 +228,18 @@ services:
   frontend:
     build:
       context: ./mcr-frontend
-      target: dev
+      target: production
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        env | grep '^VITE_' | while IFS='=' read -r key value; do
+          printf 'window.%s = "%s";\n' "$$key" "$$value"
+        done > /usr/share/nginx/html/config.js
+        exec nginx -g 'daemon off;'
     container_name: mcr-frontend
     ports:
-      - "8881:5173"
+      - "8881:8080"
     volumes:
       - ./mcr-frontend/src:/app/src
     develop:

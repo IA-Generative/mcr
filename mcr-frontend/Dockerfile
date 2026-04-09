@@ -28,9 +28,15 @@ RUN pnpm run build
 # Serve
 FROM bitnamilegacy/nginx:1.27.4 AS production
 
+USER root
+
 COPY --from=build /app/dist /usr/share/nginx/html
 
+RUN touch /usr/share/nginx/html/config.js && chmod 666 /usr/share/nginx/html/config.js
+
 COPY docker/nginx.conf /opt/bitnami/nginx/conf/server_blocks/my_app.conf
+
+USER 1001
 
 EXPOSE 8080
 
