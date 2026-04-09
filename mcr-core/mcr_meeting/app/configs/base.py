@@ -463,10 +463,10 @@ class EvaluationSettings(BaseSettings):
 
 
 class KeycloakExchangeSettings(BaseSettings):
-    KEYCLOAK_URL: str
-    KEYCLOAK_REALM: str
+    KEYCLOAK_URL: str = ""
+    KEYCLOAK_REALM: str = ""
     KEYCLOAK_CORE_CLIENT_ID: str = "mcr-core"
-    KEYCLOAK_CORE_CLIENT_SECRET: str
+    KEYCLOAK_CORE_CLIENT_SECRET: str = ""
 
 
 class DriveSettings(BaseSettings):
