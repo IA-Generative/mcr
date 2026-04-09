@@ -1,8 +1,13 @@
 import time
 from abc import ABC, abstractmethod
+from io import BytesIO
 
 from loguru import logger
 from playwright.async_api import Page
+
+from mcr_capture_worker.settings.settings import CaptureSettings
+
+capture_settings = CaptureSettings()
 
 
 class MeetingMonitor(ABC):
@@ -48,6 +53,20 @@ class MeetingMonitor(ABC):
 
     async def disconnect_from_meeting(self, page: Page) -> None:
         return
+
+    async def enable_chunk_size_based_disconnection(self, data: BytesIO) -> None:
+        data_size = len(data.getvalue()) / capture_settings.BYTES_PER_KB
+
+        if (
+            self._alone_since is None
+            and data_size <= capture_settings.EMPTY_CHUNK_THRESHOLD
+        ):
+            self.start_alone_timer()
+        elif (
+            self._alone_since is not None
+            and data_size > capture_settings.EMPTY_CHUNK_THRESHOLD
+        ):
+            self.reset_alone_timer()
 
     @abstractmethod
     async def _get_participant_count(self, page: Page) -> int:

@@ -66,6 +66,13 @@ class CaptureSettings(BaseSettings):
         30,
         description="Time in seconds the bot waits to be disconnected after stop recording before forcing browser to close",
     )
+    EMPTY_CHUNK_THRESHOLD: int = Field(
+        8,
+        description="Size threshold in kilobytes under which an audio chunk is considered empty. Used as a proxy to identify when a bot is alone in a meeting. It replaces our flawed previous logic, reading the number of participants in the meeting to identify when the bot is alone. This threshold only applies to Visio and COMU meetings.",
+    )
+    BYTES_PER_KB: int = Field(
+        1024, description="Conversion factor between bytes and kilobytes"
+    )
 
     model_config = SettingsConfigDict(
         from_attributes=True, case_sensitive=True, env_file=".env", extra="allow"
