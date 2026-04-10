@@ -95,16 +95,9 @@
         </template>
 
         <template #cell="{ colKey, cell }">
-          <RouterLink
-            v-if="colKey === 'title'"
-            :to="`${ROUTES.MEETINGS.path}/${asTitleCell(cell).id}`"
-          >
-            {{ asTitleCell(cell).name }}
-          </RouterLink>
-          <TableActions
-            v-else-if="colKey === 'actions'"
-            :on-delete="() => deleteMeetingModal(asMeeting(cell).id)"
-            :on-edit="() => editMeetingModal(asMeeting(cell).id)"
+          <DataTableCellsAction
+            :col-key="colKey"
+            :cell="cell"
           />
         </template>
       </DsfrDataTable>
@@ -134,13 +127,6 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { formatMeetingDate } from '@/utils/formatters';
 import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 import { useMeetings } from '@/services/meetings/use-meeting';
-import { RouterLink } from 'vue-router';
-import { ROUTES } from '@/router/routes';
-import type { MeetingDto, UpdateMeetingDto } from '@/services/meetings/meetings.types';
-import { useModal } from 'vue-final-modal';
-import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
-import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
-import TableActions from '@/components/table/TableActions.vue';
 import TablePagination from '@/components/table/TablePagination.vue';
 import { usePagination } from '@/composables/use-pagination';
 
@@ -185,40 +171,7 @@ const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
   pageSize: 10,
 });
 
-const { getAllMeetingsQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
-const { mutate: updateMeeting } = updateMeetingMutation();
-const { mutate: deleteMeeting } = deleteMeetingMutation();
-
-// Type casting in functions to avoid repeating it in the template
-function asTitleCell(cell: unknown): { name: string; id: number } {
-  return cell as { name: string; id: number };
-}
-function asMeeting(cell: unknown): MeetingDto {
-  return cell as MeetingDto;
-}
-
-// Code for actions modals : EDIT and DELETE
-function editMeetingModal(id: number) {
-  const meeting = meetings.value.find((m) => m.id === id);
-  const { open } = useModal({
-    component: EditMeetingModal,
-    attrs: {
-      itemSelected: meeting,
-      onUpdateMeeting: (values: UpdateMeetingDto) => updateMeeting({ id, payload: values }),
-    },
-  });
-  open();
-}
-function deleteMeetingModal(id: number) {
-  const { open } = useModal({
-    component: DeleteMeetingModal,
-    attrs: {
-      title: t('meeting.confirm-delete.title'),
-      onSuccess: () => deleteMeeting(id),
-    },
-  });
-  open();
-}
+const { getAllMeetingsQuery } = useMeetings();
 
 const { data: paginatedMeetings, error: meetingsError } = getAllMeetingsQuery({
   search: ref(''),
