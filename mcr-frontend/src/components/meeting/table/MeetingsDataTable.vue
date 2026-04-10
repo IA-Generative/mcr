@@ -47,22 +47,22 @@ import useToaster from '@/composables/use-toaster';
 const toaster = useToaster();
 
 const headers = [
-  { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-[20%]' } },
-  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: 'w-[35%]' } },
+  { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-48' } },
+  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: '' } },
   {
     key: 'transcription',
     label: t('meetings_v2.table.columns.transcription'),
-    headerAttrs: { class: 'w-[15%]' },
+    headerAttrs: { class: 'w-32' },
   },
   {
     key: 'report',
     label: t('meetings_v2.table.columns.report.label'),
-    headerAttrs: { class: 'w-[20%]' },
+    headerAttrs: { class: 'w-40' },
   },
   {
     key: 'actions',
     label: t('meetings_v2.table.columns.actions'),
-    headerAttrs: { class: 'w-[10%]' },
+    headerAttrs: { class: 'w-24' },
   },
 ];
 
