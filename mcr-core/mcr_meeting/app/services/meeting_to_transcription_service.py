@@ -90,7 +90,9 @@ def transcribe_meeting(
 
     full_audio_bytes = fetch_audio_bytes(meeting_id)
 
-    diarized_transcription_segments = speech_to_text_pipeline.run(full_audio_bytes)
+    diarized_transcription_segments = speech_to_text_pipeline.run(
+        full_audio_bytes, meeting_id
+    )
 
     feature_flag_client = get_feature_flag_client()
 

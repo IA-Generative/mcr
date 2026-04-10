@@ -37,7 +37,7 @@ class ASREvaluationPipeline:
             logger.info("Processing sample {}...", sample.uid)
 
             generated_transcription_segments = self.speech_to_text_pipeline.run(
-                sample.audio_bytes
+                sample.audio_bytes, meeting_id=0
             )
             generated_transcription = TranscriptionOutput(
                 segments=generated_transcription_segments
