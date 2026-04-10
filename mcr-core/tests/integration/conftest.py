@@ -9,7 +9,7 @@ from tests.mocks.in_memory_drive import InMemoryDriveClient
 @pytest.fixture
 def in_memory_drive() -> Generator[InMemoryDriveClient, None, None]:
     mock = InMemoryDriveClient()
-    original = deliverable_module.upload_file
-    deliverable_module.upload_file = mock  # type: ignore[assignment]
+    original = deliverable_module.upload_file  # type: ignore[attr-defined]
+    deliverable_module.upload_file = mock  # type: ignore[attr-defined]
     yield mock
-    deliverable_module.upload_file = original
+    deliverable_module.upload_file = original  # type: ignore[attr-defined]

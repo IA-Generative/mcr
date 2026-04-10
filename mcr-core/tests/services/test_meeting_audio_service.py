@@ -37,7 +37,7 @@ class TestMeetingAudioService:
         mock_validate: Mock,
         mock_get_file: Mock,
         user_fixture: User,
-    ):
+    ) -> None:
         # Arrange
         meeting_data = MeetingFactory.create(owner=user_fixture)
         s3_obj = S3Object(
@@ -58,7 +58,7 @@ class TestMeetingAudioService:
 
     def test_get_meeting_audio_service_fails_if_requester_isnt_owner(
         self, user_fixture: User
-    ):
+    ) -> None:
         # Arrange
         meeting_data = MeetingFactory.create()
 
@@ -71,7 +71,7 @@ class TestMeetingAudioService:
 
     def test_get_meeting_audio_service_fails_if_creation_date_over_a_week(
         self, user_fixture: User
-    ):
+    ) -> None:
         # Arrange
         meeting_data = MeetingFactory.create(owner=user_fixture)
         meeting_data.creation_date = datetime.now(timezone.utc) - timedelta(
@@ -99,7 +99,7 @@ class TestMeetingAudioService:
         mock_validate: Mock,
         mock_get_file: Mock,
         user_fixture: User,
-    ):
+    ) -> None:
         # Arrange
         meeting_data = MeetingFactory.create(owner=user_fixture)
         meeting_data.creation_date = datetime.now(timezone.utc) - timedelta(
@@ -126,7 +126,7 @@ class TestMeetingAudioService:
     )
     def test_get_meeting_audio_service_raises_when_no_audio_files(
         self, mock_get_objects: Mock, user_fixture: User
-    ):
+    ) -> None:
         # Arrange
         meeting_data = MeetingFactory.create(owner=user_fixture)
         mock_get_objects.return_value = iter([])
@@ -138,7 +138,9 @@ class TestMeetingAudioService:
     # --- stream_audio_chunks ---
 
     @patch("mcr_meeting.app.services.meeting_audio_service.get_file_from_s3")
-    def test_stream_audio_chunks_yields_bytes_in_order(self, mock_get_file: Mock):
+    def test_stream_audio_chunks_yields_bytes_in_order(
+        self, mock_get_file: Mock
+    ) -> None:
         # Arrange
         mock_get_file.side_effect = [
             BytesIO(b"chunk_1"),
@@ -161,7 +163,7 @@ class TestMeetingAudioService:
         assert result == [b"chunk_1", b"chunk_2", b"chunk_3"]
         assert mock_get_file.call_count == 3
 
-    def test_stream_audio_chunks_with_empty_iterator(self):
+    def test_stream_audio_chunks_with_empty_iterator(self) -> None:
         # Act
         result = list(stream_audio_chunks(iter([])))
 

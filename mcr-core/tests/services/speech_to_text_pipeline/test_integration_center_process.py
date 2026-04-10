@@ -1,7 +1,8 @@
 """Test integration of the speech-to-text pipeline center process."""
 
+from collections.abc import Callable
 from io import BytesIO
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from loguru import logger
@@ -118,7 +119,7 @@ def test_integration_center_process_normal_flow(
     expected_segments_count: int,
     expected_speakers: list[str],
     pre_processed_audio_bytes: BytesIO,
-    create_mock_feature_flag_client,
+    create_mock_feature_flag_client: Callable[[str, bool], Mock],
     request: pytest.FixtureRequest,
 ) -> None:
     """Test center process with normal flow and different speaker configurations.
@@ -135,7 +136,7 @@ def test_integration_center_process_normal_flow(
 
     # Mock feature flag to use local diarization (not API)
     mock_feature_flag_client_diar = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
+        "api_based_diarization", False
     )
     mock_get_feature_flag_client_diarization.return_value = (
         mock_feature_flag_client_diar
@@ -143,7 +144,7 @@ def test_integration_center_process_normal_flow(
 
     # Mock feature flag to use local transcription (not API)
     mock_feature_flag_client_trans = create_mock_feature_flag_client(
-        "api_based_transcription", enabled=False
+        "api_based_transcription", False
     )
     mock_get_feature_flag_client_transcription.return_value = (
         mock_feature_flag_client_trans
@@ -223,7 +224,7 @@ def test_integration_center_process_empty_diarization(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_feature_flag_client_diarization: MagicMock,
     pre_processed_audio_bytes: BytesIO,
-    create_mock_feature_flag_client,
+    create_mock_feature_flag_client: Callable[[str, bool], Mock],
 ) -> None:
     """Test center process when diarization returns empty result.
 
@@ -232,7 +233,7 @@ def test_integration_center_process_empty_diarization(
     """
     # Mock feature flag to use local diarization (not API)
     mock_feature_flag_client_diar = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
+        "api_based_diarization", False
     )
     mock_get_feature_flag_client_diarization.return_value = (
         mock_feature_flag_client_diar
@@ -275,7 +276,7 @@ def test_integration_center_process_with_empty_chunks(
     diarization_result_multiple_speakers: list[DiarizationSegment],
     mock_transcription_segments_with_empty: list[list[TranscriptionSegment]],
     pre_processed_audio_bytes: BytesIO,
-    create_mock_feature_flag_client,
+    create_mock_feature_flag_client: Callable[[str, bool], Mock],
 ) -> None:
     """Test center process when some chunks produce no transcription.
 
@@ -286,7 +287,7 @@ def test_integration_center_process_with_empty_chunks(
 
     # Mock feature flag to use local diarization (not API)
     mock_feature_flag_client_diar = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
+        "api_based_diarization", False
     )
     mock_get_feature_flag_client_diarization.return_value = (
         mock_feature_flag_client_diar
@@ -294,7 +295,7 @@ def test_integration_center_process_with_empty_chunks(
 
     # Mock feature flag to use local transcription (not API)
     mock_feature_flag_client_trans = create_mock_feature_flag_client(
-        "api_based_transcription", enabled=False
+        "api_based_transcription", False
     )
     mock_get_feature_flag_client_transcription.return_value = (
         mock_feature_flag_client_trans

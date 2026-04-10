@@ -6,7 +6,7 @@ from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting, get_
 from tests.factories import MeetingFactory, UserFactory
 
 
-def test_get_meeting_by_id_filters_returns_error():
+def test_get_meeting_by_id_filters_returns_error() -> None:
     user = UserFactory.create()
 
     deleted = MeetingFactory.create(owner=user, status=MeetingStatus.DELETED)
@@ -17,7 +17,7 @@ def test_get_meeting_by_id_filters_returns_error():
     assert str(exc.value) == f"Meeting not found: id={deleted.id}"
 
 
-def test_get_meetings_filters_deleted():
+def test_get_meetings_filters_deleted() -> None:
     user = UserFactory.create()
 
     active1 = MeetingFactory.create(owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -35,7 +35,7 @@ def test_get_meetings_filters_deleted():
     assert paginated.total == 2
 
 
-def test_get_meetings_with_search_filters_deleted():
+def test_get_meetings_with_search_filters_deleted() -> None:
     user = UserFactory.create()
 
     active1 = MeetingFactory.create(
@@ -59,7 +59,7 @@ def test_get_meetings_with_search_filters_deleted():
     assert paginated.total == 2
 
 
-def test_get_meetings_pagination_defaults():
+def test_get_meetings_pagination_defaults() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(15, owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -72,7 +72,7 @@ def test_get_meetings_pagination_defaults():
     assert paginated.total == 15
 
 
-def test_get_meetings_pagination_page_2():
+def test_get_meetings_pagination_page_2() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(15, owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -85,7 +85,7 @@ def test_get_meetings_pagination_page_2():
     assert paginated.total == 15
 
 
-def test_get_meetings_pagination_custom_page_size():
+def test_get_meetings_pagination_custom_page_size() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(15, owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -98,7 +98,7 @@ def test_get_meetings_pagination_custom_page_size():
     assert paginated.total == 15
 
 
-def test_get_meetings_pagination_beyond_last_page():
+def test_get_meetings_pagination_beyond_last_page() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(5, owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -111,7 +111,7 @@ def test_get_meetings_pagination_beyond_last_page():
     assert paginated.total == 5
 
 
-def test_get_meetings_pagination_negative_page():
+def test_get_meetings_pagination_negative_page() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(10, owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -125,7 +125,7 @@ def test_get_meetings_pagination_negative_page():
     assert paginated.total == 10
 
 
-def test_get_meetings_pagination_negative_page_size():
+def test_get_meetings_pagination_negative_page_size() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(12, owner=user, status=MeetingStatus.IMPORT_PENDING)
@@ -139,7 +139,7 @@ def test_get_meetings_pagination_negative_page_size():
     assert paginated.total == 12
 
 
-def test_get_meetings_pagination_with_search():
+def test_get_meetings_pagination_with_search() -> None:
     user = UserFactory.create()
 
     MeetingFactory.create_batch(

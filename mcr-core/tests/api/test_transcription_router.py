@@ -1,4 +1,4 @@
-# type: ignore[explicit-any]
+# mypy: disable-error-code="explicit-any"
 
 from collections.abc import Callable
 from datetime import datetime, timezone

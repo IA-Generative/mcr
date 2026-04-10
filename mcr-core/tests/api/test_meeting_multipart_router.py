@@ -17,13 +17,13 @@ from .conftest import PrefixedTestClient
 
 
 def test_init_multipart_upload(
-    mock_minio: Mock,
+    mock_s3: Mock,
     meeting_client: PrefixedTestClient,
     user_fixture: User,
     meeting_fixture: Meeting,
 ) -> None:
     filename = "audio.mp3"
-    mock_minio.create_multipart_upload.return_value = {
+    mock_s3.create_multipart_upload.return_value = {
         "Key": filename,
         "UploadId": "1",
     }
@@ -48,17 +48,17 @@ def test_init_multipart_upload(
 
 
 def test_sign_multipart_part(
-    mock_minio: Mock,
+    mock_s3: Mock,
     meeting_client: PrefixedTestClient,
     user_fixture: User,
     meeting_fixture: Meeting,
 ) -> None:
-    mock_minio.get_presigned_url_for_upload_part.return_value = "url"
+    mock_s3.get_presigned_url_for_upload_part.return_value = "url"
 
     # Arrange
     multipart_sign_part_request = MultipartSignPartRequest(
         upload_id="1",
-        object_key=get_audio_object_prefix(meeting_fixture.id),
+        object_key=get_audio_object_prefix(str(meeting_fixture.id)),
         part_number=1,
     )
     payload = multipart_sign_part_request.model_dump(mode="json")
@@ -76,19 +76,19 @@ def test_sign_multipart_part(
 
 
 def test_complete_multipart(
-    mock_minio: Mock,
+    mock_s3: Mock,
     meeting_client: PrefixedTestClient,
     user_fixture: User,
     meeting_fixture: Meeting,
 ) -> None:
-    mock_minio.complete_multipart_upload.return_value = None
+    mock_s3.complete_multipart_upload.return_value = None
 
     # Arrange
     multipart_complete_part_1 = MultipartCompletePart(part_number=1, etag="")
     multipart_complete_part_2 = MultipartCompletePart(part_number=2, etag="")
     multipart_complete_request = MultipartCompleteRequest(
         upload_id="1",
-        object_key=get_audio_object_prefix(meeting_fixture.id),
+        object_key=get_audio_object_prefix(str(meeting_fixture.id)),
         parts=[multipart_complete_part_1, multipart_complete_part_2],
     )
     payload = multipart_complete_request.model_dump(mode="json")
@@ -104,17 +104,17 @@ def test_complete_multipart(
 
 
 def test_abort_multipart(
-    mock_minio: Mock,
+    mock_s3: Mock,
     meeting_client: PrefixedTestClient,
     user_fixture: User,
     meeting_fixture: Meeting,
 ) -> None:
-    mock_minio.abort_multipart_upload.return_value = None
+    mock_s3.abort_multipart_upload.return_value = None
 
     # Arrange
     multipart_abort_request = MultipartAbortRequest(
         upload_id="1",
-        object_key=get_audio_object_prefix(meeting_fixture.id),
+        object_key=get_audio_object_prefix(str(meeting_fixture.id)),
     )
     payload = multipart_abort_request.model_dump(mode="json")
 
