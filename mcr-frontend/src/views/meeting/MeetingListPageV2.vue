@@ -88,7 +88,7 @@
             {{ label }}
             <DsfrTooltip
               v-if="key === 'report'"
-              :content="t('meetings_v2.table.columns.report-tooltip')"
+              :content="t('meetings_v2.table.columns.report.tooltip')"
             >
             </DsfrTooltip>
           </div>
@@ -161,7 +161,7 @@ const headers = [
   },
   {
     key: 'report',
-    label: t('meetings_v2.table.columns.report'),
+    label: t('meetings_v2.table.columns.report.label'),
     headerAttrs: { class: 'w-[20%]' },
   },
   {
