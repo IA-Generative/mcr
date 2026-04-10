@@ -129,7 +129,7 @@ def test_integration_full_process(
 
     # Execute: Run the full pipeline
     pipeline = SpeechToTextPipeline()
-    transcription_segments = pipeline.run(audio_bytes)
+    transcription_segments = pipeline.run(audio_bytes, meeting_id=0)
 
     # Verify: Results structure
     assert isinstance(transcription_segments, list)
@@ -247,7 +247,7 @@ def test_integration_full_process_empty_diarization(
     # Execute: Run the full pipeline
     audio_bytes = create_audio_buffer("wav")
     pipeline = SpeechToTextPipeline()
-    transcription_segments = pipeline.run(audio_bytes)
+    transcription_segments = pipeline.run(audio_bytes, meeting_id=0)
 
     # Verify: Empty result
     assert isinstance(transcription_segments, list)

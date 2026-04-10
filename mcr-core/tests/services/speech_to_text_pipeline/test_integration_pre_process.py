@@ -28,7 +28,7 @@ def test_integration_pre_process(
     audio_buffer = create_audio_buffer(audio_format)
 
     speech_to_text_pipeline = SpeechToTextPipeline()
-    processed_bytes = speech_to_text_pipeline.pre_process(audio_buffer)
+    processed_bytes = speech_to_text_pipeline.pre_process(audio_buffer, meeting_id=0)
 
     # Verify the feature flag was checked
     mock_feature_flag_client.is_enabled.assert_called_once_with("audio_noise_filtering")
@@ -70,7 +70,7 @@ def test_pre_process_skips_filtering_when_audio_is_clean(
     audio_buffer = create_audio_buffer("wav")
 
     pipeline = SpeechToTextPipeline()
-    pipeline.pre_process(audio_buffer)
+    pipeline.pre_process(audio_buffer, meeting_id=0)
 
     mocks.mock_is_noisy.assert_called_once()
 
@@ -85,7 +85,7 @@ def test_pre_process_applies_filtering_when_audio_is_noisy(
     audio_buffer = create_audio_buffer("wav")
 
     pipeline = SpeechToTextPipeline()
-    pipeline.pre_process(audio_buffer)
+    pipeline.pre_process(audio_buffer, meeting_id=0)
 
     mocks.mock_is_noisy.assert_called_once()
     mocks.mock_filter_noise.assert_called_once()
