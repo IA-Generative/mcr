@@ -75,110 +75,25 @@
       </DsfrAlert>
     </div>
 
-    <div class="fr-container flex flex-col">
-      <DsfrDataTable
-        title=""
-        :headers-row="headers"
-        no-caption
-        :rows="rows"
-        :sortable-rows="['date', 'title']"
-      >
-        <template #header="{ key, label }">
-          <div class="w-full flex gap-1 items-center">
-            {{ label }}
-            <DsfrTooltip
-              v-if="key === 'report'"
-              :content="t('meetings_v2.table.columns.report.tooltip')"
-            >
-            </DsfrTooltip>
-          </div>
-        </template>
-
-        <template #cell="{ colKey, cell }">
-          <DataTableCellsAction
-            :col-key="colKey"
-            :cell="cell"
-          />
-        </template>
-      </DsfrDataTable>
-      <TablePagination
-        class="self-end"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :total-pages="totalPages"
-        @on-page-change="setCurrentPage"
-        @on-page-size-change="setPageSize"
-      />
-    </div>
+    <MeetingsDataTable />
   </div>
 </template>
 
 <script lang="ts" setup>
+import { ref, onMounted } from 'vue';
 import PageFrontMatterV2 from '@/components/core/PageFrontMatterV2.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { t } from '@/plugins/i18n';
 import videoSvgPath from '@dsfr-artwork/pictograms/leisure/video.svg?url';
 import podcastSvgPath from '@dsfr-artwork/pictograms/leisure/podcast.svg?url';
 import selfTrainingSvgPath from '@dsfr-artwork/pictograms/digital/self-training.svg?url';
-import useToaster from '@/composables/use-toaster';
+import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 
 const isWebexEnabled = useFeatureFlag('webex');
-import { ref, onMounted, computed, watch } from 'vue';
-import { formatMeetingDate } from '@/utils/formatters';
-import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
-import { useMeetings } from '@/services/meetings/use-meeting';
-import { usePagination } from '@/composables/use-pagination';
 
 const SESSION_KEY = 'dsfr-alert-closed';
 const showAlert = ref(true);
 const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
-
-const toaster = useToaster();
-
-const headers = [
-  { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-[20%]' } },
-  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: 'w-[35%]' } },
-  {
-    key: 'transcription',
-    label: t('meetings_v2.table.columns.transcription'),
-    headerAttrs: { class: 'w-[15%]' },
-  },
-  {
-    key: 'report',
-    label: t('meetings_v2.table.columns.report.label'),
-    headerAttrs: { class: 'w-[20%]' },
-  },
-  {
-    key: 'actions',
-    label: t('meetings_v2.table.columns.actions'),
-    headerAttrs: { class: 'w-[10%]' },
-  },
-];
-
-const rows = computed(() =>
-  meetings.value.map((meeting) => ({
-    date: formatMeetingDate(meeting.creation_date),
-    title: { name: meeting.name, id: meeting.id },
-    transcription: '',
-    report: '',
-    actions: meeting,
-  })),
-);
-
-const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
-  currentPage: 1,
-  pageSize: 10,
-});
-
-const { getAllMeetingsQuery } = useMeetings();
-
-const { data: paginatedMeetings, error: meetingsError } = getAllMeetingsQuery({
-  search: ref(''),
-  page: currentPage,
-  pageSize,
-});
-const meetings = computed(() => paginatedMeetings.value?.data ?? []);
-const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
 
 onMounted(() => {
   const alreadyClosed = sessionStorage.getItem(SESSION_KEY);
@@ -191,16 +106,6 @@ function closeAlert() {
   showAlert.value = false;
   sessionStorage.setItem(SESSION_KEY, CLOSED_ALERT_VALUE);
 }
-
-watch(
-  meetingsError,
-  (error) => {
-    if (error) {
-      toaster.addErrorMessage(t('error.meetings-loading'));
-    }
-  },
-  { immediate: true },
-);
 </script>
 
 <style scoped>
