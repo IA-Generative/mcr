@@ -4,11 +4,9 @@ import { ref } from 'vue';
 import MeetingListPageV2 from '@/views/meeting/MeetingListPageV2.vue';
 import { renderWithPlugins } from '@/vitest.setup';
 
-
 const { mockUseFeatureFlag } = vi.hoisted(() => {
-  return { mockUseFeatureFlag: vi.fn(() => ref(false)) }
-})
-
+  return { mockUseFeatureFlag: vi.fn(() => ref(false)) };
+});
 
 vi.mock('@/composables/use-feature-flag', () => ({
   useFeatureFlag: () => mockUseFeatureFlag(),
