@@ -127,7 +127,6 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { formatMeetingDate } from '@/utils/formatters';
 import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 import { useMeetings } from '@/services/meetings/use-meeting';
-import TablePagination from '@/components/table/TablePagination.vue';
 import { usePagination } from '@/composables/use-pagination';
 
 const SESSION_KEY = 'dsfr-alert-closed';

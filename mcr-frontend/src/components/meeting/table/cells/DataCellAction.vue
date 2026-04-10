@@ -7,7 +7,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import TableActions from '@/components/table/TableActions.vue';
 import type { MeetingDto, UpdateMeetingDto } from '@/services/meetings/meetings.types';
 import { useModal } from 'vue-final-modal';
 import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
