@@ -10,7 +10,7 @@
         class="tile"
         :horizontal="true"
         :small="true"
-        :svg-path="videoSvgPath"
+        :img-src="videoSvgPath"
         :title="t('meetings_v2.tile-import.title')"
         :description="t('meetings_v2.tile-import.subtitle')"
       />
@@ -18,7 +18,7 @@
         class="tile"
         :horizontal="true"
         :small="true"
-        :svg-path="podcastSvgPath"
+        :img-src="podcastSvgPath"
         :title="t('meetings_v2.tile-record.title')"
         :description="t('meetings_v2.tile-record.subtitle')"
       />
@@ -26,7 +26,7 @@
         class="tile"
         :horizontal="true"
         :small="true"
-        :svg-path="selfTrainingSvgPath"
+        :img-src="selfTrainingSvgPath"
         :title="t('meetings_v2.tile-visio.title')"
         :description="
           isWebexEnabled
