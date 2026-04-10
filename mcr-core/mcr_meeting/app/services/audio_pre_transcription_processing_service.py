@@ -1,12 +1,21 @@
+import json
 import os
+import re
 import tempfile
 from collections.abc import Iterator
 from io import BytesIO
 
 import ffmpeg
+import numpy as np
+import numpy.typing as npt
 from loguru import logger
 
-from mcr_meeting.app.configs.base import AudioSettings, Speech2TextSettings
+from mcr_meeting.app.configs.base import (
+    AudioSettings,
+    NoiseDetectionSettings,
+    NormalizedAudioVolumeSettings,
+    Speech2TextSettings,
+)
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.s3_service import get_file_from_s3
@@ -14,6 +23,8 @@ from mcr_meeting.setup.logger import log_ffmpeg_command
 
 s2t_settings = Speech2TextSettings()
 audio_settings = AudioSettings()
+noise_detection_settings = NoiseDetectionSettings()
+normalized_audio_volume_settings = NormalizedAudioVolumeSettings()
 sample_rate = audio_settings.SAMPLE_RATE
 nb_channels = audio_settings.NB_AUDIO_CHANNELS
 
@@ -170,3 +181,166 @@ def download_and_concatenate_s3_audio_chunks_into_bytes(
 
     audio_buffer.seek(0)
     return audio_buffer
+
+
+def _parse_mean_volume(ffmpeg_stderr: str) -> float:
+    """Parse mean_volume in dBFS from ffmpeg volumedetect stderr output."""
+    match = re.search(r"mean_volume:\s*(-?\d+(?:\.\d+)?)\s*dB", ffmpeg_stderr)
+    if not match:
+        raise RuntimeError(
+            f"Could not parse mean_volume from ffmpeg output.\n\n{ffmpeg_stderr}"
+        )
+    return float(match.group(1))
+
+
+def _parse_silence_intervals(
+    ffmpeg_stderr: str,
+) -> list[tuple[float, float]]:
+    """Parse silence intervals from ffmpeg silencedetect stderr output."""
+    starts = [
+        float(x)
+        for x in re.findall(r"silence_start:\s*([0-9]+(?:\.[0-9]+)?)", ffmpeg_stderr)
+    ]
+    ends = [
+        float(x)
+        for x in re.findall(r"silence_end:\s*([0-9]+(?:\.[0-9]+)?)", ffmpeg_stderr)
+    ]
+    return list(zip(starts, ends))
+
+
+def _parse_loudnorm_stats(ffmpeg_stderr: str) -> dict[str, str]:
+    """Parse loudnorm statistics (JSON) from ffmpeg stderr output (pass 1)."""
+    json_start = ffmpeg_stderr.rfind("{")
+    json_end = ffmpeg_stderr.rfind("}") + 1
+    if json_start == -1 or json_end == 0:
+        raise RuntimeError(
+            f"Could not parse loudnorm stats from ffmpeg output.\n\n{ffmpeg_stderr}"
+        )
+    result: dict[str, str] = json.loads(ffmpeg_stderr[json_start:json_end])
+    return result
+
+
+def _get_mean_volume_db(wav_bytes: BytesIO) -> float:
+    """Return the mean_volume in dBFS via ffmpeg volumedetect."""
+    _, stderr = (
+        ffmpeg.input("pipe:0", format="wav")
+        .output("pipe:", format="null", af="volumedetect")
+        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    )
+    return _parse_mean_volume(stderr.decode("utf-8", errors="replace"))
+
+
+def _detect_silences(
+    wav_bytes: BytesIO,
+) -> list[tuple[float, float]]:
+    """Detect silence segments using a relative threshold (mean_volume - offset dB)."""
+    mean_volume_db = _get_mean_volume_db(wav_bytes)
+    threshold_db = mean_volume_db - noise_detection_settings.SILENCE_THRESHOLD_OFFSET_DB
+
+    af = f"silencedetect=noise={threshold_db}dB:d={noise_detection_settings.MIN_SILENCE_DURATION}"
+    _, stderr = (
+        ffmpeg.input("pipe:0", format="wav")
+        .output("pipe:", format="null", af=af)
+        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    )
+    return _parse_silence_intervals(stderr.decode("utf-8", errors="replace"))
+
+
+def two_pass_volume_normalization(wav_bytes: BytesIO) -> BytesIO:
+    """Normalize volume using two-pass EBU R128 loudnorm."""
+    loudnorm_base = f"loudnorm=I={normalized_audio_volume_settings.TARGET_LUFS}:TP={normalized_audio_volume_settings.TRUE_PEAK}:LRA={normalized_audio_volume_settings.LOUDNESS_RANGE}"
+
+    # Pass 1: measure loudness statistics
+    _, stderr = (
+        ffmpeg.input("pipe:0", format="wav")
+        .output("pipe:", format="null", af=f"{loudnorm_base}:print_format=json")
+        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    )
+    stats = _parse_loudnorm_stats(stderr.decode("utf-8", errors="replace"))
+
+    # Pass 2: apply normalization with measured values
+    out, _ = (
+        ffmpeg.input("pipe:0", format="wav")
+        .output(
+            "pipe:",
+            format="wav",
+            ar=audio_settings.SAMPLE_RATE,
+            af=(
+                f"{loudnorm_base}:"
+                f"measured_I={stats['input_i']}:"
+                f"measured_TP={stats['input_tp']}:"
+                f"measured_LRA={stats['input_lra']}:"
+                f"measured_thresh={stats['input_thresh']}:"
+                f"offset={stats['target_offset']}:"
+                f"linear=true"
+            ),
+        )
+        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    )
+    return BytesIO(out)
+
+
+def _read_audio_samples(
+    wav_bytes: BytesIO,
+) -> npt.NDArray[np.float32]:
+    """Read WAV bytes into float32 mono samples via ffmpeg."""
+    out, _ = (
+        ffmpeg.input("pipe:0", format="wav")
+        .output(
+            "pipe:",
+            format="s16le",
+            acodec="pcm_s16le",
+            ac=1,
+            ar=audio_settings.SAMPLE_RATE,
+        )
+        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    )
+    return (
+        np.frombuffer(out, dtype=np.int16).astype(np.float32)
+        / noise_detection_settings.INT16_MAX
+    )
+
+
+def _seconds_to_samples(seconds: float) -> int:
+    """Convert a time position in seconds to a sample index."""
+    return int(seconds * audio_settings.SAMPLE_RATE)
+
+
+def compute_spectral_flatness_on_silences(
+    wav_bytes: BytesIO,
+) -> float | None:
+    """Calculate the average spectral flatness over silence segments."""
+    normalized_wav_bytes = two_pass_volume_normalization(wav_bytes)
+    silences = _detect_silences(normalized_wav_bytes)
+    samples = _read_audio_samples(normalized_wav_bytes)
+
+    flatness_values = []
+    for seg_start, seg_end in silences:
+        segment = samples[_seconds_to_samples(seg_start) : _seconds_to_samples(seg_end)]
+        if len(segment) < noise_detection_settings.FRAME_SIZE:
+            continue
+        for start in range(
+            0,
+            len(segment) - noise_detection_settings.FRAME_SIZE,
+            noise_detection_settings.HOP_SIZE,
+        ):
+            frame = segment[start : start + noise_detection_settings.FRAME_SIZE]
+            spectrum = np.abs(np.fft.rfft(frame)) ** 2 + 1e-12
+            geo_mean = np.exp(np.mean(np.log(spectrum)))
+            arith_mean = np.mean(spectrum)
+            flatness_values.append(geo_mean / arith_mean)
+
+    return float(np.mean(flatness_values)) if flatness_values else None
+
+
+def is_audio_noisy(wav_bytes: BytesIO) -> bool:
+    """Determine whether audio is noisy based on spectral flatness in silence segments."""
+    flatness = compute_spectral_flatness_on_silences(wav_bytes)
+    if flatness is None:
+        logger.warning(
+            "No silence segments detected, cannot compute spectral flatness. Assuming noisy audio."
+        )
+    wav_bytes.seek(0)
+    return (
+        flatness is None or flatness > noise_detection_settings.NOISE_FLATNESS_THRESHOLD
+    )

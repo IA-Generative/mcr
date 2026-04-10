@@ -58,9 +58,9 @@ class TranscriptionProcessor:
     def transcribe(
         self,
         audio_bytes: BytesIO,
-        vad_spans: list[TimeSpan],
+        chunk_spans: list[TimeSpan],
     ) -> list[TranscriptionSegment]:
-        transcription_inputs = split_audio_on_timestamps(audio_bytes, vad_spans)
+        transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
 
         logger.debug(
             "Starting transcription of {} input audio chunks", len(transcription_inputs)

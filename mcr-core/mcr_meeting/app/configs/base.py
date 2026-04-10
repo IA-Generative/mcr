@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     MCR_FRONTEND_URL: str
     DEBUG: bool = False
     ENV_MODE: str = Field(description="Environment mode")
+    COMU_LOOKUP_URL: str = Field(default="https://webconf.comu.gouv.fr/api/lookup")
 
     @field_validator("ENV_MODE")
     def validate_env_mode(cls, v: str) -> str:
@@ -68,6 +69,61 @@ class AudioSettings(BaseSettings):
         0.6,
         description="""non speech probability threshold. we exclude segment 
                        with non speech probability higher than this value """,
+    )
+
+
+class NoiseDetectionSettings(BaseSettings):
+    """
+    Configuration settings for noise detection based on spectral flatness
+    """
+
+    # === PARAMETERS ===
+
+    NOISE_FLATNESS_THRESHOLD: float = Field(
+        default=0.05,
+        description="Spectral flatness threshold above which audio is considered noisy.",
+    )
+    MIN_SILENCE_DURATION: float = Field(
+        default=0.5,
+        description="Minimum silence segment duration in seconds for silence detection.",
+    )
+    SILENCE_THRESHOLD_OFFSET_DB: float = Field(
+        default=10.0,
+        description="Offset in dB below mean volume used as silence detection threshold.",
+    )
+
+    # === CONSTANTS ===
+
+    FRAME_SIZE: int = Field(
+        default=2048,
+        description="Number of audio samples per analysis window used for spectral flatness computation. A larger frame captures more frequency detail but reduces time resolution. Based on the Fast Fourier Transform (FFT) algorithm.",
+    )
+    HOP_SIZE: int = Field(
+        default=512,
+        description="Hop size in samples between consecutive FFT frames.",
+    )
+    INT16_MAX: float = Field(
+        default=32768.0,
+        description="Maximum absolute value of a 16-bit signed integer, used to normalize audio samples to [-1.0, 1.0].",
+    )
+
+
+class NormalizedAudioVolumeSettings(BaseSettings):
+    """
+    Configuration settings for normalized audio volume based on EBU R128
+    """
+
+    TARGET_LUFS: float = Field(
+        default=-23.0,
+        description="Target loudness in LUFS for EBU R128 volume normalization.",
+    )
+    TRUE_PEAK: float = Field(
+        default=-1.5,
+        description="Maximum true peak level in dBTP for loudnorm.",
+    )
+    LOUDNESS_RANGE: float = Field(
+        default=11.0,
+        description="Target loudness range in LU for loudnorm.",
     )
 
 
@@ -129,6 +185,14 @@ class WhisperTranscriptionSettings(BaseSettings):
     INITIAL_PROMPT: str | None = Field(
         default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
         description="Prompt passed to the transcription model",
+    )
+    MAX_CHUNK_DURATION: float = Field(
+        default=600.0,
+        description="Maximum duration in seconds for a single transcription chunk (~10 min).",
+    )
+    SPLIT_SEARCH_WINDOW_RATIO: float = Field(
+        default=0.2,
+        description="Fraction of max_chunk_duration at the end of a chunk where the algorithm searches for the best silence to split on.",
     )
 
 
@@ -228,6 +292,7 @@ class ApiSettings(BaseSettings):
     FEATURE_FLAG_API_PREFIX: str = "/api/feature-flag"
     MEETING_API_PREFIX: str = "/api/meetings"
     TRANSCRIPTION_API_PREFIX: str = "/api/transcription"
+    LOOKUP_API_PREFIX: str = "/api/lookup"
 
 
 class CelerySettings(BaseSettings):
@@ -235,6 +300,8 @@ class CelerySettings(BaseSettings):
     REDIS_PORT: int
     REDIS_VHOST_TASK_DB: int = 0
     REDIS_VHOST_RESULT_DB: int = 1
+    REDIS_TOKEN_STORE_DB: int = 2
+    REDIS_TOKEN_TTL_SECONDS: int = 2_592_000  # 30 days
 
     @property
     def CELERY_BROKER_URL(self) -> str:
@@ -393,6 +460,18 @@ class EvaluationSettings(BaseSettings):
     SUPPORTED_AUDIO_FORMATS: list[str] = Field(
         default=["mp3", "wav"], description="Supported audio formats for evaluation"
     )
+
+
+class KeycloakExchangeSettings(BaseSettings):
+    KEYCLOAK_URL: str = ""
+    KEYCLOAK_REALM: str = ""
+    KEYCLOAK_CORE_CLIENT_ID: str = "mcr-core"
+    KEYCLOAK_CORE_CLIENT_SECRET: str = ""
+
+
+class DriveSettings(BaseSettings):
+    DRIVE_API_BASE_URL: str = ""
+    DRIVE_FRONTEND_URL: str = ""
 
 
 class TranscriptionForbiddenSentences(BaseSettings):

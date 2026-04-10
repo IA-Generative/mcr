@@ -1,7 +1,6 @@
-name: "Défaut"
+name: "Bug/Défaut"
 description: Créer un ticket de bug
 title: "🐛 "
-labels: ["Bug"]
 type: bug
 body:
   - type: textarea

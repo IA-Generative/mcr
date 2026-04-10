@@ -1,0 +1,33 @@
+LOCUTEUR_01 : Bon, tout le monde est là ? Parfait. Ça faisait longtemps qu'on voulait se poser pour parler randonnée estivale. J'ai plein d'idées mais je voulais d'abord avoir vos avis. On a tous fait des trucs différents ces dernières années.
+LOCUTEUR_02 : Oui, bonne idée. Tu as regardé du côté des Écrins cette année ? J'ai vu des topos qui avaient l'air excellents.
+LOCUTEUR_01 : J'ai regardé oui, mais je voulais changer un peu. Les Écrins je les connais assez bien maintenant. Je pensais plutôt aux Dolomites ou au Mercantour.
+LOCUTEUR_03 : Pardon, je me permets de m'insérer — on ne se connaît pas encore je crois. Tu mentionnes le Mercantour, c'est justement là que je suis allée l'été dernier. Trois jours sur le GR 52, c'était absolument somptueux.
+LOCUTEUR_01 : Ah, avec plaisir ! Et c'était comment niveau difficulté ?
+LOCUTEUR_02 : Nadia, tu n'as pas répondu à la question sur le dénivelé.
+LOCUTEUR_03 : Ah pardon ! Ça dépend vraiment du tracé. Le GR 52 peut se faire de façon assez progressive, mais il y a des variantes qui montent à plus de 2 500 mètres si tu veux du costaud.
+LOCUTEUR_04 : Je cherchais le bon moment pour entrer dans la conversation. Je suis convaincu que cet été la meilleure option c'est les Alpes du Nord. Le tour du Mont-Blanc reste une référence absolue.
+LOCUTEUR_02 : Théo, je suis un peu partagée. C'est magnifique, personne ne dit le contraire, mais c'est devenu extrêmement fréquenté non ? En juillet-août, les refuges sont bondés.
+LOCUTEUR_04 : La fréquentation est un vrai sujet, c'est vrai. Mais si on réserve six mois à l'avance et qu'on évite les semaines centrales d'août, ça reste gérable. Voir l'aiguille du Midi depuis le col de Voza au petit matin, ça n'a pas d'équivalent.
+LOCUTEUR_01 : Tu l'as fait combien de fois, Théo ?
+LOCUTEUR_04 : Deux fois. Une en onze jours, une en sept jours en poussant les étapes. Je préfère la version lente — on a le temps de s'arrêter, d'observer, de papoter avec les autres randonneurs.
+LOCUTEUR_05 : Désolée je suis en retard, j'ai eu du mal à me garer. Théo, bonjour ! Et toi Nadia, ça faisait longtemps !
+LOCUTEUR_03 : Ah, contente de te voir ! Tu connais tout le monde ?
+LOCUTEUR_02 : Fabienne, je te présente — on a un nouveau visage parmi nous aujourd'hui.
+LOCUTEUR_05 : Ravie de te rencontrer. Alors, vous en étiez où ?
+LOCUTEUR_01 : On débattait entre Mercantour et tour du Mont-Blanc. Théo plaide pour le TMB, Nadia vante le Mercantour.
+LOCUTEUR_05 : J'ai fait quelque chose de complètement différent l'an dernier qui mérite d'être mis sur la table : le chemin de Stevenson. La GR 70 à travers les Cévennes. C'est moins spectaculaire que les Alpes, mais il y a quelque chose d'unique dans cette lumière du Massif central et dans les villages traversés.
+LOCUTEUR_02 : Fabienne, tu m'intrigues. Je connaissais le nom mais je n'avais jamais rencontré quelqu'un qui l'avait fait. C'est praticable en combien de jours ?
+LOCUTEUR_05 : En général une dizaine de jours pour la version complète, du Puy-en-Velay à Saint-Jean-du-Gard. Ce qui est agréable aussi c'est que les hébergements sont variés — gîtes, fermes, petits hôtels. On n'est pas dépendant des refuges de haute montagne.
+LOCUTEUR_04 : Ça m'intéresse pour une autre année. Mais cet été j'ai vraiment envie d'altitude. On a eu un hiver long, j'ai besoin de panoramas à 360 degrés.
+LOCUTEUR_03 : Je comprends tout à fait, Théo. Dans ce cas, une option qu'on n'a pas encore mentionnée : le GR 20 en Corse. C'est réputé pour être le plus beau — et le plus difficile — sentier de Grande Randonnée en France. Les paysages sont à couper le souffle.
+LOCUTEUR_01 : J'en ai toujours entendu parler comme d'un truc très physique. Il faut un bon niveau quand même ?
+LOCUTEUR_03 : Oui, il ne faut pas y aller à la légère. Mais avec un groupe comme le nôtre, la moitié nord suffit déjà pour se faire une idée. C'est du terrain rocheux, parfois technique, mais faisable en deux semaines tranquilles.
+LOCUTEUR_05 : Je veux bien reconsidérer la montagne si c'est la Corse. L'an dernier je cherchais quelque chose de plus doux parce que j'avais eu une blessure au genou. Là je suis remise.
+LOCUTEUR_04 : Honnêtement, je suis prêt à lâcher le TMB si le groupe penche pour la Corse. L'important c'est de partir ensemble.
+LOCUTEUR_02 : Je me demande si on ne devrait pas voter. On a trois options sérieuses : le TMB, le Mercantour, le GR 20. Et le chemin de Stevenson pour une autre fois.
+LOCUTEUR_01 : Bonne idée. Un tableau avec les dates disponibles de chacun et on voit ce qui colle ?
+LOCUTEUR_05 : Moi je suis bloquée les deux premières semaines de juillet, mais après je suis libre.
+LOCUTEUR_03 : Pareil à peu près — pas avant le 14 juillet. Mais à partir de là, trois semaines de disponibles.
+LOCUTEUR_02 : Moi c'est plus compliqué, j'ai un mariage le 2 août. Donc soit on part avant, soit après le 5 août.
+LOCUTEUR_04 : Je m'adapte. Dernière semaine de juillet ça m'irait très bien. Le GR 20 ou le Mercantour, la lumière du soir est incroyable à cette période.
+LOCUTEUR_01 : Très bien. Je compile tout ça et je vous envoie un récap cette semaine. On se donne une date butoir vendredi prochain — parce qu'il faudra réserver vite si on veut des hébergements corrects.

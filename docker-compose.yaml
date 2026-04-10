@@ -68,6 +68,12 @@ services:
       - TRANSCRIPTION_API_KEY=${TRANSCRIPTION_API_KEY}
       - DIARIZATION_API_BASE_URL=${DIARIZATION_API_BASE_URL}
       - DIARIZATION_API_KEY=${DIARIZATION_API_KEY}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CORE_CLIENT_ID=${KEYCLOAK_CORE_CLIENT_ID}
+      - KEYCLOAK_CORE_CLIENT_SECRET=${KEYCLOAK_CORE_CLIENT_SECRET}
+      - DRIVE_API_BASE_URL=${DRIVE_API_BASE_URL}
+      - DRIVE_FRONTEND_URL=${DRIVE_FRONTEND_URL}
 
     ports:
       - "5672:5672"
@@ -134,6 +140,7 @@ services:
       - postgres
     networks:
       - mcr-network
+      - shared-network
     volumes:
       - ./mcr-core/mcr_meeting:/app/mcr_meeting
     develop:
@@ -173,6 +180,12 @@ services:
       - LEVEL=${LEVEL}
       - DISPLAY_REQUEST_ID=${DISPLAY_REQUEST_ID}
       - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+      - KEYCLOAK_URL=${KEYCLOAK_URL}
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
+      - KEYCLOAK_CORE_CLIENT_ID=${KEYCLOAK_CORE_CLIENT_ID}
+      - KEYCLOAK_CORE_CLIENT_SECRET=${KEYCLOAK_CORE_CLIENT_SECRET}
+      - DRIVE_API_BASE_URL=${DRIVE_API_BASE_URL}
+      - DRIVE_FRONTEND_URL=${DRIVE_FRONTEND_URL}
 
   generation:
     build:
@@ -242,6 +255,7 @@ services:
       context: ./mcr-capture-worker
       target: dev
     container_name: mcr-capture-worker
+    user: "1000:1000"
     volumes:
       - ./mcr-capture-worker/mcr_capture_worker:/app/mcr_capture_worker
     develop:
@@ -249,6 +263,7 @@ services:
         - action: rebuild
           path: ./mcr-capture-worker/pyproject.toml
     environment:
+      - HOME=/tmp
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -386,10 +401,13 @@ services:
         restart: true
     networks:
       - mcr-network
+      - shared-network
 
 networks:
   mcr-network:
     driver: bridge
+  shared-network:
+    external: true
 
 volumes:
   postgres_data:

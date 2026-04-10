@@ -62,9 +62,9 @@ class CaptureSettings(BaseSettings):
         300,
         description="Time in seconds the bot waits alone in a meeting before auto-disconnecting",
     )
-    FAKE_AUDIO_CAPTURE_FILE: str = Field(
-        "/app/mcr_capture_worker/resources/audio.wav",
-        description="Path to a .wav file used as fake audio capture input for the browser",
+    TEARDOWN_TIMEOUT: int = Field(
+        30,
+        description="Time in seconds the bot waits to be disconnected after stop recording before forcing browser to close",
     )
 
     model_config = SettingsConfigDict(

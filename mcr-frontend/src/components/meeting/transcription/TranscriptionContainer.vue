@@ -38,12 +38,12 @@
 </template>
 
 <script setup lang="ts">
-import { type MeetingDto } from '@/services/meetings/meetings.types';
+import { type MeetingDetailDto } from '@/services/meetings/meetings.types';
 import type { DsfrTabItemProps } from '@gouvminint/vue-dsfr';
 import { useI18n } from 'vue-i18n';
 
 defineProps<{
-  meeting: MeetingDto;
+  meeting: MeetingDetailDto;
 }>();
 
 const { t } = useI18n();

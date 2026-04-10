@@ -2,35 +2,66 @@
 
 from collections.abc import Callable
 from io import BytesIO
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 from pydub.generators import Sine
 
+from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
+
+M = WhisperTranscriptionSettings().MAX_CHUNK_DURATION
+
+
+@pytest.fixture
+def mock_noise_detection_dependencies():
+    with (
+        patch(
+            "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
+        ) as mock_get_ff_client,
+        patch(
+            "mcr_meeting.app.services.speech_to_text.speech_to_text.is_audio_noisy"
+        ) as mock_is_noisy,
+        patch(
+            "mcr_meeting.app.services.speech_to_text.speech_to_text.filter_noise_from_audio_bytes"
+        ) as mock_filter_noise,
+    ):
+        mock_get_ff_client.return_value.is_enabled.return_value = True
+        yield SimpleNamespace(
+            mock_is_noisy=mock_is_noisy,
+            mock_filter_noise=mock_filter_noise,
+        )
 
 
 @pytest.fixture
 def diarization_result_multiple_speakers() -> list[DiarizationSegment]:
     """Mock diarization result with multiple speakers.
 
-    Note: Segments have gaps > MAX_SILENCE_GAP to prevent VAD merging.
+    Segments are spaced at multiples of MAX_CHUNK_DURATION so that
+    compute_transcription_chunks produces 4 chunks (boundaries at M, 2M, 3M).
     """
     return [
         DiarizationSegment(start=0.0, end=3.0, speaker="Intervenant 1"),
-        DiarizationSegment(start=4.0, end=6.0, speaker="Intervenant 2"),
-        DiarizationSegment(start=7.0, end=10.0, speaker="Intervenant 2"),
-        DiarizationSegment(start=11.0, end=12.0, speaker="Intervenant 1"),
-        DiarizationSegment(start=12.01, end=13.0, speaker="Intervenant 2"),
+        DiarizationSegment(start=M, end=M + 2.0, speaker="Intervenant 2"),
+        DiarizationSegment(start=2 * M, end=2 * M + 3.0, speaker="Intervenant 2"),
+        DiarizationSegment(start=3 * M, end=3 * M + 1.0, speaker="Intervenant 1"),
+        DiarizationSegment(
+            start=3 * M + 1.01, end=3 * M + 2.0, speaker="Intervenant 2"
+        ),
     ]
 
 
 @pytest.fixture
 def diarization_result_single_speaker() -> list[DiarizationSegment]:
-    """Mock diarization result with single speaker."""
+    """Mock diarization result with single speaker.
+
+    Produces 2 chunks (boundary at M).
+    """
     return [
         DiarizationSegment(start=0.0, end=5.0, speaker="Intervenant 1"),
-        DiarizationSegment(start=6.0, end=10.0, speaker="Intervenant 1"),
+        DiarizationSegment(start=M, end=M + 4.0, speaker="Intervenant 1"),
     ]
 
 
@@ -42,7 +73,11 @@ def diarization_result_empty() -> list[DiarizationSegment]:
 
 @pytest.fixture
 def mock_transcription_segments_normal() -> list[list[TranscriptionSegment]]:
-    """Normal transcription segments for each chunk."""
+    """Normal transcription segments for each chunk.
+
+    Each sub-list corresponds to one transcription chunk.
+    Timestamps are relative to the chunk start.
+    """
     return [
         [
             TranscriptionSegment(id=0, start=0.0, end=1.5, text="1st segment"),

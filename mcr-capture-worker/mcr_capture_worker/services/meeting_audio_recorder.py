@@ -58,37 +58,37 @@ class MeetingAudioRecorder:
             raise RuntimeError("MeetingTransitionClient is not initialized")
 
         async with async_playwright() as playwright:
-            browser_args = [
-                "--use-fake-device-for-media-stream",
-                "--use-fake-ui-for-media-stream",
-            ]
-            if capture_settings.FAKE_AUDIO_CAPTURE_FILE:
-                browser_args.append(
-                    f"--use-file-for-fake-audio-capture={capture_settings.FAKE_AUDIO_CAPTURE_FILE}"
-                )
             self.browser = await playwright.chromium.launch(
                 headless=capture_settings.BROWSER_HEADLESS,
-                args=browser_args,
+                args=[
+                    "--no-sandbox",
+                    "--use-fake-device-for-media-stream",
+                    "--use-fake-ui-for-media-stream",
+                    "--autoplay-policy=no-user-gesture-required",
+                    "--disable-dev-shm-usage",
+                ],
             )
+
             context = await self.browser.new_context(
                 permissions=["microphone", "camera"],
             )
             page = await context.new_page()
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
 
+            page.on("console", self.handle_console_message)
+
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
+            await self.connection_strategy.post_connect_setup(page)
             self._connected_at = time.monotonic()
 
             await self.meeting_transition_client.start_capture_bot(self.meeting_id)
 
-            page.on("console", self.handle_console_message)
-
-            await page.expose_function(
+            await context.expose_function(
                 "sendOnDataavailableToWorker", self.handle_data_available
             )
-            await page.expose_function("sendOnStartToWorker", self.handle_start)
-            await page.expose_function("sendOnStopToWorker", self.handle_stop)
+            await context.expose_function("sendOnStartToWorker", self.handle_start)
+            await context.expose_function("sendOnStopToWorker", self.handle_stop)
             time.sleep(3)
 
             await self.start_recording(page)
@@ -175,6 +175,7 @@ class MeetingAudioRecorder:
         self.pending_uploads.append(
             self.handle_audio_chunk(BytesIO(bytes(data["js_bytes"])))
         )
+        logger.info("Handle date available")
 
     async def handle_stop(self) -> None:
         await self.end_capture_if_in_progress()
@@ -218,7 +219,15 @@ class MeetingAudioRecorder:
         logger.info("Recording stopped...")
 
     async def wait_for_teardown_to_finish(self) -> None:
+        deadline = time.monotonic() + capture_settings.TEARDOWN_TIMEOUT
         while not self.teardown_after_stop_is_finished:
+            if time.monotonic() >= deadline:
+                logger.warning(
+                    "Teardown timed out for meeting: {} — forcing browser close",
+                    self.meeting_id,
+                )
+                await self.browser.close()
+                return
             await asyncio.sleep(1)
 
     def mark_teardown_as_finished(self) -> None:

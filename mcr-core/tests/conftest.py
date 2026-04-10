@@ -11,6 +11,8 @@ from pytest_mock import MockerFixture
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+import mcr_meeting.app.services.redis_token_store as redis_store_module
+import mcr_meeting.app.services.token_exchange_service as token_exchange_module
 from mcr_meeting.app.db.db import (
     Base,
     db_session_ctx,
@@ -23,6 +25,8 @@ from mcr_meeting.app.services.feature_flag_service import (
 )
 from mcr_meeting.main import app
 from tests.mocks.email_mocks import mock_send_email as mock_send_email  # noqa: F401
+from tests.mocks.in_memory_keycloak import InMemoryKeycloak
+from tests.mocks.in_memory_redis import InMemoryRedis
 from tests.mocks.s3_mocks import mock_s3_put as mock_s3_put  # noqa: F401
 
 # --- TEST DB SETUP ---
@@ -72,6 +76,24 @@ def db_session() -> Generator[Session, None, None]:
     transaction.rollback()
     connection.close()
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def in_memory_redis() -> Generator[InMemoryRedis, None, None]:
+    mock = InMemoryRedis()
+    original = redis_store_module._client
+    redis_store_module._client = mock  # type: ignore[assignment]
+    yield mock
+    redis_store_module._client = original
+
+
+@pytest.fixture(autouse=True)
+def in_memory_keycloak() -> Generator[InMemoryKeycloak, None, None]:
+    mock = InMemoryKeycloak()
+    original = token_exchange_module._keycloak
+    token_exchange_module._keycloak = mock  # type: ignore[assignment]
+    yield mock
+    token_exchange_module._keycloak = original
 
 
 @pytest.fixture

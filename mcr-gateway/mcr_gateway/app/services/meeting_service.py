@@ -14,6 +14,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingBase,
     MeetingCreate,
     MeetingUpdate,
+    MeetingWithDetails,
     PaginatedMeetingsResponse,
     ReportGenerationRequest,
 )
@@ -21,21 +22,25 @@ from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
 
 
 class MCRCoreCustomAuth(httpx.Auth):
-    def __init__(self, user_keycloak_uuid: UUID4):
+    def __init__(self, user_keycloak_uuid: UUID4, access_token: str | None = None):
         self.token = str(user_keycloak_uuid)
+        self.access_token = access_token
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, Any, None]:
         request.headers["X-User-Keycloak-Uuid"] = self.token
+        if self.access_token:
+            request.headers["X-User-Access-Token"] = self.access_token
         yield request
 
 
 @asynccontextmanager
 async def get_meeting_http_client(
     user_keycloak_uuid: UUID4,
+    access_token: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
     client = httpx.AsyncClient(
         base_url=settings.MEETING_SERVICE_URL,
-        auth=MCRCoreCustomAuth(user_keycloak_uuid),
+        auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
     )
     try:
         yield client
@@ -106,7 +111,7 @@ async def generate_presigned_url_service(
 async def get_meeting_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
-) -> Meeting:
+) -> MeetingWithDetails:
     """
     Service to retrieve a single meeting by its ID from the meeting service.
 
@@ -114,13 +119,13 @@ async def get_meeting_service(
         meeting_id (int): The ID of the meeting to retrieve.
 
     Returns:
-        Meeting: The meeting object corresponding to the provided ID.
+        MeetingDetailed: The meeting object with deliverables.
     """
     async with get_meeting_http_client(user_keycloak_uuid) as client:
         response = await client.get(f"{meeting_id}")
         response.raise_for_status()
         meeting_data = response.json()
-        return Meeting(**meeting_data)
+        return MeetingWithDetails(**meeting_data)
 
 
 async def update_meeting_service(
@@ -211,6 +216,7 @@ async def init_meeting_capture_service(
 async def stop_meeting_capture_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
+    access_token: str | None = None,
 ) -> None:
     """
     Service to stop the transcription for a meeting by calling the mcr-core API.
@@ -219,7 +225,7 @@ async def stop_meeting_capture_service(
         meeting_id (int): The ID of the meeting for which the transcription should be stopped.
     """
     try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
+        async with get_meeting_http_client(user_keycloak_uuid, access_token) as client:
             response = await client.post(url=f"{meeting_id}/capture/stop")
             response.raise_for_status()  # Raise an error for non-200 responses
 
@@ -275,8 +281,9 @@ async def get_meetings_service(
 async def start_meeting_transcription_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
+    access_token: str | None = None,
 ) -> None:
-    async with get_meeting_http_client(user_keycloak_uuid) as client:
+    async with get_meeting_http_client(user_keycloak_uuid, access_token) as client:
         response = await client.post(url=f"{meeting_id}/transcription/init")
         response.raise_for_status()
 

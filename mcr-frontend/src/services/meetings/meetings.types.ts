@@ -18,7 +18,7 @@ export const MeetingStatus = [
 ] as const;
 export type MeetingStatus = (typeof MeetingStatus)[number];
 
-export const OnlineMeetingPlatforms = ['COMU', 'WEBINAIRE', 'WEBCONF', 'VISIO'] as const;
+export const OnlineMeetingPlatforms = ['COMU', 'WEBINAIRE', 'WEBCONF', 'VISIO', 'WEBEX'] as const;
 export const ImportMeetingPlatforms = ['MCR_IMPORT'] as const;
 export const RecordMeetingPlatforms = ['MCR_RECORD'] as const;
 
@@ -56,7 +56,20 @@ export interface RecordMeetingDto extends MeetingDtoBase {
   name_platform: RecordMeetingPlatforms;
 }
 
+export const DeliverableFileType = ['TRANSCRIPTION', 'REPORT'] as const;
+export type DeliverableFileType = (typeof DeliverableFileType)[number];
+
+export interface DeliverableDto {
+  file_type: DeliverableFileType;
+  external_url: string | null;
+  updated_at: string;
+}
+
 export type MeetingDto = OnlineMeetingDto | ImportMeetingDto | RecordMeetingDto;
+
+export type MeetingDetailDto = MeetingDto & {
+  deliverables: DeliverableDto[];
+};
 
 export type AddOnlineMeetingDto = Omit<
   OnlineMeetingDto,

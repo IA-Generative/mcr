@@ -46,7 +46,11 @@ plugins = ["pydantic.mypy"]
 # I:    isort -> Sorted imports
 # G:    flake8-logging-format -> logging format
 # UP:   pyupgrade -> PEP approved code conventions
-extend-select = ["T20", "I", "G", "UP"]
+extend-select = ["T20", "I", "G", "UP", "TID251"]
 logger-objects = ["loguru.logger"]
 
 ignore = ["UP017", "UP008", "UP028", "UP046", "UP047"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"logging".msg = "Use loguru instead of stdlib logging"
+"requests".msg = "Use httpx instead of requests"

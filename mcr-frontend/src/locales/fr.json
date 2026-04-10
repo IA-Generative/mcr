@@ -94,6 +94,30 @@
     "hero": {
       "title": "Faire un compte-rendu",
       "subtitle": "Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée)."
+    },
+    "tile-import": {
+      "title": "J'importe un fichier audio ou vidéo",
+      "subtitle": "Importez un fichier au format : .mp3, .wav, .m4a, .mp4, .mov."
+    },
+    "tile-record": {
+      "title": "J'enregistre une réunion en présentiel",
+      "subtitle": "Activez votre micro et parlez à tour de rôle, en direct."
+    },
+    "tile-visio": {
+      "title": "Je participe à une réunion en visioconférence",
+      "subtitle-without-webex": "Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio).",
+      "subtitle-with-webex": "Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio, Webex)."
+    },
+    "table": {
+      "new-title": "Mes réunions MCR",
+      "new-subtitle": "Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents."
+    },
+    "availability-alert-description": {
+      "audio": "🔈 L'audio est disponible pendant",
+      "days": "jours.",
+      "pre-warning-pre-bold": "📄 Les livrables (transcriptions et compte-rendus) sont disponibles pendant",
+      "pre-warning-post-bold": "Un indicateur",
+      "post-warning": "apparaîtra à côté du nom de la réunion lorsque celle-ci sera bientôt supprimée."
     }
   },
   "meeting": {
@@ -185,22 +209,24 @@
       "update": "@:common.form.update",
       "errors": {
         "url": {
-          "not-found": "L'URL entré n'a pas pu être validée, vérifiez l'url ou utiliser l'identifiant/mot de passe",
           "not-supported": {
-            "visio-enabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire, Webconf ou Visio. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR.",
-            "visio-disabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire ou Webconf. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR."
+            "webex-enabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire, Webconf, Visio ou Webex. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR.",
+            "webex-disabled": "Veuillez renseigner l'URL d'une réunion sur COMU, Webinaire, Webconf ou Visio. Les autres plateformes de visioconférence ne sont pas encore supportées par MCR."
           },
           "not-moderator": "Veuillez renseigner l'URL modérateur de votre Webinaire. Demandez-le à l'organisateur ou rendez-vous sur le site de Webinaire > Mes réunions > Inviter > Inviter les modérateurs",
           "not-private": "URL COMU publique détectée. Veuillez renseigner l'URL privée de la réunion (finissant par un secret) ou utiliser l'identifiant/mot de passe de la réunion en cliquant sur l'interrupteur",
           "invalid-comu-parsing": "L'URL COMU est invalide, il ne contient pas d'identifiant/mot de passe ni de secret.",
-          "invalid-visio-url": "URL Visio invalide détectée. Format attendu: https://visio.numerique.gouv.fr/aaa-bbbb-ccc."
-        }
+          "invalid-visio-url": "URL Visio invalide détectée. Format attendu: https://visio.numerique.gouv.fr/aaa-bbbb-ccc.",
+          "invalid-webex-url": "URL Webex invalide détectée. Format attendu: https://fake.webex.com/meet/fake-slug"
+        },
+        "lookup-warning": "Les informations de la réunion n'ont pas pu être validées."
       }
     },
     "transcription": {
       "start": "Démarrer l'enregistrement",
       "stop": "Arrêter l'enregistrement",
       "download": "Télécharger la transcription",
+      "open-on-drive": "Voir la transcription sur MyMirai",
       "transcription-in-progress": {
         "title": "Votre transcription est en cours de génération",
         "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
@@ -367,6 +393,11 @@
         "url": "URL de votre visioconférence",
         "url_error": "Veuillez renseigner l'URL d'une réunion sur Webconf",
         "url_hint": "Exemple: https://webconf.numerique.gouv.fr/reunion2301"
+      },
+      "webex": {
+        "url": "URL de votre visioconférence",
+        "url_error": "Veuillez renseigner l'URL d'une réunion sur Webex",
+        "url_hint": "Exemple: https://fake.webex.com/meet/fake-slug"
       },
       "webinaire": {
         "connection_code": "Code de connexion",

@@ -18,6 +18,8 @@ dependencies = [
     "python-statemachine>=2.5.0",
     "unleashclient>=6.3.0",
     "jinja2>=3.1.6",
+    "redis>=5.0.0",
+    "python-keycloak==5.8.1",
 ]
 
 [project.optional-dependencies]
@@ -84,7 +86,6 @@ typing = [
     "numpy-typing>=1.1.1",
 ]
 tools = ["mypy-clean-slate", "deptry"]
-provisioning = ["python-keycloak"]
 
 [tool.mypy]
 # disallow_any_unimported = true
@@ -125,12 +126,19 @@ ignore_missing_imports = true
 # I:    isort -> Sorted imports
 # G:    flake8-logging-format -> logging format
 # UP:   pyupgrade -> PEP approved code conventions
-extend-select = ["T20", "I", "G", "UP"]
+extend-select = ["T20", "I", "G", "UP", "TID251"]
 logger-objects = ["loguru.logger"]
 
 ignore = ["UP017", "UP008", "UP028", "UP046"]
 
 exclude = ["scripts/**", "notebooks/**"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/setup/logger.py" = ["TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"logging".msg = "Use loguru instead of stdlib logging"
+"requests".msg = "Use httpx instead of requests"
 
 [tool.pytest.ini_options]
 env_override_existing_values = 1

@@ -10,9 +10,6 @@ from mcr_meeting.app.configs.base import AudioSettings
 from mcr_meeting.app.services.feature_flag_service import FeatureFlag
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
-# Note: Fixtures mock_feature_flag_client and create_audio_buffer
-# are automatically imported from conftest.py in this directory
-
 
 @pytest.mark.parametrize("feature_flag_enabled", [True, False])
 @pytest.mark.parametrize("audio_format", ["mp3", "mp4", "m4a", "wav", "mov"])
@@ -24,17 +21,6 @@ def test_integration_pre_process(
     feature_flag_enabled: bool,
     audio_format: str,
 ):
-    """Test that pre-processing works normally on various audio formats.
-
-    This test verifies the entire flow:
-    1. Normalize audio to WAV format
-    2. Conditionally apply noise filtering based on feature flag
-    3. Return processed audio bytes with correct sample rate and channels
-
-    This test runs multiple times with different combinations of:
-    - feature_flag_enabled: True, False
-    - audio_format: mp3, mp4, m4a, wav, mov
-    """
     mock_feature_flag_client = create_mock_feature_flag_client(
         FeatureFlag.AUDIO_NOISE_FILTERING, enabled=feature_flag_enabled
     )
@@ -73,3 +59,33 @@ def test_integration_pre_process(
         f"Expected sample rate of {audio_settings.SAMPLE_RATE} Hz, "
         f"got {info.samplerate} Hz"
     )
+
+
+def test_pre_process_skips_filtering_when_audio_is_clean(
+    mock_noise_detection_dependencies,
+    create_audio_buffer,
+):
+    mocks = mock_noise_detection_dependencies
+    mocks.mock_is_noisy.return_value = False
+    audio_buffer = create_audio_buffer("wav")
+
+    pipeline = SpeechToTextPipeline()
+    pipeline.pre_process(audio_buffer)
+
+    mocks.mock_is_noisy.assert_called_once()
+
+
+def test_pre_process_applies_filtering_when_audio_is_noisy(
+    mock_noise_detection_dependencies,
+    create_audio_buffer,
+):
+    mocks = mock_noise_detection_dependencies
+    mocks.mock_is_noisy.return_value = True
+    mocks.mock_filter_noise.return_value = BytesIO(b"filtered")
+    audio_buffer = create_audio_buffer("wav")
+
+    pipeline = SpeechToTextPipeline()
+    pipeline.pre_process(audio_buffer)
+
+    mocks.mock_is_noisy.assert_called_once()
+    mocks.mock_filter_noise.assert_called_once()
