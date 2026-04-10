@@ -163,7 +163,7 @@ def download_and_concatenate_s3_audio_chunks_into_bytes(
         BytesIO: A BytesIO object containing the concatenated audio data.
 
     Raises:
-        ValueError: If no audio chunks are found
+        NoAudioFoundError: If no audio chunks are found
         InvalidAudioFileError: If S3 download fails
     """
     audio_buffer = BytesIO()

@@ -171,13 +171,10 @@ class TranscriptionProcessor:
                         )
                     )
 
-            if not segments:
-                raise TranscriptionError("Transcription API returned no segments")
-
-            return segments
-
-        except TranscriptionError:
-            raise
-
         except Exception as e:
             raise TranscriptionError(f"Error calling transcription API: {e}") from e
+        
+        if not segments:
+            raise TranscriptionError("Transcription API returned no segments")
+
+        return segments

@@ -43,7 +43,8 @@ def fetch_audio_bytes(
         bytes: The audio bytes for the specified meeting.
 
     Raises:
-        InvalidAudioFileError: If no audio files are found or processing fails.
+        NoAudioFoundError: If no audio files are found for the meeting.
+        InvalidAudioFileError: If audio processing fails or an unexpected error occurs.
     """
 
     logger.info("Fetching audio bytes for meeting ID: {}", meeting_id)
@@ -85,7 +86,6 @@ def transcribe_meeting(
 
     Returns:
         list[SpeakerTranscription]: List of transcriptions associated with speakers.
-        None: If transcription fails or no audio is available.
     """
 
     full_audio_bytes = fetch_audio_bytes(meeting_id)
