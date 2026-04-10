@@ -142,7 +142,6 @@ import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
 import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
 import TableActions from '@/components/table/TableActions.vue';
 import TablePagination from '@/components/table/TablePagination.vue';
-import { useI18n } from 'vue-i18n';
 import { usePagination } from '@/composables/use-pagination';
 
 const SESSION_KEY = 'dsfr-alert-closed';
@@ -180,14 +179,12 @@ const rows = computed(() =>
     actions: meeting,
   })),
 );
-const search = ref<string>('');
 
 const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
   currentPage: 1,
   pageSize: 10,
 });
 
-const { t: tI18n } = useI18n();
 const { getAllMeetingsQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
 const { mutate: updateMeeting } = updateMeetingMutation();
 const { mutate: deleteMeeting } = deleteMeetingMutation();
@@ -216,7 +213,7 @@ function deleteMeetingModal(id: number) {
   const { open } = useModal({
     component: DeleteMeetingModal,
     attrs: {
-      title: tI18n('meeting.confirm-delete.title'),
+      title: t('meeting.confirm-delete.title'),
       onSuccess: () => deleteMeeting(id),
     },
   });
@@ -224,13 +221,11 @@ function deleteMeetingModal(id: number) {
 }
 
 const { data: paginatedMeetings, error: meetingsError } = getAllMeetingsQuery({
-  search,
+  search: ref(''),
   page: currentPage,
   pageSize,
 });
-
 const meetings = computed(() => paginatedMeetings.value?.data ?? []);
-
 const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
 
 onMounted(() => {
