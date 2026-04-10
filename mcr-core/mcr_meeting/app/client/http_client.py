@@ -16,7 +16,9 @@ class HttpClient:
             headers["X-User-Keycloak-UUID"] = self.token
         return headers
 
-    async def post(self, endpoint: str, data: object | None = None) -> httpx.Response:
+    async def post(
+        self, endpoint: str, data: object | None = None
+    ) -> httpx.Response:
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             response = await client.post(
                 endpoint, headers=self._get_headers(), json=data
