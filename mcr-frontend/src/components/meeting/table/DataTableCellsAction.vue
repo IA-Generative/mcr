@@ -9,7 +9,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
-import DataCellMeeting from './cells/DataCellMeeting.vue';
+import DataCellMeetingTitle from './cells/DataCellMeetingTitle.vue';
 import DataCellAction from './cells/DataCellAction.vue';
 
 const props = defineProps<{
@@ -20,7 +20,7 @@ const props = defineProps<{
 const currentComponent = computed(() => {
   switch (props.colKey) {
     case 'title':
-      return DataCellMeeting;
+      return DataCellMeetingTitle;
     case 'actions':
       return DataCellAction;
     default:

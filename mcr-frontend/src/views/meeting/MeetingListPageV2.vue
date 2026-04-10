@@ -80,7 +80,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
 import PageFrontMatterV2 from '@/components/core/PageFrontMatterV2.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { t } from '@/plugins/i18n';
