@@ -1,0 +1,47 @@
+{
+  "skill_name": "andon",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "I'm getting a 403 when I try to access the meetings list endpoint from the frontend. I checked and my token seems valid. What's going on?",
+      "expected_output": "Should guide the user through debugging the 403 by asking questions about the auth flow, pointing them toward the gateway auth middleware, and helping them discover the issue themselves rather than directly providing the fix.",
+      "files": [],
+      "assertions": [
+        {"name": "asks-questions", "description": "Response contains at least 2 questions to guide the user's thinking", "check": "count('?') >= 2"},
+        {"name": "no-complete-solution", "description": "Does not provide a complete code fix (no code blocks >5 lines that solve the problem)", "check": "manual + heuristic"},
+        {"name": "references-actual-code", "description": "Points to real files/paths in the MCR codebase", "check": "contains file paths like mcr-gateway/ or mcr-core/"},
+        {"name": "explains-why", "description": "Teaches the underlying concept, not just procedural steps", "check": "contains explanatory language"},
+        {"name": "uses-escalation", "description": "Starts with a hint or question, not the answer", "check": "first substantive content is a question or conceptual hint"},
+        {"name": "concise-response", "description": "Response is under 400 words to maintain momentum", "check": "word_count < 400"}
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "I need to add a new field 'priority' to meetings. I've never touched the backend before, I mostly work on the frontend. Where do I even start?",
+      "expected_output": "Should walk the user through the architecture layers step by step, asking them what they think each layer does, rather than just writing all the code for them.",
+      "files": [],
+      "assertions": [
+        {"name": "asks-questions", "description": "Response contains at least 2 questions to guide the user's thinking", "check": "count('?') >= 2"},
+        {"name": "no-complete-solution", "description": "Does not provide a complete code fix (no code blocks >5 lines that solve the problem)", "check": "manual + heuristic"},
+        {"name": "references-actual-code", "description": "Points to real files/paths in the MCR codebase", "check": "contains file paths like mcr-core/mcr_meeting/app/models/"},
+        {"name": "explains-why", "description": "Teaches the underlying concept, not just procedural steps", "check": "contains explanatory language"},
+        {"name": "uses-escalation", "description": "Starts with a hint or question, not the answer", "check": "first substantive content is a question or conceptual hint"},
+        {"name": "concise-response", "description": "Response is under 400 words to maintain momentum", "check": "word_count < 400"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "The Celery task for transcription keeps failing silently. I added some print statements but nothing shows up. I don't really understand how Celery works in this project.",
+      "expected_output": "Should help the user understand Celery's architecture in this project, guide them toward proper logging (not print), and help them find where to look for errors — without just writing the fix.",
+      "files": [],
+      "assertions": [
+        {"name": "asks-questions", "description": "Response contains at least 2 questions to guide the user's thinking", "check": "count('?') >= 2"},
+        {"name": "no-complete-solution", "description": "Does not provide a complete code fix (no code blocks >5 lines that solve the problem)", "check": "manual + heuristic"},
+        {"name": "references-actual-code", "description": "Points to real files/paths in the MCR codebase", "check": "contains file paths like mcr-core/ or celery-related files"},
+        {"name": "explains-why", "description": "Teaches the underlying concept, not just procedural steps", "check": "contains explanatory language"},
+        {"name": "uses-escalation", "description": "Starts with a hint or question, not the answer", "check": "first substantive content is a question or conceptual hint"},
+        {"name": "concise-response", "description": "Response is under 400 words to maintain momentum", "check": "word_count < 400"}
+      ]
+    }
+  ]
+}
