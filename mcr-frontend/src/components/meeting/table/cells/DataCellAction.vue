@@ -6,18 +6,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import type { MeetingDto, UpdateMeetingDto } from '@/services/meetings/meetings.types';
 import { useModal } from 'vue-final-modal';
+import { t } from '@/plugins/i18n';
 import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
 import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
 import { useMeetings } from '@/services/meetings/use-meeting';
-import { useI18n } from 'vue-i18n';
 
 const props = defineProps<{ cell: unknown }>();
-
 const typedCell = computed(() => props.cell as MeetingDto);
-const { t } = useI18n();
+
 const { updateMeetingMutation, deleteMeetingMutation } = useMeetings();
 const { mutate: updateMeeting } = updateMeetingMutation();
 const { mutate: deleteMeeting } = deleteMeetingMutation();

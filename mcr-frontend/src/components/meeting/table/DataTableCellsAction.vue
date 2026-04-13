@@ -8,7 +8,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import DataCellMeetingTitle from './cells/DataCellMeetingTitle.vue';
 import DataCellAction from './cells/DataCellAction.vue';
 

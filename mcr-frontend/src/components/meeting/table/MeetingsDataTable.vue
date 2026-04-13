@@ -37,7 +37,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
 import { t } from '@/plugins/i18n';
 import { formatMeetingDate } from '@/utils/formatters';
 import { useMeetings } from '@/services/meetings/use-meeting';
