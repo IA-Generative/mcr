@@ -27,3 +27,4 @@ export const getRetryDelay = (attemptIndex: number): number => {
 
 export const MAX_DELAY_TO_FETCH_AUDIO = 7;
 export const MAX_DELAY_TO_FETCH_DELIVERABLE = 30;
+export const DELAY_TO_SHOW_ALERT = 20;

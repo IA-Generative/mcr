@@ -118,7 +118,11 @@
       },
       "columns": {
         "date": "Date de création",
-        "title": "Titre de réunion",
+        "title": {
+          "label": "Titre de réunion",
+          "tooltip": "La réunion sera automatiquement supprimée dans {daysLeft} jours.",
+          "tooltip-expired": "La réunion sera automatiquement supprimée demain."
+        },
         "transcription": "Transcription",
         "report": {
           "label": "Compte-rendu",
