@@ -85,12 +85,11 @@ def compute_silence_ratio(wav_bytes: BytesIO) -> float:
     return min(silence_duration / total_duration, 1.0)
 
 
-def check_audio_is_not_silent(wav_bytes: BytesIO, meeting_id: int) -> None:
+def check_audio_is_not_silent(wav_bytes: BytesIO) -> None:
     """Check that the audio is not silent, raise SilentAudioError otherwise.
 
     Args:
         wav_bytes: Normalized WAV audio bytes.
-        meeting_id: ID of the meeting (included in the error message).
 
     Raises:
         SilentAudioError: If the silence ratio exceeds the configured threshold.
@@ -98,7 +97,7 @@ def check_audio_is_not_silent(wav_bytes: BytesIO, meeting_id: int) -> None:
     silence_ratio = compute_silence_ratio(wav_bytes)
     if silence_ratio >= noise_detection_settings.SILENT_AUDIO_THRESHOLD:
         raise SilentAudioError(
-            f"Silent audio detected for meeting {meeting_id}: "
+            f"Silent audio detected: "
             f"audio is {silence_ratio:.0%} silent "
             f"(threshold: {noise_detection_settings.SILENT_AUDIO_THRESHOLD:.0%})"
         )

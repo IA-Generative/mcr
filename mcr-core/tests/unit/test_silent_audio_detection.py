@@ -64,8 +64,8 @@ class TestSilentAudioErrorPropagation:
 
         mock_fetch.return_value = BytesIO(b"fake audio")
         mock_pipeline.run.side_effect = SilentAudioError(
-            "Silent audio detected for meeting 42: audio is 98% silent (threshold: 95%)"
+            "Silent audio detected: audio is 98% silent (threshold: 95%)"
         )
 
-        with pytest.raises(SilentAudioError, match="meeting 42"):
+        with pytest.raises(SilentAudioError, match="Silent audio detected"):
             transcribe_meeting(meeting_id=42)

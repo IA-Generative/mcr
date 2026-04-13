@@ -46,7 +46,7 @@ class SpeechToTextPipeline:
         self.transcription_processor = TranscriptionProcessor()
         self.diarization_processor = DiarizationProcessor()
 
-    def pre_process(self, audio_bytes: BytesIO, meeting_id: int) -> BytesIO:
+    def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
 
         This includes normalizing the audio to WAV format, checking for silent audio,
@@ -54,7 +54,6 @@ class SpeechToTextPipeline:
 
         Args:
             audio_bytes (BytesIO): The input audio bytes.
-            meeting_id (int): The meeting ID (used in error messages).
 
         Returns:
             BytesIO: The pre-processed audio bytes.
@@ -62,7 +61,7 @@ class SpeechToTextPipeline:
         feature_flag_client = get_feature_flag_client()
         wav_audio_bytes = audio_bytes_to_wav_bytes(audio_bytes)
 
-        check_audio_is_not_silent(wav_audio_bytes, meeting_id)
+        check_audio_is_not_silent(wav_audio_bytes)
 
         if feature_flag_client.is_enabled("audio_noise_filtering"):
             if is_audio_noisy(wav_audio_bytes):
@@ -144,13 +143,12 @@ class SpeechToTextPipeline:
     def run(
         self,
         audio_bytes: BytesIO,
-        meeting_id: int,
     ) -> list[DiarizedTranscriptionSegment]:
         """Transcribe full audio bytes to text with speaker diarization"""
 
         logger.debug("🏁 Starting speech-to-text pipeline with pre-processing.")
 
-        pre_processed_audio_bytes = self.pre_process(audio_bytes, meeting_id)
+        pre_processed_audio_bytes = self.pre_process(audio_bytes)
 
         diarization_result = self.diarize_audio(
             pre_processed_audio_bytes,
