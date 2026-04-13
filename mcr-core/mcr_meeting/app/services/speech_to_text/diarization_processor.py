@@ -128,13 +128,13 @@ class DiarizationProcessor:
 
             logger.debug("API diarization returned {} segments", len(segments))
 
-        except Exception as e:  
-            raise DiarizationError(f"Error calling diarization API: {e}") from e  
+        except Exception as e:
+            raise DiarizationError(f"Error calling diarization API: {e}") from e
 
-        if not segments:  
-            raise DiarizationError("Diarization API returned no segments")  
+        if not segments:
+            raise DiarizationError("Diarization API returned no segments")
 
-        return segments 
+        return segments
 
     def __del__(self) -> None:
         """Clean up HTTP client on deletion"""
