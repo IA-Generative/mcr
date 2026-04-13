@@ -11,6 +11,7 @@ from celery.signals import task_failure, task_prerun, task_success, worker_proce
 from faster_whisper import WhisperModel
 from loguru import logger
 from pyannote.audio import Pipeline
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
@@ -40,6 +41,7 @@ from mcr_meeting.app.utils.load_speech_to_text_model import (
     load_diarization_pipeline,
     load_whisper_model,
 )
+from mcr_meeting.app.utils.sentry_context import set_sentry_meeting_context
 from mcr_meeting.evaluation.asr.evaluation_pipeline import ASREvaluationPipeline
 from mcr_meeting.evaluation.asr.types import EvaluationInput, TranscriptionOutput
 from mcr_meeting.setup.logger import setup_logging
@@ -60,6 +62,7 @@ sentry_sdk.init(
     traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
     environment=settings.ENV_MODE,
     ignore_errors=[],
+    integrations=[CeleryIntegration()],
 )
 
 celery_worker = Celery(
@@ -116,7 +119,9 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
 
 
 @celery_worker.task(name=MCRTranscriptionTasks.TRANSCRIBE, max_retries=3)
-def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, object]]:
+def transcribe(
+    meeting_id: int, owner_keycloak_uuid: str, name_platform: str
+) -> list[dict[str, object]]:
     transcription_data = transcribe_meeting(meeting_id=meeting_id)
 
     result = [item.model_dump() for item in transcription_data]
@@ -129,6 +134,9 @@ def set_meeting_in_progress_status(**kwargs: Any) -> None:  # type: ignore[expli
     task_args = extract_transcription_task_args(kwargs)
 
     client = MeetingApiClient(task_args.owner_keycloak_uuid)
+    meeting = asyncio.run(client.get_meeting(task_args.meeting_id))
+    set_sentry_meeting_context(meeting, task_args.owner_keycloak_uuid)
+
     asyncio.run(client.start_transcription(task_args.meeting_id))
     logger.info("Starting transcription for meeting ID: {}", task_args.meeting_id)
 

@@ -79,7 +79,7 @@ def after_init_transcription_handler(
         update_meeting_status(meeting, next_status)
         celery_producer_app.send_task(
             MCRTranscriptionTasks.TRANSCRIBE,
-            args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+            args=[meeting.id, str(meeting.owner.keycloak_uuid), meeting.name_platform],
         )
 
     current_wait_time_minutes = (
