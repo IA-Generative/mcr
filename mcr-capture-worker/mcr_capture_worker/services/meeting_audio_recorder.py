@@ -142,6 +142,8 @@ class MeetingAudioRecorder:
             filename = f"{now_ts}.weba"
             await asyncio.sleep(1)
 
+            await self.meeting_monitor.enable_chunk_size_based_disconnection(data)
+
             await put_file_in_audio_folder(
                 data=data,
                 meeting_id=self.meeting_id,
@@ -175,7 +177,6 @@ class MeetingAudioRecorder:
         self.pending_uploads.append(
             self.handle_audio_chunk(BytesIO(bytes(data["js_bytes"])))
         )
-        logger.info("Handle date available")
 
     async def handle_stop(self) -> None:
         await self.end_capture_if_in_progress()
