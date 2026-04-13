@@ -5,11 +5,11 @@ from unittest.mock import Mock, patch
 import pytest
 
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.evaluation.asr_evaluation_pipeline import (
+from mcr_meeting.evaluation.asr.evaluation_pipeline import (
     ASREvaluationPipeline,
     MetricsPipeline,
 )
-from mcr_meeting.evaluation.eval_types import (
+from mcr_meeting.evaluation.asr.types import (
     EvaluationInput,
     EvaluationMetrics,
     EvaluationOutput,
@@ -66,8 +66,8 @@ def mock_evaluation_output(mock_transcription, mock_metrics):
 
 
 class TestASREvaluationPipeline:
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     def test_init(
         self, mock_metrics_pipeline, mock_stt_pipeline, mock_evaluation_input
     ):
@@ -78,8 +78,8 @@ class TestASREvaluationPipeline:
         mock_stt_pipeline.assert_called_once()
         mock_metrics_pipeline.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     def test_process_single_sample_success(
         self,
         mock_metrics_pipeline,
@@ -104,8 +104,8 @@ class TestASREvaluationPipeline:
         mock_stt_instance.run.assert_called_once()
         results_manager.save_generated_transcription.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     def test_process_single_sample_exception(
         self, mock_metrics_pipeline, mock_stt_pipeline, mock_evaluation_input
     ):
@@ -120,9 +120,9 @@ class TestASREvaluationPipeline:
 
         assert result is None
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.ResultsManager")
     def test_run_evaluation_success(
         self,
         mock_results_manager,
@@ -156,9 +156,9 @@ class TestASREvaluationPipeline:
         assert summary == expected_summary
         mock_metrics_instance.calculate_and_save_metrics.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.SpeechToTextPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsPipeline")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.ResultsManager")
     def test_run_evaluation_no_successful_processing(
         self,
         mock_results_manager,
@@ -177,14 +177,14 @@ class TestASREvaluationPipeline:
 
 
 class TestMetricsPipeline:
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsCalculator")
     def test_init(self, mock_metrics_calculator):
         pipeline = MetricsPipeline()
 
         assert pipeline.timestamp is not None
         mock_metrics_calculator.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsCalculator")
     def test_calculate_metrics_success(
         self, mock_metrics_calculator, mock_transcription, mock_metrics
     ):
@@ -208,14 +208,14 @@ class TestMetricsPipeline:
         assert outputs[0].uid == "test_uid"
         assert outputs[0].metrics == mock_metrics
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsCalculator")
     def test_calculate_metrics_empty_inputs(self, mock_metrics_calculator):
         pipeline = MetricsPipeline()
         with pytest.raises(ValueError, match="No evaluation inputs to process"):
             pipeline.calculate_metrics([])
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsCalculator")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.ResultsManager")
     def test_save_metrics_success(
         self, mock_results_manager, mock_metrics_calculator, mock_evaluation_output
     ):
@@ -232,15 +232,15 @@ class TestMetricsPipeline:
         mock_rm_instance.save_summary_json.assert_called_once()
         mock_rm_instance.save_results_to_s3.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsCalculator")
     def test_save_metrics_empty_outputs(self, mock_metrics_calculator):
         pipeline = MetricsPipeline()
 
         with pytest.raises(ValueError, match="No evaluation outputs to process"):
             pipeline.save_metrics([], Path("/output"))
 
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.MetricsCalculator")
-    @patch("mcr_meeting.evaluation.asr_evaluation_pipeline.ResultsManager")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsCalculator")
+    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.ResultsManager")
     def test_calculate_and_save_metrics(
         self,
         mock_results_manager,

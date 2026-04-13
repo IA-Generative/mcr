@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.evaluation.eval_types import TranscriptionOutput
+from mcr_meeting.evaluation.asr.types import TranscriptionOutput
 
 from scripts.dataset_standardisation.utils import save_transcription_output
 
