@@ -1,0 +1,94 @@
+{
+  "skill_name": "grafana-sql",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Count meetings by status",
+      "expected_output": "A SQL query that counts meetings grouped by their status column, with Grafana time filter",
+      "files": [],
+      "expectations": [
+        "The query contains GROUP BY status",
+        "The query uses COUNT(*) or COUNT(id) to count meetings",
+        "The query includes $__timeFilter(creation_date) for Grafana time filtering",
+        "The query references only the meeting table",
+        "The query is a SELECT statement only (no INSERT, UPDATE, DELETE)",
+        "The query does not contain hardcoded date ranges",
+        "The query does not use SELECT *"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "How many meetings failed, broken down by platform?",
+      "expected_output": "A SQL query grouping failed meetings by platform type, inferring the MCR_VISIO aggregation from domain knowledge",
+      "files": [],
+      "expectations": [
+        "The query uses a CASE WHEN expression to aggregate platforms into MCR_VISIO",
+        "The MCR_VISIO case includes all 5 platforms: COMU, WEBINAIRE, WEBCONF, VISIO, WEBEX",
+        "The query filters for failed meeting statuses",
+        "The query includes $__timeFilter for Grafana time filtering",
+        "The query uses GROUP BY on the CASE expression or an alias",
+        "The query is a SELECT statement only"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Deliverables with negative votes",
+      "expected_output": "A SQL query fetching deliverables where vote_type is NEGATIVE",
+      "files": [],
+      "expectations": [
+        "The query references the deliverable table",
+        "The query filters on vote_type = 'NEGATIVE'",
+        "The query does not reference nonexistent columns like rating, feedback, or score",
+        "The query is a SELECT statement only",
+        "The query does not say it cannot find or doesn't know about the deliverable table"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Average meeting duration by platform",
+      "expected_output": "A SQL query computing average duration from start_date and end_date, NOT using a duration_minutes column",
+      "files": [],
+      "expectations": [
+        "The query computes duration using end_date minus start_date or EXTRACT(EPOCH FROM ...)",
+        "The query does NOT reference a duration_minutes column (this is a Python property, not a DB column)",
+        "The query does NOT reference a duration column",
+        "The query groups by name_platform or a CASE expression for platform aggregation",
+        "The query filters out NULL start_date or end_date values",
+        "The query includes $__timeFilter for Grafana time filtering",
+        "The query is a SELECT statement only"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "I need a complete breakdown of all meeting statuses including deleted ones — I want to know what state they were in before deletion",
+      "expected_output": "A UNION ALL query with non-DELETED meetings in one branch and DELETED meetings bucketed by pre-deletion status via meeting_transition_record in the other, plus an offer to provide validation queries",
+      "files": [],
+      "expectations": [
+        "The query uses UNION ALL with separate branches for DELETED and non-DELETED meetings",
+        "The DELETED branch uses LEFT JOIN LATERAL on meeting_transition_record to recover pre-deletion status",
+        "The DELETED branch uses ON true (not ON m.status = 'DELETED') to avoid the undercounting bug",
+        "The non-DELETED branch has AND status != 'DELETED' to prevent double-counting",
+        "Both branches of the UNION ALL include $__timeFilter",
+        "The query uses COALESCE to handle DELETED meetings with no transition records",
+        "The query appends +DEL suffix to deleted meeting statuses",
+        "The query is a SELECT statement only",
+        "The output offers or mentions validation queries to verify counts (because the query uses UNION ALL)"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "What's our success rate over time? I want a daily percentage",
+      "expected_output": "A time-series query computing daily success rate as a percentage, accounting for DELETED meetings that were actually successes, plus an offer to provide validation queries",
+      "files": [],
+      "expectations": [
+        "The query groups by DATE(creation_date) or similar daily bucketing",
+        "The query computes a percentage using SUM(CASE...) / COUNT(*) or similar",
+        "The query accounts for DELETED meetings (joins meeting_transition_record)",
+        "The query uses LEFT JOIN LATERAL with ON true for the transition record lookup",
+        "The query includes $__timeFilter for Grafana time filtering",
+        "The query is a SELECT statement only",
+        "The output offers or mentions validation queries to verify the ratio computation"
+      ]
+    }
+  ]
+}
