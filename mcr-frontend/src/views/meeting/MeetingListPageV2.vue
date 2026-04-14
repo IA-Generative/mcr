@@ -74,6 +74,8 @@
         </p>
       </DsfrAlert>
     </div>
+
+    <MeetingsDataTable />
   </div>
 </template>
 
@@ -84,10 +86,9 @@ import { t } from '@/plugins/i18n';
 import videoSvgPath from '@dsfr-artwork/pictograms/leisure/video.svg?url';
 import podcastSvgPath from '@dsfr-artwork/pictograms/leisure/podcast.svg?url';
 import selfTrainingSvgPath from '@dsfr-artwork/pictograms/digital/self-training.svg?url';
+import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 
 const isWebexEnabled = useFeatureFlag('webex');
-import { ref, onMounted } from 'vue';
-import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 
 const SESSION_KEY = 'dsfr-alert-closed';
 const showAlert = ref(true);
