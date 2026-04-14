@@ -6,6 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
+from pydub import AudioSegment
 from pydub.generators import Sine
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
@@ -109,16 +110,10 @@ def mock_transcription_segments_with_empty() -> list[list[TranscriptionSegment]]
 
 
 @pytest.fixture
-def pre_processed_audio_bytes(create_audio_buffer: Callable[[str], BytesIO]) -> BytesIO:
-    """Create pre-processed audio bytes for testing."""
-    return create_audio_buffer("wav")
-
-
-@pytest.fixture
 def create_audio_buffer() -> Callable[[str], BytesIO]:
     """Factory fixture to create audio buffers in different formats.
 
-    This fixture returns a factory function that creates audio test files
+    Returns a factory function that creates audio test files
     in various formats (mp3, mp4, m4a, wav, mov) for testing audio processing.
 
     Usage:
@@ -128,21 +123,10 @@ def create_audio_buffer() -> Callable[[str], BytesIO]:
     """
 
     def _create_buffer(audio_format: str) -> BytesIO:
-        """Create a small test audio file in memory with the specified format.
-
-        Args:
-            audio_format: The audio format (mp3, mp4, m4a, wav, mov)
-
-        Returns:
-            BytesIO: Buffer containing the audio data
-        """
-        # Generate a 1-second sine wave at 440Hz (A note)
         sine_wave = Sine(440).to_audio_segment(duration=1000)
 
-        # Export to specified format in memory
         audio_buffer = BytesIO()
 
-        # Set format-specific parameters
         match audio_format:
             case "mp3":
                 sine_wave.export(audio_buffer, format="mp3", bitrate="128k")
@@ -161,3 +145,37 @@ def create_audio_buffer() -> Callable[[str], BytesIO]:
         return audio_buffer
 
     return _create_buffer
+
+
+@pytest.fixture
+def create_silent_audio_buffer() -> Callable[[float], BytesIO]:
+    """Factory fixture to create silent WAV audio buffers.
+
+    Returns a factory function that creates silent WAV audio of a given
+    duration in seconds, matching the project's audio settings (16kHz, mono, 16-bit).
+
+    Usage:
+        def test_something(create_silent_audio_buffer):
+            silent_wav = create_silent_audio_buffer(10.0)
+    """
+
+    def _create_buffer(duration_seconds: float) -> BytesIO:
+        duration_ms = int(duration_seconds * 1000)
+        silent_segment = (
+            AudioSegment.silent(duration=duration_ms, frame_rate=16000)
+            .set_channels(1)
+            .set_sample_width(2)
+        )
+
+        audio_buffer = BytesIO()
+        silent_segment.export(audio_buffer, format="wav")
+        audio_buffer.seek(0)
+        return audio_buffer
+
+    return _create_buffer
+
+
+@pytest.fixture
+def pre_processed_audio_bytes(create_audio_buffer: Callable[[str], BytesIO]) -> BytesIO:
+    """Create pre-processed audio bytes for testing."""
+    return create_audio_buffer("wav")
