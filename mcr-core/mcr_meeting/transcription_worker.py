@@ -40,8 +40,8 @@ from mcr_meeting.app.utils.load_speech_to_text_model import (
     load_diarization_pipeline,
     load_whisper_model,
 )
-from mcr_meeting.evaluation.asr_evaluation_pipeline import ASREvaluationPipeline
-from mcr_meeting.evaluation.eval_types import EvaluationInput, TranscriptionOutput
+from mcr_meeting.evaluation.asr.evaluation_pipeline import ASREvaluationPipeline
+from mcr_meeting.evaluation.asr.types import EvaluationInput, TranscriptionOutput
 from mcr_meeting.setup.logger import setup_logging
 
 setup_logging()

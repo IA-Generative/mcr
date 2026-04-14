@@ -2,7 +2,7 @@
 Evaluate the participant naming pipeline against ground-truth expected files.
 
 Usage from mcr root:
-    docker compose --env-file .env --env-file .env.local.docker exec transcription_worker python -m mcr_meeting.eval_naming
+    docker compose --env-file .env --env-file .env.local.docker exec transcription_worker python -m mcr_meeting.evaluation.participant_naming
 
 """
 

@@ -4,8 +4,8 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
-from mcr_meeting.evaluation.asr_evaluation_pipeline import MetricsPipeline
-from mcr_meeting.evaluation.eval_types import (
+from mcr_meeting.evaluation.asr.evaluation_pipeline import MetricsPipeline
+from mcr_meeting.evaluation.asr.types import (
     EvaluationInput,
     MetricsPipelineInput,
     TranscriptionOutput,

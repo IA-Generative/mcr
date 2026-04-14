@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from mcr_meeting.evaluation.eval_types import TranscriptionOutput
+from mcr_meeting.evaluation.asr.types import TranscriptionOutput
 
 
 def save_transcription_output(

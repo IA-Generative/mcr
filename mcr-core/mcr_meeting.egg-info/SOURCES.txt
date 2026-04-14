@@ -84,7 +84,7 @@ mcr_meeting/app/utils/db_utils.py
 mcr_meeting/app/utils/files_mime_types.py
 mcr_meeting/app/utils/s3_client.py
 mcr_meeting/evaluation/__init__.py
-mcr_meeting/evaluation/asr_evaluation_pipeline.py
+mcr_meeting/evaluation/asr.evaluation_pipeline.py
 mcr_meeting/evaluation/cli.py
 mcr_meeting/evaluation/eval_types.py
 mcr_meeting/evaluation/utils.py
