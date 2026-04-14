@@ -42,6 +42,7 @@ import { formatMeetingDate } from '@/utils/formatters';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { usePagination } from '@/composables/use-pagination';
 import useToaster from '@/composables/use-toaster';
+import type { CellMap, ColKey } from './types';
 
 const toaster = useToaster();
 

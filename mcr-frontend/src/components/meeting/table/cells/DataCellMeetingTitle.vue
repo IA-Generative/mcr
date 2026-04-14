@@ -26,8 +26,9 @@ import {
   getNumberOfDaysBeforeMeetingDeletion,
   meetingDateIsInAlertPeriod,
 } from '@/services/meetings/meetings-datetime';
+import { t } from '@/plugins/i18n';
 
-const {cell: meeting} = defineProps<{ cell: MeetingTitleCell }>();
+const { cell: meeting } = defineProps<{ cell: MeetingTitleCell }>();
 
 const showAlertIcon = computed(() => meetingDateIsInAlertPeriod(meeting.creation_date));
 const numberOfDaysBeforeDeleting = computed(() =>
