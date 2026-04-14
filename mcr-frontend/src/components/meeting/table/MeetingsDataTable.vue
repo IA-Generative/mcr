@@ -105,3 +105,11 @@ watch(
   { immediate: true },
 );
 </script>
+
+<style scoped>
+:deep() .fr-table__content td {
+  max-width: 10rem;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+</style>
