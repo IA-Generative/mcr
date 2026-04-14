@@ -1,13 +1,13 @@
 <template>
-  <RouterLink :to="`${ROUTES.MEETINGS.path}/${typedCell.id}`">
-    {{ typedCell.name }}
+  <RouterLink :to="`${ROUTES.MEETINGS.path}/${cell.id}`">
+    {{ cell.name }}
   </RouterLink>
 </template>
 
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import { ROUTES } from '@/router/routes';
+import type { MeetingTitleCell } from '../types';
 
-const props = defineProps<{ cell: unknown }>();
-const typedCell = computed(() => props.cell as { name: string; id: number });
+defineProps<{ cell: MeetingTitleCell }>();
 </script>

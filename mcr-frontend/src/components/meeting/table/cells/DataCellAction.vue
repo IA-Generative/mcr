@@ -1,7 +1,7 @@
 <template>
   <TableActions
-    :on-delete="() => deleteMeetingModal(typedCell.id)"
-    :on-edit="() => editMeetingModal(typedCell.id)"
+    :on-delete="() => deleteMeetingModal(cell.id)"
+    :on-edit="() => editMeetingModal(cell.id)"
   />
 </template>
 
@@ -13,8 +13,8 @@ import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
 import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
 import { useMeetings } from '@/services/meetings/use-meeting';
 
-const props = defineProps<{ cell: unknown }>();
-const typedCell = computed(() => props.cell as MeetingDto);
+const props = defineProps<{ cell: MeetingDto }>();
+const selectedCell = computed(() => props.cell);
 
 const { updateMeetingMutation, deleteMeetingMutation } = useMeetings();
 const { mutate: updateMeeting } = updateMeetingMutation();
@@ -24,7 +24,7 @@ function editMeetingModal(id: number) {
   const { open } = useModal({
     component: EditMeetingModal,
     attrs: {
-      itemSelected: typedCell.value,
+      itemSelected: selectedCell.value,
       onUpdateMeeting: (values: UpdateMeetingDto) => updateMeeting({ id, payload: values }),
     },
   });

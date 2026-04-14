@@ -19,9 +19,9 @@
       </template>
 
       <template #cell="{ colKey, cell }">
-        <DataTableCellsAction
-          :col-key="colKey"
-          :cell="cell"
+        <MeetingCellDispatcher
+          :col-key="colKey as ColKey"
+          :cell="cell as CellMap[ColKey]"
         />
       </template>
     </DsfrDataTable>
@@ -42,6 +42,7 @@ import { formatMeetingDate } from '@/utils/formatters';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { usePagination } from '@/composables/use-pagination';
 import useToaster from '@/composables/use-toaster';
+import type { CellMap, ColKey } from './types';
 
 const toaster = useToaster();
 
@@ -82,13 +83,16 @@ const meetings = computed(() => paginatedMeetings.value?.data ?? []);
 const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
 
 const rows = computed(() =>
-  meetings.value.map((meeting) => ({
-    date: formatMeetingDate(meeting.creation_date),
-    title: { name: meeting.name, id: meeting.id },
-    transcription: '',
-    report: '',
-    actions: meeting,
-  })),
+  meetings.value.map(
+    (meeting) =>
+      ({
+        date: formatMeetingDate(meeting.creation_date),
+        title: { name: meeting.name, id: meeting.id },
+        transcription: '',
+        report: '',
+        actions: meeting,
+      }) satisfies CellMap,
+  ),
 );
 
 watch(
