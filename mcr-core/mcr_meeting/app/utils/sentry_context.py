@@ -34,7 +34,7 @@ def gather_meeting_context(
 
 
 def set_sentry_meeting_context(meeting_context: MeetingContext) -> None:
-    sentry_sdk.set_tag("meeting_id", meeting_context["meeting_id"])
+    sentry_sdk.set_tag("meeting.id", meeting_context["meeting_id"])
     sentry_sdk.set_user({"id": meeting_context["owner_keycloak_uuid"]})
     if meeting_context["name_platform"] is not None:
-        sentry_sdk.set_tag("name_platform", meeting_context["name_platform"])
+        sentry_sdk.set_tag("meeting.platform", meeting_context["name_platform"])
