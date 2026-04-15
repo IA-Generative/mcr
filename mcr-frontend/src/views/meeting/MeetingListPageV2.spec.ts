@@ -12,6 +12,13 @@ vi.mock('@/composables/use-feature-flag', () => ({
   useFeatureFlag: () => mockUseFeatureFlag(),
 }));
 
+// MeetingsDataTable (rendered by MeetingListPageV2) calls useMeetings().getAllMeetingsQuery,
+// which would otherwise fire a real HTTP request and crash on the missing Keycloak session.
+vi.mock('@/services/meetings/use-meeting', async () => {
+  const { mockUseMeetings } = await import('@/vitest.setup');
+  return mockUseMeetings();
+});
+
 const SESSION_KEY = 'dsfr-alert-closed';
 const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
 
