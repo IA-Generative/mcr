@@ -10,7 +10,7 @@ export interface CellMap {
   date: string;
   title: MeetingTitleCell;
   transcription: MeetingStatus;
-  report: string;
+  report: MeetingStatus;
   actions: MeetingDto;
 }
 

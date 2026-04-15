@@ -91,7 +91,7 @@ const rows = computed(() =>
       creation_date: meeting.creation_date,
     },
     transcription: meeting.status,
-    report: '',
+    report: meeting.status,
     actions: meeting,
   })),
 );
