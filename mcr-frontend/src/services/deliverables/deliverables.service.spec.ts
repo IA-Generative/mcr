@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getTranscriptionStatus, MeetingStatus } from '@/services/meetings/meetings.types';
+import { MeetingStatus } from '@/services/meetings/meetings.types';
+import { getTranscriptionStatus } from './deliverables.service';
 
 vi.mock('@/plugins/i18n', () => ({ t: vi.fn((key: string) => key) }));
 

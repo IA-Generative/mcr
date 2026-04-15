@@ -75,6 +75,7 @@ declare module 'vue' {
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     SkeletonLoader: typeof import('./components/core/SkeletonLoader.vue')['default']
+    StatusTag: typeof import('./components/meeting/table/StatusTag.vue')['default']
     TableActions: typeof import('./components/table/TableActions.vue')['default']
     TableHeaderActions: typeof import('./components/meeting/table/TableHeaderActions.vue')['default']
     TablePagination: typeof import('./components/table/TablePagination.vue')['default']

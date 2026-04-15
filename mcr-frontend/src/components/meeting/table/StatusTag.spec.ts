@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getTagMeta } from '@/components/meeting/table/StatusTag.vue';
-import { DeliverableStatus } from '@/services/meetings/meetings.types';
+import { DeliverableStatus } from '@/services/deliverables/deliverables.types';
 
 vi.mock('@/plugins/i18n', () => ({ t: vi.fn((key: string) => key) }));
 
