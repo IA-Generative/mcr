@@ -20,6 +20,7 @@ mixed counting scheme::
 """
 
 from mcr_meeting.evaluation.acronymes.types import AcronymMetrics
+from mcr_meeting.evaluation.utils.math_utils import safe_ratio
 
 
 def score_acronym(expected: int, predicted: int) -> tuple[int, int, int, int]:
@@ -40,22 +41,15 @@ def score_acronym(expected: int, predicted: int) -> tuple[int, int, int, int]:
     return tp, fp, tn, fn
 
 
-def _safe_ratio(numerator: int, denominator: int) -> float:
-    """Return 0.0 if the denominator is zero, otherwise the ratio."""
-    if denominator == 0:
-        return 0.0
-    return numerator / denominator
-
-
 def _metrics_from_counts(tp: int, fp: int, tn: int, fn: int) -> AcronymMetrics:
     return AcronymMetrics(
         tp=tp,
         fp=fp,
         tn=tn,
         fn=fn,
-        precision=_safe_ratio(tp, tp + fp),
-        recall=_safe_ratio(tp, tp + fn),
-        accuracy=_safe_ratio(tp + tn, tp + tn + fp + fn),
+        precision=safe_ratio(tp, tp + fp),
+        recall=safe_ratio(tp, tp + fn),
+        accuracy=safe_ratio(tp + tn, tp + tn + fp + fn),
     )
 
 
