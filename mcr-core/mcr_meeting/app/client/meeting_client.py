@@ -1,5 +1,6 @@
 from mcr_meeting.app.client.http_client import HttpClient
 from mcr_meeting.app.configs.base import ApiSettings, ServiceSettings
+from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
 
 
 class MeetingApiClient:
@@ -11,6 +12,10 @@ class MeetingApiClient:
 
     def _get_base_url(self) -> str:
         return f"{self.service_settings.CORE_SERVICE_BASE_URL}{self.api_settings.MEETING_API_PREFIX}"
+
+    async def get_meeting(self, meeting_id: int) -> MeetingResponse:
+        response = await self.client.get(f"/{meeting_id}")
+        return MeetingResponse.model_validate(response.json())
 
     async def start_transcription(self, meeting_id: int) -> None:
         await self.client.post(f"/{meeting_id}/transcription/start")
