@@ -48,7 +48,7 @@ const toaster = useToaster();
 
 const headers = [
   { key: 'date', label: t('meetings_v2.table.columns.date'), headerAttrs: { class: 'w-48' } },
-  { key: 'title', label: t('meetings_v2.table.columns.title'), headerAttrs: { class: '' } },
+  { key: 'title', label: t('meetings_v2.table.columns.title.label'), headerAttrs: { class: '' } },
   {
     key: 'transcription',
     label: t('meetings_v2.table.columns.transcription'),
@@ -83,16 +83,17 @@ const meetings = computed(() => paginatedMeetings.value?.data ?? []);
 const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
 
 const rows = computed(() =>
-  meetings.value.map(
-    (meeting) =>
-      ({
-        date: formatMeetingDate(meeting.creation_date),
-        title: { name: meeting.name, id: meeting.id },
-        transcription: '',
-        report: '',
-        actions: meeting,
-      }) satisfies CellMap,
-  ),
+  meetings.value.map((meeting) => ({
+    date: formatMeetingDate(meeting.creation_date),
+    title: {
+      name: meeting.name,
+      id: meeting.id,
+      creation_date: meeting.creation_date,
+    },
+    transcription: '',
+    report: '',
+    actions: meeting,
+  })),
 );
 
 watch(
