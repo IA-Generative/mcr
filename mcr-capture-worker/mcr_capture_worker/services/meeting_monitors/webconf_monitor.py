@@ -1,4 +1,5 @@
 import asyncio
+from io import BytesIO
 
 from loguru import logger
 from playwright.async_api import Page
@@ -25,3 +26,6 @@ class WebConfMeetingMonitor(MeetingMonitor):
         if text is None or not text.strip().isdigit():
             raise ValueError(f"Could not read participant count from badge: {text}")
         return int(text.strip())
+
+    async def enable_chunk_size_based_disconnection(self, data: BytesIO) -> None:
+        return

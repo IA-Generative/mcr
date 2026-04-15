@@ -1,3 +1,5 @@
+from io import BytesIO
+
 from loguru import logger
 from playwright.async_api import Page
 
@@ -22,3 +24,6 @@ class WebinaireMeetingMonitor(MeetingMonitor):
         if await mute_button.count() > 0:
             logger.info("Bot mic was activated by a participant — muting")
             await mute_button.click()
+
+    async def enable_chunk_size_based_disconnection(self, data: BytesIO) -> None:
+        return

@@ -13,3 +13,6 @@ class VisioMeetingMonitor(MeetingMonitor):
         if text is None or not text.strip().isdigit():
             raise ValueError(f"Could not read participant count from badge: {text}")
         return int(text.strip())
+
+    async def should_disconnect(self, page: Page, grace_period_s: int) -> bool:
+        return self.is_alone_timer_expired(grace_period_s)

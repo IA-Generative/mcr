@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 
@@ -9,6 +9,8 @@ from mcr_capture_worker.services.meeting_audio_recorder import MeetingAudioRecor
 @pytest.fixture(scope="function")
 def mock_meeting_audio_recorder() -> MeetingAudioRecorder:
     bot = MeetingAudioRecorder(meeting_id=0)
+    bot.meeting_monitor = Mock()
+    bot.meeting_monitor.enable_chunk_size_based_disconnection = AsyncMock()
 
     return bot
 

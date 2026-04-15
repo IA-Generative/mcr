@@ -6,7 +6,7 @@ import pandas as pd
 from loguru import logger
 
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
-from mcr_meeting.evaluation.eval_types import (
+from mcr_meeting.evaluation.asr.types import (
     EvaluationInput,
     EvaluationOutput,
     EvaluationSummary,

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from loguru import logger
 
-from mcr_meeting.evaluation.asr_evaluation_pipeline import ASREvaluationPipeline
+from mcr_meeting.evaluation.asr.evaluation_pipeline import ASREvaluationPipeline
 from mcr_meeting.evaluation.cli.utils import load_evaluation_inputs
 
 

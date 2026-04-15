@@ -4,11 +4,20 @@ import { ref } from 'vue';
 import MeetingListPageV2 from '@/views/meeting/MeetingListPageV2.vue';
 import { renderWithPlugins } from '@/vitest.setup';
 
-const mockUseFeatureFlag = vi.fn(() => ref(false));
+const { mockUseFeatureFlag } = vi.hoisted(() => {
+  return { mockUseFeatureFlag: vi.fn(() => ref(false)) };
+});
 
 vi.mock('@/composables/use-feature-flag', () => ({
   useFeatureFlag: () => mockUseFeatureFlag(),
 }));
+
+// MeetingsDataTable (rendered by MeetingListPageV2) calls useMeetings().getAllMeetingsQuery,
+// which would otherwise fire a real HTTP request and crash on the missing Keycloak session.
+vi.mock('@/services/meetings/use-meeting', async () => {
+  const { mockUseMeetings } = await import('@/vitest.setup');
+  return mockUseMeetings();
+});
 
 const SESSION_KEY = 'dsfr-alert-closed';
 const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';

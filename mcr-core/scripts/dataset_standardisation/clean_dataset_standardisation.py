@@ -11,7 +11,7 @@ from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSe
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     merge_consecutive_segments_per_speaker,
 )
-from mcr_meeting.evaluation.eval_types import TranscriptionOutput
+from mcr_meeting.evaluation.asr.types import TranscriptionOutput
 from scripts.dataset_standardisation.utils import save_transcription_output
 
 
