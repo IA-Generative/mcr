@@ -42,7 +42,7 @@ from mcr_meeting.app.utils.load_speech_to_text_model import (
     load_whisper_model,
 )
 from mcr_meeting.app.utils.sentry_context import (
-    MeetingContext,
+    gather_meeting_context,
     set_sentry_meeting_context,
 )
 from mcr_meeting.evaluation.asr.evaluation_pipeline import ASREvaluationPipeline
@@ -130,39 +130,16 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, obje
     return result
 
 
-def _gather_meeting_context(
-    meeting_id: int, owner_keycloak_uuid: str
-) -> MeetingContext:
-    try:
-        client = MeetingApiClient(owner_keycloak_uuid)
-        meeting = asyncio.run(client.get_meeting(meeting_id))
-        return MeetingContext(
-            meeting_id=meeting_id,
-            owner_keycloak_uuid=owner_keycloak_uuid,
-            name_platform=meeting.name_platform,
-        )
-    except Exception:
-        logger.warning(
-            "Failed to fetch meeting {} details for Sentry context, using partial context",
-            meeting_id,
-        )
-        return MeetingContext(
-            meeting_id=meeting_id,
-            owner_keycloak_uuid=owner_keycloak_uuid,
-            name_platform=None,
-        )
-
-
 @task_prerun.connect(sender=transcribe)
 def set_meeting_in_progress_status(**kwargs: Any) -> None:  # type: ignore[explicit-any]
     task_args = extract_transcription_task_args(kwargs)
 
-    meeting_context = _gather_meeting_context(
-        task_args.meeting_id, task_args.owner_keycloak_uuid
+    client = MeetingApiClient(task_args.owner_keycloak_uuid)
+    meeting_context = gather_meeting_context(
+        task_args.meeting_id, task_args.owner_keycloak_uuid, client
     )
     set_sentry_meeting_context(meeting_context)
 
-    client = MeetingApiClient(task_args.owner_keycloak_uuid)
     asyncio.run(client.start_transcription(task_args.meeting_id))
     logger.info("Starting transcription for meeting ID: {}", task_args.meeting_id)
 
