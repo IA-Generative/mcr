@@ -1,112 +1,113 @@
 import pytest
 
-from mcr_meeting.evaluation.acronymes.constants import ACRONYMES
-from mcr_meeting.evaluation.acronymes.types import AcronymMetrics
 from mcr_meeting.evaluation.acronymes.utils.metrics import (
-    acronym_fn,
-    acronym_fp,
-    acronym_tp,
     compute_audio_metrics,
     compute_global_metrics,
+    score_acronym,
 )
 
+GLOSSARY = ["DGPN", "DGGN", "DGSI", "ANTS", "ANTAI"]
 
-class TestAcronymTpFpFn:
+
+def _empty_predicted(glossary: list[str]) -> dict[str, int]:
+    return dict.fromkeys(glossary, 0)
+
+
+class TestScoreAcronym:
     @pytest.mark.parametrize(
-        "count, expected_tp, expected_fp, expected_fn",
+        "expected, predicted, result",
         [
-            (0, 0, 0, 1),
-            (1, 1, 0, 0),
-            (2, 1, 1, 0),
-            (3, 1, 2, 0),
-            (4, 1, 3, 0),
-            (10, 1, 9, 0),
+            (0, 0, (0, 0, 1, 0)),  # correctly absent -> TN
+            (0, 5, (0, 5, 0, 0)),  # 5 hallucinations -> FP=5
+            (1, 4, (1, 3, 0, 0)),  # correct + 3 extras -> TP=1, FP=3
+            (2, 0, (0, 0, 0, 2)),  # 2 missing -> FN=2
+            (3, 1, (1, 0, 0, 2)),  # 1 correct, 2 still missing -> TP=1, FN=2
+            (2, 2, (2, 0, 0, 0)),  # exact match -> TP=2
         ],
     )
-    def test_metric_table(
-        self, count: int, expected_tp: int, expected_fp: int, expected_fn: int
+    def test_count_aware_scoring(
+        self, expected: int, predicted: int, result: tuple[int, int, int, int]
     ) -> None:
-        assert acronym_tp(count) == expected_tp
-        assert acronym_fp(count) == expected_fp
-        assert acronym_fn(count) == expected_fn
+        assert score_acronym(expected, predicted) == result
 
 
 class TestComputeAudioMetrics:
     def test_perfect_audio(self) -> None:
-        counts = dict.fromkeys(ACRONYMES, 1)
-        m = compute_audio_metrics(counts)
-        assert m.tp == 20
+        expected = {"DGPN": 1, "DGGN": 1, "DGSI": 1, "ANTS": 0, "ANTAI": 0}
+        predicted = {"DGPN": 1, "DGGN": 1, "DGSI": 1, "ANTS": 0, "ANTAI": 0}
+        m = compute_audio_metrics(expected, predicted)
+        assert m.tp == 3
         assert m.fp == 0
+        assert m.tn == 2
         assert m.fn == 0
         assert m.precision == 1.0
         assert m.recall == 1.0
+        assert m.accuracy == 1.0
 
     def test_all_missing(self) -> None:
-        counts = dict.fromkeys(ACRONYMES, 0)
-        m = compute_audio_metrics(counts)
+        expected = dict.fromkeys(GLOSSARY, 1)
+        predicted = _empty_predicted(GLOSSARY)
+        m = compute_audio_metrics(expected, predicted)
         assert m.tp == 0
         assert m.fp == 0
-        assert m.fn == 20
-        assert m.precision == 0.0
+        assert m.tn == 0
+        assert m.fn == 5
+        assert m.precision == 0.0  # 0/0 -> 0.0 by convention
         assert m.recall == 0.0
+        assert m.accuracy == 0.0
 
-    def test_with_repetitions(self) -> None:
-        counts = dict.fromkeys(ACRONYMES, 1)
-        counts["ANTS"] = 4
-        m = compute_audio_metrics(counts)
-        assert m.tp == 20
+    def test_repetitions_inflate_fp(self) -> None:
+        # DGPN expected 1x, emitted 4x -> TP=1, FP=3 under count-aware model.
+        expected = {"DGPN": 1, "DGGN": 0, "DGSI": 0, "ANTS": 0, "ANTAI": 0}
+        predicted = {"DGPN": 4, "DGGN": 0, "DGSI": 0, "ANTS": 0, "ANTAI": 0}
+        m = compute_audio_metrics(expected, predicted)
+        assert m.tp == 1
         assert m.fp == 3
+        assert m.tn == 4
         assert m.fn == 0
-        assert m.precision == pytest.approx(20 / 23)
+        assert m.precision == pytest.approx(1 / 4)
         assert m.recall == 1.0
+        assert m.accuracy == pytest.approx(5 / 8)
 
-    def test_with_missing_and_extras(self) -> None:
-        counts = dict.fromkeys(ACRONYMES, 1)
-        counts["ANTS"] = 4
-        counts["DGSI"] = 0
-        m = compute_audio_metrics(counts)
-        assert m.tp == 19
-        assert m.fp == 3
-        assert m.fn == 1
-        assert m.precision == pytest.approx(19 / 22)
-        assert m.recall == pytest.approx(19 / 20)
+    def test_missing_key_in_expected_treated_as_zero(self) -> None:
+        # Common case: reference file only lists spoken acronyms.
+        expected = {"DGPN": 1}  # DGGN/DGSI/ANTS/ANTAI implicit 0
+        predicted = dict.fromkeys(GLOSSARY, 0)
+        predicted["DGPN"] = 1
+        m = compute_audio_metrics(expected, predicted)
+        assert m.tp == 1
+        assert m.fp == 0
+        assert m.tn == 4
+        assert m.fn == 0
+        assert m.accuracy == 1.0
 
 
 class TestComputeGlobalMetrics:
-    def test_micro_average_two_audios(self) -> None:
-        audio1 = dict.fromkeys(ACRONYMES, 1)
-        audio2 = {a: (1 if i < 10 else 0) for i, a in enumerate(ACRONYMES)}
-        m = compute_global_metrics({"a1": audio1, "a2": audio2})
-        assert m.tp == 30
-        assert m.fp == 0
-        assert m.fn == 10
-        assert m.precision == 1.0
-        assert m.recall == pytest.approx(30 / 40)
-
-    def test_micro_average_with_fp(self) -> None:
-        audio1 = dict.fromkeys(ACRONYMES, 1)
-        audio1["ANTS"] = 4
-        audio2 = dict.fromkeys(ACRONYMES, 1)
-        m = compute_global_metrics({"a1": audio1, "a2": audio2})
-        assert m.tp == 40
-        assert m.fp == 3
-        assert m.fn == 0
-        assert m.precision == pytest.approx(40 / 43)
-        assert m.recall == 1.0
+    def test_micro_average_with_mixed_errors(self) -> None:
+        # audio1: 3 correct, 2 missing -> tp=3, fn=2, fp=0, tn=0
+        # audio2: 0 expected, DGPN emitted 2x -> tp=0, fn=0, fp=2, tn=4
+        a1_expected = {"DGPN": 1, "DGGN": 1, "DGSI": 1, "ANTS": 1, "ANTAI": 1}
+        a1_predicted = {"DGPN": 1, "DGGN": 1, "DGSI": 1, "ANTS": 0, "ANTAI": 0}
+        a2_expected = dict.fromkeys(GLOSSARY, 0)
+        a2_predicted = {"DGPN": 2, "DGGN": 0, "DGSI": 0, "ANTS": 0, "ANTAI": 0}
+        m = compute_global_metrics(
+            {"a1": a1_expected, "a2": a2_expected},
+            {"a1": a1_predicted, "a2": a2_predicted},
+        )
+        assert m.tp == 3
+        assert m.fp == 2
+        assert m.tn == 4
+        assert m.fn == 2
+        assert m.precision == pytest.approx(3 / 5)
+        assert m.recall == pytest.approx(3 / 5)
+        assert m.accuracy == pytest.approx(7 / 11)
 
     def test_empty_inputs_safe(self) -> None:
-        m = compute_global_metrics({})
+        m = compute_global_metrics({}, {})
         assert m.tp == 0
         assert m.fp == 0
+        assert m.tn == 0
         assert m.fn == 0
         assert m.precision == 0.0
         assert m.recall == 0.0
-
-
-class TestAcronymMetricsModel:
-    def test_serialization_roundtrip(self) -> None:
-        m = AcronymMetrics(tp=10, fp=2, fn=8, precision=0.83, recall=0.55)
-        dumped = m.model_dump()
-        assert dumped == {"tp": 10, "fp": 2, "fn": 8, "precision": 0.83, "recall": 0.55}
-        rebuilt = AcronymMetrics.model_validate(dumped)
-        assert rebuilt == m
+        assert m.accuracy == 0.0
