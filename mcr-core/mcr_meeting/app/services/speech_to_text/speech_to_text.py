@@ -10,9 +10,10 @@ from mcr_meeting.app.schemas.transcription_schema import (
     TranscriptionSegment,
 )
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
+    audio_bytes_to_wav_bytes,
+    check_audio_is_not_silent,
     filter_noise_from_audio_bytes,
     is_audio_noisy,
-    normalize_audio_bytes_to_wav_bytes,
 )
 from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
     SpellingCorrector,
@@ -48,7 +49,8 @@ class SpeechToTextPipeline:
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
 
-        This includes normalizing the audio to WAV format and applying noise filtering if enabled.
+        This includes normalizing the audio to WAV format, checking for silent audio,
+        and applying noise filtering if enabled.
 
         Args:
             audio_bytes (BytesIO): The input audio bytes.
@@ -57,20 +59,20 @@ class SpeechToTextPipeline:
             BytesIO: The pre-processed audio bytes.
         """
         feature_flag_client = get_feature_flag_client()
-        normalized_audio_bytes = normalize_audio_bytes_to_wav_bytes(audio_bytes)
+        wav_audio_bytes = audio_bytes_to_wav_bytes(audio_bytes)
+
+        check_audio_is_not_silent(wav_audio_bytes)
 
         if feature_flag_client.is_enabled("audio_noise_filtering"):
-            if is_audio_noisy(normalized_audio_bytes):
+            if is_audio_noisy(wav_audio_bytes):
                 logger.debug("Noisy audio detected, applying noise filtering")
-                pre_processed_bytes = filter_noise_from_audio_bytes(
-                    normalized_audio_bytes
-                )
+                pre_processed_bytes = filter_noise_from_audio_bytes(wav_audio_bytes)
             else:
                 logger.debug("Clean audio detected, not applying noise filtering")
-                pre_processed_bytes = normalized_audio_bytes
+                pre_processed_bytes = wav_audio_bytes
         else:
             logger.debug("Noise filtering disabled, skipping filtering step")
-            pre_processed_bytes = normalized_audio_bytes
+            pre_processed_bytes = wav_audio_bytes
 
         return pre_processed_bytes
 
