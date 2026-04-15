@@ -90,7 +90,7 @@ const rows = computed(() =>
       id: meeting.id,
       creation_date: meeting.creation_date,
     },
-    transcription: '',
+    transcription: meeting.status,
     report: '',
     actions: meeting,
   })),

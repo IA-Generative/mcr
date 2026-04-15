@@ -128,7 +128,13 @@
           "label": "Compte-rendu",
           "tooltip": "La génération du compte rendu est disponible une fois la transcription prête. Vous pouvez la lancer depuis la fiche réunion, ou la configurer en amont."
         },
-        "actions": "Actions"
+        "actions": "Actions",
+        "status": {
+          "pending": "EN ATTENTE",
+          "info": "EN COURS",
+          "success": "DISPONIBLE",
+          "error": "ERREUR"
+        }
       }
     },
     "availability-alert-description": {

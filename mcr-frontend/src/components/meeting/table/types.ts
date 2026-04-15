@@ -1,4 +1,4 @@
-import type { MeetingDto } from '@/services/meetings/meetings.types';
+import type { MeetingDto, MeetingStatus } from '@/services/meetings/meetings.types';
 
 export interface MeetingTitleCell {
   name: string;
@@ -9,7 +9,7 @@ export interface MeetingTitleCell {
 export interface CellMap {
   date: string;
   title: MeetingTitleCell;
-  transcription: string;
+  transcription: MeetingStatus;
   report: string;
   actions: MeetingDto;
 }
