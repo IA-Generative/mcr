@@ -3,11 +3,9 @@ from mcr_meeting.evaluation.acronymes.utils.counting import (
     evaluate_acronyms,
 )
 from mcr_meeting.evaluation.acronymes.utils.metrics import (
-    acronym_fn,
-    acronym_fp,
-    acronym_tp,
     compute_audio_metrics,
     compute_global_metrics,
+    score_acronym,
 )
 from mcr_meeting.evaluation.acronymes.utils.persistence import (
     build_results_dataframe,
@@ -17,9 +15,6 @@ from mcr_meeting.evaluation.acronymes.utils.persistence import (
 )
 
 __all__ = [
-    "acronym_fn",
-    "acronym_fp",
-    "acronym_tp",
     "build_results_dataframe",
     "build_summary",
     "compute_audio_metrics",
@@ -28,4 +23,5 @@ __all__ = [
     "evaluate_acronyms",
     "save_acronym_results_csv",
     "save_acronym_summary_json",
+    "score_acronym",
 ]

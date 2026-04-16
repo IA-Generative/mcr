@@ -1,8 +1,7 @@
 """Regex-based acronym counting in normalized text."""
 
 import re
-
-from mcr_meeting.evaluation.acronymes.constants import ACRONYMES
+from collections.abc import Iterable
 
 
 def count_acronym_occurrences(normalized_text: str, acronym: str) -> int:
@@ -17,9 +16,9 @@ def count_acronym_occurrences(normalized_text: str, acronym: str) -> int:
     return len(re.findall(pattern, normalized_text))
 
 
-def evaluate_acronyms(normalized_text: str) -> dict[str, int]:
-    """Return ``{acronym -> count}`` for the 20 reference acronyms."""
+def evaluate_acronyms(normalized_text: str, glossary: Iterable[str]) -> dict[str, int]:
+    """Return ``{acronym -> count}`` for every acronym in ``glossary``."""
     return {
         acronym: count_acronym_occurrences(normalized_text, acronym)
-        for acronym in ACRONYMES
+        for acronym in glossary
     }
