@@ -12,6 +12,7 @@ class DeliverableFileType(StrEnum):
     TRANSCRIPTION = "TRANSCRIPTION"
     REPORT = "REPORT"
 
+
 class Deliverable(Base):
     __tablename__ = "deliverable"
 
