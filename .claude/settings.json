@@ -1,13 +1,12 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "Stop": [
       {
-        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "bash scripts/ruff-check-file.sh",
-            "timeout": 30
+            "command": "uv run --script \"$CLAUDE_PROJECT_DIR/scripts/check_changed.py\"",
+            "timeout": 60
           }
         ]
       }
