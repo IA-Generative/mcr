@@ -5,17 +5,12 @@ from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mcr_meeting.app.db.db import Base
+from mcr_meeting.app.models.feedback_model import VoteType
 
 
 class DeliverableFileType(StrEnum):
     TRANSCRIPTION = "TRANSCRIPTION"
     REPORT = "REPORT"
-
-
-class VoteType(StrEnum):
-    POSITIVE = "POSITIVE"
-    NEGATIVE = "NEGATIVE"
-
 
 class Deliverable(Base):
     __tablename__ = "deliverable"
