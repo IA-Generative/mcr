@@ -282,6 +282,7 @@ class ComuUrlValidator:
         re.compile(r"webconf\.comu\.gouv\.fr"),
         re.compile(r"webconf\.comu\.interieur\.rie\.gouv\.fr"),
         re.compile(r"webconf\.comu\.minint\.fr"),
+        re.compile(r"webconf\.comu\.din\.gouv\.fr"),
     ]
     secret = re.compile(r"\?secret=[A-Za-z0-9_.]{22}")
     meeting_id = re.compile(r"\d+")
