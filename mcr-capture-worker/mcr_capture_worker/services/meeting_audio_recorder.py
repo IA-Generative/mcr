@@ -127,14 +127,17 @@ class MeetingAudioRecorder:
             await self.browser.close()
 
     async def _should_auto_disconnect(self, page: Page) -> bool:
-        if self._connected_at is not None:
-            elapsed_since_connect = time.monotonic() - self._connected_at
-            if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
-                return False
+        # if self._connected_at is not None:
+        #     elapsed_since_connect = time.monotonic() - self._connected_at
+        #     if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
+        #         return False
 
-        return await self.meeting_monitor.should_disconnect(
-            page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
-        )
+        # return await self.meeting_monitor.should_disconnect(
+        #     page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
+        # )
+
+        # The bot's automatic disconnection is a dysfunctional feature, it is currently disabled
+        return False
 
     async def handle_audio_chunk(self, data: BytesIO) -> None:
         try:
