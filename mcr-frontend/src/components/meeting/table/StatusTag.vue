@@ -1,6 +1,6 @@
 <template>
   <DsfrTag
-    v-if="tagMeta.label !== ''"
+    v-if="tagMeta"
     :label="tagMeta.label"
     :class="tagMeta.class"
     :icon="tagMeta.icon"
@@ -12,7 +12,13 @@
 import { t } from '@/plugins/i18n';
 import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
 
-export function getTagMeta(status: DeliverableStatus | null) {
+interface TagMeta {
+  class: string;
+  label: string;
+  icon: string;
+}
+
+export function getTagMeta(status: DeliverableStatus | null): TagMeta | null {
   if (status === 'PENDING') {
     return {
       class: 'pending',
@@ -41,11 +47,7 @@ export function getTagMeta(status: DeliverableStatus | null) {
       icon: 'fr-icon-error-fill',
     };
   }
-  return {
-    class: 'no_data',
-    label: '',
-    icon: '',
-  };
+  return null;
 }
 </script>
 

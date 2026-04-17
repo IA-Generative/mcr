@@ -1,5 +1,5 @@
 <template>
-  <StatusTag :status="(deliverableStatusToShow as DeliverableStatus) || null" />
+  <StatusTag :status="deliverableStatusToShow as DeliverableStatus" />
 </template>
 
 <script lang="ts">
@@ -16,15 +16,15 @@ import type { MeetingStatus } from '@/services/meetings/meetings.types';
 <script lang="ts" setup>
 const props = defineProps<{
   deliverableType: DeliverableFileType;
-  cell: MeetingStatus;
+  status: MeetingStatus;
 }>();
 
 const deliverableStatusToShow = computed(() => {
   switch (props.deliverableType) {
     case 'TRANSCRIPTION':
-      return getTranscriptionStatus(props.cell);
+      return getTranscriptionStatus(props.status);
     case 'REPORT':
-      return getReportStatus(props.cell);
+      return getReportStatus(props.status);
     default:
       return null;
   }

@@ -5,7 +5,7 @@
   />
   <DataCellDeliverable
     v-else-if="colKey === 'transcription' || colKey === 'report'"
-    :cell="cell as MeetingStatus"
+    :status="cell as MeetingStatus"
     :deliverable-type="colKey.toUpperCase() as DeliverableFileType"
   />
   <DataCellAction
