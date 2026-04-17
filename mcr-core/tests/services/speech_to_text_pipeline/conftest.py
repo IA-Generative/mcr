@@ -9,11 +9,11 @@ import pytest
 from pydub import AudioSegment
 from pydub.generators import Sine
 
-from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
+from mcr_meeting.app.configs.base import TranscriptionApiSettings
 from mcr_meeting.app.schemas.transcription_schema import TranscriptionSegment
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 
-M = WhisperTranscriptionSettings().MAX_CHUNK_DURATION
+M = TranscriptionApiSettings().MAX_CHUNK_DURATION
 
 
 @pytest.fixture

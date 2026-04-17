@@ -201,18 +201,28 @@ class WhisperTranscriptionSettings(BaseSettings):
     WORD_TIMESTAMPS: bool | None = Field(
         default=True,
         description="For the model to return word_timestamps or just segment timestamps.",
-    )
+    )  # ONLY USED FOR GPU TRANSCRIPTION, NOT API TRANSCRIPTION
     INITIAL_PROMPT: str | None = Field(
         default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
         description="Prompt passed to the transcription model",
     )
-    MAX_CHUNK_DURATION: float = Field(
-        default=600.0,
-        description="Maximum duration in seconds for a single transcription chunk (~10 min).",
+    TEMPERATURE: float | list[float] | None = Field(
+        default=None,
+        description="Sampling temperature for the transcription model. Can be a single float or a list of floats for multiple attempts with increasing randomness.",
     )
-    SPLIT_SEARCH_WINDOW_RATIO: float = Field(
-        default=0.2,
-        description="Fraction of max_chunk_duration at the end of a chunk where the algorithm searches for the best silence to split on.",
+    VAD_FILTER: bool | None = Field(
+        default=True,
+        description="Whether to apply Voice Activity Detection (VAD) with Silero to filter out non-speech parts of the audio.",
+    )
+    VAD_PARAMETERS: dict[str, float | int] | None = Field(
+        default={
+            "threshold": 0.4,
+            "min_silence_duration_ms": 700,
+            "speech_pad_ms": 600,
+            "min_speech_duration_ms": 200,
+            "max_speech_duration_s": 10**9,
+        },
+        description="Parameters for the Voice Activity Detection (VAD) with Silero applied in the transcription process to filter out non-speech parts of the audio.",
     )
 
 
@@ -454,9 +464,6 @@ class TranscriptionApiSettings(BaseSettings):
     DIARIZATION_API_KEY: str = Field(description="API key for diarization service")
 
     # Shared settings
-    API_LANGUAGE: str = Field(
-        default="fr", description="Language code for transcription"
-    )
     API_TIMEOUT: float | None = Field(
         default=None,
         description="API request timeout in seconds, None means no timeout",
@@ -469,6 +476,14 @@ class TranscriptionApiSettings(BaseSettings):
         with a backoff of 0.5s (base for httpx and openAI client)
         This was set as the goal on 27/02/26
         """,
+    )
+    MAX_CHUNK_DURATION: float = Field(
+        default=600.0,
+        description="Maximum duration in seconds for a single transcription chunk (~10 min).",
+    )
+    SPLIT_SEARCH_WINDOW_RATIO: float = Field(
+        default=0.2,
+        description="Fraction of max_chunk_duration at the end of a chunk where the algorithm searches for the best silence to split on.",
     )
 
 
