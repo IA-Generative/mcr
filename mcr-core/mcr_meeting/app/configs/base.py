@@ -444,7 +444,7 @@ class TranscriptionApiSettings(BaseSettings):
     )
     TRANSCRIPTION_API_KEY: str = Field(description="API key for transcription service")
     TRANSCRIPTION_API_MODEL: str = Field(
-        default="whisper-1", description="Model name for transcription API"
+        default="faster-whisper-large-v3-turbo", description="Model name for transcription API"
     )
 
     # Diarization API (custom endpoint)

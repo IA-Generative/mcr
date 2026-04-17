@@ -101,10 +101,10 @@ class DiarizationProcessor:
             }
 
             response = client.post(
-                f"{api_settings.DIARIZATION_API_BASE_URL}/diarize",
+                f"{api_settings.DIARIZATION_API_BASE_URL}/audio/diarizations",
                 files={"file": ("audio.wav", audio_bytes, "audio/wav")},
                 data=form_data,
-                headers={"Authorization": f"Bearer {api_settings.DIARIZATION_API_KEY}"},
+                headers={"apikey": api_settings.DIARIZATION_API_KEY},
             )
 
             audio_bytes.seek(0)
