@@ -12,6 +12,7 @@ const comuDomainPattern = [
   /webconf\.comu\.gouv\.fr/,
   /webconf\.comu\.interieur\.rie\.gouv\.fr/,
   /webconf\.comu\.minint\.fr/,
+  /webconf\.comu\.din\.gouv\.fr/,
 ]
   .map((r) => r.source)
   .join('|');
