@@ -15,6 +15,10 @@ class InvalidAudioFileError(MCRException):
     """Raised when an invalid audio file is provided."""
 
 
+class SilentAudioError(MCRException):
+    """Raised when the audio is silent or contains no meaningful audio content."""
+
+
 class NoAudioFoundError(MCRException):
     """Raised when no audio files are found for a given meeting."""
 

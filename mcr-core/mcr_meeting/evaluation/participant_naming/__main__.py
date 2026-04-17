@@ -20,6 +20,7 @@ from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSe
 from mcr_meeting.app.services.speech_to_text.participants_naming import (
     ParticipantExtraction,
 )
+from mcr_meeting.evaluation.utils.math_utils import safe_ratio
 
 SEGMENT_PATTERN = re.compile(r"^(LOCUTEUR_\d+)\s*:\s*(.+)$")
 
@@ -108,7 +109,7 @@ def evaluate_file(
 
     return EvalResult(
         file=txt_path.name,
-        accuracy=correct / total if total else 0,
+        accuracy=safe_ratio(correct, total),
         correct=correct,
         total=total,
         details=details,
@@ -142,7 +143,7 @@ def log_report(results: list[EvalResult]) -> None:
         total_speakers += res.total
 
     logger.info("\n{}", "=" * 60)
-    overall = total_correct / total_speakers if total_speakers else 0
+    overall = safe_ratio(total_correct, total_speakers)
     logger.info("  OVERALL: {}/{} ({:.0%})", total_correct, total_speakers, overall)
     logger.info("{}\n", "=" * 60)
 

@@ -19,6 +19,7 @@ from mcr_meeting.app.configs.base import (
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     NoAudioFoundError,
+    SilentAudioError,
 )
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.services.s3_service import get_file_from_s3
@@ -32,7 +33,77 @@ sample_rate = audio_settings.SAMPLE_RATE
 nb_channels = audio_settings.NB_AUDIO_CHANNELS
 
 
-def normalize_audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
+def _get_audio_duration_seconds(wav_bytes: BytesIO) -> float:
+    """Compute duration of normalized WAV audio from byte size.
+
+    Works because we control the WAV output format (header size, bytes per sample,
+    sample rate, and channel count are all defined in AudioSettings).
+    """
+    byte_count = len(wav_bytes.getvalue()) - audio_settings.WAV_HEADER_SIZE
+    return byte_count / (sample_rate * nb_channels * audio_settings.BYTES_PER_SAMPLE)
+
+
+def _detect_silences_absolute(
+    wav_bytes: BytesIO,
+) -> list[tuple[float, float]]:
+    """Detect silence segments using a fixed absolute dB threshold.
+
+    Unlike _detect_silences (which is relative to mean volume), this uses a fixed
+    noise floor so it reliably detects silence even on fully silent audio where the
+    mean volume is already at the floor.
+    """
+    threshold_db = noise_detection_settings.SILENT_AUDIO_NOISE_FLOOR_DB
+
+    af = f"silencedetect=noise={threshold_db}dB:d={noise_detection_settings.MIN_SILENCE_DURATION}"
+    _, stderr = (
+        ffmpeg.input("pipe:0", format="wav")
+        .output("pipe:", format="null", af=af)
+        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    )
+    return _parse_silence_intervals(stderr.decode("utf-8", errors="replace"))
+
+
+def compute_silence_ratio(wav_bytes: BytesIO) -> float:
+    """Compute the ratio of silence duration to total audio duration.
+
+    Uses ffmpeg silencedetect with a fixed absolute threshold to identify silent
+    intervals, then returns the proportion of the audio that is silent.
+
+    Args:
+        wav_bytes: Normalized WAV audio bytes.
+
+    Returns:
+        Float between 0.0 (no silence) and 1.0 (fully silent).
+    """
+    total_duration = _get_audio_duration_seconds(wav_bytes)
+    if total_duration <= 0:
+        return 1.0
+
+    silences = _detect_silences_absolute(wav_bytes)
+    silence_duration = sum(end - start for start, end in silences)
+    wav_bytes.seek(0)
+    return min(silence_duration / total_duration, 1.0)
+
+
+def check_audio_is_not_silent(wav_bytes: BytesIO) -> None:
+    """Check that the audio is not silent, raise SilentAudioError otherwise.
+
+    Args:
+        wav_bytes: Normalized WAV audio bytes.
+
+    Raises:
+        SilentAudioError: If the silence ratio exceeds the configured threshold.
+    """
+    silence_ratio = compute_silence_ratio(wav_bytes)
+    if silence_ratio >= noise_detection_settings.SILENT_AUDIO_THRESHOLD:
+        raise SilentAudioError(
+            f"Silent audio detected: "
+            f"audio is {silence_ratio:.0%} silent "
+            f"(threshold: {noise_detection_settings.SILENT_AUDIO_THRESHOLD:.0%})"
+        )
+
+
+def audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
     """
     Bytes→normalized WAV bytes, using FFmpeg via stdin/stdout pipes.
 

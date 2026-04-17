@@ -65,6 +65,16 @@ class AudioSettings(BaseSettings):
         description="Mono (1 channel) is standard for speech-to-text, ensuring consistent input and reducing computational load.",
     )
 
+    WAV_HEADER_SIZE: int = Field(
+        44,
+        description="Standard WAV file header size in bytes.",
+    )
+
+    BYTES_PER_SAMPLE: int = Field(
+        2,
+        description="Bytes per audio sample (2 for 16-bit PCM).",
+    )
+
     NO_SPEECH_PROB_THRESHOLD: float = Field(
         0.6,
         description="""non speech probability threshold. we exclude segment 
@@ -90,6 +100,16 @@ class NoiseDetectionSettings(BaseSettings):
     SILENCE_THRESHOLD_OFFSET_DB: float = Field(
         default=10.0,
         description="Offset in dB below mean volume used as silence detection threshold.",
+    )
+    SILENT_AUDIO_THRESHOLD: float = Field(
+        default=0.95,
+        description="Ratio of silence duration to total audio duration above which audio is considered silent.",
+    )
+    SILENT_AUDIO_NOISE_FLOOR_DB: float = Field(
+        default=-40.0,
+        description="Fixed absolute threshold in dB for silence detection used by the silent audio check. "
+        "Unlike SILENCE_THRESHOLD_OFFSET_DB (relative to mean volume), this is an absolute floor "
+        "so it works even on fully silent audio.",
     )
 
     # === CONSTANTS ===
