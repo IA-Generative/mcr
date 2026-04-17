@@ -1,6 +1,6 @@
 import pytest
 
-from mcr_meeting.evaluation.acronymes.utils.metrics import (
+from mcr_meeting.evaluation.acronyms.utils.metrics import (
     compute_audio_metrics,
     compute_global_metrics,
     score_acronym,

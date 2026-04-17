@@ -1,6 +1,6 @@
 import pytest
 
-from mcr_meeting.evaluation.acronymes.utils.counting import (
+from mcr_meeting.evaluation.acronyms.utils.counting import (
     count_acronym_occurrences,
     evaluate_acronyms,
 )

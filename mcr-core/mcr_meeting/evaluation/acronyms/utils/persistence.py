@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from mcr_meeting.evaluation.acronymes.types import (
+from mcr_meeting.evaluation.acronyms.types import (
     AcronymEvaluationSummary,
     AcronymPerAudioEntry,
 )
-from mcr_meeting.evaluation.acronymes.utils.metrics import (
+from mcr_meeting.evaluation.acronyms.utils.metrics import (
     compute_audio_metrics,
     compute_global_metrics,
 )
@@ -51,10 +51,10 @@ def save_acronym_results_csv(
     output_dir: Path,
     timestamp: str,
 ) -> Path:
-    """Write ``{timestamp}_acronymes_results.csv`` to ``output_dir``."""
+    """Write ``{timestamp}_acronyms_results.csv`` to ``output_dir``."""
     output_dir.mkdir(parents=True, exist_ok=True)
     df = build_results_dataframe(glossary, per_audio_expected, per_audio_predicted)
-    output_path = output_dir / f"{timestamp}_acronymes_results.csv"
+    output_path = output_dir / f"{timestamp}_acronyms_results.csv"
     df.to_csv(output_path, index=False)
     return output_path
 
@@ -94,9 +94,9 @@ def save_acronym_summary_json(
     output_dir: Path,
     timestamp: str,
 ) -> Path:
-    """Write ``{timestamp}_acronymes_summary.json`` to ``output_dir``."""
+    """Write ``{timestamp}_acronyms_summary.json`` to ``output_dir``."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / f"{timestamp}_acronymes_summary.json"
+    output_path = output_dir / f"{timestamp}_acronyms_summary.json"
     output_path.write_text(
         json.dumps(summary.model_dump(), indent=2, ensure_ascii=False)
     )

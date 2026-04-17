@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from mcr_meeting.evaluation.acronymes.types import AcronymEvaluationSummary
-from mcr_meeting.evaluation.acronymes.utils.persistence import (
+from mcr_meeting.evaluation.acronyms.types import AcronymEvaluationSummary
+from mcr_meeting.evaluation.acronyms.utils.persistence import (
     build_results_dataframe,
     build_summary,
     save_acronym_results_csv,
@@ -78,7 +78,7 @@ class TestPersistence:
             GLOSSARY, expected, predicted, tmp_path, "2026-04-15_18-00-00"
         )
         assert out_path.exists()
-        assert out_path.name == "2026-04-15_18-00-00_acronymes_results.csv"
+        assert out_path.name == "2026-04-15_18-00-00_acronyms_results.csv"
         content = out_path.read_text()
         assert "uid" in content
         assert "DGPN_expected" in content
@@ -92,7 +92,7 @@ class TestPersistence:
         summary = build_summary(GLOSSARY, expected, predicted)
         out_path = save_acronym_summary_json(summary, tmp_path, "2026-04-15_18-00-00")
         assert out_path.exists()
-        assert out_path.name == "2026-04-15_18-00-00_acronymes_summary.json"
+        assert out_path.name == "2026-04-15_18-00-00_acronyms_summary.json"
         loaded = json.loads(out_path.read_text())
         assert loaded["total_files"] == 1
         assert loaded["global_metrics"]["precision"] == 1.0

@@ -19,7 +19,7 @@ mixed counting scheme::
     accuracy = (TP + TN) / (TP + TN + FP + FN)
 """
 
-from mcr_meeting.evaluation.acronymes.types import AcronymMetrics
+from mcr_meeting.evaluation.acronyms.types import AcronymMetrics
 from mcr_meeting.evaluation.utils.math_utils import safe_ratio
 
 
