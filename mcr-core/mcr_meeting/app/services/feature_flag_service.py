@@ -20,6 +20,7 @@ class FeatureFlag(StrEnum):
     AUDIO_NOISE_FILTERING = "audio_noise_filtering"
     API_BASED_DIARIZATION = "api_based_diarization"
     API_BASED_TRANSCRIPTION = "api_based_transcription"
+    ACRONYM_CORRECTION = "acronym_correction"
 
 
 class FeatureFlagClient(ABC):
