@@ -23,6 +23,7 @@ declare module 'vue' {
     CreateVisioMeetingForm: typeof import('./components/meeting/CreateVisioMeetingForm.vue')['default']
     CreateVisioMeetingModal: typeof import('./components/meeting/modals/CreateVisioMeetingModal.vue')['default']
     DataCellAction: typeof import('./components/meeting/table/cells/DataCellAction.vue')['default']
+    DataCellDeliverable: typeof import('./components/meeting/table/cells/DataCellDeliverable.vue')['default']
     DataCellMeetingTitle: typeof import('./components/meeting/table/cells/DataCellMeetingTitle.vue')['default']
     DeleteMeetingModal: typeof import('./components/meeting/modals/DeleteMeetingModal.vue')['default']
     DsfrAlert: typeof import('@gouvminint/vue-dsfr')['DsfrAlert']

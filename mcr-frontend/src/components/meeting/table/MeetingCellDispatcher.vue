@@ -3,14 +3,14 @@
     v-if="colKey === 'title'"
     :cell="cell as MeetingTitleCell"
   />
+  <DataCellDeliverable
+    v-else-if="colKey === 'transcription' || colKey === 'report'"
+    :status="cell as MeetingStatus"
+    :deliverable-type="colKey.toUpperCase() as DeliverableFileType"
+  />
   <DataCellAction
     v-else-if="colKey === 'actions'"
     :cell="cell as MeetingDto"
-  />
-  <StatusTag
-    v-else-if="colKey === 'transcription'"
-    :cell="cell as MeetingStatus"
-    :deliverable-type="colKey.toUpperCase() as DeliverableFileType"
   />
 
   <template v-else>{{ cell }}</template>

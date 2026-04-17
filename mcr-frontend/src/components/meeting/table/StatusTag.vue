@@ -1,5 +1,6 @@
 <template>
   <DsfrTag
+    v-if="tagMeta"
     :label="tagMeta.label"
     :class="tagMeta.class"
     :icon="tagMeta.icon"
@@ -9,14 +10,15 @@
 
 <script lang="ts">
 import { t } from '@/plugins/i18n';
-import { getTranscriptionStatus } from '@/services/deliverables/deliverables.service';
-import type {
-  DeliverableFileType,
-  DeliverableStatus,
-} from '@/services/deliverables/deliverables.types';
-import type { MeetingStatus } from '@/services/meetings/meetings.types';
+import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
 
-export function getTagMeta(status: DeliverableStatus) {
+interface TagMeta {
+  class: string;
+  label: string;
+  icon: string;
+}
+
+export function getTagMeta(status: DeliverableStatus | null): TagMeta | null {
   if (status === 'PENDING') {
     return {
       class: 'pending',
@@ -45,26 +47,16 @@ export function getTagMeta(status: DeliverableStatus) {
       icon: 'fr-icon-error-fill',
     };
   }
-  return {
-    class: 'pending',
-    label: t('meetings_v2.table.columns.status.pending'),
-    icon: 'fr-icon-info-fill',
-  };
+  return null;
 }
 </script>
 
 <script lang="ts" setup>
 const props = defineProps<{
-  deliverableType: DeliverableFileType;
-  cell: MeetingStatus;
+  status: DeliverableStatus | null;
 }>();
 
-const tagMeta = computed(() => {
-  if (props.deliverableType === 'TRANSCRIPTION') {
-    return getTagMeta(getTranscriptionStatus(props.cell));
-  }
-  return getTagMeta('FAILED');
-});
+const tagMeta = computed(() => getTagMeta(props.status));
 </script>
 
 <style>
