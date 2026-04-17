@@ -15,6 +15,9 @@ from mcr_meeting.app.services.audio_pre_transcription_processing_service import 
     filter_noise_from_audio_bytes,
     is_audio_noisy,
 )
+from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
+    AcronymCorrector,
+)
 from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
     SpellingCorrector,
 )
@@ -99,6 +102,13 @@ class SpeechToTextPipeline:
             diarized_transcription_segments
         )
         cleaned_segments = remove_hallucinations(merged_segments)
+
+        if feature_flag_client.is_enabled("acronym_correction"):
+            logger.debug("Acronym correction enabled, correcting segments")
+            acronym_corrector = AcronymCorrector()
+            cleaned_segments = acronym_corrector.correct(cleaned_segments)
+        else:
+            logger.debug("Acronym correction disabled, skipping correction")
 
         if feature_flag_client.is_enabled("spelling_correction"):
             logger.debug("Spelling correction enabled, correcting segments")
