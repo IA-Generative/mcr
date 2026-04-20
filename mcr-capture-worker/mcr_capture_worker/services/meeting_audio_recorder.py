@@ -9,6 +9,10 @@ from mcr_capture_worker.clients.meeting_transition_client import MeetingApiClien
 from mcr_capture_worker.meeting_repository import get_meeting, get_meeting_with_owner
 from mcr_capture_worker.models.meeting_model import MeetingStatus
 from mcr_capture_worker.schemas.audio_capture_schema import OnDataAvailableBytesWrapper
+from mcr_capture_worker.services.connection_strategies.factory import (
+    build_connection_strategy,
+)
+from mcr_capture_worker.services.meeting_monitors.factory import build_meeting_monitor
 from mcr_capture_worker.services.s3_service import (
     put_file_in_audio_folder,
 )
@@ -50,7 +54,7 @@ class MeetingAudioRecorder:
 
         self.user_uuid = meeting.owner.keycloak_uuid
         self.meeting_platform = meeting.name_platform
-        self.connection_strategy = meeting.get_connection_strategy()
+        self.connection_strategy = build_connection_strategy(meeting)
 
         self.meeting_transition_client = MeetingApiClient(str(self.user_uuid))
         if self.meeting_transition_client is None:
@@ -76,7 +80,7 @@ class MeetingAudioRecorder:
 
             page.on("console", self.handle_console_message)
 
-            self.meeting_monitor = meeting.get_meeting_monitor(page)
+            self.meeting_monitor = build_meeting_monitor(meeting, page)
 
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
