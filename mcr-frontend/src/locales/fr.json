@@ -313,7 +313,9 @@
           "resume": "Reprendre",
           "start-transcription": "Lancer ma transcription"
         },
-        "upload-failed": "Certains extraits audio n'ont pas pu être envoyés. Vérifiez votre connexion et réessayez."
+        "upload-failed": "Certains extraits audio n'ont pas pu être envoyés. Vérifiez votre connexion et réessayez.",
+        "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez.",
+        "empty-chunk": "Un problème est survenu lors de la capture audio. Vérifiez votre microphone."
       },
       "transcription-failed": {
         "title": "Une erreur est survenue",
