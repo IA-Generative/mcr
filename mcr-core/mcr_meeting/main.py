@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from mcr_meeting.app.api.evaluation_router import router as evaluation_router
 from mcr_meeting.app.api.feature_flag_router import router as feature_flag_router
+from mcr_meeting.app.api.feedback_router import router as feedback_router
 from mcr_meeting.app.api.lookup_router import router as lookup_router
 from mcr_meeting.app.api.meeting.capture_bot_router import router as capture_bot_router
 from mcr_meeting.app.api.meeting.capture_router import router as capture_router
@@ -60,6 +61,7 @@ app.include_router(transcription_router)
 app.include_router(report_generation_router)
 app.include_router(feature_flag_router)
 app.include_router(meeting_multipart_router)
+app.include_router(feedback_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app")

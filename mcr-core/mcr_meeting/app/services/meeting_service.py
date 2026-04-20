@@ -175,3 +175,13 @@ def update_meeting_start_date(meeting: Meeting, start_date: datetime) -> Meeting
 def update_meeting_end_date(meeting: Meeting, end_date: datetime) -> Meeting:
     meeting.end_date = end_date
     return update_meeting(meeting)
+
+
+def meeting_exists(meeting_id: int) -> bool:
+    db = get_db_session_ctx()
+    return (
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED)
+        .first()
+        is not None
+    )

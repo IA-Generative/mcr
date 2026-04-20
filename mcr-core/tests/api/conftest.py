@@ -91,6 +91,11 @@ def feature_flag_client() -> PrefixedTestClient:
     return PrefixedTestClient(TestClient(app), api_settings.FEATURE_FLAG_API_PREFIX)
 
 
+@pytest.fixture
+def feedback_client() -> PrefixedTestClient:
+    return PrefixedTestClient(TestClient(app), api_settings.FEEDBACK_API_PREFIX)
+
+
 # --- TEST DB SETUP ---
 # Use a temporary SQLite file for the test DB
 TEST_DB_FD, TEST_DB_PATH = tempfile.mkstemp()
