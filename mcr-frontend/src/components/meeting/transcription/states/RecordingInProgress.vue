@@ -274,12 +274,28 @@ onMounted(async () => {
     uploadPendingFromIdb();
   }
 
-  await startRecording({
-    onDataAvailableHandler: (e) => handleDataChunkEvent(e),
-    onStopEventHandler: () => handleOnStopEvent(),
-    onRecordingStart: (ctx) => recordingMonitor.attach({ ...ctx, meetingId: props.meetingId }),
-    numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
-  });
+  try {
+    await startRecording({
+      onDataAvailableHandler: (e) => handleDataChunkEvent(e),
+      onStopEventHandler: () => handleOnStopEvent(),
+      onRecordingStart: (ctx) => recordingMonitor.attach({ ...ctx, meetingId: props.meetingId }),
+      numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: {
+        feature: 'recording',
+        'meeting.id': props.meetingId,
+      },
+      contexts: {
+        recording: {
+          already_recorded_chunks: totalAlreadyRecordedChunks,
+          'error.phase': 'start',
+        },
+      },
+    });
+    return;
+  }
 
   if (totalAlreadyRecordedChunks) {
     pauseRecording();
