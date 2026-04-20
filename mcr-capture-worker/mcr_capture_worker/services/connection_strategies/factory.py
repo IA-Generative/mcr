@@ -11,16 +11,16 @@ from mcr_capture_worker.services.connection_strategies.visio_connection import (
 from mcr_capture_worker.services.connection_strategies.webconf_connection import (
     WebConfConnectionStrategy,
 )
-from mcr_capture_worker.services.connection_strategies.webex_connection import (
-    WebexStrategy,
-)
 from mcr_capture_worker.services.connection_strategies.webinaire_connection import (
     WebinaireConnectionStrategy,
 )
 
 
 def build_connection_strategy(meeting: Meeting) -> ConnectionStrategy:
-    """Build the Playwright-based connection strategy for a meeting."""
+    """Build the Playwright-based connection strategy for a meeting.
+
+    Raises ValueError for Webex, which uses the Node subprocess path instead.
+    """
     match meeting.name_platform:
         case MeetingPlatform.VISIO:
             return VisioStrategy()
@@ -31,4 +31,6 @@ def build_connection_strategy(meeting: Meeting) -> ConnectionStrategy:
         case MeetingPlatform.WEBINAIRE:
             return WebinaireConnectionStrategy()
         case MeetingPlatform.WEBEX:
-            return WebexStrategy()
+            raise ValueError(
+                "Webex has no Playwright strategy; use the Node subprocess path"
+            )
