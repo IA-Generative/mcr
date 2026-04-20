@@ -43,8 +43,6 @@ def pytest_configure(config):  # noqa: ARG001
         "mcr_generation.app.services.sections.next_meeting",
         "mcr_generation.app.services.sections.next_meeting.refine_next_meeting",
         "mcr_generation.app.services.sections.next_meeting.format_section_for_report",
-        "mcr_generation.app.services.sections.participants",
-        "mcr_generation.app.services.sections.participants.refine_participants",
         "mcr_generation.app.services.sections.topics",
         "mcr_generation.app.services.sections.topics.map_reduce_topics",
         "mcr_generation.app.services.sections.detailed_discussions",
