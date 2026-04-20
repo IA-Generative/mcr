@@ -92,7 +92,7 @@ async function startRecording(options: RecordingOptions = {}) {
   }
 
   const mediaStream = await navigator.mediaDevices.getUserMedia({
-    audio: { deviceId: { exact: currentAudioId.value } },
+    audio: { deviceId: { ideal: currentAudioId.value } },
   });
 
   mediaRecorder.value = new MediaRecorder(mediaStream, {
