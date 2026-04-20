@@ -1,0 +1,33 @@
+mcr-capture-worker/mcr_capture_worker/services/audio/webex_node/package.json
+  5913c9ee0d4ea04c 1-9
+mcr-capture-worker/mcr_capture_worker/services/audio/webex_node/polyfills.js
+  5913c9ee0d4ea04c 1-154
+mcr-capture-worker/.dockerignore
+  5913c9ee0d4ea04c 1-3
+mcr-capture-worker/mcr_capture_worker/services/webex_node_transport.py
+  5913c9ee0d4ea04c 1-141
+mcr-capture-worker/mcr_capture_worker/services/audio/webex_node/webex_node_bot.js
+  5913c9ee0d4ea04c 1-358
+mcr-capture-worker/mcr_capture_worker/services/audio/webex_node/.gitignore
+  5913c9ee0d4ea04c 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "be1b7f1aed11055ffa6d8cfb2f14bc434e6b1f40",
+  "prompts": {
+    "5913c9ee0d4ea04c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ad1fd1b2-9346-4924-945b-bb80ec2e6e06",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 677,
+      "total_deletions": 1,
+      "accepted_lines": 726,
+      "overriden_lines": 0
+    }
+  }
+}
