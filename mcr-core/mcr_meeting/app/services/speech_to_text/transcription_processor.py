@@ -40,6 +40,7 @@ class TranscriptionProcessor:
                 api_key=api_settings.TRANSCRIPTION_API_KEY,
                 base_url=api_settings.TRANSCRIPTION_API_BASE_URL,
                 max_retries=api_settings.MAX_RETRIES,
+                default_headers={"apikey": api_settings.TRANSCRIPTION_API_KEY},
             )
         return self._openai_client
 
