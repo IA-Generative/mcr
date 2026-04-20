@@ -51,7 +51,6 @@ class MeetingAudioRecorder:
         self.user_uuid = meeting.owner.keycloak_uuid
         self.meeting_platform = meeting.name_platform
         self.connection_strategy = meeting.get_connection_strategy()
-        self.meeting_monitor = meeting.get_meeting_monitor()
 
         self.meeting_transition_client = MeetingApiClient(str(self.user_uuid))
         if self.meeting_transition_client is None:
@@ -76,6 +75,8 @@ class MeetingAudioRecorder:
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
 
             page.on("console", self.handle_console_message)
+
+            self.meeting_monitor = meeting.get_meeting_monitor(page)
 
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
@@ -103,7 +104,7 @@ class MeetingAudioRecorder:
                     await self.stop_recording(page)
                     break
 
-                if await self._should_auto_disconnect(page):
+                if await self._should_auto_disconnect():
                     logger.info(
                         "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
                         self.meeting_id,
@@ -112,7 +113,7 @@ class MeetingAudioRecorder:
                     await self.stop_recording(page)
                     break
 
-                await self.meeting_monitor.enforce_bot_muted(page)
+                await self.meeting_monitor.enforce_bot_muted()
                 # Continue capturing and processing audio chunks
                 # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
                 # A blocking loop would prevent Playwright from processing browser events,
@@ -126,14 +127,14 @@ class MeetingAudioRecorder:
             )
             await self.browser.close()
 
-    async def _should_auto_disconnect(self, page: Page) -> bool:
+    async def _should_auto_disconnect(self) -> bool:
         # if self._connected_at is not None:
         #     elapsed_since_connect = time.monotonic() - self._connected_at
         #     if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
         #         return False
 
         # return await self.meeting_monitor.should_disconnect(
-        #     page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
+        #     capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
         # )
 
         # The bot's automatic disconnection is a dysfunctional feature, it is currently disabled
@@ -214,7 +215,7 @@ class MeetingAudioRecorder:
     async def stop_recording(self, page: Page) -> None:
         await page.evaluate("window.stopRecording()")
         try:
-            await self.meeting_monitor.disconnect_from_meeting(page)
+            await self.meeting_monitor.disconnect_from_meeting()
         except Exception:
             logger.error(
                 "Encountered error disconnecting from meeting: {}", self.meeting_id

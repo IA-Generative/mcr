@@ -9,6 +9,8 @@ from mcr_capture_worker.db.db import Base
 from mcr_capture_worker.models.user_model import User
 
 if TYPE_CHECKING:
+    from playwright.async_api import Page  # noqa: F401
+
     from mcr_capture_worker.services.connection_strategies.abstract_connection import (
         ConnectionStrategy,
     )
@@ -84,7 +86,7 @@ class Meeting(Base):
     def get_connection_strategy(self) -> "ConnectionStrategy":
         raise NotImplementedError
 
-    def get_meeting_monitor(self) -> "MeetingMonitor":
+    def get_meeting_monitor(self, page: "Page") -> "MeetingMonitor":
         raise NotImplementedError
 
 
@@ -100,10 +102,10 @@ class ComuMeeting(Meeting):
 
         return ComuConnectionStrategy()
 
-    def get_meeting_monitor(self) -> "MeetingMonitor":
+    def get_meeting_monitor(self, page: "Page") -> "MeetingMonitor":
         from mcr_capture_worker.services.meeting_monitors import ComuMeetingMonitor
 
-        return ComuMeetingMonitor()
+        return ComuMeetingMonitor(page)
 
 
 class WebinaireMeeting(Meeting):
@@ -118,12 +120,12 @@ class WebinaireMeeting(Meeting):
 
         return WebinaireConnectionStrategy()
 
-    def get_meeting_monitor(self) -> "MeetingMonitor":
+    def get_meeting_monitor(self, page: "Page") -> "MeetingMonitor":
         from mcr_capture_worker.services.meeting_monitors import (
             WebinaireMeetingMonitor,
         )
 
-        return WebinaireMeetingMonitor()
+        return WebinaireMeetingMonitor(page)
 
 
 class WebConfMeeting(Meeting):
@@ -138,10 +140,10 @@ class WebConfMeeting(Meeting):
 
         return WebConfConnectionStrategy()
 
-    def get_meeting_monitor(self) -> "MeetingMonitor":
+    def get_meeting_monitor(self, page: "Page") -> "MeetingMonitor":
         from mcr_capture_worker.services.meeting_monitors import WebConfMeetingMonitor
 
-        return WebConfMeetingMonitor()
+        return WebConfMeetingMonitor(page)
 
 
 class VisiofMeeting(Meeting):
@@ -156,10 +158,10 @@ class VisiofMeeting(Meeting):
 
         return VisioStrategy()
 
-    def get_meeting_monitor(self) -> "MeetingMonitor":
+    def get_meeting_monitor(self, page: "Page") -> "MeetingMonitor":
         from mcr_capture_worker.services.meeting_monitors import VisioMeetingMonitor
 
-        return VisioMeetingMonitor()
+        return VisioMeetingMonitor(page)
 
 
 class WebexMeeting(Meeting):
@@ -174,9 +176,9 @@ class WebexMeeting(Meeting):
 
         return WebexStrategy()
 
-    def get_meeting_monitor(self) -> "MeetingMonitor":
+    def get_meeting_monitor(self, page: "Page") -> "MeetingMonitor":
         from mcr_capture_worker.services.meeting_monitors.webex_monitor import (
             WebexMeetingMonitor,
         )
 
-        return WebexMeetingMonitor()
+        return WebexMeetingMonitor(page)
