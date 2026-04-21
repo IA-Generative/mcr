@@ -526,6 +526,28 @@
       "required": "Champ requis"
     }
   },
+  "feedback": {
+    "button": {
+      "label": "Faire un retour"
+    },
+    "modal": {
+      "title": "Votre avis",
+      "body": "Cet outil vous a-t-il été utile ?"
+    },
+    "vote": {
+      "positive": "Oui",
+      "negative": "Non"
+    },
+    "comment": {
+      "label": "Commentaire (Optionnel)",
+      "placeholder": "Décrivez votre expérience..."
+    },
+    "submit": "Envoyer",
+    "success": {
+      "title": "Merci !",
+      "body": "Votre retour a bien été pris en compte."
+    }
+  },
   "error": {
     "default": "Une erreur est survenue",
     "meetings-loading": "Erreur lors du chargement des réunions",
