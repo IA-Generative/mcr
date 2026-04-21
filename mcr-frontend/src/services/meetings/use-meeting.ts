@@ -121,8 +121,8 @@ function startCaptureMutation() {
   return useMutation({
     mutationFn: (id: number) => initCapture(id),
     onSuccess: (_, id) => {
-      queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDto) =>
-        updateMeetingStatus(old, 'CAPTURE_PENDING'),
+      queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDto | undefined) =>
+        old ? updateMeetingStatus(old, 'CAPTURE_PENDING') : undefined,
       );
     },
     onError: () => {
