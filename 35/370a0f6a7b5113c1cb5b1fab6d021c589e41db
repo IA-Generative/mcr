@@ -1,0 +1,36 @@
+mcr-generation/mcr_generation/app/exceptions/exceptions.py
+  5fdf414fd92075fe 1-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "35370a0f6a7b5113c1cb5b1fab6d021c589e41db",
+  "prompts": {
+    "5fdf414fd92075fe": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bc4e5f2c-0cd0-47c6-b144-2f0a0c5dcc31",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": null,
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 490,
+      "overriden_lines": 0
+    },
+    "8052f0fe257649f2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "551875d4-2e72-49a7-9f3a-b625f44add87",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 26,
+      "overriden_lines": 0
+    }
+  }
+}
