@@ -1,0 +1,31 @@
+mcr-generation/tests/app/services/report_generator/test_report_generator_factory.py
+  9518f44533529d7d 1-12
+mcr-generation/tests/app/services/utils/test_s3_service.py
+  9518f44533529d7d 1-64
+mcr-generation/tests/app/services/utils/test_input_chunker.py
+  9518f44533529d7d 1-22
+mcr-generation/tests/app/services/utils/test_llm_helpers.py
+  9518f44533529d7d 1-45
+mcr-generation/tests/app/test_report_generation_task_service.py
+  9518f44533529d7d 12-15,100-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2",
+  "base_commit_sha": "a9a7960154082e7a77a0443d8484b69b3db7fa29",
+  "prompts": {
+    "9518f44533529d7d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f3ab154-7095-41f3-a79d-4e9847ebf843",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 158,
+      "total_deletions": 1,
+      "accepted_lines": 158,
+      "overriden_lines": 0
+    }
+  }
+}
