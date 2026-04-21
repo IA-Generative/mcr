@@ -1,13 +1,13 @@
-from mcr_meeting.evaluation.acronymes.utils.counting import (
+from mcr_meeting.evaluation.acronyms.utils.counting import (
     count_acronym_occurrences,
     evaluate_acronyms,
 )
-from mcr_meeting.evaluation.acronymes.utils.metrics import (
+from mcr_meeting.evaluation.acronyms.utils.metrics import (
     compute_audio_metrics,
     compute_global_metrics,
     score_acronym,
 )
-from mcr_meeting.evaluation.acronymes.utils.persistence import (
+from mcr_meeting.evaluation.acronyms.utils.persistence import (
     build_results_dataframe,
     build_summary,
     save_acronym_results_csv,

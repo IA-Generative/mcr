@@ -1,6 +1,6 @@
 """Evaluate the STT pipeline on acronym recognition.
 
-For each audio in the `data/acronymes/audio/` dataset, this script:
+For each audio in the `data/acronyms/audio/` dataset, this script:
 1. generates a transcription via ``SpeechToTextPipeline``,
 2. saves it as ``{timestamp}_{uid}.json`` (same convention as the existing
    evaluation pipeline, via ``ResultsManager``),
@@ -13,12 +13,12 @@ For each audio in the `data/acronymes/audio/` dataset, this script:
 
 Once all audios are processed, results are aggregated (micro-average) and two
 summary files are written:
-- ``{timestamp}_acronymes_results.csv`` — per-audio detail
-- ``{timestamp}_acronymes_summary.json`` — global summary + detail
+- ``{timestamp}_acronyms_results.csv`` — per-audio detail
+- ``{timestamp}_acronyms_summary.json`` — global summary + detail
 
 Usage::
 
-    uv run mcr-core/mcr_meeting/evaluation/acronymes/evaluation_script.py
+    uv run mcr-core/mcr_meeting/evaluation/acronyms/evaluation_script.py
 """
 
 import sys
@@ -30,11 +30,11 @@ from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
-from mcr_meeting.evaluation.acronymes.loaders import (
+from mcr_meeting.evaluation.acronyms.loaders import (
     load_audio_reference,
     load_glossary,
 )
-from mcr_meeting.evaluation.acronymes.utils import (
+from mcr_meeting.evaluation.acronyms.utils import (
     build_summary,
     compute_audio_metrics,
     evaluate_acronyms,
@@ -48,11 +48,11 @@ from mcr_meeting.evaluation.utils.text_normalization import french_text_normaliz
 # Paths resolved relative to this file so they don't depend on the cwd.
 THIS_FILE = Path(__file__).resolve()
 EVALUATION_DIR = THIS_FILE.parent.parent
-DATA_DIR = EVALUATION_DIR / "data" / "acronymes"
+DATA_DIR = EVALUATION_DIR / "data" / "acronyms"
 AUDIO_DIR = DATA_DIR / "audio"
 REFERENCE_DIR = DATA_DIR / "references"
 GLOSSARY_PATH = DATA_DIR / "glossary.json"
-OUTPUT_DIR = EVALUATION_DIR / "data" / "outputs" / "acronymes_outputs"
+OUTPUT_DIR = EVALUATION_DIR / "data" / "outputs" / "acronyms_outputs"
 
 
 def discover_audio_files(audio_dir: Path) -> list[Path]:

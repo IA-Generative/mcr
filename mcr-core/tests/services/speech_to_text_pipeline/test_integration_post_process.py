@@ -30,6 +30,10 @@ def mock_post_process_external_calls(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: feature_flag_client,
     )
     monkeypatch.setattr(
+        "mcr_meeting.app.services.speech_to_text.speech_to_text.AcronymCorrector.correct",
+        lambda _self, segments: segments,
+    )
+    monkeypatch.setattr(
         "mcr_meeting.app.services.speech_to_text.speech_to_text.SpellingCorrector.correct",
         lambda _self, segments: segments,
     )

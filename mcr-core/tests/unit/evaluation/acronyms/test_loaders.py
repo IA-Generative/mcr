@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from mcr_meeting.evaluation.acronymes.loaders import (
+from mcr_meeting.evaluation.acronyms.loaders import (
     load_audio_reference,
     load_glossary,
 )
