@@ -51,7 +51,7 @@ def generate_docx_decisions_reports_from_template(
 
 class ReportDocxGenerator(TemplatedDocxGenerator):
     """
-    Renders the FCR report template using docxtpl.
+    Renders the MCR report template using docxtpl.
     Template placeholders:
       - {{meeting_name}}
       - {{objective}}
