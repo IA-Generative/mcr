@@ -1,11 +1,11 @@
 #### **1. Description**
 
-Ce repository regroupe les différents services de l’application **FCR**, dont l’objectif est d’aider les métiers dans leurs tâches de génération de comptes rendus.
+Ce repository regroupe les différents services de l’application **MCR**, dont l’objectif est d’aider les métiers dans leurs tâches de génération de comptes rendus.
 
 Les services sont les suivants :
 
 1. **mcr-frontend**  
-   Application **Vue**. Il s’agit de l’interface utilisateur de FCR.
+   Application **Vue**. Il s’agit de l’interface utilisateur de MCR.
 
 2. **mcr-gateway**  
    Application **FastAPI** exposée comme point d’entrée du cluster.  
@@ -27,22 +27,22 @@ Les services sont les suivants :
 
 ---
 
-Il existe **trois manières** de fournir l’audio d’une réunion à FCR :
+Il existe **trois manières** de fournir l’audio d’une réunion à MCR :
 
 1. Via une plateforme de visioconférence (COMU, webinaire, webconf)
 2. Via un fichier audio ou vidéo (MP3, WAV, MP4, etc.)
 3. Via un microphone connecté à la machine
 
-Une fois l’audio fourni, FCR effectue les étapes suivantes :
+Une fois l’audio fourni, MCR effectue les étapes suivantes :
 
 1. Transcription et diarisation de l’audio
 2. Génération du compte-rendu (optionnel)
 
 ---
 
-### **2. Architecture de FCR**
+### **2. Architecture de MCR**
 
-![Architecture globale de FCR](./image/schema-archi-fonctionnel.jpg)
+![Architecture globale de MCR](./image/schema-archi-fonctionnel.jpg)
 
 ---
 
@@ -57,6 +57,7 @@ Avant de démarrer, assurez-vous d’avoir installé les éléments suivants :
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
 De manière optionnelle, vous pouvez utiliser un outil de gestion de bases de données tel que :
+
 - [pgAdmin](https://www.pgadmin.org/download/)
 - [DBeaver](https://dbeaver.io/download/)
 
@@ -64,7 +65,7 @@ Ces outils permettent de visualiser et d’explorer le contenu de la base de don
 
 ---
 
-### **4. Lancement de FCR en local**
+### **4. Lancement de MCR en local**
 
 Clonez le repository et lancez le projet à l’aide de la commande `make` :
 
@@ -77,6 +78,7 @@ make start
 ---
 
 ### **5. Licence**
+
 Ce projet est distribué sous licence Apache 2.0.
 
 ### **6. Avis de sécurité**

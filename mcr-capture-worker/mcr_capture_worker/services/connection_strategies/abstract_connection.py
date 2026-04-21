@@ -73,7 +73,7 @@ class ConnectionStrategy(ABC):
     def get_agent_name(self, meeting: Meeting) -> str:
         email = meeting.owner.email
 
-        return f"FCR Agent de {email}"
+        return f"MCR Agent de {email}"
 
     async def wait_for_webRTC_connection(self, page: Page) -> None:
         try:

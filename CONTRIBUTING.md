@@ -1,6 +1,6 @@
-# Contribuer à FCR
+# Contribuer à MCR
 
-Merci de votre intérêt pour contribuer au projet **FCR** 🎉
+Merci de votre intérêt pour contribuer au projet **MCR** 🎉
 
 Ce document décrit le processus de contribution et les règles à respecter afin de garantir la qualité, la cohérence et la maintenabilité du projet.
 
@@ -75,4 +75,3 @@ En contribuant à ce projet, vous acceptez que vos contributions soient distribu
 ---
 
 Merci pour votre contribution 🙏
-
