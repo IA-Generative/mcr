@@ -1,3 +1,4 @@
+from mcr_generation.app.exceptions.exceptions import UnsupportedReportTypeError
 from mcr_generation.app.schemas.celery_types import ReportTypes
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
@@ -21,7 +22,7 @@ def get_generator(report_type: ReportTypes) -> BaseReportGenerator:
         BaseReportGenerator: A concrete report generator instance.
 
     Raises:
-        ValueError: If the report type is not supported.
+        UnsupportedReportTypeError: If the report type is not supported.
     """
     match report_type:
         case ReportTypes.DECISION_RECORD:
@@ -29,4 +30,4 @@ def get_generator(report_type: ReportTypes) -> BaseReportGenerator:
         case ReportTypes.DETAILED_SYNTHESIS:
             return DetailedSynthesisGenerator()
         case _:
-            raise ValueError(f"Unknown report type: {report_type}")
+            raise UnsupportedReportTypeError(f"Unknown report type: {report_type}")
