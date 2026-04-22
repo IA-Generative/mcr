@@ -10,6 +10,7 @@ export enum API_PATHS {
   TRANSCRIPTIONS = 'transcriptions',
   AUTH = 'auth',
   LOOKUP = 'lookup',
+  FEEDBACKS = 'feedbacks',
 }
 
 const HttpService = axios.create({

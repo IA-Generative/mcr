@@ -12,6 +12,7 @@ useScheme({ scheme: 'light' });
 
 const toaster = useToaster();
 const auth = useAuth();
+
 provide('auth', auth);
 
 const { cleanupStaleChunks } = useAudioChunkCleanup();
@@ -30,6 +31,7 @@ onMounted(async () => {
     </main>
     <AppFooter></AppFooter>
   </div>
+  <FeedbackButton v-if="auth.isLogged" />
   <ModalsContainer />
   <AppToaster
     :messages="toaster.messages"
