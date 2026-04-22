@@ -3,12 +3,13 @@ Unit tests for report_generation_task_service signal handlers.
 """
 
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import httpx
 import pytest
 from pytest import fixture
 
+from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import (
     DecisionRecord,
     Header,
@@ -17,27 +18,15 @@ from mcr_generation.app.schemas.base import (
 )
 
 # ---------------------------------------------------------------------------
-# Mocks specific to this file (celery, s3, and the report generator package
-# which is mocked wholesale here since it is not the subject under test).
+# Mocks specific to this file (celery + report_generator package wholesale,
+# since they are not the subject under test and initialise side effects).
 # Common mocks (langfuse, openai, section modules, …) live in tests/conftest.py.
 # ---------------------------------------------------------------------------
 _mock_celery_worker = MagicMock()
 _mock_celery_worker.celery_app.task = lambda *args, **kwargs: (lambda fn: fn)
 sys.modules["mcr_generation.app.utils.celery_worker"] = _mock_celery_worker
-
-# input_chunker: the real module is needed by other test files (they import Chunk directly).
-# report_generator.*: the real modules are needed by test_base/decision_record_generator.
-# Both are mocked here only because this file tests the task service, not the generators.
-for _mod in [
-    "mcr_generation.app.services.utils.input_chunker",
-    "mcr_generation.app.services.report_generator",
-    "mcr_generation.app.services.report_generator.base_report_generator",
-    "mcr_generation.app.services.report_generator.decision_record_generator",
-]:
-    sys.modules[_mod] = MagicMock()
-# ---------------------------------------------------------------------------
-# This import must come AFTER the sys.modules patches above.
-# E402 is suppressed intentionally here.
+sys.modules["mcr_generation.app.services.utils.input_chunker"] = MagicMock()
+sys.modules["mcr_generation.app.services.report_generator"] = MagicMock()
 
 from mcr_generation.app.services.report_generation_task_service import (  # noqa: E402
     generate_report_from_docx,
@@ -75,130 +64,104 @@ def decision_record() -> DecisionRecord:
     )
 
 
-MODULE = "mcr_generation.app.services.report_generation_task_service"
-
-
 class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
-        self, decision_record: DecisionRecord
+        self,
+        decision_record: DecisionRecord,
+        mock_get_file_from_s3: MagicMock,
+        mock_chunk_docx_to_document_list: MagicMock,
+        mock_get_generator: MagicMock,
     ) -> None:
         """Happy path: get_generator is mocked and its generate() return value is
         forwarded as-is by the task."""
-        mock_chunks = ["chunk1", "chunk2"]
-        mock_docx_bytes = b"docx content"
+        mock_get_file_from_s3.return_value = b"docx content"
+        mock_chunk_docx_to_document_list.return_value = ["chunk1", "chunk2"]
+        mock_get_generator.return_value.generate.return_value = decision_record
 
-        mock_generator = MagicMock()
-        mock_generator.generate.return_value = decision_record
+        generate_report_from_docx(1, "transcription.docx")
 
-        with (
-            patch(
-                f"{MODULE}.get_file_from_s3", return_value=mock_docx_bytes
-            ) as mock_s3,
-            patch(
-                f"{MODULE}.chunk_docx_to_document_list", return_value=mock_chunks
-            ) as mock_chunker,
-            patch(
-                f"{MODULE}.get_generator", return_value=mock_generator
-            ) as mock_get_generator,
-        ):
-            result = generate_report_from_docx(1, "transcription.docx")
-
-        assert result == decision_record
-
-        mock_s3.assert_called_once_with("transcription.docx")
-        mock_chunker.assert_called_once_with(mock_docx_bytes)
+        mock_get_file_from_s3.assert_called_once_with("transcription.docx")
+        mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
         mock_get_generator.assert_called_once()
-        mock_generator.generate.assert_called_once_with(mock_chunks)
+        mock_get_generator.return_value.generate.assert_called_once_with(
+            ["chunk1", "chunk2"]
+        )
 
-    def test_propagates_s3_error(self) -> None:
+    def test_propagates_s3_error(self, mock_get_file_from_s3: MagicMock) -> None:
         """An exception raised by get_file_from_s3 must propagate."""
-        with patch(
-            f"{MODULE}.get_file_from_s3", side_effect=RuntimeError("S3 unavailable")
-        ):
-            with pytest.raises(RuntimeError, match="S3 unavailable"):
-                generate_report_from_docx(1, "transcription.docx")
+        mock_get_file_from_s3.side_effect = RuntimeError("S3 unavailable")
+
+        with pytest.raises(RuntimeError, match="S3 unavailable"):
+            generate_report_from_docx(1, "transcription.docx")
 
 
 class TestGenerateReportFromDocxSuccess:
-    def _make_mock_http_client(self, mock_response: MagicMock) -> MagicMock:
-        mock_client = MagicMock()
-        mock_client.post.return_value = mock_response
-        mock_client.__enter__ = MagicMock(return_value=mock_client)
-        mock_client.__exit__ = MagicMock(return_value=False)
-        return mock_client
-
     def test_logs_error_and_returns_when_args_empty(
-        self, decision_record: DecisionRecord
+        self,
+        decision_record: DecisionRecord,
+        mock_httpx_client: MagicMock,
     ) -> None:
         """When sender has no request args, the function returns early without calling httpx."""
         sender = MagicMock()
         sender.request.args = []
 
-        with patch(f"{MODULE}.httpx.Client") as mock_client_cls:
-            generate_report_from_docx_success(sender=sender, result=decision_record)
+        generate_report_from_docx_success(sender=sender, result=decision_record)
 
-        mock_client_cls.assert_not_called()
+        mock_httpx_client.cls.assert_not_called()
 
     def test_posts_report_to_correct_endpoint(
-        self, decision_record: DecisionRecord
+        self,
+        decision_record: DecisionRecord,
+        mock_httpx_client: MagicMock,
+        mock_api_settings: MagicMock,  # noqa: ARG002
     ) -> None:
         """When args contain a meeting_id, the report payload is POSTed to the right URL."""
         sender = MagicMock()
         sender.request.args = [42]
-        result = decision_record
-
-        mock_response = MagicMock()
-        mock_client = self._make_mock_http_client(mock_response)
-        mock_api_settings = MagicMock()
-        mock_api_settings.MCR_CORE_API_URL = "http://mcr-core/api"
 
         expected_payload = {
-            "next_steps": result.next_steps,
+            "next_steps": decision_record.next_steps,
             "topics_with_decision": [
-                topic.model_dump() for topic in result.topics_with_decision
+                topic.model_dump() for topic in decision_record.topics_with_decision
             ],
             "header": {
-                "title": result.header.title,
-                "objective": result.header.objective,
-                "next_meeting": result.header.next_meeting,
+                "title": decision_record.header.title,
+                "objective": decision_record.header.objective,
+                "next_meeting": decision_record.header.next_meeting,
                 "participants": [
                     p.model_dump(exclude={"association_justification"})
-                    for p in result.header.participants
+                    for p in decision_record.header.participants
                 ],
             },
         }
 
-        with patch(f"{MODULE}.api_settings", mock_api_settings):
-            with patch(f"{MODULE}.httpx.Client", return_value=mock_client):
-                generate_report_from_docx_success(sender=sender, result=result)
+        generate_report_from_docx_success(sender=sender, result=decision_record)
 
-        mock_client.post.assert_called_once_with(
+        mock_httpx_client.post.assert_called_once_with(
             "/meetings/42/report/success",
             json=expected_payload,
         )
-        mock_response.raise_for_status.assert_called_once()
+        mock_httpx_client.post.return_value.raise_for_status.assert_called_once()
 
-    def test_raises_on_http_error(self, decision_record: DecisionRecord) -> None:
-        """An HTTPStatusError from raise_for_status() propagates to the caller."""
+    def test_raises_on_http_error(
+        self,
+        decision_record: DecisionRecord,
+        mock_httpx_client: MagicMock,
+        mock_api_settings: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """An HTTPStatusError from raise_for_status() is wrapped in ReportCallbackError."""
         sender = MagicMock()
         sender.request.args = [1]
-
-        mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = httpx.HTTPStatusError(
-            "500 Internal Server Error",
-            request=MagicMock(),
-            response=MagicMock(),
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = (
+            httpx.HTTPStatusError(
+                "500 Internal Server Error",
+                request=MagicMock(),
+                response=MagicMock(),
+            )
         )
-        mock_client = self._make_mock_http_client(mock_response)
-        mock_api_settings = MagicMock()
-        mock_api_settings.MCR_CORE_API_URL = "http://mcr-core/api"
 
-        with patch(f"{MODULE}.api_settings", mock_api_settings):
-            with patch(f"{MODULE}.httpx.Client", return_value=mock_client):
-                with pytest.raises(httpx.HTTPStatusError):
-                    generate_report_from_docx_success(
-                        sender=sender, result=decision_record
-                    )
+        with pytest.raises(ReportCallbackError):
+            generate_report_from_docx_success(sender=sender, result=decision_record)
 
 
 class TestSetMeetingFailedStatusOnError:

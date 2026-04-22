@@ -14,6 +14,17 @@ each test file imports its own module under test after this setup runs.
 import sys
 from unittest.mock import MagicMock
 
+from tests.mocks.docx_mocks import mock_docx_loader  # noqa: F401
+from tests.mocks.llm_mocks import mock_instructor_client  # noqa: F401
+from tests.mocks.s3_mocks import mock_s3_client  # noqa: F401
+from tests.mocks.task_service_mocks import (  # noqa: F401
+    mock_api_settings,
+    mock_chunk_docx_to_document_list,
+    mock_get_file_from_s3,
+    mock_get_generator,
+    mock_httpx_client,
+)
+
 
 def pytest_configure(config):  # noqa: ARG001
     # -- Third-party modules with import-time side effects -------------------
@@ -25,11 +36,9 @@ def pytest_configure(config):  # noqa: ARG001
 
     # -- Internal utilities that initialise LLM clients at module level ------
     sys.modules["mcr_generation.app.utils.function_execution_timer"] = MagicMock()
-    sys.modules["mcr_generation.app.services.utils.llm_helpers"] = MagicMock()
 
-    # -- S3 / storage clients (try to connect at import time) ----------------
+    # -- S3 client: calls boto3.client() at import time with live env vars ---
     sys.modules["mcr_generation.app.utils.s3_client"] = MagicMock()
-    sys.modules["mcr_generation.app.services.utils.s3_service"] = MagicMock()
 
     # -- Section modules (refiners / map-reduce) -----------------------------
     # Note: only leaf modules that would trigger real LLM client initialisation

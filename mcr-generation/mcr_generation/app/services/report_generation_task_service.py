@@ -6,6 +6,7 @@ from langfuse import observe
 from loguru import logger
 
 from mcr_generation.app.configs.settings import ApiSettings
+from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -55,12 +56,15 @@ def generate_report_from_docx_success(
 
     payload_dict = result.model_dump()
 
-    with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
-        response = client.post(
-            f"/meetings/{meeting_id}/report/success",
-            json=payload_dict,
-        )
-        response.raise_for_status()
+    try:
+        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
+            response = client.post(
+                f"/meetings/{meeting_id}/report/success",
+                json=payload_dict,
+            )
+            response.raise_for_status()
+    except Exception as e:
+        raise ReportCallbackError(f"Failed to POST report: {e}") from e
 
 
 @task_failure.connect

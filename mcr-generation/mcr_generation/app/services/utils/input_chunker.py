@@ -8,6 +8,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from mcr_generation.app.configs.settings import ChunkingConfig
+from mcr_generation.app.exceptions.exceptions import InvalidTranscriptionFileError
 
 chunk_config = ChunkingConfig()
 
@@ -18,12 +19,17 @@ class Chunk(BaseModel):
 
 
 def chunk_docx_to_document_list(docx_bytes: BytesIO) -> list[Chunk]:
-    with NamedTemporaryFile(suffix=".docx") as tmp:
-        tmp.write(docx_bytes.getbuffer())
-        tmp.flush()
+    try:
+        with NamedTemporaryFile(suffix=".docx") as tmp:
+            tmp.write(docx_bytes.getbuffer())
+            tmp.flush()
 
-        loader = UnstructuredWordDocumentLoader(tmp.name)
-        docs = loader.load()
+            loader = UnstructuredWordDocumentLoader(tmp.name)
+            docs = loader.load()
+    except Exception as e:
+        raise InvalidTranscriptionFileError(
+            f"Failed to parse DOCX transcription: {e}"
+        ) from e
 
     # Combine all page contents into one large text
     full_text = "\n".join([doc.page_content for doc in docs])
