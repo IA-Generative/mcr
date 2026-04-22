@@ -179,7 +179,7 @@ def _from_status(
     sm = cls(meeting)
 
     for st in sm.states:
-        if isinstance(st.value, str) and st.value == meeting.status.value:
+        if isinstance(st.value, str) and st.value == meeting.status:
             sm.current_state = st
             break
     else:

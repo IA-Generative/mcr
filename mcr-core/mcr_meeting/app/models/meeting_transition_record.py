@@ -1,7 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey
-from sqlalchemy import Enum as SQLEnum
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mcr_meeting.app.models.meeting_model import MeetingStatus
@@ -31,6 +30,4 @@ class MeetingTransitionRecord(Base):
     )
     timestamp: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     predicted_date_of_next_transition: Mapped[datetime | None] = mapped_column(DateTime)
-    status: Mapped[MeetingStatus] = mapped_column(
-        SQLEnum(MeetingStatus), nullable=False
-    )
+    status: Mapped[MeetingStatus] = mapped_column(String, nullable=False)
