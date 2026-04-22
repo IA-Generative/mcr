@@ -151,6 +151,7 @@ def after_start_report_handler(
             celery_producer_app.send_task(
                 MCRReportGenerationTasks.REPORT,
                 args=[meeting.id, transcription_object_name, report_type],
+                kwargs={"owner_keycloak_uuid": str(meeting.owner.keycloak_uuid)},
             )
 
         logger.info("Report generation task created for meeting: {}", meeting.id)
