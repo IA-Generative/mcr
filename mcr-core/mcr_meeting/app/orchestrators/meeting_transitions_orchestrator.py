@@ -137,6 +137,11 @@ def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting
     )
 
 
+def fail_report(meeting_id: int) -> Meeting:
+    meeting = get_meeting_service(meeting_id=meeting_id)
+    return _apply_transition(meeting, MeetingEvent.FAIL_REPORT)
+
+
 def _apply_transition(  # type: ignore[explicit-any]
     meeting: Meeting,
     transition_name: MeetingEvent,

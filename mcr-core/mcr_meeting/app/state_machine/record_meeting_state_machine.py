@@ -110,6 +110,11 @@ class RecordMeetingStateMachine(StateMachine):
             return
         update_status_handler(self.meeting, self.current_state_value)
 
+    def after_FAIL_REPORT(self) -> None:
+        if self.meeting is None:
+            return
+        update_status_handler(self.meeting, self.current_state_value)
+
     def after_DELETE(self) -> None:
         if self.meeting is None:
             return
