@@ -61,6 +61,7 @@ function getStateComponent(status: MeetingStatus, name_platform: string) {
     case 'TRANSCRIPTION_DONE':
     case 'REPORT_PENDING':
     case 'REPORT_DONE':
+    case 'REPORT_FAILED':
       return DoneStateComponent;
     case 'CAPTURE_FAILED':
     case 'TRANSCRIPTION_FAILED':
