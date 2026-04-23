@@ -63,7 +63,6 @@ declare module 'vue' {
     MeetingFrontMatter: typeof import('./components/meeting/MeetingFrontMatter.vue')['default']
     MeetingsDataTable: typeof import('./components/meeting/table/MeetingsDataTable.vue')['default']
     PageFrontMatter: typeof import('./components/core/PageFrontMatter.vue')['default']
-    PageFrontMatterV2: typeof import('./components/core/PageFrontMatterV2.vue')['default']
     ProgressBar: typeof import('./components/core/ProgressBar.vue')['default']
     RecordingInProgress: typeof import('./components/meeting/transcription/states/RecordingInProgress.vue')['default']
     RecordMeetingForm: typeof import('./components/meeting/forms/RecordMeetingForm.vue')['default']
