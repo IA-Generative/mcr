@@ -26,11 +26,21 @@ RUN uv run playwright install chromium
 RUN uv run playwright install-deps chromium
 
 # Install PulseAudio with a null sink so the browser AudioContext can initialize
+# Install FFmpeg for the Webex Node bot audio encoding
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends pulseaudio && \
+    apt-get install -y --no-install-recommends pulseaudio ffmpeg && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 22 (needed by @roamhq/wrtc native bindings)
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY /mcr_capture_worker mcr_capture_worker
+
+# Install Node dependencies for the Webex bot (ignore lockfile to get
+# correct platform-specific native binaries for linux)
+RUN cd mcr_capture_worker/services/audio/webex_node && npm install --omit=dev --package-lock=false
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 

@@ -1,5 +1,4 @@
 from enum import StrEnum
-from typing import TYPE_CHECKING
 
 from sqlalchemy import Enum as SQLEnum
 from sqlalchemy import ForeignKey, String
@@ -7,14 +6,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mcr_capture_worker.db.db import Base
 from mcr_capture_worker.models.user_model import User
-
-if TYPE_CHECKING:
-    from mcr_capture_worker.services.connection_strategies.abstract_connection import (
-        ConnectionStrategy,
-    )
-    from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor import (
-        MeetingMonitor,
-    )
 
 
 class MeetingStatus(StrEnum):
@@ -81,29 +72,11 @@ class Meeting(Base):
         "polymorphic_on": name_platform,
     }
 
-    def get_connection_strategy(self) -> "ConnectionStrategy":
-        raise NotImplementedError
-
-    def get_meeting_monitor(self) -> "MeetingMonitor":
-        raise NotImplementedError
-
 
 class ComuMeeting(Meeting):
     __mapper_args__ = {
         "polymorphic_identity": MeetingPlatform.COMU,
     }
-
-    def get_connection_strategy(self) -> "ConnectionStrategy":
-        from mcr_capture_worker.services.connection_strategies import (
-            ComuConnectionStrategy,
-        )
-
-        return ComuConnectionStrategy()
-
-    def get_meeting_monitor(self) -> "MeetingMonitor":
-        from mcr_capture_worker.services.meeting_monitors import ComuMeetingMonitor
-
-        return ComuMeetingMonitor()
 
 
 class WebinaireMeeting(Meeting):
@@ -111,37 +84,11 @@ class WebinaireMeeting(Meeting):
         "polymorphic_identity": MeetingPlatform.WEBINAIRE,
     }
 
-    def get_connection_strategy(self) -> "ConnectionStrategy":
-        from mcr_capture_worker.services.connection_strategies import (
-            WebinaireConnectionStrategy,
-        )
-
-        return WebinaireConnectionStrategy()
-
-    def get_meeting_monitor(self) -> "MeetingMonitor":
-        from mcr_capture_worker.services.meeting_monitors import (
-            WebinaireMeetingMonitor,
-        )
-
-        return WebinaireMeetingMonitor()
-
 
 class WebConfMeeting(Meeting):
     __mapper_args__ = {
         "polymorphic_identity": MeetingPlatform.WEBCONF,
     }
-
-    def get_connection_strategy(self) -> "ConnectionStrategy":
-        from mcr_capture_worker.services.connection_strategies import (
-            WebConfConnectionStrategy,
-        )
-
-        return WebConfConnectionStrategy()
-
-    def get_meeting_monitor(self) -> "MeetingMonitor":
-        from mcr_capture_worker.services.meeting_monitors import WebConfMeetingMonitor
-
-        return WebConfMeetingMonitor()
 
 
 class VisiofMeeting(Meeting):
@@ -149,34 +96,8 @@ class VisiofMeeting(Meeting):
         "polymorphic_identity": MeetingPlatform.VISIO,
     }
 
-    def get_connection_strategy(self) -> "ConnectionStrategy":
-        from mcr_capture_worker.services.connection_strategies import (
-            VisioStrategy,
-        )
-
-        return VisioStrategy()
-
-    def get_meeting_monitor(self) -> "MeetingMonitor":
-        from mcr_capture_worker.services.meeting_monitors import VisioMeetingMonitor
-
-        return VisioMeetingMonitor()
-
 
 class WebexMeeting(Meeting):
     __mapper_args__ = {
         "polymorphic_identity": MeetingPlatform.WEBEX,
     }
-
-    def get_connection_strategy(self) -> "ConnectionStrategy":
-        from mcr_capture_worker.services.connection_strategies.webex_connection import (
-            WebexStrategy,
-        )
-
-        return WebexStrategy()
-
-    def get_meeting_monitor(self) -> "MeetingMonitor":
-        from mcr_capture_worker.services.meeting_monitors.webex_monitor import (
-            WebexMeetingMonitor,
-        )
-
-        return WebexMeetingMonitor()

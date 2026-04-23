@@ -1,22 +1,32 @@
 import asyncio
 import time
+from collections.abc import Awaitable, Callable
 from io import BytesIO
+from pathlib import Path
 
 from loguru import logger
 from playwright.async_api import ConsoleMessage, Page, async_playwright
 
 from mcr_capture_worker.clients.meeting_transition_client import MeetingApiClient
 from mcr_capture_worker.meeting_repository import get_meeting, get_meeting_with_owner
-from mcr_capture_worker.models.meeting_model import MeetingStatus
+from mcr_capture_worker.models.meeting_model import Meeting, MeetingStatus
 from mcr_capture_worker.schemas.audio_capture_schema import OnDataAvailableBytesWrapper
+from mcr_capture_worker.services.connection_strategies.factory import (
+    build_connection_strategy,
+)
+from mcr_capture_worker.services.meeting_monitors.factory import build_meeting_monitor
 from mcr_capture_worker.services.s3_service import (
     put_file_in_audio_folder,
 )
+from mcr_capture_worker.services.webex_node_capture import WebexNodeCapture
 from mcr_capture_worker.settings.settings import ApiSettings, CaptureSettings
 from mcr_capture_worker.utils.upload_queue import UploadQueue
 
 capture_settings = CaptureSettings()
 api_settings = ApiSettings()
+
+WEBEX_NODE_BOT_DIR = Path(__file__).parent / "audio" / "webex_node"
+WEBEX_NODE_BOT_SCRIPT = WEBEX_NODE_BOT_DIR / "webex_node_bot.js"
 
 
 class MeetingAudioRecorder:
@@ -32,30 +42,25 @@ class MeetingAudioRecorder:
         self._connected_at: float | None = None
 
     async def start(self) -> None:
-        """
-        Captures audio from an online meeting using Playwright to automate browser actions.
-
-        Workflow:
-            1. Launches a Chromium browser instance using Playwright.
-            2. Injects JavaScript scripts to record audio using a MediaRecorder.
-            3. Continuously listens for data event from the injected MediaRecorder and processes them.
-            4. Stops recording and closes the browser when the meeting ends or an error occurs.
-
-        Raises:
-            Exception: If any error occurs during browser automation or audio processing.
-        """
         meeting = get_meeting_with_owner(self.meeting_id)
         if meeting is None:
             raise ValueError(f"Couldn't get meeting {self.meeting_id}")
 
         self.user_uuid = meeting.owner.keycloak_uuid
         self.meeting_platform = meeting.name_platform
-        self.connection_strategy = meeting.get_connection_strategy()
-        self.meeting_monitor = meeting.get_meeting_monitor()
 
         self.meeting_transition_client = MeetingApiClient(str(self.user_uuid))
         if self.meeting_transition_client is None:
             raise RuntimeError("MeetingTransitionClient is not initialized")
+
+        if meeting.name_platform == "WEBEX":
+            await self._start_webex_node_capture(meeting)
+        else:
+            await self._start_playwright_capture(meeting)
+
+    async def _start_playwright_capture(self, meeting: Meeting) -> None:
+        assert self.meeting_transition_client is not None
+        self.connection_strategy = build_connection_strategy(meeting)
 
         async with async_playwright() as playwright:
             self.browser = await playwright.chromium.launch(
@@ -77,6 +82,8 @@ class MeetingAudioRecorder:
 
             page.on("console", self.handle_console_message)
 
+            self.meeting_monitor = build_meeting_monitor(meeting, page)
+
             await self.load_recording_script(page)
             await self.connection_strategy.connect(page, context, meeting)
             await self.connection_strategy.post_connect_setup(page)
@@ -94,30 +101,63 @@ class MeetingAudioRecorder:
             await self.start_recording(page)
             await self.wait_for_data_or_meeting_end(page)
 
+    async def _start_webex_node_capture(self, meeting: Meeting) -> None:
+        assert self.meeting_transition_client is not None
+
+        def handle_chunk(payload: bytes) -> None:
+            self.pending_uploads.append(self.handle_audio_chunk(BytesIO(payload)))
+
+        capture = WebexNodeCapture(
+            meeting=meeting,
+            meeting_transition_client=self.meeting_transition_client,
+            script_path=WEBEX_NODE_BOT_SCRIPT,
+            on_chunk=handle_chunk,
+            on_connected=self._mark_connected,
+        )
+        self.meeting_monitor = capture.monitor
+
+        await capture.run(poll_fn=self._poll_until_stop)
+
+        # Finalize — upload any pending chunks and transition state
+        await self.end_capture_if_in_progress()
+        await self.pending_uploads.wait_for_all_to_finish()
+        logger.info("WEBEX NODE: all chunks uploaded, initiating transcription")
+        await self.meeting_transition_client.init_transcription(self.meeting_id)
+
+    def _mark_connected(self) -> None:
+        self._connected_at = time.monotonic()
+
+    async def _poll_until_stop(
+        self, stop_callback: Callable[[], Awaitable[None]]
+    ) -> None:
+        """Poll DB status and auto-disconnect conditions every second.
+
+        Calls stop_callback once when either trigger fires, then returns.
+        """
+        while True:
+            meeting = get_meeting(self.meeting_id)
+            if not meeting or meeting.status != MeetingStatus.CAPTURE_IN_PROGRESS:
+                await stop_callback()
+                return
+
+            if await self._should_auto_disconnect():
+                logger.info(
+                    "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
+                    self.meeting_id,
+                    capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S,
+                )
+                await stop_callback()
+                return
+
+            await self.meeting_monitor.enforce_bot_muted()
+            await asyncio.sleep(1)
+
     async def wait_for_data_or_meeting_end(self, page: Page) -> None:
+        async def stop() -> None:
+            await self.stop_recording(page)
+
         try:
-            # Check every 1 second if the transcription should be stopped
-            while True:
-                meeting = get_meeting(self.meeting_id)
-                if not meeting or meeting.status != MeetingStatus.CAPTURE_IN_PROGRESS:
-                    await self.stop_recording(page)
-                    break
-
-                if await self._should_auto_disconnect(page):
-                    logger.info(
-                        "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
-                        self.meeting_id,
-                        capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S,
-                    )
-                    await self.stop_recording(page)
-                    break
-
-                await self.meeting_monitor.enforce_bot_muted(page)
-                # Continue capturing and processing audio chunks
-                # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
-                # A blocking loop would prevent Playwright from processing browser events,
-                # meaning we wouldn't receive any data from the bot's page.
-                await asyncio.sleep(1)
+            await self._poll_until_stop(stop)
         except Exception as e:
             logger.error(
                 "Error in wait_for_data_or_meeting_end for meeting: {}, Error details: {}",
@@ -126,14 +166,14 @@ class MeetingAudioRecorder:
             )
             await self.browser.close()
 
-    async def _should_auto_disconnect(self, page: Page) -> bool:
+    async def _should_auto_disconnect(self) -> bool:
         # if self._connected_at is not None:
         #     elapsed_since_connect = time.monotonic() - self._connected_at
         #     if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
         #         return False
 
         # return await self.meeting_monitor.should_disconnect(
-        #     page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
+        #     capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
         # )
 
         # The bot's automatic disconnection is a dysfunctional feature, it is currently disabled
@@ -214,7 +254,7 @@ class MeetingAudioRecorder:
     async def stop_recording(self, page: Page) -> None:
         await page.evaluate("window.stopRecording()")
         try:
-            await self.meeting_monitor.disconnect_from_meeting(page)
+            await self.meeting_monitor.disconnect_from_meeting()
         except Exception:
             logger.error(
                 "Encountered error disconnecting from meeting: {}", self.meeting_id

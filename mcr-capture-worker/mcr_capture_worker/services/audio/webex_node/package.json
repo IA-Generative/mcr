@@ -1,0 +1,9 @@
+{
+  "name": "webex-node-bot",
+  "private": true,
+  "version": "0.0.0",
+  "dependencies": {
+    "@roamhq/wrtc": "^0.10.0",
+    "webex": "^3.12.0"
+  }
+}

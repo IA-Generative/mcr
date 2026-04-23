@@ -6,10 +6,14 @@ from mcr_capture_worker.services.meeting_monitors.abstract_meeting_monitor impor
 
 
 class ComuMeetingMonitor(MeetingMonitor):
-    async def _get_participant_count(self, page: Page) -> int:
+    def __init__(self, page: Page) -> None:
+        super().__init__()
+        self._page = page
+
+    async def _get_participant_count(self) -> int:
         # COMU: the mdc-badge is inside [data-test="participants-button"]
         # Use >> to pierce the shadow DOM of mdc-badge
-        badge_text = page.locator(
+        badge_text = self._page.locator(
             '[data-test="participants-button"] mdc-badge >> mdc-text'
         ).first
         text = await badge_text.text_content(timeout=5000)
@@ -17,5 +21,5 @@ class ComuMeetingMonitor(MeetingMonitor):
             raise ValueError(f"Could not read participant count from badge: {text}")
         return int(text.strip())
 
-    async def should_disconnect(self, page: Page, grace_period_s: int) -> bool:
+    async def should_disconnect(self, grace_period_s: int) -> bool:
         return self.is_alone_timer_expired(grace_period_s)

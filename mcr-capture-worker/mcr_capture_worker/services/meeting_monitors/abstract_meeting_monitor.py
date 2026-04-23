@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from io import BytesIO
 
 from loguru import logger
-from playwright.async_api import Page
 
 from mcr_capture_worker.settings.settings import CaptureSettings
 
@@ -26,9 +25,9 @@ class MeetingMonitor(ABC):
             return False
         return (time.monotonic() - self._alone_since) >= grace_period_s
 
-    async def should_disconnect(self, page: Page, grace_period_s: int) -> bool:
+    async def should_disconnect(self, grace_period_s: int) -> bool:
         """Check participant count and return True if the bot should auto-disconnect."""
-        participant_count = await self.get_participant_count(page)
+        participant_count = await self.get_participant_count()
 
         if participant_count is None or participant_count <= 1:
             self.start_alone_timer()
@@ -37,21 +36,21 @@ class MeetingMonitor(ABC):
         self.reset_alone_timer()
         return False
 
-    async def get_participant_count(self, page: Page) -> int | None:
-        """Safely retrieve participant count from the meeting UI.
+    async def get_participant_count(self) -> int | None:
+        """Safely retrieve participant count.
 
         Returns the participant count, or None if it could not be determined.
         """
         try:
-            return await self._get_participant_count(page)
+            return await self._get_participant_count()
         except Exception as e:
             logger.warning("Could not read participant count: {}", e)
             return None
 
-    async def enforce_bot_muted(self, page: Page) -> None:
+    async def enforce_bot_muted(self) -> None:
         return
 
-    async def disconnect_from_meeting(self, page: Page) -> None:
+    async def disconnect_from_meeting(self) -> None:
         return
 
     async def enable_chunk_size_based_disconnection(self, data: BytesIO) -> None:
@@ -69,8 +68,8 @@ class MeetingMonitor(ABC):
             self.reset_alone_timer()
 
     @abstractmethod
-    async def _get_participant_count(self, page: Page) -> int:
-        """Platform-specific implementation to scrape the participant count from the meeting UI.
+    async def _get_participant_count(self) -> int:
+        """Platform-specific implementation of participant count retrieval.
 
         Returns the total number of participants currently in the meeting,
         including the bot itself.

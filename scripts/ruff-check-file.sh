@@ -21,7 +21,7 @@ PKG_DIR="${REL_PATH%%/*}"
 
 case "$PKG_DIR" in
     mcr-core|mcr-gateway|mcr-generation|mcr-capture-worker)
-        OUTPUT=$(cd "$ROOT_DIR/$PKG_DIR" && uv run ruff check "$FILE_PATH" 2>&1)
+        OUTPUT=$(cd "$ROOT_DIR/$PKG_DIR" && uv run --quiet ruff check --output-format=concise --no-fix "$FILE_PATH" 2>&1)
         if [[ $? -ne 0 ]]; then
             echo "$OUTPUT" >&2
             exit 2
