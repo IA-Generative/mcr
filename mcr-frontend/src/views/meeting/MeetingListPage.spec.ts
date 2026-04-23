@@ -1,82 +1,122 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { screen, within } from '@testing-library/vue';
 import { ref } from 'vue';
-import { screen } from '@testing-library/vue';
 import MeetingListPage from '@/views/meeting/MeetingListPage.vue';
 import { renderWithPlugins } from '@/vitest.setup';
 
-// Utilisation de vi.hoisted pour déclarer les mocks avant le hoisting
-const { mockGetAllMeetingsQuery, mockUseQuery, mockAddErrorMessage } = vi.hoisted(() => {
-  return {
-    mockGetAllMeetingsQuery: vi.fn(),
-    mockUseQuery: vi.fn(),
-    mockAddErrorMessage: vi.fn(),
-  };
+const { mockUseFeatureFlag } = vi.hoisted(() => {
+  return { mockUseFeatureFlag: vi.fn(() => ref(false)) };
 });
-
-// MeetingListPage renders child components that each use different parts of useMeetings().
-// mockUseMeetings uses a Proxy so any unspecified property returns a default mock mutation,
-// avoiding the need to explicitly mock every mutation used by every child component.
-vi.mock('@/services/meetings/use-meeting', async () => {
-  const { mockUseMeetings } = await import('@/vitest.setup');
-  return mockUseMeetings({ getAllMeetingsQuery: mockGetAllMeetingsQuery });
-});
-
-vi.mock('@/composables/use-toaster', () => ({
-  default: () => ({
-    addErrorMessage: mockAddErrorMessage,
-  }),
-}));
-
-// Mock de useQuery pour le temps d'attente global
-vi.mock('@tanstack/vue-query', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@tanstack/vue-query')>()),
-  useQuery: mockUseQuery,
-}));
 
 vi.mock('@/composables/use-feature-flag', () => ({
-  useFeatureFlag: () => ref(false),
+  useFeatureFlag: () => mockUseFeatureFlag(),
 }));
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn() }),
-  useRoute: () => ({ params: {} }),
-}));
+// MeetingsDataTable (rendered by MeetingListPageV2) calls useMeetings().getAllMeetingsQuery,
+// which would otherwise fire a real HTTP request and crash on the missing Keycloak session.
+vi.mock('@/services/meetings/use-meeting', async () => {
+  const { mockUseMeetings } = await import('@/vitest.setup');
+  return mockUseMeetings();
+});
 
-describe('MeetingListPage - 24h warning banner', () => {
+const SESSION_KEY = 'dsfr-alert-closed';
+const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
+
+describe('MeetingListPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-
-    mockGetAllMeetingsQuery.mockReturnValue({
-      data: ref([]),
-      isLoading: ref(false),
-      error: ref(null),
-    });
+    sessionStorage.clear();
   });
 
-  it('should_display_warning_banner_when_waiting_time_greater_or_equal_to_24_hours', () => {
-    // Arrange
-    mockUseQuery.mockReturnValue({
-      data: ref({ estimation_duration_minutes: 25 * 60 }), // 25 heures
-    });
-
-    // Act
+  it('should_display_title_and_subtitle', () => {
     renderWithPlugins(MeetingListPage);
 
-    // Assert
-    expect(screen.getByText('Délai de traitement prolongé')).toBeInTheDocument();
-    expect(screen.getByText('Plus de 24 h')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {
+        name: 'Faire un compte-rendu',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée).',
+      ),
+    ).toBeInTheDocument();
   });
 
-  it('should_not_display_warning_banner_when_waiting_time_less_than_24_hours', () => {
-    // Arrange
-    mockUseQuery.mockReturnValue({
-      data: ref({ estimation_duration_minutes: 12 * 60 }), // 12 heures
-    });
-
-    // Act
+  it('should_display_import_tile', () => {
     renderWithPlugins(MeetingListPage);
 
-    // Assert
-    expect(screen.queryByText('Délai de traitement prolongé')).not.toBeInTheDocument();
+    expect(screen.getByText("J'importe un fichier audio ou vidéo")).toBeInTheDocument();
+    expect(
+      screen.getByText('Importez un fichier au format : .mp3, .wav, .m4a, .mp4, .mov.'),
+    ).toBeInTheDocument();
+  });
+
+  it('should_display_record_tile', () => {
+    renderWithPlugins(MeetingListPage);
+
+    expect(screen.getByText("J'enregistre une réunion en présentiel")).toBeInTheDocument();
+    expect(
+      screen.getByText('Activez votre micro et parlez à tour de rôle, en direct.'),
+    ).toBeInTheDocument();
+  });
+
+  it('should_display_visio_tile_without_webex', () => {
+    mockUseFeatureFlag.mockReturnValue(ref(false));
+    renderWithPlugins(MeetingListPage);
+
+    expect(screen.getByText('Je participe à une réunion en visioconférence')).toBeInTheDocument();
+    expect(
+      screen.getByText('Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio).'),
+    ).toBeInTheDocument();
+  });
+
+  it('should_display_visio_tile_with_webex', () => {
+    mockUseFeatureFlag.mockReturnValue(ref(true));
+    renderWithPlugins(MeetingListPage);
+
+    expect(screen.getByText('Je participe à une réunion en visioconférence')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Ajoutez un lien ou des identifiants (Webconf, COMU, Webinaire, Visio, Webex).',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should_display_second_title_and_subtitle', () => {
+    renderWithPlugins(MeetingListPage);
+    expect(
+      screen.getByRole('heading', {
+        name: 'Mes réunions MCR',
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('should_display_availability_alert', () => {
+    renderWithPlugins(MeetingListPage);
+    const alertInfo = screen.getByRole('alertInfo');
+    expect(alertInfo).toBeInTheDocument();
+  });
+
+  it('should_hide_availability_alert_on_close', async () => {
+    renderWithPlugins(MeetingListPage);
+    const alertInfo = screen.getByRole('alertInfo');
+    expect(alertInfo).toBeInTheDocument();
+    const closeButton = within(alertInfo).getByRole('button', { name: 'Fermer le message' });
+    expect(closeButton).toBeInTheDocument();
+    closeButton.click();
+    await nextTick();
+    expect(screen.queryByRole('alertInfo')).toBeNull();
+  });
+
+  it('should_not_display_availability_alert_if_already_closed', async () => {
+    sessionStorage.setItem(SESSION_KEY, CLOSED_ALERT_VALUE);
+    renderWithPlugins(MeetingListPage);
+    await nextTick();
+    expect(screen.queryByRole('alertInfo')).toBeNull();
   });
 });
