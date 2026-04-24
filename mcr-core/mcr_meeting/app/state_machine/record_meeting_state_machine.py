@@ -32,6 +32,7 @@ class RecordMeetingStateMachine(StateMachine):
     TRANSCRIPTION_FAILED = State(MeetingStatus.TRANSCRIPTION_FAILED)
     REPORT_PENDING = State(MeetingStatus.REPORT_PENDING)
     REPORT_DONE = State(MeetingStatus.REPORT_DONE)
+    REPORT_FAILED = State(MeetingStatus.REPORT_FAILED)
     DELETED = State(MeetingStatus.DELETED, final=True)
 
     # -------------------------------------------------------------------------
@@ -57,7 +58,10 @@ class RecordMeetingStateMachine(StateMachine):
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
     START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
     COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
-    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE)
+    FAIL_REPORT = REPORT_PENDING.to(REPORT_FAILED)
+    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE) | REPORT_FAILED.to(
+        TRANSCRIPTION_DONE
+    )
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
 
@@ -102,6 +106,11 @@ class RecordMeetingStateMachine(StateMachine):
         )
 
     def after_RESET_REPORT(self) -> None:
+        if self.meeting is None:
+            return
+        update_status_handler(self.meeting, self.current_state_value)
+
+    def after_FAIL_REPORT(self) -> None:
         if self.meeting is None:
             return
         update_status_handler(self.meeting, self.current_state_value)

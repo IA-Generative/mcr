@@ -28,6 +28,7 @@ export const meetingStatusForTranscriptionDone: MeetingStatus[] = [
   'TRANSCRIPTION_DONE',
   'REPORT_PENDING',
   'REPORT_DONE',
+  'REPORT_FAILED',
 ];
 
 export const meetingStatusForReportPending: MeetingStatus[] = [
@@ -47,5 +48,6 @@ export const meetingStatusForReportFailed: MeetingStatus[] = [
   'CAPTURE_FAILED',
   'TRANSCRIPTION_FAILED',
   'CAPTURE_BOT_CONNECTION_FAILED',
+  'REPORT_FAILED',
 ];
 export const meetingStatusForReportDone: MeetingStatus[] = ['REPORT_DONE'];

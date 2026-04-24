@@ -89,4 +89,27 @@ def generate_report_from_docx_success(
 def set_meeting_failed_status_on_error(
     sender: Any | None = None, **kwargs: Any
 ) -> None:
-    pass
+    meeting_id: int | None = None
+    args = kwargs.get("args")
+    if args:
+        meeting_id = args[0]
+    elif sender is not None and hasattr(sender, "request") and sender.request.args:
+        meeting_id = sender.request.args[0]
+
+    if meeting_id is None:
+        logger.error("Unable to extract meeting_id from signal args")
+        return
+
+    logger.error(
+        "Meeting {} updated to REPORT_FAILED",
+        meeting_id,
+    )
+
+    try:
+        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
+            response = client.post(f"/meetings/{meeting_id}/report/failure")
+            response.raise_for_status()
+    except Exception as e:
+        raise ReportCallbackError(
+            f"Failed to POST report generation failure: {e}"
+        ) from e

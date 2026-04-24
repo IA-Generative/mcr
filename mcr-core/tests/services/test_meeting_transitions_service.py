@@ -287,6 +287,18 @@ def test_fail_transcription() -> None:
     assert result.status == MeetingStatus.TRANSCRIPTION_FAILED
 
 
+def test_fail_report() -> None:
+    """Test report failure transitions to REPORT_FAILED."""
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.REPORT_PENDING,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    result = mts.fail_report(meeting_id=meeting.id)
+
+    assert result.status == MeetingStatus.REPORT_FAILED
+
+
 def test_complete_transcription(mock_send_email: MagicMock) -> None:
     """Test completing transcription transitions to TRANSCRIPTION_DONE."""
     meeting = MeetingFactory.create(

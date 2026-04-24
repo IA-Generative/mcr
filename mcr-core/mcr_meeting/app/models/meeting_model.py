@@ -9,7 +9,6 @@ from datetime import datetime
 from enum import StrEnum
 
 from sqlalchemy import DateTime, ForeignKey, String
-from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.db import Base
@@ -38,6 +37,7 @@ class MeetingStatus(StrEnum):
     - CAPTURE_FAILED: Capture encountered an issue and failed.
     - TRANSCRIPTION_FAILED: Transcription encountered an issue and failed.
     - REPORT_PENDING: Report has but requested
+    - REPORT_FAILED: Report generation encountered an issue and failed.
     - REPORT_DONE: Report is available
     - DELETED: Meeting was deleted
     """
@@ -54,6 +54,7 @@ class MeetingStatus(StrEnum):
     TRANSCRIPTION_DONE = "TRANSCRIPTION_DONE"
     TRANSCRIPTION_FAILED = "TRANSCRIPTION_FAILED"
     REPORT_PENDING = "REPORT_PENDING"
+    REPORT_FAILED = "REPORT_FAILED"
     REPORT_DONE = "REPORT_DONE"
     CAPTURE_FAILED = "CAPTURE_FAILED"
     DELETED = "DELETED"
@@ -73,6 +74,7 @@ class MeetingEvent(StrEnum):
     UPDATE_TRANSCRIPTION = "UPDATE_TRANSCRIPTION"
     START_REPORT = "START_REPORT"
     COMPLETE_REPORT = "COMPLETE_REPORT"
+    FAIL_REPORT = "FAIL_REPORT"
     RESET_REPORT = "RESET_REPORT"
     DELETE = "DELETE"
 
@@ -110,14 +112,12 @@ class Meeting(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String, index=True)
     url: Mapped[str | None] = mapped_column(String, index=True)
-    name_platform: Mapped[MeetingPlatforms] = mapped_column(
-        SQLEnum(MeetingPlatforms), nullable=False
-    )
+    name_platform: Mapped[MeetingPlatforms] = mapped_column(String, nullable=False)
     creation_date: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     start_date: Mapped[datetime | None] = mapped_column(DateTime)
     end_date: Mapped[datetime | None] = mapped_column(DateTime)
     status: Mapped[MeetingStatus] = mapped_column(
-        SQLEnum(MeetingStatus), default=MeetingStatus.NONE, nullable=False
+        String, default=MeetingStatus.NONE, nullable=False
     )
     transcription_filename: Mapped[str | None] = mapped_column(String)
     report_filename: Mapped[str | None] = mapped_column(String)

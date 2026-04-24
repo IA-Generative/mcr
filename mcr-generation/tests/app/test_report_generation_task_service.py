@@ -165,12 +165,67 @@ class TestGenerateReportFromDocxSuccess:
 
 
 class TestSetMeetingFailedStatusOnError:
-    def test_is_noop_with_no_args(self) -> None:
-        """Function is a no-op and should never raise."""
+    def test_posts_failure_to_correct_endpoint(
+        self,
+        mock_httpx_client: MagicMock,
+        mock_api_settings: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """When kwargs contain args, meeting_id is extracted and POSTed to the failure endpoint."""
+        set_meeting_failed_status_on_error(
+            sender=MagicMock(),
+            args=[42, "transcription.docx", "DECISION_RECORD"],
+            exception=Exception("LLM timeout"),
+        )
+
+        mock_httpx_client.post.assert_called_once_with("/meetings/42/report/failure")
+        mock_httpx_client.post.return_value.raise_for_status.assert_called_once()
+
+    def test_falls_back_to_sender_request_args(
+        self,
+        mock_httpx_client: MagicMock,
+        mock_api_settings: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """When kwargs has no args, meeting_id is extracted from sender.request.args."""
+        sender = MagicMock()
+        sender.request.args = [7]
+
+        set_meeting_failed_status_on_error(sender=sender)
+
+        mock_httpx_client.post.assert_called_once_with("/meetings/7/report/failure")
+
+    def test_returns_early_when_no_meeting_id(
+        self,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        """When neither kwargs nor sender provide args, logs error and returns without POST."""
+        sender = MagicMock(spec=[])  # no 'request' attribute
+
+        set_meeting_failed_status_on_error(sender=sender)
+
+        mock_httpx_client.cls.assert_not_called()
+
+    def test_returns_early_when_no_sender_and_no_args(
+        self,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        """When called with no sender and no args, logs error and returns without POST."""
         set_meeting_failed_status_on_error()
 
-    def test_is_noop_with_sender_and_kwargs(self) -> None:
-        """Function is a no-op regardless of the arguments passed."""
-        set_meeting_failed_status_on_error(
-            sender=MagicMock(), exception=Exception("fail"), traceback=None
+        mock_httpx_client.cls.assert_not_called()
+
+    def test_raises_on_http_error(
+        self,
+        mock_httpx_client: MagicMock,
+        mock_api_settings: MagicMock,  # noqa: ARG002
+    ) -> None:
+        """An HTTPStatusError from raise_for_status() is wrapped in ReportCallbackError."""
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = (
+            httpx.HTTPStatusError(
+                "500 Internal Server Error",
+                request=MagicMock(),
+                response=MagicMock(),
+            )
         )
+
+        with pytest.raises(ReportCallbackError):
+            set_meeting_failed_status_on_error(sender=MagicMock(), args=[1])
