@@ -65,7 +65,7 @@ describe('use-recorder', () => {
     await startRecording();
 
     expect(mockGetUserMedia).toHaveBeenCalledWith({
-      audio: { deviceId: { exact: 'abc123' } },
+      audio: { deviceId: { ideal: 'abc123' } },
     });
   });
 
