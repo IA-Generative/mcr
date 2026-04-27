@@ -51,8 +51,9 @@ EVALUATION_DIR = THIS_FILE.parent.parent
 DATA_DIR = EVALUATION_DIR / "data" / "acronyms"
 AUDIO_DIR = DATA_DIR / "audio"
 REFERENCE_DIR = DATA_DIR / "references"
-GLOSSARY_PATH = DATA_DIR / "glossary.json"
+GLOSSARY_PATH = DATA_DIR / "in_glossary.json"
 NOT_IN_GLOSSARY_PATH = DATA_DIR / "not_in_glossary.json"
+NOT_EVALUATED_PATH = DATA_DIR / "acronyms_not_evaluated.json"
 OUTPUT_DIR = EVALUATION_DIR / "data" / "outputs" / "acronyms_outputs"
 
 
@@ -151,6 +152,9 @@ def main() -> None:
     if NOT_IN_GLOSSARY_PATH.exists():
         not_in_glossary = load_glossary(NOT_IN_GLOSSARY_PATH)
         glossary = glossary + not_in_glossary
+    if NOT_EVALUATED_PATH.exists():
+        not_evaluated = set(load_glossary(NOT_EVALUATED_PATH))
+        glossary = [a for a in glossary if a not in not_evaluated]
     logger.info("Loaded glossary with {} acronyms.", len(glossary))
 
     audio_files = discover_audio_files(AUDIO_DIR)

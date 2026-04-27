@@ -6,7 +6,7 @@
 
 **AAPC** - Avis d'appel public à la concurrence - Document officiel annonçant le lancement d'une procédure de mise en concurrence pour un marché public.
 
-**AC** - Administration centrale - Ensemble des services et directions de l'État situés à Paris assurant le pilotage stratégique du ministère.
+**AC** ou **ADCE** - Administration centrale - Ensemble des services et directions de l'État situés à Paris assurant le pilotage stratégique du ministère.
 
 **ACA** - Atelier central automobile - Service centralisé dédié à la gestion, la maintenance et la logistique du parc automobile du ministère.
 
