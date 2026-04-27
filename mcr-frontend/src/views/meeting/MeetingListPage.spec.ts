@@ -19,7 +19,7 @@ vi.mock('@/services/meetings/use-meeting', async () => {
   return mockUseMeetings();
 });
 
-const SESSION_KEY = 'dsfr-alert-closed';
+const SESSION_KEY = 'homepage-dsfr-alert-closed';
 const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
 
 describe('MeetingListPage', () => {
