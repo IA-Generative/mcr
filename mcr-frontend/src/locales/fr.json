@@ -87,10 +87,6 @@
         "title": "Titre",
         "date": "Date",
         "actions": "Actions"
-      },
-      "pagination": {
-        "previous": "Précédent",
-        "next": "Suivant"
       }
     }
   },
@@ -139,6 +135,10 @@
           "success": "DISPONIBLE",
           "error": "ERREUR"
         }
+      },
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant"
       }
     },
     "availability-alert-description": {
