@@ -52,22 +52,9 @@
 
 <script lang="ts" setup>
 import PageFrontMatter from '@/components/core/PageFrontMatter.vue';
+import { useSessionAlert } from '@/composables/use-session-alert';
 import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 import MeetingTiles from './MeetingTiles.vue';
 
-const SESSION_KEY = 'dsfr-alert-closed';
-const showAlert = ref(true);
-const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
-
-onMounted(() => {
-  const alreadyClosed = sessionStorage.getItem(SESSION_KEY);
-  if (alreadyClosed && alreadyClosed == CLOSED_ALERT_VALUE) {
-    showAlert.value = false;
-  }
-});
-
-function closeAlert() {
-  showAlert.value = false;
-  sessionStorage.setItem(SESSION_KEY, CLOSED_ALERT_VALUE);
-}
+const { showAlert, closeAlert } = useSessionAlert('homepage-dsfr-alert-closed');
 </script>
