@@ -4,32 +4,74 @@ _GLOSSARY_PATH = Path(__file__).parent / "data" / "small_glossaire.md"
 GLOSSARY_CONTENT = _GLOSSARY_PATH.read_text(encoding="utf-8")
 
 ACRONYM_PROMPT_TEMPLATE = """
-Tu es un correcteur spécialisé dans les acronymes et sigles.
+Tu corriges les acronymes mal transcrits dans une transcription vocale en français. Tu ne modifies RIEN d'autre.
 
-Objectif : identifier et corriger UNIQUEMENT les acronymes/sigles mal transcrits par le système de reconnaissance vocale, en t'appuyant sur le glossaire fourni. Tu ne dois modifier AUCUN autre mot du texte.
+# Types d'erreurs à corriger
 
-Contexte : le système de transcription vocale transforme mal les acronymes prononcés comme des mots. Par exemple « ANTS » prononcé « ance » est transcrit « ance » au lieu de « ANTS ». Les acronymes épelés lettre par lettre sont généralement bien transcrits.
+1. Acronyme transcrit en mot français courant
+   « opaque » → « OPAC », « café » → « CAF », « eau nue » → « ONU »
 
-Glossaire des acronymes connus :
+2. Acronyme commençant par A avec liaison avalée (uniquement après « la » ou « le »)
+   « la NTS » → « l'ANTS », « la NTAI » → « l'ANTAI »
+
+3. Chiffre dans un sigle indiquant une lettre doublée
+   Quand un sigle contient un chiffre (souvent « 2 »), c'est généralement que le locuteur a dit « deux X » pour signaler que la lettre X est doublée dans l'acronyme.
+   « AN2SI » → « ANSSI » (deux S) ; « A2IM » → « AAIM » (deux A) ; « CN2L » → « CNLL » (deux L).
+
+4. Acronyme en majuscules très proche d'un acronyme connu (lettre manquante ou modifiée)
+   « CMI » → « CCMI ».
+
+# Source des acronymes de correction
+
+Tu corriges en priorité vers les acronymes du glossaire fourni plus bas.
+Tu peux aussi corriger vers un acronyme ABSENT du glossaire, mais UNIQUEMENT si cet acronyme est un sigle français très connu du grand public (ex : ONU, OTAN, SNCF, ANSSI, CNIL, INSEE, SMIC, RATP…) ET que la correction est évidente et sans ambiguïté.
+
+Si l'acronyme cible est obscur, technique, ou que tu hésites sur sa forme exacte : NE CORRIGE PAS.
+
+# Règles
+
+1. Corrige UNIQUEMENT si : (a) ressemblance forte avec un acronyme connu ET (b) le contexte confirme sans effort.
+2. En cas de doute, ne corrige pas. Une non-correction vaut mieux qu'une correction erronée.
+3. Ne touche à aucun autre mot, même fautif. Ne modifie pas la ponctuation.
+4. Garde les balises <separatorID> strictement identiques et à leur place.
+5. Les acronymes corrigés s'écrivent en majuscules sans points (« ANTS », pas « A.N.T.S. »).
+
+# Ce que tu ne dois JAMAIS faire
+
+- Remplacer une forme développée par son acronyme.
+  « direction générale des étrangers en France » RESTE tel quel, pas « DGEF ».
+- Remplacer un acronyme par un autre très différent.
+  « AN2SI » peut devenir « ANSSI » (le 2 = double S), mais PAS « DGSI » (trop différent).
+- Inventer un acronyme que tu ne connais pas avec certitude.
+- Corriger un acronyme déjà bien écrit (« ANTS » reste « ANTS »).
+- Corriger un acronyme épelé (« D-G-P-N » reste « D-G-P-N »).
+- Modifier « une NTS », « de NTS », « du NTS » — la règle de liaison ne s'applique qu'à « la » et « le ».
+
+# Exemples
+
+Glossaire pour les exemples : **OPAC**, **ANTS**, **DGEF**, **CCMI**, **DGSI**.
+
+Entrée : Le locataire a contacté l'opaque pour signaler le problème.
+Sortie : Le locataire a contacté l'OPAC pour signaler le problème.
+
+Entrée : La NTS a transmis le dossier à la direction générale des étrangers en France.
+Sortie : L'ANTS a transmis le dossier à la direction générale des étrangers en France.
+
+Entrée : Le CMI a été signé avant la réunion avec l'AN2SI.
+Sortie : Le CCMI a été signé avant la réunion avec l'ANSSI.
+
+Entrée : Je suis ambassadeur de la France à l'eau nue.
+Sortie : Je suis ambassadeur de la France à l'ONU.
+
+# Glossaire à utiliser en priorité pour la correction
 <<<
 {glossary}
 >>>
 
-Règles STRICTES :
-1) Tu ne corriges QUE les mots qui sont des acronymes/sigles mal transcrits d'après le glossaire. Tu ne touches à AUCUN autre mot, même s'il contient des fautes d'orthographe.
-2) Si un acronyme est déjà correctement écrit en majuscules, ne le modifie pas.
-3) Si un mot ressemble phonétiquement à un acronyme du glossaire et que le contexte confirme qu'il s'agit de cet acronyme, remplace-le par l'acronyme correct en majuscules.
-4) Les acronymes épelés lettre par lettre (ex : « D-G-P-N ») sont généralement bien transcrits : ne les modifie pas sauf si une lettre est manifestement fausse.
-5) Pour les prononciations mixtes ou abrégées (début nommifié + fin épelée, ou inversement, ou lettres doublées comme « A-B-2C » pour « ABCC »), normalise vers l'acronyme correct du glossaire.
-6) Ne reformule pas, ne corrige pas l'orthographe des autres mots, ne modifie pas la ponctuation ni la structure des phrases.
-7) Les balises <separatorID> doivent rester strictement identiques et à leur position d'origine. Interdiction de les modifier, supprimer, déplacer ou dupliquer.
-
-Sortie :
-- Retourne uniquement le texte corrigé, sans explication ni commentaire.
-- Conserve strictement toutes les balises <separatorID>.
-
-Texte à corriger :
+# Texte à corriger
 <<<
 {text}
 >>>
+
+Réponds uniquement avec le texte corrigé. Pas de préambule, pas d'explication, pas de commentaire.
 """

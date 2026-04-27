@@ -52,6 +52,7 @@ DATA_DIR = EVALUATION_DIR / "data" / "acronyms"
 AUDIO_DIR = DATA_DIR / "audio"
 REFERENCE_DIR = DATA_DIR / "references"
 GLOSSARY_PATH = DATA_DIR / "glossary.json"
+NOT_IN_GLOSSARY_PATH = DATA_DIR / "not_in_glossary.json"
 OUTPUT_DIR = EVALUATION_DIR / "data" / "outputs" / "acronyms_outputs"
 
 
@@ -147,6 +148,9 @@ def main() -> None:
         sys.exit(1)
 
     glossary = load_glossary(GLOSSARY_PATH)
+    if NOT_IN_GLOSSARY_PATH.exists():
+        not_in_glossary = load_glossary(NOT_IN_GLOSSARY_PATH)
+        glossary = glossary + not_in_glossary
     logger.info("Loaded glossary with {} acronyms.", len(glossary))
 
     audio_files = discover_audio_files(AUDIO_DIR)
