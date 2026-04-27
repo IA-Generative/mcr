@@ -30,8 +30,9 @@
       v-model:current-page="currentPageIndex"
       class="self-center mb-6"
       :pages="pages"
-      :prev-page-title="$t('meetings.table.pagination.previous')"
-      :next-page-title="$t('meetings.table.pagination.next')"
+      :prev-page-title="$t('meetings_v2.table.pagination.previous')"
+      :next-page-title="$t('meetings_v2.table.pagination.next')"
+      :trunc-limit="TRUNCATED_PAGINATION_SIZE"
     />
   </div>
 </template>
@@ -67,6 +68,7 @@ const headers = [
 ];
 
 const PAGE_SIZE = 10;
+const TRUNCATED_PAGINATION_SIZE = 4;
 
 const { currentPage, setCurrentPage } = usePagination({ currentPage: 1 });
 
