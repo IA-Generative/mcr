@@ -389,6 +389,11 @@
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
     },
+    "subtitle": {
+      "import": "Fichier importé le ",
+      "record": "Réunion en présentiel enregistrée le ",
+      "visio": "Enregistré avec {visioPlatform} le "
+    },
     "visio-form": {
       "comu": {
         "access_code": "Code d'accès",
