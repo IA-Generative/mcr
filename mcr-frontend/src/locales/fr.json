@@ -87,6 +87,10 @@
         "title": "Titre",
         "date": "Date",
         "actions": "Actions"
+      },
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant"
       }
     }
   },
