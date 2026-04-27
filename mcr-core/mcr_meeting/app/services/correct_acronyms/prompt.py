@@ -1,6 +1,6 @@
 from pathlib import Path
 
-_GLOSSARY_PATH = Path(__file__).parent / "data" / "small_glossaire.md"
+_GLOSSARY_PATH = Path(__file__).parent / "data" / "glossary.md"
 GLOSSARY_CONTENT = _GLOSSARY_PATH.read_text(encoding="utf-8")
 
 ACRONYM_PROMPT_TEMPLATE = """
