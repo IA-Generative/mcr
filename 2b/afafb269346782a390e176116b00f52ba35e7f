@@ -1,0 +1,29 @@
+mcr-core/mcr_meeting/app/models/deliverable_model.py
+  603f9dcf261298e6 11,13-21,31-33
+mcr-core/mcr_meeting/app/models/__init__.py
+  603f9dcf261298e6 2,11-12
+mcr-core/mcr_meeting/app/services/deliverable_storage_service.py
+  603f9dcf261298e6 6-10,43,55-56,64
+mcr-core/mcr_meeting/app/statemachine_actions/meeting_actions.py
+  603f9dcf261298e6 13,127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "2bafafb269346782a390e176116b00f52ba35e7f",
+  "prompts": {
+    "603f9dcf261298e6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c9158b40-05f5-42a8-a91f-2a0ed0f8ec67",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 93,
+      "total_deletions": 21,
+      "accepted_lines": 93,
+      "overriden_lines": 0
+    }
+  }
+}
