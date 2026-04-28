@@ -2,20 +2,32 @@
   <div class="flex flex-col gap-4">
     <DsfrBreadcrumb
       :links="[
-        { text: 'Accueil', to: '/meetings' },
+        { text: $t('home.text'), to: '/meetings' },
         { text: meeting.name, to: `/meetings/${meeting.id}` },
       ]"
     />
     <h1 class="fr-text text-4xl font-bold text truncate-title">{{ meeting.name }}</h1>
-    <div class="text">
-      <span>{{ getSubtitleFromPlatformName(meeting.name_platform) }}</span>
-      <span class="font-semibold">{{ getCalendarDateFromIso8601(meeting.creation_date) }} </span>
-      <span> à </span>
-      <span class="font-semibold">{{ getTimeFromIso8601(meeting.creation_date) }}</span>
-      <span class="ml-4 mr-4">|</span>
-      <span>Durée : </span>
-      <span class="font-semibold">{{ getMeetingDuration(meeting) }}</span>
-    </div>
+    <i18n-t
+      keypath="meeting-v2.details"
+      tag="div"
+      class="text"
+    >
+      <template #subtitle>
+        <span>{{ getSubtitleFromPlatformName(meeting.name_platform) }}</span>
+      </template>
+      <template #date>
+        <span class="font-semibold">{{ getCalendarDateFromIso8601(meeting.creation_date) }}</span>
+      </template>
+      <template #time>
+        <span class="font-semibold">{{ getTimeFromIso8601(meeting.creation_date) }}</span>
+      </template>
+      <template #separator>
+        <span class="ml-4 mr-4">{{ t('common.pipe') }}</span>
+      </template>
+      <template #duration>
+        <span class="font-semibold">{{ getMeetingDuration(meeting) }}</span>
+      </template>
+    </i18n-t>
   </div>
 </template>
 
