@@ -385,6 +385,12 @@
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
     },
+    "audio-card": {
+      "title": "Audio",
+      "availability": "L'audio de la réunion est disponible pendant {nbDays}",
+      "button": "Écouter l'audio",
+      "error": "L'audio de votre réunion n'a pas pu être obtenu."
+    },
     "delete": "Supprimer la réunion",
     "edit": "Modifier le nom",
     "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
