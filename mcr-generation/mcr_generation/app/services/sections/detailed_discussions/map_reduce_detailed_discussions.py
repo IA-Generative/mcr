@@ -1,5 +1,6 @@
 """Module for extracting and consolidating detailed discussions from meeting transcripts"""
 
+import contextvars
 from concurrent.futures import ThreadPoolExecutor
 
 import instructor
@@ -51,9 +52,17 @@ class MapReduceDetailedDiscussions:
     @observe(name="section_content_generation")
     def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            discussions_by_chunk = list(
-                executor.map(self.map_extract_detailed_discussions, chunks)
-            )
+            futures = [
+                executor.submit(
+                    contextvars.copy_context().run,
+                    self.map_extract_detailed_discussions,
+                    chunk,
+                )
+                for chunk in chunks
+            ]
+            discussions_by_chunk: list[list[MappedDetailedDiscussion]] = [
+                f.result() for f in futures
+            ]
             logger.debug(
                 "Mapped detailed discussions by chunk: {}", discussions_by_chunk
             )
