@@ -25,6 +25,9 @@ from mcr_generation.app.services.utils.llm_helpers import (
     call_llm_with_structured_output,
 )
 from mcr_generation.app.utils.function_execution_timer import log_execution_time
+from mcr_generation.app.utils.langfuse_observability import (
+    record_empty_map_phase_event,
+)
 
 
 class MapReduceTopics:
@@ -61,6 +64,7 @@ class MapReduceTopics:
     def process_transcript_parallel(
         self, chunks: list[Chunk], max_workers: int = 4
     ) -> Content:
+        self._last_chunk_count = len(chunks)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
                 executor.submit(
@@ -87,6 +91,10 @@ class MapReduceTopics:
             Content: Deduplicated and consolidated list of topics.
         """
         if not all_topics:
+            record_empty_map_phase_event(
+                section="topics",
+                chunk_count=getattr(self, "_last_chunk_count", None),
+            )
             return Content(topics=[], next_steps=[])
 
         topics_input = [d.model_dump() for d in all_topics]

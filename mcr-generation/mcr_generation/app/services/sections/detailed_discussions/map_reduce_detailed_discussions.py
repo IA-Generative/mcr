@@ -25,6 +25,9 @@ from mcr_generation.app.services.utils.llm_helpers import (
     call_llm_with_structured_output,
 )
 from mcr_generation.app.utils.function_execution_timer import log_execution_time
+from mcr_generation.app.utils.langfuse_observability import (
+    record_empty_map_phase_event,
+)
 
 
 class MapReduceDetailedDiscussions:
@@ -51,6 +54,7 @@ class MapReduceDetailedDiscussions:
     @log_execution_time
     @observe(name="section_content_generation")
     def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
+        self._last_chunk_count = len(chunks)
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
                 executor.submit(
@@ -86,6 +90,10 @@ class MapReduceDetailedDiscussions:
             Content: Deduplicated and consolidated list of detailed discussions.
         """
         if not all_discussions:
+            record_empty_map_phase_event(
+                section="detailed_discussions",
+                chunk_count=getattr(self, "_last_chunk_count", None),
+            )
             return Content(detailed_discussions=[])
 
         discussions_input = [d.model_dump() for d in all_discussions]

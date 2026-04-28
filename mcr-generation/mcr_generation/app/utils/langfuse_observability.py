@@ -85,3 +85,41 @@ def record_generation_usage(
         )
     except Exception as e:
         logger.warning("langfuse update_current_generation (usage) failed: {}", e)
+
+
+def record_llm_retry_event(
+    attempt: int,
+    next_sleep_seconds: float | None,
+    exception_type: str | None,
+    exception_msg: str | None,
+) -> None:
+    try:
+        get_client().create_event(
+            name="llm_retry",
+            level="WARNING",
+            metadata={
+                "attempt": attempt,
+                "next_sleep_seconds": next_sleep_seconds,
+                "exception_type": exception_type,
+                "exception_msg": exception_msg,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (llm_retry) failed: {}", e)
+
+
+def record_empty_map_phase_event(
+    section: str,
+    chunk_count: int | None,
+) -> None:
+    try:
+        get_client().create_event(
+            name="empty_map_phase",
+            level="WARNING",
+            metadata={
+                "section": section,
+                "chunk_count": chunk_count,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (empty_map_phase) failed: {}", e)
