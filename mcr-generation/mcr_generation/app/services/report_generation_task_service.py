@@ -2,11 +2,11 @@ from typing import Any
 
 import httpx
 from celery.signals import task_failure, task_prerun, task_success
-from langfuse import observe
+from langfuse import get_client, observe
 from loguru import logger
 
 from mcr_generation.app.client.meeting_client import MeetingApiClient
-from mcr_generation.app.configs.settings import ApiSettings
+from mcr_generation.app.configs.settings import ApiSettings, LangfuseSettings
 from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport
 from mcr_generation.app.schemas.celery_types import (
@@ -24,6 +24,7 @@ from mcr_generation.app.utils.sentry_context import (
 )
 
 api_settings = ApiSettings()
+langfuse_settings = LangfuseSettings()
 
 
 @celery_app.task(name=MCRReportGenerationTasks.REPORT)
@@ -36,6 +37,29 @@ def generate_report_from_docx(
 ) -> BaseReport:
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
+
+    chunk_count = len(chunks)
+    total_chars = sum(len(c.text) for c in chunks)
+    get_client().update_current_trace(
+        session_id=str(meeting_id),
+        tags=[
+            f"env:{langfuse_settings.ENV_MODE.lower()}",
+            f"report_type:{report_type}",
+            "pipeline:generation",
+        ],
+        metadata={
+            "transcription_object": transcription_object_filename,
+            "chunk_count": chunk_count,
+            "total_chars": total_chars,
+        },
+        input={
+            "meeting_id": meeting_id,
+            "transcription_object": transcription_object_filename,
+            "report_type": report_type,
+            "chunk_count": chunk_count,
+            "total_chars": total_chars,
+        },
+    )
 
     report_type_enum = ReportTypes(report_type)
     generator = get_generator(report_type_enum)
