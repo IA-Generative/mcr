@@ -123,3 +123,25 @@ def record_empty_map_phase_event(
         )
     except Exception as e:
         logger.warning("langfuse create_event (empty_map_phase) failed: {}", e)
+
+
+def record_low_confidence_items_event(
+    section: str,
+    chunk_id: int,
+    threshold: float,
+    items: list[dict[str, object]],
+) -> None:
+    try:
+        get_client().create_event(
+            name=f"low_confidence_{section}",
+            level="WARNING",
+            metadata={
+                "chunk_id": chunk_id,
+                "threshold": threshold,
+                "items": items,
+            },
+        )
+    except Exception as e:
+        logger.warning(
+            "langfuse create_event (low_confidence_{}) failed: {}", section, e
+        )
