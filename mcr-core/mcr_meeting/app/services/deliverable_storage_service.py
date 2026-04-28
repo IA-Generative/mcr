@@ -3,7 +3,11 @@ from loguru import logger
 from mcr_meeting.app.client.drive_client import upload_file
 from mcr_meeting.app.db.deliverable_repository import save_deliverable
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
-from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableFileType
+from mcr_meeting.app.models.deliverable_model import (
+    Deliverable,
+    DeliverableStatus,
+    DeliverableType,
+)
 from mcr_meeting.app.services.redis_token_store import (
     delete_refresh_token,
     get_refresh_token,
@@ -36,7 +40,7 @@ def store_deliverable(
     meeting_id: int,
     user_keycloak_uuid: str,
     file_bytes: bytes,
-    file_type: DeliverableFileType,
+    type: DeliverableType,
     filename: str = "document.docx",
 ) -> None:
     try:
@@ -48,7 +52,8 @@ def store_deliverable(
             save_deliverable(
                 Deliverable(
                     meeting_id=meeting_id,
-                    file_type=file_type,
+                    type=type,
+                    status=DeliverableStatus.AVAILABLE,
                     external_url=external_url,
                 )
             )
@@ -56,7 +61,7 @@ def store_deliverable(
     except Exception as exc:
         logger.exception(
             "Failed to store {} deliverable for meeting {}: {}",
-            file_type.value,
+            type.value,
             meeting_id,
             exc,
         )
