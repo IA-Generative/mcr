@@ -51,7 +51,7 @@ function getSubtitleFromPlatformName(namePlatform: AllMeetingPlatforms): string 
 }
 
 .truncate-title {
-  max-width: 70vw;
+  max-width: 50vw;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
