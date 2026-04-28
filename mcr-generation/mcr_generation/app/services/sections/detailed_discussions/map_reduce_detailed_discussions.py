@@ -9,7 +9,7 @@ from langfuse import get_client, observe
 from loguru import logger
 from openai import OpenAI
 
-from mcr_generation.app.configs.settings import LLMConfig
+from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.schemas.base import Participant
 from mcr_generation.app.services.sections.detailed_discussions.prompts import (
     MAP_PROMPT_TEMPLATE,
@@ -139,4 +139,22 @@ class MapReduceDetailedDiscussions:
         discussions = resp.detailed_discussions
         for discussion in discussions:
             discussion.chunk_id = chunk.id
+
+        threshold = LangfuseSettings().LOW_CONFIDENCE_THRESHOLD
+        low = [
+            {"topic": d.topic, "confidence": d.topic_confidence}
+            for d in discussions
+            if d.topic_confidence < threshold
+        ]
+        if low:
+            get_client().create_event(
+                name="low_confidence_detailed_discussions",
+                level="WARNING",
+                metadata={
+                    "chunk_id": chunk.id,
+                    "threshold": threshold,
+                    "items": low,
+                },
+            )
+
         return discussions
