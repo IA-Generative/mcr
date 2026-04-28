@@ -10,6 +10,7 @@ from loguru import logger
 from openai import OpenAI
 
 from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
+from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.schemas.base import Participant
 from mcr_generation.app.services.sections.detailed_discussions.prompts import (
     MAP_PROMPT_TEMPLATE,
@@ -26,6 +27,7 @@ from mcr_generation.app.services.utils.llm_helpers import (
 )
 from mcr_generation.app.utils.function_execution_timer import log_execution_time
 from mcr_generation.app.utils.langfuse_observability import (
+    record_chunk_map_failed_event,
     record_empty_map_phase_event,
     record_low_confidence_items_event,
 )
@@ -56,24 +58,43 @@ class MapReduceDetailedDiscussions:
     @observe(name="section_content_generation")
     def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
         self._last_chunk_count = len(chunks)
+        successful: list[list[MappedDetailedDiscussion]] = []
+        failed_chunk_ids: list[int] = []
+
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
-                executor.submit(
-                    contextvars.copy_context().run,
-                    self.map_extract_detailed_discussions,
-                    chunk,
+                (
+                    chunk.id,
+                    executor.submit(
+                        contextvars.copy_context().run,
+                        self.map_extract_detailed_discussions,
+                        chunk,
+                    ),
                 )
                 for chunk in chunks
             ]
-            discussions_by_chunk: list[list[MappedDetailedDiscussion]] = [
-                f.result() for f in futures
-            ]
-            logger.debug(
-                "Mapped detailed discussions by chunk: {}", discussions_by_chunk
+            for chunk_id, fut in futures:
+                try:
+                    successful.append(fut.result())
+                except Exception as e:
+                    failed_chunk_ids.append(chunk_id)
+                    record_chunk_map_failed_event(
+                        section="detailed_discussions",
+                        chunk_id=chunk_id,
+                        exception_type=type(e).__name__,
+                        exception_msg=str(e)[:500],
+                    )
+                    logger.warning("Chunk {} failed map phase: {}", chunk_id, e)
+
+        if failed_chunk_ids and not successful:
+            raise AllChunksFailedError(
+                f"All {len(chunks)} chunks failed in map phase: {failed_chunk_ids}"
             )
-            all_discussions = [
-                discussion for sublist in discussions_by_chunk for discussion in sublist
-            ]
+
+        logger.debug("Mapped detailed discussions by chunk: {}", successful)
+        all_discussions = [
+            discussion for sublist in successful for discussion in sublist
+        ]
         return self.reduce_discussions_into_content(all_discussions)
 
     @observe(name="section_content_reduce")

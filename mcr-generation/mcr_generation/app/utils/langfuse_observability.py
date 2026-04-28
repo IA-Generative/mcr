@@ -108,6 +108,27 @@ def record_llm_retry_event(
         logger.warning("langfuse create_event (llm_retry) failed: {}", e)
 
 
+def record_chunk_map_failed_event(
+    section: str,
+    chunk_id: int,
+    exception_type: str,
+    exception_msg: str,
+) -> None:
+    try:
+        get_client().create_event(
+            name="chunk_map_failed",
+            level="ERROR",
+            metadata={
+                "section": section,
+                "chunk_id": chunk_id,
+                "exception_type": exception_type,
+                "exception_msg": exception_msg,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (chunk_map_failed) failed: {}", e)
+
+
 def record_empty_map_phase_event(
     section: str,
     chunk_count: int | None,

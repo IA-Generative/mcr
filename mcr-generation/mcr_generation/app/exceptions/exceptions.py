@@ -25,3 +25,7 @@ class ReportCallbackError(MCRGenerationException):
 
 class UnsupportedReportTypeError(MCRGenerationException):
     """Raised when an unknown report type is requested."""
+
+
+class AllChunksFailedError(MCRGenerationException):
+    """Raised when every chunk failed during map phase, leaving no content to reduce."""
