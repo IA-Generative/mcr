@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import instructor
 from langchain.prompts import PromptTemplate
-from langfuse import observe
+from langfuse import get_client, observe
 from loguru import logger
 from openai import OpenAI
 
@@ -61,6 +61,7 @@ class MapReduceTopics:
     def process_transcript_parallel(
         self, chunks: list[Chunk], max_workers: int = 4
     ) -> Content:
+        self._last_chunk_count = len(chunks)
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = [
                 executor.submit(
@@ -87,6 +88,14 @@ class MapReduceTopics:
             Content: Deduplicated and consolidated list of topics.
         """
         if not all_topics:
+            get_client().create_event(
+                name="empty_map_phase",
+                level="WARNING",
+                metadata={
+                    "section": "topics",
+                    "chunk_count": getattr(self, "_last_chunk_count", None),
+                },
+            )
             return Content(topics=[], next_steps=[])
 
         topics_input = [d.model_dump() for d in all_topics]

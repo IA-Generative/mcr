@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import instructor
 from langchain.prompts import PromptTemplate
-from langfuse import observe
+from langfuse import get_client, observe
 from loguru import logger
 from openai import OpenAI
 
@@ -51,6 +51,7 @@ class MapReduceDetailedDiscussions:
     @log_execution_time
     @observe(name="section_content_generation")
     def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
+        self._last_chunk_count = len(chunks)
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
                 executor.submit(
@@ -86,6 +87,14 @@ class MapReduceDetailedDiscussions:
             Content: Deduplicated and consolidated list of detailed discussions.
         """
         if not all_discussions:
+            get_client().create_event(
+                name="empty_map_phase",
+                level="WARNING",
+                metadata={
+                    "section": "detailed_discussions",
+                    "chunk_count": getattr(self, "_last_chunk_count", None),
+                },
+            )
             return Content(detailed_discussions=[])
 
         discussions_input = [d.model_dump() for d in all_discussions]

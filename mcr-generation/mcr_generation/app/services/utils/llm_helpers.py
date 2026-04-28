@@ -3,7 +3,7 @@ from typing import TypeVar
 from instructor import Instructor
 from langfuse import get_client, observe
 from pydantic import BaseModel
-from tenacity import Retrying, stop_after_attempt, wait_exponential
+from tenacity import RetryCallState, Retrying, stop_after_attempt, wait_exponential
 
 from mcr_generation.app.configs.settings import LLMConfig
 from mcr_generation.app.exceptions.exceptions import LLMCallError
@@ -11,6 +11,23 @@ from mcr_generation.app.exceptions.exceptions import LLMCallError
 llm_config = LLMConfig()
 
 T = TypeVar("T", bound=BaseModel)
+
+
+def _emit_retry_event(retry_state: RetryCallState) -> None:
+    exc = retry_state.outcome.exception() if retry_state.outcome else None
+    next_sleep = (
+        retry_state.next_action.sleep if retry_state.next_action is not None else None
+    )
+    get_client().create_event(
+        name="llm_retry",
+        level="WARNING",
+        metadata={
+            "attempt": retry_state.attempt_number,
+            "next_sleep_seconds": next_sleep,
+            "exception_type": type(exc).__name__ if exc else None,
+            "exception_msg": str(exc)[:500] if exc else None,
+        },
+    )
 
 
 @observe(as_type="generation", capture_input=False)
@@ -51,6 +68,7 @@ def call_llm_with_structured_output(
                     min=retry_min_wait,
                     max=retry_max_wait,
                 ),
+                before_sleep=_emit_retry_event,
             ),
         )
     except Exception as e:
