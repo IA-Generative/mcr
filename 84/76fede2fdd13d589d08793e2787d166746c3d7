@@ -1,0 +1,27 @@
+mcr-core/tests/factories/deliverable_factory.py
+  603f9dcf261298e6 3-7,17-18
+mcr-core/tests/integration/test_deliverable_storage.py
+  603f9dcf261298e6 1-5,62,68-69,83,104,124
+mcr-core/tests/api/test_meeting_router.py
+  603f9dcf261298e6 174-204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "8476fede2fdd13d589d08793e2787d166746c3d7",
+  "prompts": {
+    "603f9dcf261298e6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c9158b40-05f5-42a8-a91f-2a0ed0f8ec67",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 87,
+      "overriden_lines": 0
+    }
+  }
+}
