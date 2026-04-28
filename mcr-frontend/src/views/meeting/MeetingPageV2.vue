@@ -34,6 +34,13 @@
           scale="3"
         />
       </div>
+      <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6">
+        <MeetingAudioCard
+          :meeting-id="meeting.id"
+          :creation-date="meeting.creation_date"
+          :status="meeting.status"
+        />
+      </div>
     </div>
 
     <div class="content-container flex-1">
