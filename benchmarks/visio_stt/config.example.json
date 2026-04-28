@@ -1,0 +1,41 @@
+{
+  "headless": true,
+  "post_stream_buffer_s": 3.0,
+  "tasks": [
+    {"audio": "test_audio/processed/speaker_01.wav", "url": "https://visio.numerique.gouv.fr/hpd-rqcw-njc"}
+  ]
+}
+
+
+{
+  "headless": true,
+  "tasks": [
+    {"audio": "test_audio/processed/011c_ECPL.wav", "url": "https://visio.numerique.gouv.fr/ufj-pvtm-rey"},
+    {"audio": "test_audio/processed/015b_EBDD.wav", "url": "https://visio.numerique.gouv.fr/lgo-lijy-lbm"},
+    {"audio": "test_audio/processed/017a_EBRZ.wav", "url": "https://visio.numerique.gouv.fr/fcw-kphk-fmh"},
+    {"audio": "test_audio/processed/018a_EARZ.wav", "url": "https://visio.numerique.gouv.fr/jpw-uqmb-hlz"},
+    {"audio": "test_audio/processed/018b_EADZ.wav", "url": "https://visio.numerique.gouv.fr/ppt-mebx-vkb"}
+  ]
+}
+
+{
+  "headless": true,
+  "tasks": [
+    {"audio": "test_audio/processed/020b_EBDZ.wav", "url": "https://visio.numerique.gouv.fr/ufj-pvtm-rey"},
+    {"audio": "test_audio/processed/020c_EBPZ.wav", "url": "https://visio.numerique.gouv.fr/lgo-lijy-lbm"},
+    {"audio": "test_audio/processed/021a_EARD.wav", "url": "https://visio.numerique.gouv.fr/fcw-kphk-fmh"},
+    {"audio": "test_audio/processed/consultation_ger_08.wav", "url": "https://visio.numerique.gouv.fr/jpw-uqmb-hlz"},
+    {"audio": "test_audio/processed/creances_ley_13.wav", "url": "https://visio.numerique.gouv.fr/ppt-mebx-vkb"}
+  ]
+}
+
+{
+  "headless": true,
+  "tasks": [
+    {"audio": "test_audio/processed/ferme_jea_08.wav", "url": "https://visio.numerique.gouv.fr/ufj-pvtm-rey"},
+    {"audio": "test_audio/processed/leg_reu_educ_08.wav", "url": "https://visio.numerique.gouv.fr/lgo-lijy-lbm"},
+    {"audio": "test_audio/processed/pap-pet-thi_reu.wav", "url": "https://visio.numerique.gouv.fr/fcw-kphk-fmh"},
+    {"audio": "test_audio/processed/pediatrie_lam_08.wav", "url": "https://visio.numerique.gouv.fr/jpw-uqmb-hlz"},
+    {"audio": "test_audio/processed/reunion_hen_09.wav", "url": "https://visio.numerique.gouv.fr/ppt-mebx-vkb"}
+  ]
+}

@@ -7,3 +7,5 @@ tmp/
 .DS_Store
 bin
 __pycache__/
+benchmarks/visio_stt/test_audio/raw/
+benchmarks/visio_stt/test_audio/processed/
