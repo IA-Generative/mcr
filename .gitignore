@@ -6,3 +6,5 @@ tmp/
 .coverage
 .DS_Store
 bin
+benchmarks/visio_stt/test_audio/raw/
+benchmarks/visio_stt/test_audio/processed/
