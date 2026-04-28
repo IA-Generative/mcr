@@ -9,7 +9,7 @@ from langfuse import observe
 from loguru import logger
 from openai import OpenAI
 
-from mcr_generation.app.configs.settings import LLMConfig
+from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.schemas.base import Participant
 from mcr_generation.app.services.sections.topics.prompts import (
     MAP_PROMPT_TEMPLATE,
@@ -27,6 +27,7 @@ from mcr_generation.app.services.utils.llm_helpers import (
 from mcr_generation.app.utils.function_execution_timer import log_execution_time
 from mcr_generation.app.utils.langfuse_observability import (
     record_empty_map_phase_event,
+    record_low_confidence_items_event,
 )
 
 
@@ -133,5 +134,19 @@ class MapReduceTopics:
             user_message_content=content,
         )
         topics = resp.topics
+
+        threshold = LangfuseSettings().LOW_CONFIDENCE_THRESHOLD
+        low = [
+            {"topic": t.topic, "confidence": t.topic_confidence}
+            for t in topics
+            if t.topic_confidence < threshold
+        ]
+        if low:
+            record_low_confidence_items_event(
+                section="topics",
+                chunk_id=chunk.id,
+                threshold=threshold,
+                items=low,
+            )
 
         return topics
