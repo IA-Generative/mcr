@@ -47,6 +47,7 @@
               :creation-date="meeting.creation_date"
               :status="meeting.status"
             />
+            <MeetingDeliverableCard />
           </div>
         </div>
         <div
