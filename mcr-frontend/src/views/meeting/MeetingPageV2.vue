@@ -49,6 +49,12 @@
             />
           </div>
         </div>
+        <div
+          v-if="meeting && isRecordingLocally"
+          class="mt-6 py-5 bg-grey-1000"
+        >
+          <LiveRecordingInProgress :meeting-id="meeting.id" />
+        </div>
       </div>
     </div>
   </div>
@@ -77,6 +83,11 @@ const { mutateAsync: deleteMeeting } = deleteMeetingMutation();
 
 const { abortRecording } = useRecorder();
 
+const isRecordingLocally = computed(
+  () =>
+    meeting?.value?.status === 'CAPTURE_IN_PROGRESS' &&
+    meeting?.value?.name_platform === 'MCR_RECORD',
+);
 watch(isError, () => {
   if (isError.value && (is403Error(error.value) || is404Error(error.value))) {
     router.push({ name: ROUTES.NOT_FOUND.name });
