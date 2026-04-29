@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from mcr_generation.app.exceptions.exceptions import LLMCallError
 from mcr_generation.app.services.utils.llm_helpers import (
+    _emit_retry_event,
     call_llm_with_structured_output,
 )
 
@@ -65,4 +66,29 @@ class TestCallLLMWithStructuredOutput:
 
         langfuse_client.update_current_generation.assert_any_call(
             usage_details={"input": 12, "output": 34, "total": 46}
+        )
+
+
+class TestEmitRetryEvent:
+    def test_passes_extracted_state_to_record_llm_retry_event(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        mock_record = MagicMock()
+        monkeypatch.setattr(
+            "mcr_generation.app.services.utils.llm_helpers.record_llm_retry_event",
+            mock_record,
+        )
+
+        retry_state = MagicMock()
+        retry_state.attempt_number = 3
+        retry_state.outcome.exception.return_value = RuntimeError("transient")
+        retry_state.next_action.sleep = 1.5
+
+        _emit_retry_event(retry_state)
+
+        mock_record.assert_called_once_with(
+            attempt=3,
+            next_sleep_seconds=1.5,
+            exception_type="RuntimeError",
+            exception_msg="transient",
         )
