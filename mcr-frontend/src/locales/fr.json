@@ -22,11 +22,6 @@
       "name": "MIrAI Compte-Rendu",
       "description": "Aide à la rédaction de compte-rendu"
     },
-    "notice": {
-      "title": "Cet outil est en version bêta.",
-      "desc": "Aidez-nous à l'améliorer en remplissant ce {link}",
-      "link": "formulaire Grist"
-    },
     "logo": {
       "text1": "Ministère",
       "text2": "de l'intérieur"
