@@ -1,9 +1,12 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import {
   getCalendarDateFromIso8601,
+  getNumberOfDaysBeforeMeetingDeletion,
   getTimeFromIso8601,
   getMeetingDuration,
+  meetingDateIsInAlertPeriod,
 } from './meetings-datetime';
+import { subDays, formatISO } from 'date-fns';
 import type { MeetingDetailDto } from './meetings.types';
 
 vi.mock('@sentry/vue', () => ({
@@ -16,6 +19,38 @@ beforeAll(() => {
 });
 afterAll(() => {
   process.env.TZ = originalTZ;
+});
+
+function creationDateDaysAgo(days: number): string {
+  return formatISO(subDays(new Date(), days));
+}
+
+describe('meetingDateIsInAlertPeriod', () => {
+  it('returns false for a meeting created 10 days ago', () => {
+    expect(meetingDateIsInAlertPeriod(creationDateDaysAgo(10))).toBe(false);
+  });
+
+  it('returns false for a meeting created exactly 20 days ago', () => {
+    expect(meetingDateIsInAlertPeriod(creationDateDaysAgo(20))).toBe(false);
+  });
+
+  it('returns true for a meeting created 25 days ago', () => {
+    expect(meetingDateIsInAlertPeriod(creationDateDaysAgo(25))).toBe(true);
+  });
+});
+
+describe('getNumberOfDaysBeforeMeetingDeletion', () => {
+  it('returns 20 for a meeting created 10 days ago', () => {
+    expect(getNumberOfDaysBeforeMeetingDeletion(creationDateDaysAgo(10))).toBe(20);
+  });
+
+  it('returns 5 for a meeting created 25 days ago', () => {
+    expect(getNumberOfDaysBeforeMeetingDeletion(creationDateDaysAgo(25))).toBe(5);
+  });
+
+  it('returns 0 for a meeting created more than 30 days ago', () => {
+    expect(getNumberOfDaysBeforeMeetingDeletion(creationDateDaysAgo(35))).toBe(0);
+  });
 });
 
 describe('getCalendarDateFromIso8601', () => {
