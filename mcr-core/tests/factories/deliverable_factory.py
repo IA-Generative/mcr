@@ -13,6 +13,10 @@ from .meeting_factory import MeetingFactory
 class DeliverableFactory(BaseFactory[Deliverable]):
     class Meta:
         model = Deliverable
+        # `meeting` resolves the SubFactory so `meeting_id` can read its id;
+        # exclude it from the kwargs passed to `Deliverable.__init__` since the
+        # model has no `meeting` relationship attribute.
+        exclude = ("meeting",)
 
     type = DeliverableType.TRANSCRIPTION
     status = DeliverableStatus.AVAILABLE
