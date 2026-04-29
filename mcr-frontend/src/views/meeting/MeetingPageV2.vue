@@ -4,6 +4,23 @@
       <div v-if="meeting">
         <div class="flex flex-row items-center justify-between">
           <MeetingFrontMatterV2 :meeting="meeting" />
+
+          <div class="flex gap-4">
+            <DsfrButton
+              secondary
+              icon="ri-edit-line"
+              @click="() => openEditMeetingModal()"
+            >
+              {{ $t('meeting-v2.edit') }}
+            </DsfrButton>
+            <DsfrButton
+              secondary
+              icon="ri-delete-bin-5-line"
+              @click="() => openDeleteMeetingModal()"
+            >
+              {{ $t('meeting-v2.delete') }}
+            </DsfrButton>
+          </div>
         </div>
       </div>
 
@@ -36,19 +53,28 @@
 </template>
 
 <script setup lang="ts">
+import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.vue';
+import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
+import { useRecorder } from '@/composables/use-recorder';
+import { t } from '@/plugins/i18n';
 import { useMeetingPeremption } from '@/composables/use-meeting-peremption';
 import { useSessionAlert } from '@/composables/use-session-alert';
-import { t } from '@/plugins/i18n';
 import { ROUTES } from '@/router/routes';
 import { is403Error, is404Error } from '@/services/http/http.utils';
+import type { UpdateMeetingDto } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
+import { useModal } from 'vue-final-modal';
 
 const router = useRouter();
 const route = useRoute();
 const { id } = route.params;
 
-const { getMeetingQuery } = useMeetings();
+const { getMeetingQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
 const { data: meeting, error, isError, isLoading } = getMeetingQuery(Number(id as string));
+const { mutate: updateMeeting } = updateMeetingMutation();
+const { mutateAsync: deleteMeeting } = deleteMeetingMutation();
+
+const { abortRecording } = useRecorder();
 
 watch(isError, () => {
   if (isError.value && (is403Error(error.value) || is404Error(error.value))) {
@@ -65,6 +91,40 @@ watch(daysBeforeDeletion, (days) => {
     closeAlert();
   }
 });
+
+function openEditMeetingModal() {
+  if (meeting.value === undefined) return;
+  const { open: _openEdit } = useModal({
+    component: EditMeetingModal,
+    attrs: {
+      itemSelected: meeting.value,
+      onUpdateMeeting: (values: UpdateMeetingDto) =>
+        updateMeeting({
+          id: meeting.value.id,
+          payload: values,
+        }),
+    },
+  });
+
+  _openEdit();
+}
+
+function openDeleteMeetingModal() {
+  if (meeting.value === undefined) return;
+  const { open: _openEdit } = useModal({
+    component: DeleteMeetingModal,
+    attrs: {
+      title: t('meeting.confirm-delete.title'),
+      onSuccess: async () => {
+        abortRecording();
+        await deleteMeeting(meeting.value.id);
+        router.replace(ROUTES.MEETINGS.path);
+      },
+    },
+  });
+
+  _openEdit();
+}
 </script>
 
 <style scoped>
