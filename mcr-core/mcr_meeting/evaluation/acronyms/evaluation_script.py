@@ -51,10 +51,15 @@ EVALUATION_DIR = THIS_FILE.parent.parent
 DATA_DIR = EVALUATION_DIR / "data" / "acronyms"
 AUDIO_DIR = DATA_DIR / "audio"
 REFERENCE_DIR = DATA_DIR / "references"
+OUTPUT_DIR = EVALUATION_DIR / "data" / "outputs" / "acronyms_outputs"
+
+# In our dataset, which is gitignored (in the data dir), we have the three following files:
+# - in_glossary.json: list of acronyms that are in the glossary markdown file mcr_meeting/app/services/correct_acronyms/data/glossary.md
+# - not_in_glossary.json: list of acronyms that are not in the glossary markdown file but that we want to evaluate because they are present in the dataset audios.
+# - acronyms_not_evaluated.json: list of acronyms that are in the glossary but that we don't want to evaluate because they are too ambiguous or not relevant for the evaluation (e.g. "CAS" which is also a common French word).
 GLOSSARY_PATH = DATA_DIR / "in_glossary.json"
 NOT_IN_GLOSSARY_PATH = DATA_DIR / "not_in_glossary.json"
 NOT_EVALUATED_PATH = DATA_DIR / "acronyms_not_evaluated.json"
-OUTPUT_DIR = EVALUATION_DIR / "data" / "outputs" / "acronyms_outputs"
 
 
 def discover_audio_files(audio_dir: Path) -> list[Path]:
