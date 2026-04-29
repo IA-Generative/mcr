@@ -6,12 +6,19 @@ from urllib.parse import urlparse, urlunparse
 from pydantic import (
     BaseModel,
     ConfigDict,
+    computed_field,
     field_serializer,
     field_validator,
     model_validator,
 )
 
-from mcr_meeting.app.models import Meeting, MeetingPlatforms, MeetingStatus
+from mcr_meeting.app.models import (
+    DeliverableStatus,
+    DeliverableType,
+    Meeting,
+    MeetingPlatforms,
+    MeetingStatus,
+)
 
 
 class PaginatedMeetings(BaseModel):
@@ -370,11 +377,18 @@ def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
 
 
 class DeliverableResponse(BaseModel):
-    file_type: str
+    type: DeliverableType
+    status: DeliverableStatus
     external_url: str | None
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def file_type(self) -> DeliverableType:
+        # Legacy alias kept until the v2 frontend (Step 4) replaces the old one.
+        return self.type
 
 
 class MeetingDetailResponse(MeetingResponse):

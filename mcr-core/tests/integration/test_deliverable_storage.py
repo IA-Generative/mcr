@@ -1,4 +1,8 @@
-from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableFileType
+from mcr_meeting.app.models.deliverable_model import (
+    Deliverable,
+    DeliverableStatus,
+    DeliverableType,
+)
 from mcr_meeting.app.services.deliverable_storage_service import store_deliverable
 from mcr_meeting.app.services.redis_token_store import get_refresh_token
 from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
@@ -55,13 +59,14 @@ def test_transcription_is_uploaded_to_drive_after_completion(
         meeting_id=meeting.id,
         user_keycloak_uuid=user_uuid,
         file_bytes=b"docx-content",
-        file_type=DeliverableFileType.TRANSCRIPTION,
+        type=DeliverableType.TRANSCRIPTION,
         filename="Transcription_Test.docx",
     )
 
     deliverables = _query_deliverables(meeting.id)
     assert len(deliverables) == 1
-    assert deliverables[0].file_type == DeliverableFileType.TRANSCRIPTION
+    assert deliverables[0].type == DeliverableType.TRANSCRIPTION
+    assert deliverables[0].status == DeliverableStatus.AVAILABLE
     assert deliverables[0].external_url == "https://drive.example.com/documents/42/"
 
 
@@ -75,7 +80,7 @@ def test_transcription_upload_skipped_when_no_refresh_token(
         meeting_id=meeting.id,
         user_keycloak_uuid=str(meeting.owner.keycloak_uuid),
         file_bytes=b"docx-content",
-        file_type=DeliverableFileType.TRANSCRIPTION,
+        type=DeliverableType.TRANSCRIPTION,
     )
 
     assert len(_query_deliverables(meeting.id)) == 0
@@ -96,7 +101,7 @@ def test_refresh_token_rotation_is_persisted(
         meeting_id=meeting.id,
         user_keycloak_uuid=user_uuid,
         file_bytes=b"docx-content",
-        file_type=DeliverableFileType.TRANSCRIPTION,
+        type=DeliverableType.TRANSCRIPTION,
     )
 
     assert get_refresh_token(user_uuid) == "new-rotated-refresh-token"
@@ -116,7 +121,7 @@ def test_drive_upload_failure_does_not_raise(
         meeting_id=meeting.id,
         user_keycloak_uuid=user_uuid,
         file_bytes=b"docx-content",
-        file_type=DeliverableFileType.TRANSCRIPTION,
+        type=DeliverableType.TRANSCRIPTION,
     )
 
     assert len(_query_deliverables(meeting.id)) == 0

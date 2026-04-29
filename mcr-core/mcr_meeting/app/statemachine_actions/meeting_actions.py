@@ -10,7 +10,7 @@ from mcr_meeting.app.exceptions.exceptions import (
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus
 
-# from mcr_meeting.app.models.deliverable_model import DeliverableFileType
+# from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -124,7 +124,7 @@ def after_complete_transcription_handler(
     #         meeting_id=meeting.id,
     #         user_keycloak_uuid=str(meeting.owner.keycloak_uuid),
     #         file_bytes=docx_buffer.getvalue(),
-    #         file_type=DeliverableFileType.TRANSCRIPTION,
+    #         type=DeliverableType.TRANSCRIPTION,
     #         filename=f"Transcription_{meeting.name}.docx",
     #     )
     # except Exception:
