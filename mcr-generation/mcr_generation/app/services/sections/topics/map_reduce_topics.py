@@ -32,11 +32,14 @@ from mcr_generation.app.utils.langfuse_observability import (
     record_low_confidence_items_event,
 )
 
+langfuse_settings = LangfuseSettings()
+
 
 class MapReduceTopics:
     max_workers: int = 4
     meeting_subject: str | None
     speaker_mapping: str | None
+    _last_chunk_count: int | None = None
 
     def __init__(
         self,
@@ -119,7 +122,7 @@ class MapReduceTopics:
         if not all_topics:
             record_empty_map_phase_event(
                 section="topics",
-                chunk_count=getattr(self, "_last_chunk_count", None),
+                chunk_count=self._last_chunk_count,
             )
             return Content(topics=[], next_steps=[])
 
@@ -160,7 +163,7 @@ class MapReduceTopics:
         )
         topics = resp.topics
 
-        threshold = LangfuseSettings().LOW_CONFIDENCE_THRESHOLD
+        threshold = langfuse_settings.LOW_CONFIDENCE_THRESHOLD
         low = [
             {"topic": t.topic, "confidence": t.topic_confidence}
             for t in topics
