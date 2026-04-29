@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     def FEEDBACK_SERVICE_URL(self) -> str:
         return f"{self.CORE_SERVICE_BASE_URL}/api/feedbacks/"
 
+    @property
+    def DELIVERABLE_SERVICE_URL(self) -> str:
+        return f"{self.CORE_SERVICE_BASE_URL}/api/deliverables/"
+
     KEYCLOAK_URL: str
     KEYCLOAK_REALM: str
     KEYCLOAK_CLIENT_ID: str
