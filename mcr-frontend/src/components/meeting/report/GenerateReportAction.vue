@@ -20,6 +20,7 @@ import TranscriptionNotReadyComponent from './TranscriptionNotReady.vue';
 import ReportFormatSelection from './ReportFormatSelection.vue';
 import ReportDownload from './ReportDownload.vue';
 import ReportPending from './ReportPending.vue';
+import FailedStateComponent from './ReportFailed.vue';
 import { sanitizeFilename } from '@/utils/formatters';
 
 const props = defineProps<{
@@ -68,6 +69,8 @@ function getStateComponent(status: MeetingStatus) {
       return ReportDownload;
     case 'REPORT_PENDING':
       return ReportPending;
+    case 'REPORT_FAILED':
+      return FailedStateComponent;
     default:
       return TranscriptionNotReadyComponent;
   }

@@ -67,6 +67,7 @@ import BaseModal from '@/components/core/BaseModal.vue';
 import RoundedActionButton from '@/components/core/RoundedActionButton.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecorder } from '@/composables/use-recorder';
+import { useRecordingMonitor } from '@/composables/use-recording-monitor';
 import { useNetworkStatus } from '@/composables/use-network-status';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
@@ -86,10 +87,22 @@ const {
   resumeRecording,
   stopRecording,
   pauseRecording,
-  audioInputLevel,
 } = useRecorder();
 const { t } = useI18n();
 const toaster = useToaster();
+
+let emptyChunkToastShown = false;
+
+function handleEmptyChunk() {
+  if (emptyChunkToastShown) return;
+  emptyChunkToastShown = true;
+  toaster.addErrorMessage(t('meeting.transcription.recording.empty-chunk'));
+}
+
+const recordingMonitor = useRecordingMonitor({
+  onEmptyChunk: handleEmptyChunk,
+});
+const audioInputLevel = recordingMonitor.audioInputLevel;
 const { isOnline } = useNetworkStatus();
 const isOfflineRecordingEnabled = useFeatureFlag('offline-recording');
 const effectiveOffline = computed(() => isOfflineRecordingEnabled.value && !isOnline.value);
@@ -149,6 +162,8 @@ async function handleDataChunkEvent(e: BlobEvent) {
 }
 
 async function handleDataChunkEventCallback(e: BlobEvent) {
+  if (e.data.size === 0) return;
+
   Sentry.logger.info(
     Sentry.logger.fmt`Meeting ${props.meetingId} - chunk ${chunkCounter} - received event`,
   );
@@ -175,6 +190,26 @@ async function handleOnStopEvent() {
       );
       toaster.addErrorMessage(t('meeting.transcription.recording.upload-failed'));
       return;
+    }
+
+    const { isSilent, stats } = recordingMonitor.silenceVerdict();
+    if (isSilent) {
+      toaster.addErrorMessage(t('meeting.transcription.recording.silent-detected'));
+      Sentry.captureMessage('Silent recording detected', {
+        level: 'error',
+        tags: {
+          feature: 'recording',
+          'error.phase': 'start',
+          'meeting.id': props.meetingId,
+        },
+        contexts: {
+          silenceVerdict: {
+            maxAudioLevel: stats.maxAudioLevel,
+            silenceRatio: stats.silenceRatio,
+            sampleCount: stats.sampleCount,
+          },
+        },
+      });
     }
 
     startTranscription(props.meetingId, {
@@ -239,11 +274,28 @@ onMounted(async () => {
     uploadPendingFromIdb();
   }
 
-  await startRecording({
-    onDataAvailableHandler: (e) => handleDataChunkEvent(e),
-    onStopEventHandler: () => handleOnStopEvent(),
-    numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
-  });
+  try {
+    await startRecording({
+      onDataAvailableHandler: (e) => handleDataChunkEvent(e),
+      onStopEventHandler: () => handleOnStopEvent(),
+      onRecordingStart: (ctx) => recordingMonitor.attach({ ...ctx, meetingId: props.meetingId }),
+      numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
+    });
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: {
+        feature: 'recording',
+        'meeting.id': props.meetingId,
+      },
+      contexts: {
+        recording: {
+          already_recorded_chunks: totalAlreadyRecordedChunks,
+          'error.phase': 'start',
+        },
+      },
+    });
+    return;
+  }
 
   if (totalAlreadyRecordedChunks) {
     pauseRecording();

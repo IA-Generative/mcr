@@ -1,134 +1,73 @@
 <template>
   <div class="fr-container py-5 flex w-full flex-col gap-10">
-    <div
-      v-if="globalTranscriptionWaitingTimeGreaterThan24Hours"
-      class="fr-alert fr-alert--warning"
-    >
-      <h3 class="fr-alert__title">
-        {{ $t('meetings.waiting-time-warning-title') }}
-      </h3>
-      <p>
-        {{ $t('meetings.waiting-time-warning-description') }}
-        <span class="font-bold">{{
-          formatDurationMinutes(globalTranscriptionWaitingTime?.estimation_duration_minutes)
-        }}</span>
-      </p>
-    </div>
-
     <PageFrontMatter
-      :title="$t('meetings.table.title')"
-      :subtitle="$t('meetings.subtitle')"
+      :title="$t('meetings_v2.hero.title')"
+      :subtitle="$t('meetings_v2.hero.subtitle')"
     />
 
-    <div class="flex flex-col">
-      <TableHeaderActions v-model="search" />
-      <DsfrTable
-        title=""
-        :headers="[
-          {
-            text: t('meetings.table.columns.status'),
-            headerAttrs: { class: 'w-[25%]' },
-          },
-          {
-            text: t('meetings.table.columns.title'),
-            headerAttrs: { class: 'w-full' },
-          },
-          {
-            text: t('meetings.table.columns.date'),
-            headerAttrs: { class: 'w-[30%]' },
-          },
-          {
-            text: t('meetings.table.columns.actions'),
-            headerAttrs: { class: 'w-[30%]' },
-          },
-        ]"
-        no-caption
+    <MeetingTiles />
+  </div>
+
+  <div class="w-full bg-[--blue-france-975-75]">
+    <div class="fr-container py-5 flex w-full flex-col gap-10">
+      <PageFrontMatter
+        :title="$t('meetings_v2.table.new-title')"
+        :subtitle="$t('meetings_v2.table.new-subtitle')"
+      />
+      <DsfrAlert
+        v-if="showAlert"
+        type="info"
+        closeable
+        data-testid="alert-availability"
+        role="alertInfo"
+        @close="closeAlert"
       >
-        <TableRows
-          :is-pending="areMeetingsLoading"
-          :meetings="meetings"
-        />
-      </DsfrTable>
-      <TablePagination
-        class="self-end"
-        :current-page="currentPage"
-        :page-size="pageSize"
-        :total-pages="totalPages"
-        @on-page-change="setCurrentPage"
-        @on-page-size-change="setPageSize"
-      ></TablePagination>
+        <p>
+          {{ $t('meetings_v2.availability-alert-description.audio') }}
+          <span style="font-weight: bold">
+            {{ MAX_DELAY_TO_FETCH_AUDIO }}
+            {{ $t('meetings_v2.availability-alert-description.days') }}
+          </span>
+        </p>
+        <p>
+          {{ $t('meetings_v2.availability-alert-description.pre-warning-pre-bold') }}
+          <span style="font-weight: bold">
+            {{ MAX_DELAY_TO_FETCH_DELIVERABLE }}
+            {{ $t('meetings_v2.availability-alert-description.days') }}
+          </span>
+          {{ $t('meetings_v2.availability-alert-description.pre-warning-post-bold') }}
+          <span
+            class="fr-icon-warning-line"
+            aria-hidden="true"
+            style="color: var(--blue-france-sun-113-625)"
+          ></span>
+          {{ $t('meetings_v2.availability-alert-description.post-warning') }}
+        </p>
+      </DsfrAlert>
     </div>
+
+    <MeetingsDataTable />
   </div>
 </template>
 
-<script setup lang="ts">
-import { useI18n } from 'vue-i18n';
-import { usePagination } from '@/composables/use-pagination';
-import { useMeetings } from '@/services/meetings/use-meeting';
-import useToaster from '@/composables/use-toaster';
-import { getGlobalTranscriptionWaitingTime } from '@/services/meetings/meetings.service';
-import { useQuery } from '@tanstack/vue-query';
-import { formatDurationMinutes } from '@/utils/timeFormatting';
-import {
-  getTranscriptionQueueWarningThreshold,
-  TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL,
-} from '@/config/meeting';
+<script lang="ts" setup>
+import PageFrontMatter from '@/components/core/PageFrontMatter.vue';
+import { MAX_DELAY_TO_FETCH_AUDIO, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
+import MeetingTiles from './MeetingTiles.vue';
 
-const { t } = useI18n();
-const toaster = useToaster();
+const SESSION_KEY = 'dsfr-alert-closed';
+const showAlert = ref(true);
+const CLOSED_ALERT_VALUE = 'CLOSED_ALERT';
 
-const search = ref<string>('');
-
-const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
-  currentPage: 1,
-  pageSize: 10,
+onMounted(() => {
+  const alreadyClosed = sessionStorage.getItem(SESSION_KEY);
+  if (alreadyClosed && alreadyClosed == CLOSED_ALERT_VALUE) {
+    showAlert.value = false;
+  }
 });
 
-const { getAllMeetingsQuery } = useMeetings();
-const {
-  data: paginatedMeetings,
-  isLoading: areMeetingsLoading,
-  error: meetingsError,
-} = getAllMeetingsQuery({ search, page: currentPage, pageSize });
-
-const meetings = computed(() => paginatedMeetings.value?.data ?? []);
-const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
-
-const { data: globalTranscriptionWaitingTime } = useQuery({
-  queryKey: ['global-transcription-waiting-time'],
-  queryFn: () => getGlobalTranscriptionWaitingTime(),
-  refetchInterval: TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL,
-});
-const globalTranscriptionWaitingTimeGreaterThan24Hours = computed(() => {
-  return (
-    (globalTranscriptionWaitingTime.value?.estimation_duration_minutes ?? 0) >=
-    getTranscriptionQueueWarningThreshold()
-  );
-});
-
-watch(search, () => {
-  currentPage.value = 1;
-});
-
-watch(
-  meetingsError,
-  (error) => {
-    if (error) {
-      toaster.addErrorMessage(t('error.meetings-loading'));
-    }
-  },
-  { immediate: true },
-);
+function closeAlert() {
+  showAlert.value = false;
+  sessionStorage.setItem(SESSION_KEY, CLOSED_ALERT_VALUE);
+}
 </script>
-
-<style scoped>
-:deep(th),
-:deep(td) {
-  white-space: nowrap;
-}
-
-:deep(.fr-table > table) {
-  table-layout: fixed;
-  display: table;
-}
-</style>

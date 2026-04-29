@@ -32,6 +32,9 @@ class TestGenerateMeetingReport:
         mock_celery_producer_app.send_task.assert_called_once()
         call_args = mock_celery_producer_app.send_task.call_args
         assert call_args.kwargs["args"][2] == ReportType.DECISION_RECORD
+        assert call_args.kwargs["kwargs"] == {
+            "owner_keycloak_uuid": str(user_fixture.keycloak_uuid)
+        }
 
     def test_empty_list_triggers_validation_error(
         self,

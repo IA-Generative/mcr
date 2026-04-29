@@ -137,6 +137,11 @@ def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting
     )
 
 
+def fail_report(meeting_id: int) -> Meeting:
+    meeting = get_meeting_service(meeting_id=meeting_id)
+    return _apply_transition(meeting, MeetingEvent.FAIL_REPORT)
+
+
 def _apply_transition(  # type: ignore[explicit-any]
     meeting: Meeting,
     transition_name: MeetingEvent,
@@ -174,7 +179,7 @@ def _from_status(
     sm = cls(meeting)
 
     for st in sm.states:
-        if isinstance(st.value, str) and st.value == meeting.status.value:
+        if isinstance(st.value, str) and st.value == meeting.status:
             sm.current_state = st
             break
     else:

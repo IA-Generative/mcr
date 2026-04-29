@@ -1,5 +1,6 @@
 import sentry_sdk
 from celery import Celery
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 from mcr_generation.app.configs.settings import CelerySettings, SentrySettings
 from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks
@@ -12,6 +13,7 @@ sentry_sdk.init(
     traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
     environment=sentrySettings.ENV_MODE,
     ignore_errors=[],
+    integrations=[CeleryIntegration()],
 )
 
 celerySettings = CelerySettings()

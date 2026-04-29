@@ -164,14 +164,14 @@ describe('TableHeaderActions', () => {
       onSuccess: vi.fn(),
       onError: (error: any) => {
         if (error.response?.status === 415) {
-          mockAddErrorMessage("Désolé, ce format de fichier n'est pas encore supporté par FCR.");
+          mockAddErrorMessage("Désolé, ce format de fichier n'est pas encore supporté par MCR.");
         }
       },
     });
 
     // Assert
     expect(mockAddErrorMessage).toHaveBeenCalledWith(
-      "Désolé, ce format de fichier n'est pas encore supporté par FCR.",
+      "Désolé, ce format de fichier n'est pas encore supporté par MCR.",
     );
   });
 });

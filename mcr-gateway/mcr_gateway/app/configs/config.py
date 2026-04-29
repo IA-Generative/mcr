@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     def LOOKUP_SERVICE_URL(self) -> str:
         return f"{self.CORE_SERVICE_BASE_URL}/api/lookup/"
 
+    @property
+    def FEEDBACK_SERVICE_URL(self) -> str:
+        return f"{self.CORE_SERVICE_BASE_URL}/api/feedbacks/"
+
     KEYCLOAK_URL: str
     KEYCLOAK_REALM: str
     KEYCLOAK_CLIENT_ID: str

@@ -1,12 +1,8 @@
 import { useStopwatch } from 'vue-timer-hook';
-import { AudioLevelMonitor } from '@/utils/audio-level-monitor';
 
 const currentAudioId = ref<string | undefined>('');
 const mediaRecorder = ref<MediaRecorder | undefined>(undefined);
 const TIME_BETWEEN_CHUNK_SPLIT = 60_000; // 1 minute
-
-let audioLevelMonitor: AudioLevelMonitor | undefined;
-const audioInputLevel = ref<number>(0);
 
 const stopwatchSettings = {
   offsetTimestamp: 0,
@@ -65,9 +61,15 @@ function _initMediaRecorderEvents(options: RecordingOptions) {
     options.onDataAvailableHandler != undefined ? options.onDataAvailableHandler : null;
 }
 
+export type RecordingStartContext = {
+  stream: MediaStream;
+  recorder: MediaRecorder;
+};
+
 type RecordingOptions = {
   onDataAvailableHandler?: (event: BlobEvent) => void;
   onStopEventHandler?: () => void;
+  onRecordingStart?: (ctx: RecordingStartContext) => void;
   numberOfChunkAlreadyRecorded?: number;
 };
 
@@ -77,29 +79,6 @@ function initializeStopwatchWithOffset(numberOfChunkAlreadyRecorded?: number): v
     offsetTimestamp = calculateElapsedSecondsFromChunkNumber(numberOfChunkAlreadyRecorded);
   }
   stopwatch.reset(offsetTimestamp, false);
-}
-
-function startAudioLevelMonitoring(mediaStream: MediaStream) {
-  stopAudioLevelMonitoring();
-
-  audioLevelMonitor = new AudioLevelMonitor({
-    fftSize: 256,
-    smoothingTimeConstant: 0.3,
-    decayRate: 0.05,
-    gain: 2.5,
-  });
-
-  audioLevelMonitor.start(mediaStream, (level: number) => {
-    audioInputLevel.value = level;
-  });
-}
-
-function stopAudioLevelMonitoring() {
-  if (audioLevelMonitor) {
-    audioLevelMonitor.stop();
-    audioLevelMonitor = undefined;
-  }
-  audioInputLevel.value = 0;
 }
 
 function setAudioDeviceId(id: string) {
@@ -113,7 +92,7 @@ async function startRecording(options: RecordingOptions = {}) {
   }
 
   const mediaStream = await navigator.mediaDevices.getUserMedia({
-    audio: { deviceId: { exact: currentAudioId.value } },
+    audio: { deviceId: { ideal: currentAudioId.value } },
   });
 
   mediaRecorder.value = new MediaRecorder(mediaStream, {
@@ -124,7 +103,7 @@ async function startRecording(options: RecordingOptions = {}) {
   initializeStopwatchWithOffset(options.numberOfChunkAlreadyRecorded);
   stopwatch.start();
 
-  startAudioLevelMonitoring(mediaStream);
+  options.onRecordingStart?.({ stream: mediaStream, recorder: mediaRecorder.value });
 }
 
 async function getAudioInputDevices() {
@@ -170,7 +149,6 @@ function releaseAudioResources() {
 
   mediaRecorder.value.stream.getTracks().forEach((track) => track.stop());
   mediaRecorder.value = undefined;
-  stopAudioLevelMonitoring();
 }
 
 function abortRecording() {
@@ -204,7 +182,6 @@ export function useRecorder() {
       minutes: stopwatch.minutes,
       hours: stopwatch.hours,
     },
-    audioInputLevel,
     getAudioInputDevices,
     getDefaultDeviceId,
     setAudioDeviceId,

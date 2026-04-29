@@ -22,11 +22,6 @@
       "name": "MIrAI Compte-Rendu",
       "description": "Aide à la rédaction de compte-rendu"
     },
-    "notice": {
-      "title": "Cet outil est en version bêta.",
-      "desc": "Aidez-nous à l'améliorer en remplissant ce {link}",
-      "link": "formulaire Grist"
-    },
     "logo": {
       "text1": "Ministère",
       "text2": "de l'intérieur"
@@ -135,6 +130,10 @@
           "success": "DISPONIBLE",
           "error": "ERREUR"
         }
+      },
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant"
       }
     },
     "availability-alert-description": {
@@ -213,7 +212,7 @@
         "file-size": "Le fichier est trop volumineux. Taille maximale : 200 Mo",
         "file-type": "Type de fichier non pris en charge",
         "file-invalid": "Le fichier sélectionné n'a pas pu être converti.",
-        "unsupported-format": "Désolé, ce format de fichier n'est pas encore supporté par FCR."
+        "unsupported-format": "Désolé, ce format de fichier n'est pas encore supporté par MCR."
       },
       "submit": "Importer et transcrire",
       "update": "@:common.form.update"
@@ -273,12 +272,12 @@
       },
       "bot-connecting": {
         "title": "Connexion en cours...",
-        "subtitle": "Le bot FCR Agent va rejoindre la réunion pour lancer l’enregistrement.",
+        "subtitle": "Le bot MCR Agent va rejoindre la réunion pour lancer l’enregistrement.",
         "description": "Le bot va rejoindre la réunion dans la liste des participants. Veuillez patienter quelques instants."
       },
       "bot-disconnecting": {
         "title": "Déconnexion en cours...",
-        "subtitle": "Le bot FCR Agent va se déconnecter de la réunion pour lancer la transcription.",
+        "subtitle": "Le bot MCR Agent va se déconnecter de la réunion pour lancer la transcription.",
         "description": "Le bot est en train de se déconnecter de la réunion, veuillez patienter quelques instants"
       },
       "bot-connection-failed": {
@@ -313,7 +312,9 @@
           "resume": "Reprendre",
           "start-transcription": "Lancer ma transcription"
         },
-        "upload-failed": "Certains extraits audio n'ont pas pu être envoyés. Vérifiez votre connexion et réessayez."
+        "upload-failed": "Certains extraits audio n'ont pas pu être envoyés. Vérifiez votre connexion et réessayez.",
+        "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez.",
+        "empty-chunk": "Un problème est survenu lors de la capture audio. Vérifiez votre microphone."
       },
       "transcription-failed": {
         "title": "Une erreur est survenue",
@@ -333,7 +334,7 @@
         "title": "Êtes vous sûr de vouloir terminer la transcription\u00a0?"
       },
       "modal-start": {
-        "title": "Avez-vous informé les participants de l'utilisation de l'outil FCR pour cette réunion\u00a0?",
+        "title": "Avez-vous informé les participants de l'utilisation de l'outil MCR pour cette réunion\u00a0?",
         "description": "Assurez-vous que l'organisateur a démarré la visioconférence avant de lancer l'enregistrement."
       },
       "tab": {
@@ -348,7 +349,7 @@
       "reset": "Regénérer le compte-rendu",
       "disclaimer": {
         "title": "Choisissez le format",
-        "description": "L'outil FCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
+        "description": "L'outil MCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
       },
       "type": {
         "cr1": "Relevé de décisions",
@@ -382,6 +383,11 @@
     "audio-player": {
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
+    },
+    "subtitle": {
+      "import": "Fichier importé le ",
+      "record": "Réunion en présentiel enregistrée le ",
+      "visio": "Enregistré avec {visioPlatform} le "
     },
     "visio-form": {
       "comu": {
@@ -524,6 +530,28 @@
       "must_be_email": "Ce champ doit être un email",
       "invalid": "Champ invalide",
       "required": "Champ requis"
+    }
+  },
+  "feedback": {
+    "button": {
+      "label": "Faire un retour"
+    },
+    "modal": {
+      "title": "Votre avis",
+      "body": "Cet outil vous a-t-il été utile ?"
+    },
+    "vote": {
+      "positive": "Oui",
+      "negative": "Non"
+    },
+    "comment": {
+      "label": "Commentaire (Optionnel)",
+      "placeholder": "Décrivez votre expérience..."
+    },
+    "submit": "Envoyer",
+    "success": {
+      "title": "Merci !",
+      "body": "Votre retour a bien été pris en compte."
     }
   },
   "error": {

@@ -6,6 +6,7 @@
       no-caption
       :rows="rows"
       :sortable-rows="['date', 'title']"
+      class="mb-2"
     >
       <template #header="{ key, label }">
         <div class="w-full flex gap-1 items-center">
@@ -25,13 +26,13 @@
         />
       </template>
     </DsfrDataTable>
-    <TablePagination
-      class="self-end"
-      :current-page="currentPage"
-      :page-size="pageSize"
-      :total-pages="totalPages"
-      @on-page-change="setCurrentPage"
-      @on-page-size-change="setPageSize"
+    <DsfrPagination
+      v-model:current-page="currentPageIndex"
+      class="self-center mb-6"
+      :pages="pages"
+      :prev-page-title="$t('meetings_v2.table.pagination.previous')"
+      :next-page-title="$t('meetings_v2.table.pagination.next')"
+      :trunc-limit="TRUNCATED_PAGINATION_SIZE"
     />
   </div>
 </template>
@@ -66,21 +67,34 @@ const headers = [
   },
 ];
 
-const { currentPage, pageSize, setCurrentPage, setPageSize } = usePagination({
-  currentPage: 1,
-  pageSize: 10,
-});
+const PAGE_SIZE = 10;
+const TRUNCATED_PAGINATION_SIZE = 4;
+
+const { currentPage, setCurrentPage } = usePagination({ currentPage: 1 });
 
 const { getAllMeetingsQuery } = useMeetings();
 
 const { data: paginatedMeetings, error: meetingsError } = getAllMeetingsQuery({
   search: ref(''),
   page: currentPage,
-  pageSize,
+  pageSize: ref(PAGE_SIZE),
 });
 
 const meetings = computed(() => paginatedMeetings.value?.data ?? []);
 const totalPages = computed(() => paginatedMeetings.value?.total_pages ?? 1);
+
+const currentPageIndex = computed({
+  get: () => currentPage.value - 1,
+  set: (index: number) => setCurrentPage(index + 1),
+});
+
+const pages = computed(() =>
+  Array.from({ length: totalPages.value }, (_, i) => ({
+    href: '',
+    label: String(i + 1),
+    title: `Page ${i + 1}`,
+  })),
+);
 
 const rows = computed(() =>
   meetings.value.map((meeting) => ({

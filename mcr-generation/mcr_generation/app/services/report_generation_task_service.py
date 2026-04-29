@@ -1,20 +1,27 @@
 from typing import Any
 
 import httpx
-from celery.signals import task_failure, task_success
+from celery.signals import task_failure, task_prerun, task_success
 from langfuse import observe
 from loguru import logger
 
+from mcr_generation.app.client.meeting_client import MeetingApiClient
 from mcr_generation.app.configs.settings import ApiSettings
+from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     ReportTypes,
+    extract_report_task_args,
 )
 from mcr_generation.app.services.report_generator import get_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
+from mcr_generation.app.utils.sentry_context import (
+    gather_meeting_context,
+    set_sentry_meeting_context,
+)
 
 api_settings = ApiSettings()
 
@@ -25,6 +32,7 @@ def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
     report_type: str = ReportTypes.DECISION_RECORD.value,
+    owner_keycloak_uuid: str | None = None,
 ) -> BaseReport:
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
@@ -32,6 +40,17 @@ def generate_report_from_docx(
     report_type_enum = ReportTypes(report_type)
     generator = get_generator(report_type_enum)
     return generator.generate(chunks)
+
+
+@task_prerun.connect(sender=generate_report_from_docx)
+def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
+    task_args = extract_report_task_args(kwargs)
+
+    client = MeetingApiClient(task_args.owner_keycloak_uuid)
+    meeting_context = gather_meeting_context(
+        task_args.meeting_id, task_args.owner_keycloak_uuid, client
+    )
+    set_sentry_meeting_context(meeting_context)
 
 
 @task_success.connect
@@ -55,16 +74,42 @@ def generate_report_from_docx_success(
 
     payload_dict = result.model_dump()
 
-    with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
-        response = client.post(
-            f"/meetings/{meeting_id}/report/success",
-            json=payload_dict,
-        )
-        response.raise_for_status()
+    try:
+        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
+            response = client.post(
+                f"/meetings/{meeting_id}/report/success",
+                json=payload_dict,
+            )
+            response.raise_for_status()
+    except Exception as e:
+        raise ReportCallbackError(f"Failed to POST report: {e}") from e
 
 
 @task_failure.connect
 def set_meeting_failed_status_on_error(
     sender: Any | None = None, **kwargs: Any
 ) -> None:
-    pass
+    meeting_id: int | None = None
+    args = kwargs.get("args")
+    if args:
+        meeting_id = args[0]
+    elif sender is not None and hasattr(sender, "request") and sender.request.args:
+        meeting_id = sender.request.args[0]
+
+    if meeting_id is None:
+        logger.error("Unable to extract meeting_id from signal args")
+        return
+
+    logger.error(
+        "Meeting {} updated to REPORT_FAILED",
+        meeting_id,
+    )
+
+    try:
+        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
+            response = client.post(f"/meetings/{meeting_id}/report/failure")
+            response.raise_for_status()
+    except Exception as e:
+        raise ReportCallbackError(
+            f"Failed to POST report generation failure: {e}"
+        ) from e

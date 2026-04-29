@@ -35,23 +35,6 @@
       />
     </template>
   </DsfrHeader>
-  <DsfrNotice :title="$t('header.notice.title')">
-    <template #desc>
-      <i18n-t
-        keypath="header.notice.desc"
-        tag="p"
-      >
-        <template #link>
-          <a
-            :href="URL_FORM_FEEDBACK"
-            target="_blank"
-          >
-            {{ $t('header.notice.link') }}
-          </a>
-        </template>
-      </i18n-t>
-    </template>
-  </DsfrNotice>
 </template>
 
 <script setup lang="ts">
@@ -101,9 +84,6 @@ const quickLinks = computed<DsfrHeaderProps['quickLinks']>(() => {
 function redirectTo(url: string): void {
   window.open(url, '_blank', 'noopener, noreferrer');
 }
-
-const URL_FORM_FEEDBACK =
-  'https://grist.numerique.gouv.fr/o/miraigrist/forms/vvANEpRC3y67QtutV6JnJC/223';
 </script>
 
 <style scoped>
