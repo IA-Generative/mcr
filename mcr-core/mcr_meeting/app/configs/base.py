@@ -314,6 +314,7 @@ class ApiSettings(BaseSettings):
     TRANSCRIPTION_API_PREFIX: str = "/api/transcription"
     LOOKUP_API_PREFIX: str = "/api/lookup"
     FEEDBACK_API_PREFIX: str = "/api/feedbacks"
+    DELIVERABLE_API_PREFIX: str = "/api/deliverables"
 
 
 class CelerySettings(BaseSettings):

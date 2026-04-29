@@ -8,6 +8,12 @@ from mcr_meeting.app.api.feedback_router import router as feedback_router
 from mcr_meeting.app.api.lookup_router import router as lookup_router
 from mcr_meeting.app.api.meeting.capture_bot_router import router as capture_bot_router
 from mcr_meeting.app.api.meeting.capture_router import router as capture_router
+from mcr_meeting.app.api.meeting.deliverable_router import (
+    deliverables_router,
+)
+from mcr_meeting.app.api.meeting.deliverable_router import (
+    meeting_scoped_router as deliverable_meeting_router,
+)
 from mcr_meeting.app.api.meeting.meeting_multipart_router import (
     router as meeting_multipart_router,
 )
@@ -62,6 +68,8 @@ app.include_router(report_generation_router)
 app.include_router(feature_flag_router)
 app.include_router(meeting_multipart_router)
 app.include_router(feedback_router)
+app.include_router(deliverable_meeting_router)
+app.include_router(deliverables_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app")
