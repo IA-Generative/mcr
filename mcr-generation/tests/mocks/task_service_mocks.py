@@ -35,24 +35,13 @@ def mock_get_generator(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-
 
 
 @pytest.fixture
-def mock_httpx_client(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    """Context-manager-capable httpx.Client replacement.
+def mock_core_api_client(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
+    """Replaces CoreApiClient at the service module's import site.
 
-    Returns the client *instance* (already entered). Test code configures
-    instance.post.return_value / side_effect directly.
+    Tests assert against the returned instance's mark_* methods.
     """
     instance = MagicMock()
-    instance.__enter__ = MagicMock(return_value=instance)
-    instance.__exit__ = MagicMock(return_value=False)
-    client_cls = MagicMock(return_value=instance)
-    monkeypatch.setattr(f"{MODULE}.httpx.Client", client_cls)
-    instance.cls = client_cls
+    cls = MagicMock(return_value=instance)
+    monkeypatch.setattr(f"{MODULE}.CoreApiClient", cls)
+    instance.cls = cls
     return instance
-
-
-@pytest.fixture
-def mock_api_settings(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    settings = MagicMock()
-    settings.MCR_CORE_API_URL = "http://mcr-core/api"
-    monkeypatch.setattr(f"{MODULE}.api_settings", settings)
-    return settings

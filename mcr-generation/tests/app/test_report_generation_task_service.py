@@ -6,11 +6,9 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import httpx
 import pytest
 from pytest import fixture
 
-from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import (
     DecisionRecord,
     Header,
@@ -99,136 +97,71 @@ class TestGenerateReportFromDocx:
 
 
 class TestGenerateReportFromDocxSuccess:
-    def test_logs_error_and_returns_when_args_empty(
+    def test_returns_early_when_args_empty(
         self,
         decision_record: DecisionRecord,
-        mock_httpx_client: MagicMock,
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When sender has no request args, the function returns early without calling httpx."""
         sender = MagicMock()
         sender.request.args = []
 
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
-        mock_httpx_client.cls.assert_not_called()
+        mock_core_api_client.cls.assert_not_called()
 
-    def test_posts_report_to_correct_endpoint(
+    def test_calls_mark_report_success(
         self,
         decision_record: DecisionRecord,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When args contain a meeting_id, the report payload is POSTed to the right URL."""
         sender = MagicMock()
         sender.request.args = [42]
 
-        expected_payload = {
-            "next_steps": decision_record.next_steps,
-            "topics_with_decision": [
-                topic.model_dump() for topic in decision_record.topics_with_decision
-            ],
-            "header": {
-                "title": decision_record.header.title,
-                "objective": decision_record.header.objective,
-                "next_meeting": decision_record.header.next_meeting,
-                "participants": [
-                    p.model_dump(exclude={"association_justification"})
-                    for p in decision_record.header.participants
-                ],
-            },
-        }
-
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
-        mock_httpx_client.post.assert_called_once_with(
-            "/meetings/42/report/success",
-            json=expected_payload,
+        mock_core_api_client.mark_report_success.assert_called_once_with(
+            meeting_id=42, report=decision_record
         )
-        mock_httpx_client.post.return_value.raise_for_status.assert_called_once()
-
-    def test_raises_on_http_error(
-        self,
-        decision_record: DecisionRecord,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
-    ) -> None:
-        """An HTTPStatusError from raise_for_status() is wrapped in ReportCallbackError."""
-        sender = MagicMock()
-        sender.request.args = [1]
-        mock_httpx_client.post.return_value.raise_for_status.side_effect = (
-            httpx.HTTPStatusError(
-                "500 Internal Server Error",
-                request=MagicMock(),
-                response=MagicMock(),
-            )
-        )
-
-        with pytest.raises(ReportCallbackError):
-            generate_report_from_docx_success(sender=sender, result=decision_record)
 
 
 class TestSetMeetingFailedStatusOnError:
-    def test_posts_failure_to_correct_endpoint(
+    def test_calls_mark_report_failure(
         self,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When kwargs contain args, meeting_id is extracted and POSTed to the failure endpoint."""
         set_meeting_failed_status_on_error(
             sender=MagicMock(),
             args=[42, "transcription.docx", "DECISION_RECORD"],
             exception=Exception("LLM timeout"),
         )
 
-        mock_httpx_client.post.assert_called_once_with("/meetings/42/report/failure")
-        mock_httpx_client.post.return_value.raise_for_status.assert_called_once()
+        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=42)
 
     def test_falls_back_to_sender_request_args(
         self,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When kwargs has no args, meeting_id is extracted from sender.request.args."""
         sender = MagicMock()
         sender.request.args = [7]
 
         set_meeting_failed_status_on_error(sender=sender)
 
-        mock_httpx_client.post.assert_called_once_with("/meetings/7/report/failure")
+        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=7)
 
     def test_returns_early_when_no_meeting_id(
         self,
-        mock_httpx_client: MagicMock,
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When neither kwargs nor sender provide args, logs error and returns without POST."""
         sender = MagicMock(spec=[])  # no 'request' attribute
 
         set_meeting_failed_status_on_error(sender=sender)
 
-        mock_httpx_client.cls.assert_not_called()
+        mock_core_api_client.cls.assert_not_called()
 
     def test_returns_early_when_no_sender_and_no_args(
         self,
-        mock_httpx_client: MagicMock,
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When called with no sender and no args, logs error and returns without POST."""
         set_meeting_failed_status_on_error()
 
-        mock_httpx_client.cls.assert_not_called()
-
-    def test_raises_on_http_error(
-        self,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
-    ) -> None:
-        """An HTTPStatusError from raise_for_status() is wrapped in ReportCallbackError."""
-        mock_httpx_client.post.return_value.raise_for_status.side_effect = (
-            httpx.HTTPStatusError(
-                "500 Internal Server Error",
-                request=MagicMock(),
-                response=MagicMock(),
-            )
-        )
-
-        with pytest.raises(ReportCallbackError):
-            set_meeting_failed_status_on_error(sender=MagicMock(), args=[1])
+        mock_core_api_client.cls.assert_not_called()

@@ -1,13 +1,12 @@
 from typing import Any
 
-import httpx
 from celery.signals import task_failure, task_prerun, task_success
 from langfuse import observe
 from loguru import logger
 
+from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
-from mcr_generation.app.configs.settings import ApiSettings, LangfuseSettings
-from mcr_generation.app.exceptions.exceptions import ReportCallbackError
+from mcr_generation.app.configs.settings import LangfuseSettings
 from mcr_generation.app.schemas.base import BaseReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -27,7 +26,6 @@ from mcr_generation.app.utils.sentry_context import (
     set_sentry_meeting_context,
 )
 
-api_settings = ApiSettings()
 langfuse_settings = LangfuseSettings()
 
 
@@ -74,13 +72,7 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 def generate_report_from_docx_success(
     sender: Any, result: BaseReport, **kwargs: Any
 ) -> None:
-    """Handle successful report generation by sending results to mcr-core API.
-
-    Args:
-        sender: Celery task that triggered this signal
-        result: Generated report with participants and decisions
-        **kwargs: Additional keyword arguments from the signal
-    """
+    """Handle successful report generation by sending results to mcr-core API."""
     logger.info("Report generation success signal received.")
 
     if not sender.request.args:
@@ -89,17 +81,7 @@ def generate_report_from_docx_success(
 
     meeting_id = sender.request.args[0]
 
-    payload_dict = result.model_dump()
-
-    try:
-        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
-            response = client.post(
-                f"/meetings/{meeting_id}/report/success",
-                json=payload_dict,
-            )
-            response.raise_for_status()
-    except Exception as e:
-        raise ReportCallbackError(f"Failed to POST report: {e}") from e
+    CoreApiClient().mark_report_success(meeting_id=meeting_id, report=result)
 
 
 @task_failure.connect
@@ -117,16 +99,6 @@ def set_meeting_failed_status_on_error(
         logger.error("Unable to extract meeting_id from signal args")
         return
 
-    logger.error(
-        "Meeting {} updated to REPORT_FAILED",
-        meeting_id,
-    )
+    logger.error("Meeting {} updated to REPORT_FAILED", meeting_id)
 
-    try:
-        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
-            response = client.post(f"/meetings/{meeting_id}/report/failure")
-            response.raise_for_status()
-    except Exception as e:
-        raise ReportCallbackError(
-            f"Failed to POST report generation failure: {e}"
-        ) from e
+    CoreApiClient().mark_report_failure(meeting_id=meeting_id)
