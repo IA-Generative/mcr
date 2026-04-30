@@ -6,10 +6,10 @@
         role="presentation"
         class="w-22 h-22 mb-6"
       />
-      <p class="text-xl font-semibold mb-4 text-[var(--blue-france-sun-113-625)]">
+      <p class="text-xl font-semibold mb-4 text-blue-france-sun">
         {{ $t('meeting.transcription.import-failed.text') }}
       </p>
-      <p class="mb-8 text-[var(--default-text-grey)]">
+      <p class="mb-8 text-grey-625">
         {{ $t('meeting.transcription.import-failed.description') }}
       </p>
     </div>

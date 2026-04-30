@@ -127,19 +127,4 @@ function leftPad(value: number): string {
 :deep(.recording-actions .fr-btn::before) {
   --icon-size: 1.5rem;
 }
-
-:deep(.fr-tag.status-badge--recording),
-:deep(.fr-tag.status-badge--paused) {
-  border-radius: 0.25rem;
-}
-
-:deep(.fr-tag.status-badge--recording) {
-  background: var(--warning-950-100);
-  color: var(--warning-425-625);
-}
-
-:deep(.fr-tag.status-badge--paused) {
-  background: var(--info-950-100);
-  color: var(--info-425-625);
-}
 </style>

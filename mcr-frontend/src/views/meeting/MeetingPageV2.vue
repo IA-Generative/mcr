@@ -36,7 +36,7 @@
       </div>
     </div>
 
-    <div class="content-container flex-1">
+    <div class="bg-beige-gris-galet-950 flex-1">
       <div class="fr-container py-5 flex flex-col h-full">
         <div v-if="meeting">
           <MeetingPageAlert />
@@ -129,9 +129,3 @@ function openDeleteMeetingModal() {
   _openEdit();
 }
 </script>
-
-<style scoped>
-.content-container {
-  background-color: var(--beige-gris-galet-950-100);
-}
-</style>

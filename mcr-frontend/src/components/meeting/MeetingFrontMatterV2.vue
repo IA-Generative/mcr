@@ -6,11 +6,11 @@
         { text: meeting.name, to: `/meetings/${meeting.id}` },
       ]"
     />
-    <h1 class="fr-text text-4xl font-bold text truncate-title">{{ meeting.name }}</h1>
+    <h1 class="fr-text text-4xl font-bold text-grey-200 truncate-title">{{ meeting.name }}</h1>
     <i18n-t
       keypath="meeting-v2.details"
       tag="div"
-      class="text"
+      class="text-grey-200"
     >
       <template #subtitle>
         <span>{{ getSubtitleFromPlatformName(meeting.name_platform) }}</span>
@@ -58,10 +58,6 @@ function getSubtitleFromPlatformName(namePlatform: AllMeetingPlatforms): string 
 </script>
 
 <style scoped>
-.text {
-  color: var(--grey-200-850);
-}
-
 .truncate-title {
   max-width: 50vw;
   overflow: hidden;

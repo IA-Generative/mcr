@@ -5,7 +5,7 @@
   >
     <div
       class="rounded-sm px-2 flex items-center gap-1"
-      :class="isRecording ? 'status-badge--recording' : 'status-badge--paused'"
+      :class="isRecording ? 'bg-warning-950 text-warning-425' : 'bg-info-950 text-info-425'"
     >
       <VIcon
         name="ri-circle-fill"
@@ -306,15 +306,3 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadHandler);
 });
 </script>
-
-<style scoped>
-.status-badge--recording {
-  background: var(--warning-950-100);
-  color: var(--warning-425-625);
-}
-
-.status-badge--paused {
-  background: var(--info-950-100);
-  color: var(--info-425-625);
-}
-</style>

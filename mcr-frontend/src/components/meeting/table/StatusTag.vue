@@ -21,28 +21,28 @@ interface TagMeta {
 export function getTagMeta(status: DeliverableStatus | null): TagMeta | null {
   if (status === 'PENDING') {
     return {
-      class: 'pending',
+      class: 'bg-info-950 text-info-425',
       label: t('meetings_v2.table.columns.status.pending'),
       icon: 'fr-icon-info-fill',
     };
   }
   if (status === 'IN_PROGRESS') {
     return {
-      class: 'info',
+      class: 'bg-yellow-tournesol-950 text-yellow-tournesol-sun',
       label: t('meetings_v2.table.columns.status.info'),
       icon: 'fr-icon-flashlight-fill',
     };
   }
   if (status === 'DONE') {
     return {
-      class: 'success',
+      class: 'bg-success-950 text-success-425',
       label: t('meetings_v2.table.columns.status.success'),
       icon: 'fr-icon-success-fill',
     };
   }
   if (status === 'FAILED') {
     return {
-      class: 'error',
+      class: 'bg-error-950 text-error-425',
       label: t('meetings_v2.table.columns.status.error'),
       icon: 'fr-icon-error-fill',
     };
@@ -58,25 +58,3 @@ const props = defineProps<{
 
 const tagMeta = computed(() => getTagMeta(props.status));
 </script>
-
-<style>
-.fr-tag.pending {
-  color: var(--info-425-625);
-  background-color: var(--info-950-100);
-}
-
-.fr-tag.info {
-  background-color: var(--yellow-tournesol-950-100);
-  color: var(--yellow-tournesol-sun-407-moon-922);
-}
-
-.fr-tag.success {
-  color: var(--success-425-625);
-  background-color: var(--success-950-100);
-}
-
-.fr-tag.error {
-  color: var(--error-425-625);
-  background-color: var(--error-950-100);
-}
-</style>

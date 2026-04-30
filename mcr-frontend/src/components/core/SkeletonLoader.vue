@@ -1,7 +1,7 @@
 <template>
   <div class="skeleton-loader">
     <div
-      class="skeleton"
+      class="skeleton bg-grey-900"
       :style="{
         width: width + 'px',
         height: height + 'px',
@@ -36,7 +36,6 @@ defineProps({
 }
 
 .skeleton {
-  background-color: var(--grey-900-175);
   position: relative;
   overflow: hidden;
 }
