@@ -10,8 +10,8 @@ module.exports = {
           200:  'var(--grey-200-850)',
           625:  'var(--grey-625-425)',
           900:  'var(--grey-900-175)',
-          950:  { DEFAULT: 'var(--grey-950-100)' },
-          1000: { DEFAULT: 'var(--grey-1000-50)' },
+          950:  'var(--grey-950-100)',
+          1000: 'var(--grey-1000-50)',
         },
         'blue-france': {
           sun: {
@@ -40,20 +40,20 @@ module.exports = {
         primary: 'var(--background-action-high-blue-france)',
         'background-contrast-grey': 'var(--background-contrast-grey)',
         info: {
-          425: { DEFAULT: 'var(--info-425-625)' },
-          950: { DEFAULT: 'var(--info-950-100)' },
+          425: 'var(--info-425-625)',
+          950: 'var(--info-950-100)',
         },
         success: {
-          425: { DEFAULT: 'var(--success-425-625)' },
-          950: { DEFAULT: 'var(--success-950-100)' },
+          425: 'var(--success-425-625)',
+          950: 'var(--success-950-100)',
         },
         warning: {
-          425: { DEFAULT: 'var(--warning-425-625)' },
-          950: { DEFAULT: 'var(--warning-950-100)' },
+          425: 'var(--warning-425-625)',
+          950: 'var(--warning-950-100)',
         },
         error: {
-          425: { DEFAULT: 'var(--error-425-625)' },
-          950: { DEFAULT: 'var(--error-950-100)' },
+          425: 'var(--error-425-625)',
+          950: 'var(--error-950-100)',
         },
         'yellow-tournesol': {
           sun: 'var(--yellow-tournesol-sun-407-moon-922)',
