@@ -11,6 +11,7 @@ export enum API_PATHS {
   AUTH = 'auth',
   LOOKUP = 'lookup',
   FEEDBACKS = 'feedbacks',
+  DELIVERABLES = 'deliverables',
 }
 
 const HttpService = axios.create({

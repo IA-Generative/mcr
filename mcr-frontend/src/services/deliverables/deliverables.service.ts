@@ -1,3 +1,5 @@
+import type { AxiosResponse } from 'axios';
+import HttpService, { API_PATHS } from '../http/http.service';
 import type { MeetingStatus } from '../meetings/meetings.types';
 import {
   meetingStatusForReportDone,
@@ -8,8 +10,31 @@ import {
   meetingStatusForTranscriptionFailed,
   meetingStatusForTranscriptionInProgress,
   meetingStatusForTranscriptionPending,
+  type DeliverableCreateRequest,
+  type DeliverableListResponse,
   type DeliverableStatus,
 } from './deliverables.types';
+
+export async function getMeetingDeliverables(meetingId: number): Promise<DeliverableListResponse> {
+  const { data } = await HttpService.get<DeliverableListResponse>(
+    `${API_PATHS.MEETINGS}/${meetingId}/${API_PATHS.DELIVERABLES}`,
+  );
+  return data;
+}
+
+export async function createDeliverable(payload: DeliverableCreateRequest): Promise<void> {
+  await HttpService.post(`${API_PATHS.DELIVERABLES}`, payload);
+}
+
+export async function deleteDeliverable(deliverableId: number): Promise<void> {
+  await HttpService.delete(`${API_PATHS.DELIVERABLES}/${deliverableId}`);
+}
+
+export async function downloadDeliverableFile(deliverableId: number): Promise<AxiosResponse> {
+  return HttpService.get(`${API_PATHS.DELIVERABLES}/${deliverableId}/file`, {
+    responseType: 'blob' as const,
+  });
+}
 
 export function getTranscriptionStatus(status: MeetingStatus): DeliverableStatus | null {
   if (meetingStatusForTranscriptionPending.includes(status)) {

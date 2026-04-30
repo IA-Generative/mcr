@@ -29,4 +29,5 @@ export enum QUERY_KEYS {
   USERS = 'users',
   MEMBERS = 'members',
   TRANSCRIPTION_WAIT_TIME = 'transcription-wait-time',
+  DELIVERABLES = 'deliverables',
 }
