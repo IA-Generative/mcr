@@ -60,7 +60,7 @@ def mock_generate_decision_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[
 
 
 class TestRequestDeliverable:
-    def test_creates_pending_row_and_dispatches_legacy_celery(
+    def test_creates_pending_row_and_dispatches_celery_with_deliverable_id(
         self,
         mock_celery_producer_app: MagicMock,
         db_session: Session,
@@ -89,7 +89,8 @@ class TestRequestDeliverable:
         assert call.kwargs["args"][0] == meeting.id
         assert call.kwargs["args"][2] == "DECISION_RECORD"
         assert call.kwargs["kwargs"] == {
-            "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid)
+            "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
+            "deliverable_id": deliverable.id,
         }
 
     def test_rejects_transcription_type(

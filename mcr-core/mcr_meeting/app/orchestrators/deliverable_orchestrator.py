@@ -91,6 +91,7 @@ def request_deliverable(
         expected_target_status=MeetingStatus.REPORT_PENDING,
         user_keycloak_uuid=user_keycloak_uuid,
         report_type=report_type,
+        deliverable_id=deliverable.id,
     )
 
     return deliverable
