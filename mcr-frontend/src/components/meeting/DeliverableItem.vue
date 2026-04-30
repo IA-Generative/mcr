@@ -1,5 +1,9 @@
 <template>
-  <div class="deliverable-item">
+  <button
+    class="deliverable-item"
+    :disabled="status !== 'AVAILABLE'"
+    @click="emit('download', deliverableId)"
+  >
     <StatusTag :status="status" />
 
     <p class="deliverable-item__title">{{ title }}</p>
@@ -9,30 +13,44 @@
         {{ fileFormat }}
         <template v-if="fileSize"> - {{ fileSize }}</template>
       </span>
-      <button class="deliverable-item__download fr-icon-download-fill" />
+      <span class="deliverable-item__download-icon fr-icon-download-line" />
     </div>
-  </div>
+  </button>
 </template>
 
 <script setup lang="ts">
 import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
 
 defineProps<{
+  deliverableId: number;
   title: string;
   status: DeliverableStatus;
   fileFormat: string;
   fileSize?: string;
 }>();
+
+const emit = defineEmits<{ download: [id: number] }>();
 </script>
 
 <style scoped>
 .deliverable-item {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  border: 1px solid #dddddd;
+  border-bottom: 3px solid var(--blue-france-sun-113-625);
   padding: 0.75rem 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  border-bottom: 3px solid var(--blue-france-sun-113-625);
   background-color: var(--grey-1000-50);
+  width: calc(50% - 0.25rem);
+  cursor: pointer;
+}
+
+.deliverable-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .deliverable-item__title {
@@ -53,12 +71,8 @@ defineProps<{
   font-size: 0.75rem;
 }
 
-.deliverable-item__download {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-default-grey);
+.deliverable-item__download-icon {
+  color: var(--blue-france-sun-113-625);
   font-size: 1rem;
-  padding: 0;
 }
 </style>
