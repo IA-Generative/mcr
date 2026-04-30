@@ -1,4 +1,5 @@
-"""HTTP-level unit tests for CoreApiClient."""
+"""HTTP-level unit tests for CoreApiClient: error wrapping and 404 swallow on
+deliverable callbacks (mid-flight deletion case)."""
 
 from typing import Any
 from unittest.mock import MagicMock
@@ -137,3 +138,83 @@ class TestMarkReportFailure:
 
         with pytest.raises(ReportCallbackError):
             core_client.mark_report_failure(meeting_id=42)
+
+
+class TestMarkDeliverableSuccess:
+    def test_posts_wrapped_payload(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        decision_record: DecisionRecord,
+    ) -> None:
+        core_client.mark_deliverable_success(deliverable_id=7, report=decision_record)
+
+        mock_httpx_client.post.assert_called_once()
+        call = mock_httpx_client.post.call_args
+        assert call.args[0] == "/deliverables/7/success"
+        assert call.kwargs["json"] == {
+            "external_url": None,
+            "report_response": _expected_payload(decision_record),
+        }
+
+    def test_swallows_404(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        decision_record: DecisionRecord,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            404
+        )
+
+        core_client.mark_deliverable_success(deliverable_id=7, report=decision_record)
+
+    def test_wraps_non_404_http_error(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        decision_record: DecisionRecord,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            500
+        )
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_success(
+                deliverable_id=7, report=decision_record
+            )
+
+
+class TestMarkDeliverableFailure:
+    def test_posts_to_deliverable_failure_endpoint(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        core_client.mark_deliverable_failure(deliverable_id=7)
+
+        mock_httpx_client.post.assert_called_once()
+        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/failure"
+
+    def test_swallows_404(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            404
+        )
+
+        core_client.mark_deliverable_failure(deliverable_id=7)
+
+    def test_wraps_non_404_http_error(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            500
+        )
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_failure(deliverable_id=7)
