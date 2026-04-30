@@ -36,6 +36,7 @@ def generate_report_from_docx(
     transcription_object_filename: str,
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
+    deliverable_id: int | None = None,
 ) -> BaseReport:
     record_report_trace_context(
         meeting_id=meeting_id,
@@ -72,33 +73,42 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 def generate_report_from_docx_success(
     sender: Any, result: BaseReport, **kwargs: Any
 ) -> None:
-    """Handle successful report generation by sending results to mcr-core API."""
+    """Handle successful report generation by sending results to mcr-core API.
+
+    Routes to the deliverable-centric callback when `deliverable_id` is in the
+    task kwargs, falling back to the legacy report callback otherwise.
+    """
     logger.info("Report generation success signal received.")
 
-    if not sender.request.args:
+    try:
+        task_args = extract_report_task_args(sender=sender)
+    except ValueError:
         logger.error("Cannot extract meeting_id: request args are empty")
         return
 
-    meeting_id = sender.request.args[0]
-
-    CoreApiClient().mark_report_success(meeting_id=meeting_id, report=result)
+    client = CoreApiClient()
+    if task_args.deliverable_id is not None:
+        client.mark_deliverable_success(
+            deliverable_id=task_args.deliverable_id, report=result
+        )
+    else:
+        client.mark_report_success(meeting_id=task_args.meeting_id, report=result)
 
 
 @task_failure.connect
 def set_meeting_failed_status_on_error(
     sender: Any | None = None, **kwargs: Any
 ) -> None:
-    meeting_id: int | None = None
-    args = kwargs.get("args")
-    if args:
-        meeting_id = args[0]
-    elif sender is not None and hasattr(sender, "request") and sender.request.args:
-        meeting_id = sender.request.args[0]
-
-    if meeting_id is None:
+    try:
+        task_args = extract_report_task_args(kwargs, sender=sender)
+    except ValueError:
         logger.error("Unable to extract meeting_id from signal args")
         return
 
-    logger.error("Meeting {} updated to REPORT_FAILED", meeting_id)
+    logger.error("Meeting {} updated to REPORT_FAILED", task_args.meeting_id)
 
-    CoreApiClient().mark_report_failure(meeting_id=meeting_id)
+    client = CoreApiClient()
+    if task_args.deliverable_id is not None:
+        client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)
+    else:
+        client.mark_report_failure(meeting_id=task_args.meeting_id)
