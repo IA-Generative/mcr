@@ -45,6 +45,12 @@
         @click="() => onClickStop()"
       />
     </div>
+    <a
+      href=""
+      class="fr-link fr-link--sm fr-link--icon-left fr-icon-question-line self-end mr-4"
+      @click.prevent="openAdvicesModal"
+      >{{ $t('meeting-v2.recording.advices.title') }}</a
+    >
   </div>
   <div
     v-else
@@ -63,6 +69,7 @@
 import BaseModal from '@/components/core/BaseModal.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecordingSession } from '@/composables/use-recording-session';
+import LiveMeetingAdvicesModal from '@/components/meeting/modals/LiveMeetingAdvicesModal.vue';
 import { useLeaveGuard } from '@/composables/use-leave-guard';
 import { useModal } from 'vue-final-modal';
 import { t } from '@/plugins/i18n';
@@ -91,6 +98,10 @@ const { open: openConfirmStopModal } = useModal({
     ctaLabel: t('meeting.transcription.recording.confirm-modal.button'),
     onSuccess: () => stopRecording(),
   },
+});
+
+const { open: openAdvicesModal } = useModal({
+  component: LiveMeetingAdvicesModal,
 });
 
 function onClickStop() {

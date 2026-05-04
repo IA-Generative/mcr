@@ -459,6 +459,40 @@
         "pause": "Mettre en pause",
         "resume": "Reprendre",
         "stop": "Terminer l'enregistrement"
+      },
+      "advices": {
+        "title": "Voir les conseils pour l’enregistrements en présentiel",
+        "modal": {
+          "title": "J’enregistre une réunion en présentiel",
+          "section-1": {
+            "title": "1. Pour garantir une bonne qualité de transcription",
+            "advice-1": {
+              "bold": "Activez votre micro et placez-le au centre de la table",
+              "text": "{bold}, à proximité des intervenants."
+            },
+            "advice-2": {
+              "bold": "Limitez les bruits de fond",
+              "text": "{bold} (fenêtres, claviers, discussions croisées)."
+            },
+            "advice-3": {
+              "bold": "Parlez clairement, évitez les sigles",
+              "text": "{bold} ou expliquez-les."
+            }
+          },
+          "section-2": {
+            "title": "2. Prévenir les participants de votre réunion",
+            "advice-1": {
+              "bold": "Informez les participants",
+              "text": "{bold} de l’utilisation de MIrAI Compte-Rendu pour cette réunion. Vous avez besoin du consentement de tous les participants pour lancer l’enregistrement."
+            },
+            "advice-2": {
+              "bold": "Assurez-vous que votre réunion ne contiendra pas de données personnelles, sensibles, confidentielles ou à diffusion restreinte.",
+              "text": "{bold} Vous pouvez mettre l’enregistrement en pause si besoin. Plus de détails dans les CGU MIrAI."
+            }
+          },
+          "confirm": "J’ai compris",
+          "cgu": "CGU MIrAI"
+        }
       }
     }
   },
