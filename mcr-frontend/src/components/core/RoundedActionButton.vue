@@ -11,7 +11,7 @@
     />
     <span
       class="font-bold text-center flex-1 flex items-center"
-      :class="disabled ? 'text-[var(--grey-625-425)]' : 'text-[var(--blue-france-sun-113-625)]'"
+      :class="disabled ? 'text-grey-625' : 'text-blue-france-sun'"
     >
       <slot />
     </span>

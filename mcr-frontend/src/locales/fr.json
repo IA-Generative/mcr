@@ -448,6 +448,18 @@
         "url_hint": "Exemple:https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/000/creator/000/hash/0000000000000000000000000000000000000000"
       },
       "visio-tools": "Outil de visioconférence*"
+    },
+    "recording": {
+      "title": "Enregistrement",
+      "status": {
+        "in-progress": "En cours d'enregistrement",
+        "paused": "Enregistrement en pause"
+      },
+      "buttons": {
+        "pause": "Mettre en pause",
+        "resume": "Reprendre",
+        "stop": "Terminer l'enregistrement"
+      }
     }
   },
   "members": {

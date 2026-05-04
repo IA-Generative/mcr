@@ -8,7 +8,7 @@
     <MeetingTiles />
   </div>
 
-  <div class="w-full bg-[--blue-france-975-75]">
+  <div class="w-full bg-blue-france-975">
     <div class="fr-container py-5 flex w-full flex-col gap-10">
       <PageFrontMatter
         :title="$t('meetings_v2.table.new-title')"

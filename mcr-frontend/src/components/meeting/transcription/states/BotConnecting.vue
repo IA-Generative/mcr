@@ -9,13 +9,13 @@
     </div>
 
     <div class="text-center">
-      <h3 class="text-xl font-semibold mb-6 text-[var(--blue-france-sun-113-625)]">
+      <h3 class="text-xl font-semibold mb-6 text-blue-france-sun">
         {{ $t('meeting.transcription.bot-connecting.title') }}
       </h3>
-      <h4 class="text-lg font-semibold mb-4 text-[var(--default-text-grey)]">
+      <h4 class="text-lg font-semibold mb-4 text-grey-625">
         {{ $t('meeting.transcription.bot-connecting.subtitle') }}
       </h4>
-      <p class="text-[var(--default-text-grey)]">
+      <p class="text-grey-625">
         {{ $t('meeting.transcription.bot-connecting.description') }}
       </p>
     </div>

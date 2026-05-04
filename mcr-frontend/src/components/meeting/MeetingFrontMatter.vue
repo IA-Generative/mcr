@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col">
     <h1 class="fr-text--lg m-0">{{ name }}</h1>
-    <h2 class="fr-text--sm text-body-grey">
+    <h2 class="fr-text--sm text-grey-625">
       {{ `${$t(getSubtitleFromPlatformName(namePlatform))} ${formatMeetingDate(startDate)}` }}
     </h2>
   </div>
