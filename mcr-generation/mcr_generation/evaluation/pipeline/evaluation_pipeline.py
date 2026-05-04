@@ -10,7 +10,6 @@ Flow per item:
 5. Aggregate every item into a CSV + summary JSON.
 """
 
-import subprocess
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -26,6 +25,7 @@ from mcr_generation.evaluation.pipeline.docx_loader import (
     load_docx_text,
     save_text_as_docx,
 )
+from mcr_generation.evaluation.pipeline.layout import DatasetLayout, OutputLayout
 from mcr_generation.evaluation.pipeline.report_renderer import render_report
 from mcr_generation.evaluation.pipeline.section_splitter import extract_section
 from mcr_generation.evaluation.pipeline.types import (
@@ -38,8 +38,6 @@ from mcr_generation.evaluation.pipeline.types import (
 from mcr_generation.evaluation.scorers.base import Scorer
 from mcr_generation.evaluation.scorers.g_eval import GEvalScorer
 
-EXPECTED_SECTION_DIRS = ("topics", "participants", "next_steps")
-
 
 class ReportEvaluationPipeline:
     def __init__(
@@ -49,8 +47,8 @@ class ReportEvaluationPipeline:
         report_type: ReportTypes = ReportTypes.DECISION_RECORD,
         scorer: Scorer | None = None,
     ) -> None:
-        self._data_dir = data_dir
-        self._output_dir = output_dir
+        self._dataset = DatasetLayout(data_dir=data_dir)
+        self._output = OutputLayout(output_dir=output_dir)
         self._report_type = report_type
         self._scorer: Scorer = scorer or GEvalScorer()
 
@@ -58,8 +56,10 @@ class ReportEvaluationPipeline:
         run_id = self._build_run_id()
         items = self._discover_items(limit=limit)
         if not items:
-            logger.error("No transcripts found in {}/transcripts.", self._data_dir)
-            raise SystemExit(1)
+            logger.error("No transcripts found in {}.", self._dataset.transcripts_dir)
+            raise ValueError(
+                "No transcripts found in the transcript dir of the dataset"
+            )
 
         logger.info("Run {}: {} item(s) to process.", run_id, len(items))
         results: list[ItemRunResult] = []
@@ -72,15 +72,18 @@ class ReportEvaluationPipeline:
     # ----- discovery -------------------------------------------------------
 
     def _discover_items(self, limit: int | None) -> list[EvalItem]:
-        transcripts_dir = self._data_dir / "transcripts"
-        expected_root = self._data_dir / "expected"
+        section_names = list(
+            dict.fromkeys(
+                c.section_name for c in CRITERIA if c.section_name is not None
+            )
+        )
         items: list[EvalItem] = []
-        for transcript_path in sorted(transcripts_dir.glob("*.docx")):
+        for transcript_path in sorted(self._dataset.transcripts_dir.glob("*.docx")):
             uid = transcript_path.stem
-            expected_report = expected_root / "reports" / f"{uid}.docx"
+            expected_report = self._dataset.expected_report(uid)
             expected_sections: dict[str, Path] = {}
-            for section in EXPECTED_SECTION_DIRS:
-                candidate = expected_root / section / f"{uid}.docx"
+            for section in section_names:
+                candidate = self._dataset.expected_section(uid, section)
                 if candidate.exists():
                     expected_sections[section] = candidate
             items.append(
@@ -95,7 +98,29 @@ class ReportEvaluationPipeline:
             )
         if limit is not None:
             items = items[:limit]
+        self._validate_references(items)
         return items
+
+    def _validate_references(self, items: list[EvalItem]) -> None:
+        missing: list[Path] = []
+        for item in items:
+            for criterion in CRITERIA:
+                if "{{reference_report}}" not in criterion.prompt_template:
+                    continue
+                if criterion.is_global:
+                    path = self._dataset.expected_report(item.uid)
+                else:
+                    section_name = criterion.section_name
+                    assert section_name is not None
+                    path = self._dataset.expected_section(item.uid, section_name)
+                if not path.exists():
+                    missing.append(path)
+        if missing:
+            listing = "\n  - ".join(str(p) for p in missing)
+            raise ValueError(
+                f"Dataset is incomplete: {len(missing)} reference file(s) "
+                f"missing:\n  - {listing}"
+            )
 
     # ----- per-item run ----------------------------------------------------
 
@@ -122,10 +147,7 @@ class ReportEvaluationPipeline:
         generator = get_generator(self._report_type)
         report = generator.generate(chunks)
         markdown = render_report(report)
-        save_text_as_docx(
-            markdown,
-            self._output_dir / "generated_reports" / f"{item.uid}.docx",
-        )
+        save_text_as_docx(markdown, self._output.generated_report(item.uid))
         return markdown
 
     def _score_criterion(
@@ -140,22 +162,16 @@ class ReportEvaluationPipeline:
             generated_markdown=generated_markdown,
         )
         if report_text is None:
+            logger.warning(
+                "Section '{}' not found in generated report for criterion {}.",
+                criterion.section_name,
+                criterion.name,
+            )
             return ScoreResult(
                 value=None,
                 justification=(
                     f"Section '{criterion.section_name}' not found in generated report."
                 ),
-            )
-        needs_reference = "{{reference_report}}" in criterion.prompt_template
-        if needs_reference and reference_text is None:
-            target = (
-                "expected/reports"
-                if criterion.is_global
-                else f"expected/{criterion.section_name}"
-            )
-            return ScoreResult(
-                value=None,
-                justification=f"Reference file missing under {target}/.",
             )
         return self._scorer.score(criterion, report_text, reference_text)
 
@@ -183,7 +199,7 @@ class ReportEvaluationPipeline:
     # ----- finalization ----------------------------------------------------
 
     def _finalize(self, run_id: str, results: list[ItemRunResult]) -> RunSummary:
-        metrics_dir = self._output_dir / "metrics"
+        metrics_dir = self._output.metrics_dir
         csv_path = metrics_dir / f"{run_id}.csv"
         summary_path = metrics_dir / f"{run_id}_summary.json"
 
@@ -200,9 +216,8 @@ class ReportEvaluationPipeline:
         n_failed = sum(1 for r in results if r.error is not None)
         summary = RunSummary(
             run_id=run_id,
-            commit_sha=run_id.split("_")[-1],
             timestamp_utc=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            dataset_dir=str(self._data_dir),
+            dataset_dir=str(self._dataset.data_dir),
             n_items_total=n_total,
             n_items_succeeded=n_total - n_failed,
             n_items_failed=n_failed,
@@ -218,15 +233,4 @@ class ReportEvaluationPipeline:
 
     @staticmethod
     def _build_run_id() -> str:
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-        try:
-            sha = (
-                subprocess.check_output(
-                    ["git", "rev-parse", "--short", "HEAD"], stderr=subprocess.DEVNULL
-                )
-                .decode()
-                .strip()
-            )
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            sha = "nogit"
-        return f"{ts}_{sha}"
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")

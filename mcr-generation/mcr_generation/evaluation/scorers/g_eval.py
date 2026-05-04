@@ -24,11 +24,11 @@ class GEvalScorer:
     """Calls the configured LLM to score a single criterion."""
 
     def __init__(self, client: Instructor | None = None) -> None:
-        self._llm_config = LLMConfig()
+        llm_config = LLMConfig()
         self._client = client or instructor.from_openai(
             OpenAI(
-                base_url=self._llm_config.LLM_HUB_API_URL,
-                api_key=self._llm_config.LLM_HUB_API_KEY,
+                base_url=llm_config.LLM_HUB_API_URL,
+                api_key=llm_config.LLM_HUB_API_KEY,
             ),
             mode=instructor.Mode.JSON,
         )
