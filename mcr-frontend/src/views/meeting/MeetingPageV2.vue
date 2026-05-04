@@ -38,15 +38,17 @@
 
     <div class="content-container flex-1">
       <div class="fr-container py-5 flex flex-col h-full">
-        <DsfrAlert
-          v-if="showAlert && daysBeforeDeletion !== undefined"
-          :type="alertType"
-          closeable
-          data-testid="alert-availability"
-          @close="closeAlert"
-        >
-          {{ t('meeting-v2.deletion-warning', daysBeforeDeletion) }}
-        </DsfrAlert>
+        <div v-if="meeting">
+          <MeetingPageAlert />
+
+          <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6">
+            <MeetingAudioCard
+              :meeting-id="meeting.id"
+              :creation-date="meeting.creation_date"
+              :status="meeting.status"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -57,13 +59,12 @@ import DeleteMeetingModal from '@/components/meeting/modals/DeleteMeetingModal.v
 import EditMeetingModal from '@/components/meeting/modals/EditMeetingModal.vue';
 import { useRecorder } from '@/composables/use-recorder';
 import { t } from '@/plugins/i18n';
-import { useMeetingPeremption } from '@/composables/use-meeting-peremption';
-import { useSessionAlert } from '@/composables/use-session-alert';
 import { ROUTES } from '@/router/routes';
 import { is403Error, is404Error } from '@/services/http/http.utils';
 import type { UpdateMeetingDto } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
+import MeetingPageAlert from './MeetingPageAlert.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -80,15 +81,6 @@ watch(isError, () => {
   if (isError.value && (is403Error(error.value) || is404Error(error.value))) {
     router.push({ name: ROUTES.NOT_FOUND.name });
     return;
-  }
-});
-
-const { showAlert, closeAlert } = useSessionAlert('meeting-page-dsfr-alert-closed');
-const { daysBeforeDeletion, alertType } = useMeetingPeremption(() => meeting.value?.creation_date);
-
-watch(daysBeforeDeletion, (days) => {
-  if (days === undefined && meeting.value?.creation_date !== undefined) {
-    closeAlert();
   }
 });
 

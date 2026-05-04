@@ -60,6 +60,7 @@ declare module 'vue' {
     ImportMeetingModal: typeof import('./components/meeting/modals/ImportMeetingModal.vue')['default']
     ImportMeetingProgressBar: typeof import('./components/meeting/ImportMeetingProgressBar.vue')['default']
     ImportPending: typeof import('./components/meeting/transcription/states/ImportPending.vue')['default']
+    MeetingAudioCard: typeof import('./components/meeting/MeetingAudioCard.vue')['default']
     MeetingCellDispatcher: typeof import('./components/meeting/table/MeetingCellDispatcher.vue')['default']
     MeetingFrontMatter: typeof import('./components/meeting/MeetingFrontMatter.vue')['default']
     MeetingFrontMatterV2: typeof import('./components/meeting/MeetingFrontMatterV2.vue')['default']
