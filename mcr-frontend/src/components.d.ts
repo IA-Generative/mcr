@@ -65,6 +65,7 @@ declare module 'vue' {
     MeetingAudioCard: typeof import('./components/meeting/MeetingAudioCard.vue')['default']
     MeetingCellDispatcher: typeof import('./components/meeting/table/MeetingCellDispatcher.vue')['default']
     MeetingDeliverableCard: typeof import('./components/meeting/MeetingDeliverableCard.vue')['default']
+    MeetingDeliverableList: typeof import('./components/meeting/MeetingDeliverableList.vue')['default']
     MeetingFrontMatter: typeof import('./components/meeting/MeetingFrontMatter.vue')['default']
     MeetingFrontMatterV2: typeof import('./components/meeting/MeetingFrontMatterV2.vue')['default']
     MeetingsDataTable: typeof import('./components/meeting/table/MeetingsDataTable.vue')['default']

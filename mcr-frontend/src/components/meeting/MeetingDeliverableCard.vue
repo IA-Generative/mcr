@@ -23,35 +23,17 @@
 
     <hr class="w-full border-0 border-t border-t-[var(--grey-925-125)] m-0 pb-0.5" />
 
-    <div
-      v-if="transcriptionItem || displayedDeliverables.length"
-      class="flex gap-2 flex-wrap"
-    >
-      <DeliverableItem
-        v-if="transcriptionItem"
-        class="border border-[#DDDDDD]"
-        :deliverable-id="TRANSCRIPTION_ITEM_ID"
-        :title="transcriptionItem.title"
-        :status="transcriptionItem.status"
-        :file-format="transcriptionItem.fileFormat"
-        @download="onDownloadTranscription"
-      />
-      <DeliverableItem
-        v-for="item in displayedDeliverables"
-        :key="item.id"
-        :deliverable-id="item.id"
-        :title="item.title"
-        :status="item.status"
-        :file-format="item.fileFormat"
-        :file-size="item.fileSize"
-        @download="onDownload"
-      />
-    </div>
+    <MeetingDeliverableList
+      :transcription-item="transcriptionItem"
+      :displayed-deliverables="displayedDeliverables"
+      @download-transcription="onDownloadTranscription"
+      @download-deliverable="onDownload"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import DeliverableItem from './DeliverableItem.vue';
+import MeetingDeliverableList from './MeetingDeliverableList.vue';
 import { useDeliverables } from '@/services/deliverables/use-deliverables';
 import {
   mapDeliverableStatus,
@@ -63,8 +45,6 @@ import { useMeetings } from '@/services/meetings/use-meeting';
 import { downloadFileFromAxios } from '@/utils/file';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
-
-const TRANSCRIPTION_ITEM_ID = -1;
 
 const props = defineProps<{ meetingId: number; meetingStatus: MeetingStatus }>();
 
