@@ -1,7 +1,11 @@
 <template>
-  <div class="deliverable-card">
-    <h2 class="deliverable-card__title">{{ $t('meeting-v2.deliverable-card.title') }}</h2>
-    <p class="deliverable-card__description">{{ $t('meeting-v2.deliverable-card.description') }}</p>
+  <div class="bg-white p-6 flex flex-col gap-4 border border-[var(--grey-975-75-hover)]">
+    <h2 class="text-blue-france-sun font-bold text-2xl">
+      {{ $t('meeting-v2.deliverable-card.title') }}
+    </h2>
+    <p class="text-[var(--text-default-grey)] m-0">
+      {{ $t('meeting-v2.deliverable-card.description') }}
+    </p>
 
     <DsfrRadioButtonSet
       v-model="selectedType"
@@ -17,11 +21,11 @@
       {{ $t('meeting-v2.deliverable-card.generate-button') }}
     </DsfrButton>
 
-    <hr class="deliverable-card__separator" />
+    <hr class="w-full border-0 border-t border-t-[var(--grey-925-125)] m-0 pb-0.5" />
 
     <div
       v-if="transcriptionItem || displayedDeliverables.length"
-      class="deliverable-card__items"
+      class="flex gap-2 flex-wrap"
     >
       <DeliverableItem
         v-if="transcriptionItem"
@@ -176,41 +180,6 @@ function onDownloadTranscription(): void {
 </script>
 
 <style scoped>
-.deliverable-card {
-  background-color: white;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  border-width: 1px;
-  border-color: var(--grey-975-75-hover);
-}
-
-.deliverable-card__title {
-  color: var(--blue-france-sun-113-625);
-  font-weight: bold;
-  font-size: 1.5rem;
-}
-
-.deliverable-card__description {
-  color: var(--text-default-grey);
-  margin: 0;
-}
-
-.deliverable-card__separator {
-  width: 100%;
-  border: none;
-  border-top: 1px var(--grey-925-125);
-  margin: 0;
-  padding-bottom: 2px;
-}
-
-.deliverable-card__items {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
 :deep(.fr-fieldset) {
   margin-bottom: 0;
 }

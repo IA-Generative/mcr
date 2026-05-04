@@ -6,14 +6,14 @@
   >
     <StatusTag :status="status" />
 
-    <p class="deliverable-item__title">{{ title }}</p>
+    <p class="text-blue-france-sun font-bold text-sm m-0">{{ title }}</p>
 
-    <div class="deliverable-item__footer">
-      <span class="deliverable-item__file-info">
+    <div class="flex items-center justify-between">
+      <span class="text-[var(--text-default-grey)] text-xs">
         {{ fileFormat }}
         <template v-if="fileSize"> - {{ fileSize }}</template>
       </span>
-      <span class="deliverable-item__download-icon fr-icon-download-line" />
+      <span class="text-blue-france-sun text-base fr-icon-download-line" />
     </div>
   </button>
 </template>
@@ -51,28 +51,5 @@ const emit = defineEmits<{ download: [id: number] }>();
 .deliverable-item:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.deliverable-item__title {
-  color: var(--blue-france-sun-113-625);
-  font-weight: bold;
-  font-size: 0.875rem;
-  margin: 0;
-}
-
-.deliverable-item__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.deliverable-item__file-info {
-  color: var(--text-default-grey);
-  font-size: 0.75rem;
-}
-
-.deliverable-item__download-icon {
-  color: var(--blue-france-sun-113-625);
-  font-size: 1rem;
 }
 </style>

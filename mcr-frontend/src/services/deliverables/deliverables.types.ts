@@ -9,7 +9,7 @@ export type DeliverableStatus = (typeof DeliverableStatus)[number];
 export const DeliverableType = ['TRANSCRIPTION', 'DECISION_RECORD', 'DETAILED_SYNTHESIS'] as const;
 export type DeliverableType = (typeof DeliverableType)[number];
 
-export interface DeliverableResponse {
+export interface DeliverableDto {
   id: number;
   meeting_id: number;
   type: DeliverableType;
@@ -20,7 +20,7 @@ export interface DeliverableResponse {
 }
 
 export interface DeliverableListResponse {
-  deliverables: DeliverableResponse[];
+  deliverables: DeliverableDto[];
 }
 
 export interface DeliverableCreateRequest {

@@ -41,7 +41,7 @@
         <div v-if="meeting">
           <MeetingPageAlert />
 
-          <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6">
+          <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6 items-start">
             <MeetingAudioCard
               :meeting-id="meeting.id"
               :creation-date="meeting.creation_date"

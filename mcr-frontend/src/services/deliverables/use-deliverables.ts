@@ -5,11 +5,11 @@ import {
   downloadDeliverableFile,
   getMeetingDeliverables,
 } from './deliverables.service';
-import type { DeliverableCreateRequest, DeliverableResponse } from './deliverables.types';
+import type { DeliverableCreateRequest, DeliverableDto } from './deliverables.types';
 
 const POLLING_INTERVAL = 10 * 1000;
 
-function shouldPollDeliverables(deliverables?: DeliverableResponse[]): boolean {
+function shouldPollDeliverables(deliverables?: DeliverableDto[]): boolean {
   if (!deliverables) return false;
   return deliverables.some((d) => d.status === 'PENDING');
 }
