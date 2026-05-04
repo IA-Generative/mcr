@@ -6,7 +6,7 @@ from langfuse import observe
 from loguru import logger
 
 from mcr_generation.app.client.meeting_client import MeetingApiClient
-from mcr_generation.app.configs.settings import ApiSettings
+from mcr_generation.app.configs.settings import ApiSettings, LangfuseSettings
 from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport
 from mcr_generation.app.schemas.celery_types import (
@@ -18,12 +18,17 @@ from mcr_generation.app.services.report_generator import get_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
+from mcr_generation.app.utils.langfuse_observability import (
+    record_chunking_metadata,
+    record_report_trace_context,
+)
 from mcr_generation.app.utils.sentry_context import (
     gather_meeting_context,
     set_sentry_meeting_context,
 )
 
 api_settings = ApiSettings()
+langfuse_settings = LangfuseSettings()
 
 
 @celery_app.task(name=MCRReportGenerationTasks.REPORT)
@@ -34,8 +39,20 @@ def generate_report_from_docx(
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
 ) -> BaseReport:
+    record_report_trace_context(
+        meeting_id=meeting_id,
+        transcription_object_filename=transcription_object_filename,
+        report_type=report_type,
+        env_mode=langfuse_settings.ENV_MODE,
+    )
+
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
+
+    record_chunking_metadata(
+        chunk_count=len(chunks),
+        total_chars=sum(len(c.text) for c in chunks),
+    )
 
     report_type_enum = ReportTypes(report_type)
     generator = get_generator(report_type_enum)

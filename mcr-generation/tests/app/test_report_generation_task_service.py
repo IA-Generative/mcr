@@ -3,6 +3,7 @@ Unit tests for report_generation_task_service signal handlers.
 """
 
 import sys
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import httpx
@@ -74,8 +75,10 @@ class TestGenerateReportFromDocx:
     ) -> None:
         """Happy path: get_generator is mocked and its generate() return value is
         forwarded as-is by the task."""
+        chunk1 = SimpleNamespace(id=0, text="chunk1")
+        chunk2 = SimpleNamespace(id=1, text="chunk2")
         mock_get_file_from_s3.return_value = b"docx content"
-        mock_chunk_docx_to_document_list.return_value = ["chunk1", "chunk2"]
+        mock_chunk_docx_to_document_list.return_value = [chunk1, chunk2]
         mock_get_generator.return_value.generate.return_value = decision_record
 
         generate_report_from_docx(1, "transcription.docx")
@@ -84,7 +87,7 @@ class TestGenerateReportFromDocx:
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
         mock_get_generator.assert_called_once()
         mock_get_generator.return_value.generate.assert_called_once_with(
-            ["chunk1", "chunk2"]
+            [chunk1, chunk2]
         )
 
     def test_propagates_s3_error(self, mock_get_file_from_s3: MagicMock) -> None:
