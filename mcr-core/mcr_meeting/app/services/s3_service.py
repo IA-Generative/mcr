@@ -30,6 +30,14 @@ def get_file_from_s3(object_name: str) -> BytesIO:
         raise e
 
 
+def get_file_from_s3_or_none(object_name: str) -> BytesIO | None:
+    try:
+        response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
+        return BytesIO(response["Body"].read())
+    except s3_client.exceptions.NoSuchKey:
+        return None
+
+
 def get_presigned_url_for_put_file(name: str) -> str:
     return s3_external_client.generate_presigned_url(
         "put_object",
