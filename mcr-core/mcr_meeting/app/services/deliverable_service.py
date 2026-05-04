@@ -1,4 +1,5 @@
 from mcr_meeting.app.db.deliverable_repository import (
+    find_active_by_meeting_and_type,
     get_by_id,
     list_by_meeting,
     save_deliverable,
@@ -56,3 +57,11 @@ def list_deliverables_for_meeting(meeting_id: int) -> list[Deliverable]:
 
 def get_deliverable(deliverable_id: int) -> Deliverable:
     return get_by_id(deliverable_id=deliverable_id)
+
+
+def find_active_deliverable(
+    meeting_id: int, deliverable_type: DeliverableType
+) -> Deliverable | None:
+    return find_active_by_meeting_and_type(
+        meeting_id=meeting_id, deliverable_type=deliverable_type
+    )
