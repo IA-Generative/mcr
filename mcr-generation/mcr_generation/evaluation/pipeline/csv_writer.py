@@ -2,7 +2,6 @@
 
 import csv
 import json
-from dataclasses import asdict
 from pathlib import Path
 
 from mcr_generation.evaluation.pipeline.types import (
@@ -83,4 +82,4 @@ def write_csv(
 def write_summary(summary_path: Path, summary: RunSummary) -> None:
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     with summary_path.open("w", encoding="utf-8") as fh:
-        json.dump(asdict(summary), fh, ensure_ascii=False, indent=2)
+        json.dump(summary.model_dump(mode="json"), fh, ensure_ascii=False, indent=2)
