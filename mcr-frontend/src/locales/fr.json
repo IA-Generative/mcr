@@ -493,6 +493,14 @@
           "confirm": "J’ai compris",
           "cgu": "CGU MIrAI"
         }
+      },
+      "ending": {
+        "title": "Êtes-vous sûr de vouloir terminer l’enregistrement ?",
+        "description": "La transcription sera générée automatiquement.",
+        "buttons": {
+          "cancel": "Annuler",
+          "end": "Terminer l'enregistrement"
+        }
       }
     }
   },
