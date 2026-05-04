@@ -49,8 +49,8 @@ test-coverage-integration:
 
 report-eval:
 	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) \
-	uv run python -m mcr_generation.evaluation.cli.cli
+	uv run python -m mcr_generation.evaluation.cli.report_eval
 
 report-eval-quick:
 	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) \
-	uv run python -m mcr_generation.evaluation.cli.cli --limit 2
+	uv run python -m mcr_generation.evaluation.cli.report_eval --limit 2
