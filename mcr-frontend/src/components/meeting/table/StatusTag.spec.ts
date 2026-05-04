@@ -16,8 +16,8 @@ describe('getTagMeta', () => {
   it('should_return_error_for_FAILED', () => {
     expect(getTagMeta('FAILED')?.class).toBe('bg-error-950 text-error-425');
   });
-  it('should_return_success_for_DONE', () => {
-    expect(getTagMeta('DONE')?.class).toBe('bg-success-950 text-success-425');
+  it('should_return_success_for_AVAILABLE', () => {
+    expect(getTagMeta('AVAILABLE')?.class).toBe('bg-success-950 text-success-425');
   });
 
   it.each(DeliverableStatus)('should_handle_%s_without_falling_back_to_default', (status) => {

@@ -19,7 +19,7 @@ export function getTranscriptionStatus(status: MeetingStatus): DeliverableStatus
     return 'IN_PROGRESS';
   }
   if (meetingStatusForTranscriptionDone.includes(status)) {
-    return 'DONE';
+    return 'AVAILABLE';
   }
   if (meetingStatusForTranscriptionFailed.includes(status)) {
     return 'FAILED';
@@ -35,7 +35,7 @@ export function getReportStatus(status: MeetingStatus): DeliverableStatus | null
     return 'IN_PROGRESS';
   }
   if (meetingStatusForReportDone.includes(status)) {
-    return 'DONE';
+    return 'AVAILABLE';
   }
   if (meetingStatusForReportFailed.includes(status)) {
     return 'FAILED';

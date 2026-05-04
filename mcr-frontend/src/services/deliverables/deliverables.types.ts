@@ -3,7 +3,7 @@ import type { MeetingStatus } from '../meetings/meetings.types';
 export const DeliverableFileType = ['TRANSCRIPTION', 'REPORT'] as const;
 export type DeliverableFileType = (typeof DeliverableFileType)[number];
 
-export const DeliverableStatus = ['PENDING', 'IN_PROGRESS', 'DONE', 'FAILED'] as const;
+export const DeliverableStatus = ['PENDING', 'IN_PROGRESS', 'AVAILABLE', 'FAILED'] as const;
 export type DeliverableStatus = (typeof DeliverableStatus)[number];
 
 export const meetingStatusForTranscriptionPending: MeetingStatus[] = [
