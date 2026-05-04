@@ -39,26 +39,6 @@ def _decision_record_response() -> ReportGenerationResponse:
     )
 
 
-@pytest.fixture
-def mock_save_formatted_report(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    save_mock = MagicMock()
-    monkeypatch.setattr(
-        "mcr_meeting.app.statemachine_actions.meeting_actions.save_formatted_report",
-        save_mock,
-    )
-    return save_mock
-
-
-@pytest.fixture
-def mock_generate_decision_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    docx_mock = MagicMock()
-    monkeypatch.setattr(
-        "mcr_meeting.app.statemachine_actions.meeting_actions.generate_docx_decisions_reports_from_template",
-        docx_mock,
-    )
-    return docx_mock
-
-
 class TestRequestDeliverable:
     def test_creates_pending_row_and_dispatches_celery_with_deliverable_id(
         self,
@@ -208,13 +188,126 @@ class TestRequestDeliverable:
                 type=DeliverableType.DECISION_RECORD,
             )
 
+    def test_same_type_pending_returns_existing_idempotently(
+        self,
+        mock_celery_producer_app: MagicMock,
+        db_session: Session,
+    ) -> None:
+        """A repeated request for an already-PENDING type must return the
+        in-flight row and NOT dispatch a second Celery task."""
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+        existing = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        result = do.request_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        assert result.id == existing.id
+        assert result.status == DeliverableStatus.PENDING
+        mock_celery_producer_app.send_task.assert_not_called()
+
+    def test_same_type_available_soft_deletes_and_creates_new(
+        self,
+        mock_celery_producer_app: MagicMock,
+        db_session: Session,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+            report_filename="decision_record.docx",
+        )
+        previous = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.AVAILABLE,
+        )
+
+        new_deliverable = do.request_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        db_session.refresh(previous)
+        db_session.refresh(meeting)
+        assert previous.status == DeliverableStatus.DELETED
+        assert new_deliverable.id != previous.id
+        assert new_deliverable.status == DeliverableStatus.PENDING
+        assert meeting.status == MeetingStatus.REPORT_PENDING
+        mock_celery_producer_app.send_task.assert_called_once()
+
+    def test_same_type_failed_soft_deletes_and_creates_new(
+        self,
+        mock_celery_producer_app: MagicMock,
+        db_session: Session,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_FAILED,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+        previous = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.FAILED,
+        )
+
+        new_deliverable = do.request_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        db_session.refresh(previous)
+        db_session.refresh(meeting)
+        assert previous.status == DeliverableStatus.DELETED
+        assert new_deliverable.id != previous.id
+        assert new_deliverable.status == DeliverableStatus.PENDING
+        assert meeting.status == MeetingStatus.REPORT_PENDING
+
+    def test_soft_deleted_row_does_not_block_new_request(
+        self,
+        mock_celery_producer_app: MagicMock,
+        db_session: Session,
+    ) -> None:
+        """A previously soft-deleted row of the same type must not prevent a
+        fresh request — the partial unique index excludes DELETED rows."""
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.DELETED,
+        )
+
+        new_deliverable = do.request_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        assert new_deliverable.status == DeliverableStatus.PENDING
+
 
 class TestMarkDeliverableSuccess:
     def test_flips_status_persists_url_and_completes_sm(
         self,
         mock_send_email: MagicMock,
-        mock_save_formatted_report: MagicMock,
-        mock_generate_decision_docx: MagicMock,
+        mock_persist_report_docx: MagicMock,
         db_session: Session,
     ) -> None:
         meeting = MeetingFactory.create(
@@ -239,6 +332,9 @@ class TestMarkDeliverableSuccess:
         assert pending.external_url == "https://drive.example.com/abc"
         assert meeting.status == MeetingStatus.REPORT_DONE
         mock_send_email.assert_called_once()
+        mock_persist_report_docx.assert_called_once_with(
+            meeting_id=meeting.id, report_response=_decision_record_response()
+        )
 
 
 class TestMarkDeliverableFailure:
@@ -367,7 +463,42 @@ class TestListDeliverables:
 
 
 class TestGetDeliverableFile:
-    def test_streams_docx_from_s3(
+    def test_streams_typed_file_when_present(
+        self,
+        mocker: Any,
+    ) -> None:
+        from io import BytesIO
+
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            report_filename="decision_record.docx",
+        )
+        deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.AVAILABLE,
+        )
+        typed_buffer = BytesIO(b"typed content")
+        typed_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            return_value=typed_buffer,
+        )
+        legacy_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_report_from_s3",
+        )
+
+        result = do.get_deliverable_file(
+            deliverable_id=deliverable.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+        )
+
+        assert result.buffer is typed_buffer
+        assert result.meeting_name == meeting.name
+        typed_mock.assert_called_once()
+        legacy_mock.assert_not_called()
+
+    def test_falls_back_to_legacy_when_typed_missing(
         self,
         mocker: Any,
     ) -> None:
@@ -383,10 +514,14 @@ class TestGetDeliverableFile:
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.AVAILABLE,
         )
-        buffer = BytesIO(b"fake docx content")
+        legacy_buffer = BytesIO(b"legacy bytes")
         mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            return_value=None,
+        )
+        legacy_mock = mocker.patch(
             "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_report_from_s3",
-            return_value=buffer,
+            return_value=legacy_buffer,
         )
 
         result = do.get_deliverable_file(
@@ -394,8 +529,67 @@ class TestGetDeliverableFile:
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
         )
 
-        assert result.buffer is buffer
-        assert result.meeting_name == meeting.name
+        assert result.buffer is legacy_buffer
+        legacy_mock.assert_called_once()
+
+    def test_transcription_uses_transcription_file(
+        self,
+        mocker: Any,
+    ) -> None:
+        from io import BytesIO
+
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="v0.docx",
+            report_filename="report.docx",
+        )
+        deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
+        transcription_buffer = BytesIO(b"transcription bytes")
+        typed_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+        )
+        report_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_report_from_s3",
+        )
+        transcription_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_transcription_from_s3",
+            return_value=transcription_buffer,
+        )
+
+        result = do.get_deliverable_file(
+            deliverable_id=deliverable.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+        )
+
+        assert result.buffer is transcription_buffer
+        transcription_mock.assert_called_once_with(meeting)
+        typed_mock.assert_not_called()
+        report_mock.assert_not_called()
+
+    def test_transcription_without_filename_raises_not_found(
+        self,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename=None,
+        )
+        deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
+
+        with pytest.raises(NotFoundException):
+            do.get_deliverable_file(
+                deliverable_id=deliverable.id,
+                user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            )
 
     def test_404_for_soft_deleted_deliverable(
         self,
@@ -416,3 +610,63 @@ class TestGetDeliverableFile:
                 deliverable_id=deleted.id,
                 user_keycloak_uuid=meeting.owner.keycloak_uuid,
             )
+
+    def test_rejects_pending_deliverable(
+        self,
+        mocker: Any,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+        typed_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+        )
+        legacy_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_report_from_s3",
+        )
+
+        with pytest.raises(BadRequestException):
+            do.get_deliverable_file(
+                deliverable_id=pending.id,
+                user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            )
+        typed_mock.assert_not_called()
+        legacy_mock.assert_not_called()
+
+    def test_rejects_failed_deliverable(
+        self,
+        mocker: Any,
+    ) -> None:
+        from io import BytesIO
+
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_FAILED,
+            name_platform=MeetingPlatforms.COMU,
+            report_filename="decision_record.docx",
+        )
+        failed = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.FAILED,
+        )
+        typed_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            return_value=BytesIO(b"stale typed content"),
+        )
+        legacy_mock = mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_report_from_s3",
+        )
+
+        with pytest.raises(BadRequestException):
+            do.get_deliverable_file(
+                deliverable_id=failed.id,
+                user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            )
+        typed_mock.assert_not_called()
+        legacy_mock.assert_not_called()
