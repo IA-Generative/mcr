@@ -1,9 +1,11 @@
-from dataclasses import dataclass, field
 from pathlib import Path
 
+from pydantic import BaseModel, ConfigDict, Field
 
-@dataclass(frozen=True)
-class Criterion:
+
+class Criterion(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     name: str
     scope: str  # "global" or "section:<name>" (e.g. "section:topics")
     scale: tuple[int, int]
@@ -26,31 +28,30 @@ class Criterion:
         return self.scope == "global"
 
 
-@dataclass(frozen=True)
-class ScoreResult:
+class ScoreResult(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     value: int | None
     justification: str | None = None
 
 
-@dataclass(frozen=True)
-class EvalItem:
+class EvalItem(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     uid: str
     transcript_path: Path
     expected_report_path: Path | None
-    expected_section_paths: dict[str, Path] = field(default_factory=dict)
+    expected_section_paths: dict[str, Path] = Field(default_factory=dict)
 
 
-@dataclass
-class ItemRunResult:
+class ItemRunResult(BaseModel):
     uid: str
     scores: dict[str, ScoreResult]
     error: str | None = None
 
 
-@dataclass
-class RunSummary:
+class RunSummary(BaseModel):
     run_id: str
-    commit_sha: str
     timestamp_utc: str
     dataset_dir: str
     n_items_total: int
