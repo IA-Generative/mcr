@@ -1,0 +1,25 @@
+mcr-core/mcr_meeting/app/db/migrations/versions/d7e3c0f4a8b1_deliverable_unique_meeting_type_active.py
+  bbfc87382067d005 1-54
+mcr-core/mcr_meeting/app/models/deliverable_model.py
+  bbfc87382067d005 4,26-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.4",
+  "base_commit_sha": "4326841dd9e65ff898f630a6a0052f0f3f48121f",
+  "prompts": {
+    "bbfc87382067d005": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e67de83f-a210-46c0-942d-334f180fe3e4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger",
+      "messages": [],
+      "total_additions": 65,
+      "total_deletions": 1,
+      "accepted_lines": 65,
+      "overriden_lines": 0
+    }
+  }
+}
