@@ -29,20 +29,20 @@
         secondary
         :label="$t('meeting-v2.recording.buttons.pause')"
         icon="fr-icon-pause-circle-fill"
-        @click="() => pauseRecording()"
+        @click="pauseRecording"
       />
       <DsfrButton
         v-else
         secondary
         :label="$t('meeting-v2.recording.buttons.resume')"
         icon="fr-icon-play-circle-fill"
-        @click="() => resumeRecording()"
+        @click="resumeRecording"
       />
       <DsfrButton
         :label="$t('meeting-v2.recording.buttons.stop')"
         icon="fr-icon-stop-circle-fill"
         :disabled="effectiveOffline"
-        @click="() => onClickStop()"
+        @click="onClickStop"
       />
     </div>
     <a
@@ -69,6 +69,7 @@
 import BaseModal from '@/components/core/BaseModal.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecordingSession } from '@/composables/use-recording-session';
+import EndLiveMeetingModal from '@/components/meeting/modals/EndLiveMeetingModal.vue';
 import LiveMeetingAdvicesModal from '@/components/meeting/modals/LiveMeetingAdvicesModal.vue';
 import { useLeaveGuard } from '@/composables/use-leave-guard';
 import { useModal } from 'vue-final-modal';
@@ -91,11 +92,9 @@ const {
   stopRecording,
 } = useRecordingSession(props.meetingId);
 
-const { open: openConfirmStopModal } = useModal({
-  component: BaseModal,
+const { open: openEndLiveMeetingModal } = useModal({
+  component: EndLiveMeetingModal,
   attrs: {
-    title: t('meeting.transcription.recording.confirm-modal.title'),
-    ctaLabel: t('meeting.transcription.recording.confirm-modal.button'),
     onSuccess: () => stopRecording(),
   },
 });
@@ -106,7 +105,7 @@ const { open: openAdvicesModal } = useModal({
 
 function onClickStop() {
   pauseRecording();
-  openConfirmStopModal();
+  openEndLiveMeetingModal();
 }
 
 function confirmAndNavigate(): Promise<boolean> {
