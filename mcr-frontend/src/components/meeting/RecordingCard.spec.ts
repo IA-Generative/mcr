@@ -85,7 +85,7 @@ describe('RecordingCard', () => {
     expect(screen.getByText('CONNEXION EN COURS DE MCR AGENT')).toBeTruthy();
   });
 
-  it('should not display advices link for online platform', () => {
+  it('should display visio advices link for online platform', () => {
     renderWithPlugins(RecordingCard, {
       props: {
         meetingId: 1,
@@ -95,6 +95,6 @@ describe('RecordingCard', () => {
       },
     });
 
-    expect(screen.queryByText(/conseils pour l'enregistrement/)).toBeNull();
+    expect(screen.getByRole('link', { name: /conseils/ })).toBeTruthy();
   });
 });
