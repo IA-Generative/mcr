@@ -511,7 +511,8 @@
         "description": "Merci de patienter, cela peut prendre quelques instants."
       },
       "in-progress": {
-        "badge": "En cours d'enregistrement"
+        "badge": "En cours d'enregistrement",
+        "stop-button": "Terminer l'enregistrement"
       },
       "error": {
         "badge": "Erreur",
