@@ -134,6 +134,18 @@ export function isMeetingFailed(status: MeetingStatus): boolean {
   );
 }
 
+const VisioCaptureStatuses: MeetingStatus[] = [
+  'CAPTURE_PENDING',
+  'CAPTURE_BOT_IS_CONNECTING',
+  'CAPTURE_IN_PROGRESS',
+  'CAPTURE_FAILED',
+  'CAPTURE_BOT_CONNECTION_FAILED',
+];
+
+export function isVisioCaptureStatus(status: MeetingStatus): boolean {
+  return VisioCaptureStatuses.includes(status);
+}
+
 export interface TranscriptionWaitingTimeResponse {
   estimation_duration_minutes: number;
 }
