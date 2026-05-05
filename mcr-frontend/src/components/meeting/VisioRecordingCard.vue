@@ -3,6 +3,7 @@
 
   <VisioInProgress
     v-else-if="cardState === 'in-progress'"
+    :meeting-id="meetingId"
     :start-date="startDate"
   />
 
