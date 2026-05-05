@@ -6,17 +6,16 @@ import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-import httpx
 import pytest
 from pytest import fixture
 
-from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import (
     DecisionRecord,
     Header,
     Participant,
     Topic,
 )
+from mcr_generation.app.schemas.celery_types import extract_report_task_args
 
 # ---------------------------------------------------------------------------
 # Mocks specific to this file (celery + report_generator package wholesale,
@@ -98,137 +97,169 @@ class TestGenerateReportFromDocx:
             generate_report_from_docx(1, "transcription.docx")
 
 
+class TestExtractReportTaskArgs:
+    def test_returns_deliverable_id_from_kwargs(self) -> None:
+        args = extract_report_task_args(
+            {
+                "args": [42],
+                "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": 7},
+            }
+        )
+
+        assert args.meeting_id == 42
+        assert args.owner_keycloak_uuid == "abc"
+        assert args.deliverable_id == 7
+
+    def test_deliverable_id_absent_returns_none(self) -> None:
+        args = extract_report_task_args(
+            {"args": [42], "kwargs": {"owner_keycloak_uuid": "abc"}}
+        )
+
+        assert args.deliverable_id is None
+
+    def test_deliverable_id_explicit_none_returns_none(self) -> None:
+        args = extract_report_task_args(
+            {
+                "args": [42],
+                "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
+            }
+        )
+
+        assert args.deliverable_id is None
+
+
 class TestGenerateReportFromDocxSuccess:
-    def test_logs_error_and_returns_when_args_empty(
+    def test_returns_early_when_args_empty(
         self,
         decision_record: DecisionRecord,
-        mock_httpx_client: MagicMock,
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When sender has no request args, the function returns early without calling httpx."""
         sender = MagicMock()
         sender.request.args = []
+        sender.request.kwargs = {}
 
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
-        mock_httpx_client.cls.assert_not_called()
+        mock_core_api_client.cls.assert_not_called()
 
-    def test_posts_report_to_correct_endpoint(
+    def test_calls_mark_report_success_when_no_deliverable_id(
         self,
         decision_record: DecisionRecord,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When args contain a meeting_id, the report payload is POSTed to the right URL."""
         sender = MagicMock()
         sender.request.args = [42]
-
-        expected_payload = {
-            "next_steps": decision_record.next_steps,
-            "topics_with_decision": [
-                topic.model_dump() for topic in decision_record.topics_with_decision
-            ],
-            "header": {
-                "title": decision_record.header.title,
-                "objective": decision_record.header.objective,
-                "next_meeting": decision_record.header.next_meeting,
-                "participants": [
-                    p.model_dump(exclude={"association_justification"})
-                    for p in decision_record.header.participants
-                ],
-            },
-        }
+        sender.request.kwargs = {"owner_keycloak_uuid": "abc"}
 
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
-        mock_httpx_client.post.assert_called_once_with(
-            "/meetings/42/report/success",
-            json=expected_payload,
+        mock_core_api_client.mark_report_success.assert_called_once_with(
+            meeting_id=42, report=decision_record
         )
-        mock_httpx_client.post.return_value.raise_for_status.assert_called_once()
+        mock_core_api_client.mark_deliverable_success.assert_not_called()
 
-    def test_raises_on_http_error(
+    def test_calls_mark_deliverable_success_when_deliverable_id_set(
         self,
         decision_record: DecisionRecord,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """An HTTPStatusError from raise_for_status() is wrapped in ReportCallbackError."""
         sender = MagicMock()
-        sender.request.args = [1]
-        mock_httpx_client.post.return_value.raise_for_status.side_effect = (
-            httpx.HTTPStatusError(
-                "500 Internal Server Error",
-                request=MagicMock(),
-                response=MagicMock(),
-            )
-        )
+        sender.request.args = [42]
+        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": 7}
 
-        with pytest.raises(ReportCallbackError):
-            generate_report_from_docx_success(sender=sender, result=decision_record)
+        generate_report_from_docx_success(sender=sender, result=decision_record)
+
+        mock_core_api_client.mark_deliverable_success.assert_called_once_with(
+            deliverable_id=7, report=decision_record
+        )
+        mock_core_api_client.mark_report_success.assert_not_called()
+
+    def test_explicit_deliverable_id_none_falls_back_to_legacy(
+        self,
+        decision_record: DecisionRecord,
+        mock_core_api_client: MagicMock,
+    ) -> None:
+        sender = MagicMock()
+        sender.request.args = [42]
+        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": None}
+
+        generate_report_from_docx_success(sender=sender, result=decision_record)
+
+        mock_core_api_client.mark_report_success.assert_called_once()
+        mock_core_api_client.mark_deliverable_success.assert_not_called()
 
 
 class TestSetMeetingFailedStatusOnError:
-    def test_posts_failure_to_correct_endpoint(
+    def test_calls_mark_report_failure_when_no_deliverable_id(
         self,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When kwargs contain args, meeting_id is extracted and POSTed to the failure endpoint."""
         set_meeting_failed_status_on_error(
             sender=MagicMock(),
             args=[42, "transcription.docx", "DECISION_RECORD"],
+            kwargs={"owner_keycloak_uuid": "abc"},
             exception=Exception("LLM timeout"),
         )
 
-        mock_httpx_client.post.assert_called_once_with("/meetings/42/report/failure")
-        mock_httpx_client.post.return_value.raise_for_status.assert_called_once()
+        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=42)
+        mock_core_api_client.mark_deliverable_failure.assert_not_called()
+
+    def test_calls_mark_deliverable_failure_when_deliverable_id_set(
+        self,
+        mock_core_api_client: MagicMock,
+    ) -> None:
+        set_meeting_failed_status_on_error(
+            sender=MagicMock(),
+            args=[42, "transcription.docx", "DECISION_RECORD"],
+            kwargs={"owner_keycloak_uuid": "abc", "deliverable_id": 7},
+            exception=Exception("LLM timeout"),
+        )
+
+        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
+            deliverable_id=7
+        )
+        mock_core_api_client.mark_report_failure.assert_not_called()
 
     def test_falls_back_to_sender_request_args(
         self,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When kwargs has no args, meeting_id is extracted from sender.request.args."""
         sender = MagicMock()
         sender.request.args = [7]
+        sender.request.kwargs = {"deliverable_id": 9}
 
         set_meeting_failed_status_on_error(sender=sender)
 
-        mock_httpx_client.post.assert_called_once_with("/meetings/7/report/failure")
+        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
+            deliverable_id=9
+        )
+
+    def test_falls_back_to_sender_with_no_deliverable_id(
+        self,
+        mock_core_api_client: MagicMock,
+    ) -> None:
+        sender = MagicMock()
+        sender.request.args = [7]
+        sender.request.kwargs = {}
+
+        set_meeting_failed_status_on_error(sender=sender)
+
+        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=7)
 
     def test_returns_early_when_no_meeting_id(
         self,
-        mock_httpx_client: MagicMock,
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When neither kwargs nor sender provide args, logs error and returns without POST."""
         sender = MagicMock(spec=[])  # no 'request' attribute
 
         set_meeting_failed_status_on_error(sender=sender)
 
-        mock_httpx_client.cls.assert_not_called()
+        mock_core_api_client.cls.assert_not_called()
 
     def test_returns_early_when_no_sender_and_no_args(
         self,
-        mock_httpx_client: MagicMock,
+        mock_core_api_client: MagicMock,
     ) -> None:
-        """When called with no sender and no args, logs error and returns without POST."""
         set_meeting_failed_status_on_error()
 
-        mock_httpx_client.cls.assert_not_called()
-
-    def test_raises_on_http_error(
-        self,
-        mock_httpx_client: MagicMock,
-        mock_api_settings: MagicMock,  # noqa: ARG002
-    ) -> None:
-        """An HTTPStatusError from raise_for_status() is wrapped in ReportCallbackError."""
-        mock_httpx_client.post.return_value.raise_for_status.side_effect = (
-            httpx.HTTPStatusError(
-                "500 Internal Server Error",
-                request=MagicMock(),
-                response=MagicMock(),
-            )
-        )
-
-        with pytest.raises(ReportCallbackError):
-            set_meeting_failed_status_on_error(sender=MagicMock(), args=[1])
+        mock_core_api_client.cls.assert_not_called()

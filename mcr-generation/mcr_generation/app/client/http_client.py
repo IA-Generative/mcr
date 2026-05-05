@@ -1,4 +1,5 @@
 from collections.abc import Mapping
+from typing import Any
 
 import httpx
 
@@ -19,5 +20,11 @@ class HttpClient:
     def get(self, endpoint: str, params: JsonParams | None = None) -> httpx.Response:
         with httpx.Client(base_url=self.base_url) as client:
             response = client.get(endpoint, headers=self._get_headers(), params=params)
+            response.raise_for_status()
+            return response
+
+    def post(self, endpoint: str, json: Any = None) -> httpx.Response:
+        with httpx.Client(base_url=self.base_url) as client:
+            response = client.post(endpoint, headers=self._get_headers(), json=json)
             response.raise_for_status()
             return response

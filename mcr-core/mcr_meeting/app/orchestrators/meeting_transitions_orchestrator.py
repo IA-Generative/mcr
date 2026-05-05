@@ -106,7 +106,10 @@ def delete(meeting_id: int, user_keycloak_uuid: UUID4 | None = None) -> Meeting:
 
 
 def start_report(
-    meeting_id: int, user_keycloak_uuid: UUID4, report_type: ReportType
+    meeting_id: int,
+    user_keycloak_uuid: UUID4,
+    report_type: ReportType,
+    deliverable_id: int | None = None,
 ) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
@@ -116,7 +119,10 @@ def start_report(
         create_formatted_docx_transcription(meeting, meeting.transcriptions)
 
     return _apply_transition(
-        meeting, MeetingEvent.START_REPORT, report_type=report_type
+        meeting,
+        MeetingEvent.START_REPORT,
+        report_type=report_type,
+        deliverable_id=deliverable_id,
     )
 
 

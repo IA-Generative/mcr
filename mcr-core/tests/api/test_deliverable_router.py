@@ -180,7 +180,7 @@ class TestPostDeliverableRoute:
         assert response.status_code == 400
         mock_celery_producer_app.send_task.assert_not_called()
 
-    def test_dispatches_legacy_celery_task(
+    def test_dispatches_celery_task_with_deliverable_id(
         self,
         deliverables_client: PrefixedTestClient,
         user_fixture: User,
@@ -193,18 +193,21 @@ class TestPostDeliverableRoute:
             transcription_filename="transcription.docx",
         )
 
-        deliverables_client.post(
+        response = deliverables_client.post(
             "",
             json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
             headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
         )
+
+        deliverable_id = response.json()["id"]
 
         mock_celery_producer_app.send_task.assert_called_once()
         call = mock_celery_producer_app.send_task.call_args
         assert call.kwargs["args"][0] == meeting.id
         assert call.kwargs["args"][2] == "DECISION_RECORD"
         assert call.kwargs["kwargs"] == {
-            "owner_keycloak_uuid": str(user_fixture.keycloak_uuid)
+            "owner_keycloak_uuid": str(user_fixture.keycloak_uuid),
+            "deliverable_id": deliverable_id,
         }
 
 

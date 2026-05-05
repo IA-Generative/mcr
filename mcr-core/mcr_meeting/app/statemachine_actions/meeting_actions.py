@@ -136,7 +136,10 @@ def after_complete_transcription_handler(
 
 
 def after_start_report_handler(
-    meeting: Meeting, next_status: MeetingStatus, report_type: ReportType
+    meeting: Meeting,
+    next_status: MeetingStatus,
+    report_type: ReportType,
+    deliverable_id: int | None = None,
 ) -> None:
     try:
         if meeting.transcription_filename is None:
@@ -146,12 +149,18 @@ def after_start_report_handler(
             meeting_id=meeting.id, filename=meeting.transcription_filename
         )
 
+        task_kwargs: dict[str, str | int] = {
+            "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
+        }
+        if deliverable_id is not None:
+            task_kwargs["deliverable_id"] = deliverable_id
+
         with UnitOfWork():
             update_meeting_status(meeting, next_status)
             celery_producer_app.send_task(
                 MCRReportGenerationTasks.REPORT,
                 args=[meeting.id, transcription_object_name, report_type],
-                kwargs={"owner_keycloak_uuid": str(meeting.owner.keycloak_uuid)},
+                kwargs=task_kwargs,
             )
 
         logger.info("Report generation task created for meeting: {}", meeting.id)
