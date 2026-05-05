@@ -72,6 +72,12 @@ class LangfuseSettings(EnvBaseSettings):
     LANGFUSE_PUBLIC_KEY: str = Field(description="Langfuse public key")
     LANGFUSE_SECRET_KEY: str = Field(description="Langfuse secret key")
     LANGFUSE_HOST: str = Field(description="Langfuse host URL")
+    LOW_CONFIDENCE_THRESHOLD: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Below this score, emit a Langfuse WARNING event for low-confidence extracted items.",
+    )
 
 
 class ChunkingConfig(BaseSettings):
