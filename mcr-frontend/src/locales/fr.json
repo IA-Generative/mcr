@@ -414,7 +414,8 @@
     "delete": "Supprimer la réunion",
     "edit": "Modifier le nom",
     "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
-    "details": "{subtitle} {date} à {time} {separator} Durée : {duration}",
+    "details": "{subtitle} {date} à {time}",
+    "duration-label": "Durée : {duration}",
     "subtitle": {
       "import": "Fichier importé le",
       "record": "Réunion en présentiel enregistrée le",
@@ -520,6 +521,58 @@
         "buttons": {
           "cancel": "Annuler",
           "end": "Terminer l'enregistrement"
+        }
+      }
+    },
+    "visio-recording": {
+      "title": "Enregistrement",
+      "connecting": {
+        "badge": "Connexion en cours de MCR Agent",
+        "description": "Merci de patienter, cela peut prendre quelques instants."
+      },
+      "in-progress": {
+        "badge": "En cours d'enregistrement",
+        "stop-button": "Terminer l'enregistrement"
+      },
+      "error": {
+        "badge": "Erreur",
+        "description": "La connexion de MCR Agent à la réunion a échoué.",
+        "retry-button": "Relancer la connexion"
+      },
+      "advices": {
+        "link": "Voir les conseils pour préparer l'enregistrement d'une visio",
+        "modal": {
+          "title": "Préparer l'enregistrement de votre visioconférence",
+          "section-1": {
+            "title": "1. Avant et pendant la visioconférence",
+            "advice-1": {
+              "bold": "Lancez votre visioconférence",
+              "text": "{bold} (COMU, Webconf, Webinaire de l'État, Visio)."
+            },
+            "advice-2": {
+              "bold": "MCR Agent se connecte automatiquement",
+              "text": "{bold} à la visio."
+            },
+            "advice-3": {
+              "bold": "Limitez les bruits parasites",
+              "text": "{bold} (notifications, conversations autour, …)."
+            },
+            "advice-4": {
+              "bold": "Parlez distinctement",
+              "text": "{bold}, une personne à la fois."
+            }
+          },
+          "section-2": {
+            "title": "2. Après la visioconférence",
+            "advice-1": {
+              "bold": "et terminez l'enregistrement.",
+              "text": "Retournez sur France Compte Rendu {bold}"
+            },
+            "advice-1-detail": "Cela permet de lancer automatiquement la transcription."
+          },
+          "callout": "Pour en savoir plus, consultez cet article sur {link}.",
+          "callout-link": "les bons gestes d'utilisation de France Compte-Rendu",
+          "confirm": "J'ai compris"
         }
       }
     }
