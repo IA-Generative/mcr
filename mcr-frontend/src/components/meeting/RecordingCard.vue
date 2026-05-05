@@ -10,19 +10,23 @@
     />
 
     <VisioRecordingCard
-      v-else-if="isOnlineMeeting({ name_platform: props.namePlatform })"
+      v-else-if="isOnline"
       :meeting-id="meetingId"
       :status="status"
       :start-date="startDate"
     />
 
     <a
-      v-if="isRecordLocally"
+      v-if="isRecordLocally || isOnline"
       href=""
       class="fr-link fr-link--sm fr-link--icon-left fr-icon-question-line self-end mr-4"
-      @click.prevent="openLiveAdvices"
+      @click.prevent="isRecordLocally ? openLiveAdvices() : openVisioAdvices()"
     >
-      {{ $t('meeting-v2.recording.advices.title') }}
+      {{
+        isRecordLocally
+          ? $t('meeting-v2.recording.advices.title')
+          : $t('meeting-v2.visio-recording.advices.link')
+      }}
     </a>
   </div>
 </template>
@@ -32,6 +36,7 @@ import { useModal } from 'vue-final-modal';
 import LiveRecordingInProgress from '@/components/meeting/LiveRecordingInProgress.vue';
 import VisioRecordingCard from '@/components/meeting/VisioRecordingCard.vue';
 import LiveMeetingAdvicesModal from '@/components/meeting/modals/LiveMeetingAdvicesModal.vue';
+import VisioAdvicesModal from '@/components/meeting/modals/VisioAdvicesModal.vue';
 import type { MeetingStatus, AllMeetingPlatforms } from '@/services/meetings/meetings.types';
 import { isOnlineMeeting } from '@/services/meetings/meetings.types';
 
@@ -43,6 +48,8 @@ const props = defineProps<{
 }>();
 
 const isRecordLocally = computed(() => props.namePlatform === 'MCR_RECORD');
+const isOnline = computed(() => isOnlineMeeting({ name_platform: props.namePlatform }));
 
 const { open: openLiveAdvices } = useModal({ component: LiveMeetingAdvicesModal });
+const { open: openVisioAdvices } = useModal({ component: VisioAdvicesModal });
 </script>
