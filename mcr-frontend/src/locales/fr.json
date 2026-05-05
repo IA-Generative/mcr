@@ -391,6 +391,26 @@
       "button": "Écouter l'audio",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
     },
+    "deliverable-card": {
+      "title": "Livrables",
+      "description": "Sélectionnez un format de compte-rendu à générer avec l'IA :",
+      "generate-button": "Générer",
+      "type": {
+        "decision-record": {
+          "label": "Relevé de décisions",
+          "hint": "Synthèse rédigée des échanges et décisions prises lors de la réunion.",
+          "title": "Relevé de décision"
+        },
+        "detailed-synthesis": {
+          "label": "Synthèse détaillée",
+          "hint": "Synthèse complète et détaillée de l'ensemble des échanges de la réunion.",
+          "title": "Synthèse détaillée"
+        },
+        "transcription": {
+          "title": "Transcription"
+        }
+      }
+    },
     "delete": "Supprimer la réunion",
     "edit": "Modifier le nom",
     "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
@@ -625,6 +645,7 @@
     "meeting-creation": "Erreur lors de la création de la réunion",
     "audio-capture": "Erreur lors de la captation audio de la visioconférence",
     "report-generation": "Erreur lors de la génération du compte-rendu. Veuillez réessayer.",
-    "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer."
+    "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer.",
+    "deliverable-generation": "La génération du livrable a échoué."
   }
 }

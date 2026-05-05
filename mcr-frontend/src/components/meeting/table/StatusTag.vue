@@ -33,7 +33,7 @@ export function getTagMeta(status: DeliverableStatus | null): TagMeta | null {
       icon: 'fr-icon-flashlight-fill',
     };
   }
-  if (status === 'DONE') {
+  if (status === 'AVAILABLE') {
     return {
       class: 'bg-success-950 text-success-425',
       label: t('meetings_v2.table.columns.status.success'),

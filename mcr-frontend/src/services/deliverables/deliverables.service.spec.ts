@@ -24,7 +24,7 @@ describe('getTranscriptionStatus', () => {
   it.each(['TRANSCRIPTION_DONE', 'REPORT_PENDING', 'REPORT_DONE'] satisfies MeetingStatus[])(
     'should_return_success_for_%s',
     (status) => {
-      expect(getTranscriptionStatus(status)).toBe('DONE');
+      expect(getTranscriptionStatus(status)).toBe('AVAILABLE');
     },
   );
 
@@ -66,7 +66,7 @@ describe('getReportStatus', () => {
   });
 
   it('should_return_success_for_REPORT_DONE', () => {
-    expect(getReportStatus('REPORT_DONE')).toBe('DONE');
+    expect(getReportStatus('REPORT_DONE')).toBe('AVAILABLE');
   });
 
   it.each([
