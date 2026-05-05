@@ -9,6 +9,10 @@ vi.mock('@/services/meetings/use-meeting', () => ({
       mutate: vi.fn(),
       isPending: { value: false },
     }),
+    stopCaptureMutation: () => ({
+      mutate: vi.fn(),
+      isPending: { value: false },
+    }),
   }),
 }));
 
