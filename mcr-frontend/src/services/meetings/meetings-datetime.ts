@@ -1,6 +1,5 @@
 import { DELAY_TO_SHOW_ALERT, MAX_DELAY_TO_FETCH_DELIVERABLE } from '@/config/meeting';
 import { differenceInDays, parseISO } from 'date-fns';
-import type { MeetingDetailDto } from './meetings.types';
 import { logger } from '@sentry/vue';
 
 export function meetingDateIsInAlertPeriod(date: string): boolean {
@@ -35,14 +34,18 @@ export function getTimeFromIso8601(isoDate: string): string {
   return `${hours}h${minutes}`;
 }
 
-export function getMeetingDuration(meeting: MeetingDetailDto): string {
-  if (meeting.start_date === undefined || meeting.end_date === undefined) {
+export function leftPad(value: number): string {
+  return value.toString().padStart(2, '0');
+}
+
+export function calculateDuration(startDate?: string, endDate?: string): string {
+  if (startDate == null || endDate == null) {
     logger.error(
       'Meeting duration cannot be computed if meeting start_date or end_date is missing',
     );
     return '';
   } else {
-    const diffMs = new Date(meeting.end_date).getTime() - new Date(meeting.start_date).getTime();
+    const diffMs = new Date(endDate).getTime() - new Date(startDate).getTime();
 
     const totalSeconds = Math.floor(diffMs / 1000);
     const hours = Math.floor(totalSeconds / 3600);
