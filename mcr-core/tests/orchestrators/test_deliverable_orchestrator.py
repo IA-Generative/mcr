@@ -54,7 +54,7 @@ class TestRequestDeliverable:
         deliverable = do.request_deliverable(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
-            type=DeliverableType.DECISION_RECORD,
+            deliverable_type=DeliverableType.DECISION_RECORD,
         )
 
         assert deliverable.status == DeliverableStatus.PENDING
@@ -87,7 +87,7 @@ class TestRequestDeliverable:
             do.request_deliverable(
                 meeting_id=meeting.id,
                 user_keycloak_uuid=meeting.owner.keycloak_uuid,
-                type=DeliverableType.TRANSCRIPTION,
+                deliverable_type=DeliverableType.TRANSCRIPTION,
             )
 
         mock_celery_producer_app.send_task.assert_not_called()
@@ -112,7 +112,7 @@ class TestRequestDeliverable:
         new_deliverable = do.request_deliverable(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
-            type=DeliverableType.DETAILED_SYNTHESIS,
+            deliverable_type=DeliverableType.DETAILED_SYNTHESIS,
         )
 
         db_session.refresh(meeting)
@@ -136,7 +136,7 @@ class TestRequestDeliverable:
         new_deliverable = do.request_deliverable(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
-            type=DeliverableType.DECISION_RECORD,
+            deliverable_type=DeliverableType.DECISION_RECORD,
         )
 
         db_session.refresh(meeting)
@@ -162,7 +162,7 @@ class TestRequestDeliverable:
         second = do.request_deliverable(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
-            type=DeliverableType.DETAILED_SYNTHESIS,
+            deliverable_type=DeliverableType.DETAILED_SYNTHESIS,
         )
 
         assert second.id != first.id
@@ -185,7 +185,7 @@ class TestRequestDeliverable:
             do.request_deliverable(
                 meeting_id=meeting.id,
                 user_keycloak_uuid=intruder.keycloak_uuid,
-                type=DeliverableType.DECISION_RECORD,
+                deliverable_type=DeliverableType.DECISION_RECORD,
             )
 
     def test_same_type_pending_returns_existing_idempotently(

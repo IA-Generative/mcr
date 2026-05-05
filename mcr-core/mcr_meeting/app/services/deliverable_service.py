@@ -15,12 +15,14 @@ from mcr_meeting.app.models.deliverable_model import (
 )
 
 
-def create_pending_deliverable(meeting_id: int, type: DeliverableType) -> Deliverable:
+def create_pending_deliverable(
+    meeting_id: int, deliverable_type: DeliverableType
+) -> Deliverable:
     with UnitOfWork():
         return save_deliverable(
             Deliverable(
                 meeting_id=meeting_id,
-                type=type,
+                type=deliverable_type,
                 status=DeliverableStatus.PENDING,
             )
         )
