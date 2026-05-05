@@ -394,7 +394,8 @@
     "delete": "Supprimer la réunion",
     "edit": "Modifier le nom",
     "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
-    "details": "{subtitle} {date} à {time} {separator} Durée : {duration}",
+    "details": "{subtitle} {date} à {time}",
+    "duration-label": "Durée : {duration}",
     "subtitle": {
       "import": "Fichier importé le",
       "record": "Réunion en présentiel enregistrée le",
@@ -501,6 +502,21 @@
           "cancel": "Annuler",
           "end": "Terminer l'enregistrement"
         }
+      }
+    },
+    "visio-recording": {
+      "title": "Enregistrement",
+      "connecting": {
+        "badge": "Connexion en cours de MCR Agent",
+        "description": "Merci de patienter, cela peut prendre quelques instants."
+      },
+      "in-progress": {
+        "badge": "En cours d'enregistrement"
+      },
+      "error": {
+        "badge": "Erreur",
+        "description": "La connexion de MCR Agent à la réunion a échoué.",
+        "retry-button": "Relancer la connexion"
       }
     }
   },
