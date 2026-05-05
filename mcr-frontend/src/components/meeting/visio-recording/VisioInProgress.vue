@@ -16,6 +16,7 @@
 
 <script setup lang="ts">
 import { useStopwatch } from 'vue-timer-hook';
+import { leftPad } from '@/services/meetings/meetings-datetime';
 
 const props = defineProps<{
   startDate?: string;
@@ -27,8 +28,4 @@ const offsetSeconds = computed(() => {
   return Math.floor((Date.now() - new Date(props.startDate).getTime()) / 1000);
 });
 const time = useStopwatch(offsetSeconds.value, showTimer.value);
-
-function leftPad(value: number): string {
-  return value.toString().padStart(2, '0');
-}
 </script>

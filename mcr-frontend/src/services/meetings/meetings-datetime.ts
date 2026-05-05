@@ -34,7 +34,11 @@ export function getTimeFromIso8601(isoDate: string): string {
   return `${hours}h${minutes}`;
 }
 
-export function getMeetingDuration(startDate?: string, endDate?: string): string {
+export function leftPad(value: number): string {
+  return value.toString().padStart(2, '0');
+}
+
+export function calculateDuration(startDate?: string, endDate?: string): string {
   if (startDate == null || endDate == null) {
     logger.error(
       'Meeting duration cannot be computed if meeting start_date or end_date is missing',

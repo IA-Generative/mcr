@@ -58,6 +58,7 @@ import BaseModal from '@/components/core/BaseModal.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecordingSession } from '@/composables/use-recording-session';
 import EndLiveMeetingModal from '@/components/meeting/modals/EndLiveMeetingModal.vue';
+import { leftPad } from '@/services/meetings/meetings-datetime';
 import { useLeaveGuard } from '@/composables/use-leave-guard';
 import { useModal } from 'vue-final-modal';
 import { t } from '@/plugins/i18n';
@@ -110,10 +111,6 @@ function confirmAndNavigate(): Promise<boolean> {
 }
 
 useLeaveGuard({ isInactive, confirm: confirmAndNavigate });
-
-function leftPad(value: number): string {
-  return value.toString().padStart(2, '0');
-}
 </script>
 
 <style scoped>
