@@ -93,15 +93,15 @@ def _create_pending_with_race_recovery(
 def request_deliverable(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
-    type: DeliverableType,
+    deliverable_type: DeliverableType,
 ) -> Deliverable:
-    if type == DeliverableType.TRANSCRIPTION:
+    if deliverable_type == DeliverableType.TRANSCRIPTION:
         raise BadRequestException(
             "TRANSCRIPTION deliverables are produced by the capture pipeline "
             "and cannot be requested through this endpoint."
         )
 
-    report_type = _REPORT_TYPE_BY_DELIVERABLE[type]
+    report_type = _REPORT_TYPE_BY_DELIVERABLE[deliverable_type]
 
     meeting = get_meeting(meeting_id=meeting_id, user_keycloak_uuid=user_keycloak_uuid)
 

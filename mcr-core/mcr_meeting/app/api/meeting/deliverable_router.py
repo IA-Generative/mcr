@@ -59,7 +59,7 @@ async def create_deliverable(
     deliverable = request_deliverable(
         meeting_id=body.meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
-        type=body.type,
+        deliverable_type=body.type,
     )
     return DeliverableResponse.model_validate(deliverable)
 
