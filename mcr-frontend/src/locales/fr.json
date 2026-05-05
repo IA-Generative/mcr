@@ -394,7 +394,8 @@
     "delete": "Supprimer la réunion",
     "edit": "Modifier le nom",
     "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
-    "details": "{subtitle} {date} à {time} {separator} Durée : {duration}",
+    "details": "{subtitle} {date} à {time}",
+    "duration-label": "Durée : {duration}",
     "subtitle": {
       "import": "Fichier importé le",
       "record": "Réunion en présentiel enregistrée le",
