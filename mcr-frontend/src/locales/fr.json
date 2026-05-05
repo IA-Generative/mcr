@@ -503,6 +503,21 @@
           "end": "Terminer l'enregistrement"
         }
       }
+    },
+    "visio-recording": {
+      "title": "Enregistrement",
+      "connecting": {
+        "badge": "Connexion en cours de MCR Agent",
+        "description": "Merci de patienter, cela peut prendre quelques instants."
+      },
+      "in-progress": {
+        "badge": "En cours d'enregistrement"
+      },
+      "error": {
+        "badge": "Erreur",
+        "description": "La connexion de MCR Agent à la réunion a échoué.",
+        "retry-button": "Relancer la connexion"
+      }
     }
   },
   "members": {
