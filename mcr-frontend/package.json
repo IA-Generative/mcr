@@ -69,6 +69,7 @@
     "@vue/tsconfig": "^0.5.1",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
+    "eslint-plugin-local-rules": "^3.0.2",
     "eslint-plugin-testing-library": "^7.3.0",
     "eslint-plugin-vue": "^9.28.0",
     "fake-indexeddb": "^6.2.5",

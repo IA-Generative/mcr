@@ -25,11 +25,20 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest',
   },
-  plugins: ['testing-library'],
+  plugins: ['testing-library', 'local-rules'],
   overrides: [
+    {
+      files: ['eslint-local-rules/**/*.js'],
+      env: { node: true },
+      rules: { 'no-undef': 'off' },
+    },
     {
       files: ['**/__tests__/**/*.[jt]s?(x)', '**/*.spec.[jt]s?(x)', '**/*.test.[jt]s?(x)'],
       extends: ['plugin:testing-library/vue'],
+      rules: {
+        'no-restricted-syntax': 'off',
+        'local-rules/no-vi-fn-outside-hoisted': 'error',
+      },
     },
   ],
 };
