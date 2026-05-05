@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from enum import StrEnum
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mcr_meeting.app.db.db import Base
@@ -23,6 +23,16 @@ class DeliverableStatus(StrEnum):
 
 class Deliverable(Base):
     __tablename__ = "deliverable"
+    __table_args__ = (
+        Index(
+            "uq_deliverable_meeting_type_active",
+            "meeting_id",
+            "type",
+            unique=True,
+            postgresql_where=text("status <> 'DELETED'"),
+            sqlite_where=text("status <> 'DELETED'"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     meeting_id: Mapped[int] = mapped_column(

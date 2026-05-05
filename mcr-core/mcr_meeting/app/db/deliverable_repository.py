@@ -3,6 +3,7 @@ from mcr_meeting.app.exceptions.exceptions import NotFoundException
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
+    DeliverableType,
 )
 
 
@@ -39,6 +40,21 @@ def get_by_id(deliverable_id: int) -> Deliverable:
     if deliverable is None:
         raise NotFoundException(f"Deliverable not found: id={deliverable_id}")
     return deliverable
+
+
+def find_active_by_meeting_and_type(
+    meeting_id: int, deliverable_type: DeliverableType
+) -> Deliverable | None:
+    db = get_db_session_ctx()
+    return (
+        db.query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type == deliverable_type,
+            Deliverable.status != DeliverableStatus.DELETED,
+        )
+        .first()
+    )
 
 
 def set_status(deliverable_id: int, status: DeliverableStatus) -> None:
