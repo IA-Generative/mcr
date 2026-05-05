@@ -3,7 +3,8 @@ import {
   getCalendarDateFromIso8601,
   getNumberOfDaysBeforeMeetingDeletion,
   getTimeFromIso8601,
-  getMeetingDuration,
+  calculateDuration,
+  leftPad,
   meetingDateIsInAlertPeriod,
 } from './meetings-datetime';
 import { subDays, formatISO } from 'date-fns';
@@ -84,24 +85,38 @@ describe('getTimeFromIso8601', () => {
   });
 });
 
+describe('leftPad', () => {
+  it('should pad single digit with leading zero', () => {
+    expect(leftPad(5)).toBe('05');
+  });
+
+  it('should leave two-digit number unchanged', () => {
+    expect(leftPad(42)).toBe('42');
+  });
+
+  it('should pad zero', () => {
+    expect(leftPad(0)).toBe('00');
+  });
+});
+
 describe('getMeetingDuration', () => {
   it('should compute a 1h30 duration', () => {
-    expect(getMeetingDuration('2025-01-01T10:00:00Z', '2025-01-01T11:30:00Z')).toBe('01:30:00');
+    expect(calculateDuration('2025-01-01T10:00:00Z', '2025-01-01T11:30:00Z')).toBe('01:30:00');
   });
 
   it('should compute a duration shorter than 1 minute', () => {
-    expect(getMeetingDuration('2025-01-01T10:00:00Z', '2025-01-01T10:00:45Z')).toBe('00:00:45');
+    expect(calculateDuration('2025-01-01T10:00:00Z', '2025-01-01T10:00:45Z')).toBe('00:00:45');
   });
 
   it('should compute a duration with hours, minutes and seconds', () => {
-    expect(getMeetingDuration('2025-01-01T08:00:00Z', '2025-01-01T10:15:30Z')).toBe('02:15:30');
+    expect(calculateDuration('2025-01-01T08:00:00Z', '2025-01-01T10:15:30Z')).toBe('02:15:30');
   });
 
   it('should return empty string when start_date is undefined', () => {
-    expect(getMeetingDuration(undefined, '2025-01-01T11:00:00Z')).toBe('');
+    expect(calculateDuration(undefined, '2025-01-01T11:00:00Z')).toBe('');
   });
 
   it('should return empty string when end_date is undefined', () => {
-    expect(getMeetingDuration('2025-01-01T10:00:00Z', undefined)).toBe('');
+    expect(calculateDuration('2025-01-01T10:00:00Z', undefined)).toBe('');
   });
 });
