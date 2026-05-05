@@ -1,11 +1,5 @@
 <template>
-  <div
-    v-if="!isSendingLastAudioChunks"
-    class="flex flex-col items-center gap-5"
-  >
-    <h2 class="font-bold text-3xl/10 text-blue-france-sun">
-      {{ $t('meeting-v2.recording.title') }}
-    </h2>
+  <template v-if="!isSendingLastAudioChunks">
     <DsfrTag
       :label="statusLabel"
       :class="
@@ -45,13 +39,7 @@
         @click="onClickStop"
       />
     </div>
-    <a
-      href=""
-      class="fr-link fr-link--sm fr-link--icon-left fr-icon-question-line self-end mr-4"
-      @click.prevent="openAdvicesModal"
-      >{{ $t('meeting-v2.recording.advices.title') }}</a
-    >
-  </div>
+  </template>
   <div
     v-else
     class="text-blue-france-sun"
@@ -70,7 +58,6 @@ import BaseModal from '@/components/core/BaseModal.vue';
 import AudioLevelMeter from '@/components/core/AudioLevelMeter.vue';
 import { useRecordingSession } from '@/composables/use-recording-session';
 import EndLiveMeetingModal from '@/components/meeting/modals/EndLiveMeetingModal.vue';
-import LiveMeetingAdvicesModal from '@/components/meeting/modals/LiveMeetingAdvicesModal.vue';
 import { useLeaveGuard } from '@/composables/use-leave-guard';
 import { useModal } from 'vue-final-modal';
 import { t } from '@/plugins/i18n';
@@ -97,10 +84,6 @@ const { open: openEndLiveMeetingModal } = useModal({
   attrs: {
     onSuccess: () => stopRecording(),
   },
-});
-
-const { open: openAdvicesModal } = useModal({
-  component: LiveMeetingAdvicesModal,
 });
 
 function onClickStop() {

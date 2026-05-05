@@ -50,10 +50,15 @@
           </div>
         </div>
         <div
-          v-if="meeting && isRecordingLocally"
+          v-if="meeting && showRecordingCard"
           class="mt-6 py-5 bg-grey-1000"
         >
-          <LiveRecordingInProgress :meeting-id="meeting.id" />
+          <RecordingCard
+            :meeting-id="meeting.id"
+            :status="meeting.status"
+            :name-platform="meeting.name_platform"
+            :start-date="meeting.start_date"
+          />
         </div>
       </div>
     </div>
@@ -68,7 +73,9 @@ import { t } from '@/plugins/i18n';
 import { ROUTES } from '@/router/routes';
 import { is403Error, is404Error } from '@/services/http/http.utils';
 import type { UpdateMeetingDto } from '@/services/meetings/meetings.types';
+import { isOnlineMeeting, isVisioCaptureStatus } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
+import RecordingCard from '@/components/meeting/RecordingCard.vue';
 import { useModal } from 'vue-final-modal';
 import MeetingPageAlert from './MeetingPageAlert.vue';
 
@@ -88,6 +95,13 @@ const isRecordingLocally = computed(
     meeting?.value?.status === 'CAPTURE_IN_PROGRESS' &&
     meeting?.value?.name_platform === 'MCR_RECORD',
 );
+
+const isVisioCapture = computed(() => {
+  if (!meeting.value || !isOnlineMeeting(meeting.value)) return false;
+  return isVisioCaptureStatus(meeting.value.status);
+});
+
+const showRecordingCard = computed(() => isRecordingLocally.value || isVisioCapture.value);
 watch(isError, () => {
   if (isError.value && (is403Error(error.value) || is404Error(error.value))) {
     router.push({ name: ROUTES.NOT_FOUND.name });
