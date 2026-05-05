@@ -13,7 +13,7 @@
       </ul>
     </div>
     <template #footer>
-      <div class="flex w-full justify-end gap-4 border-t border-gray-300 pt-4">
+      <div class="flex w-full justify-end gap-4">
         <DsfrButton
           secondary
           :label="$t('meeting-v2.recording.ending.buttons.cancel')"
