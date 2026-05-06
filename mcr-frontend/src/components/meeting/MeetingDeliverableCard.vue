@@ -60,7 +60,9 @@ const toaster = useToaster();
 
 const selectedType = ref<DeliverableType>('DECISION_RECORD');
 
-const activeDeliverables = computed(() => deliverables.value ?? []);
+const activeDeliverables = computed(() =>
+  (deliverables.value ?? []).filter((d) => d.type !== 'TRANSCRIPTION'),
+);
 
 const generatedTypes = computed(() => new Set(activeDeliverables.value.map((d) => d.type)));
 
