@@ -48,6 +48,7 @@
               :status="meeting.status"
             />
             <MeetingDeliverableCard
+              v-if="isPostCaptureStatus(meeting.status)"
               :meeting-id="meeting.id"
               :meeting-status="meeting.status"
             />
@@ -77,7 +78,11 @@ import { t } from '@/plugins/i18n';
 import { ROUTES } from '@/router/routes';
 import { is403Error, is404Error } from '@/services/http/http.utils';
 import type { UpdateMeetingDto } from '@/services/meetings/meetings.types';
-import { isOnlineMeeting, isVisioCaptureStatus } from '@/services/meetings/meetings.types';
+import {
+  isOnlineMeeting,
+  isPostCaptureStatus,
+  isVisioCaptureStatus,
+} from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import RecordingCard from '@/components/meeting/RecordingCard.vue';
 import { useModal } from 'vue-final-modal';
