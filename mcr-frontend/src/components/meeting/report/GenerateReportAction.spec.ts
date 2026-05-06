@@ -4,7 +4,9 @@ import { renderWithPlugins } from '@/vitest.setup';
 import type { MeetingDto } from '@/services/meetings/meetings.types';
 
 // Mock du composable useToaster
-const mockAddErrorMessage = vi.fn();
+const { mockAddErrorMessage } = vi.hoisted(() => ({
+  mockAddErrorMessage: vi.fn(),
+}));
 vi.mock('@/composables/use-toaster', () => ({
   default: () => ({
     addErrorMessage: mockAddErrorMessage,
@@ -12,9 +14,11 @@ vi.mock('@/composables/use-toaster', () => ({
 }));
 
 // Mock du service des meetings
-const mockGenerateReport = vi.fn();
-const mockGetReport = vi.fn();
-const mockResetReport = vi.fn();
+const { mockGenerateReport, mockGetReport, mockResetReport } = vi.hoisted(() => ({
+  mockGenerateReport: vi.fn(),
+  mockGetReport: vi.fn(),
+  mockResetReport: vi.fn(),
+}));
 
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({

@@ -19,10 +19,13 @@ vi.mock('@/composables/use-toaster', () => ({
 }));
 
 // Mock du service des meetings
-const mockCreateMeeting = vi.fn();
-const mockImportMeeting = vi.fn();
-const mockStartTranscription = vi.fn();
-const mockStartCapture = vi.fn();
+const { mockStartCapture, mockStartTranscription, mockImportMeeting, mockCreateMeeting } =
+  vi.hoisted(() => ({
+    mockStartCapture: vi.fn(),
+    mockStartTranscription: vi.fn(),
+    mockImportMeeting: vi.fn(),
+    mockCreateMeeting: vi.fn(),
+  }));
 
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
@@ -39,7 +42,9 @@ vi.mock('@/services/meetings/use-meeting', () => ({
 }));
 
 // Mock de vue-router
-const mockPush = vi.fn();
+const { mockPush } = vi.hoisted(() => ({
+  mockPush: vi.fn(),
+}));
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: mockPush,

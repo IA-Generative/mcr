@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { flushPromises } from '@vue/test-utils';
 
-const mockSetAudioDeviceId = vi.fn();
-const mockGetAudioInputDevices = vi.fn();
-
+const { mockSetAudioDeviceId, mockGetAudioInputDevices } = vi.hoisted(() => ({
+  mockSetAudioDeviceId: vi.fn(),
+  mockGetAudioInputDevices: vi.fn(),
+}));
 vi.mock('@/composables/use-recorder', () => ({
   useRecorder: () => ({
     getAudioInputDevices: mockGetAudioInputDevices,
