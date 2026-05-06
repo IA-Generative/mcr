@@ -70,6 +70,7 @@ function shouldPollServerForUpdates(data?: MeetingDto): boolean {
     data.status === 'CAPTURE_PENDING' ||
     data.status === 'CAPTURE_BOT_IS_CONNECTING' ||
     data.status === 'CAPTURE_BOT_CONNECTION_FAILED' ||
+    data.status === 'CAPTURE_IN_PROGRESS' ||
     data.status === 'CAPTURE_DONE' ||
     data.status === 'TRANSCRIPTION_PENDING' ||
     data.status === 'TRANSCRIPTION_IN_PROGRESS' ||

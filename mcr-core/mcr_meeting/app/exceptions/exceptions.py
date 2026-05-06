@@ -27,6 +27,10 @@ class NotFoundException(MCRException):
     """Raised when a resource is not found."""
 
 
+class BadRequestException(MCRException):
+    """Raised when an inbound request fails a business rule (mapped to HTTP 400)."""
+
+
 class NotSavedException(MCRException):
     """Raised when a resource is not saved."""
 

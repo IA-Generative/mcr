@@ -9,7 +9,7 @@
     </div>
 
     <div class="text-center">
-      <h3 class="text-xl font-bold mb-6 text-[var(--blue-france-sun-113-625)]">
+      <h3 class="text-xl font-bold mb-6 text-blue-france-sun">
         {{ $t('meeting.report.error.no-transcription.title') }}
       </h3>
       <p class="text-gray-700 text-lg">

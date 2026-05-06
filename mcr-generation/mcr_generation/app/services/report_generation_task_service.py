@@ -1,13 +1,12 @@
 from typing import Any
 
-import httpx
 from celery.signals import task_failure, task_prerun, task_success
 from langfuse import observe
 from loguru import logger
 
+from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
-from mcr_generation.app.configs.settings import ApiSettings
-from mcr_generation.app.exceptions.exceptions import ReportCallbackError
+from mcr_generation.app.configs.settings import LangfuseSettings
 from mcr_generation.app.schemas.base import BaseReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -18,12 +17,16 @@ from mcr_generation.app.services.report_generator import get_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
+from mcr_generation.app.utils.langfuse_observability import (
+    record_chunking_metadata,
+    record_report_trace_context,
+)
 from mcr_generation.app.utils.sentry_context import (
     gather_meeting_context,
     set_sentry_meeting_context,
 )
 
-api_settings = ApiSettings()
+langfuse_settings = LangfuseSettings()
 
 
 @celery_app.task(name=MCRReportGenerationTasks.REPORT)
@@ -33,9 +36,22 @@ def generate_report_from_docx(
     transcription_object_filename: str,
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
+    deliverable_id: int | None = None,
 ) -> BaseReport:
+    record_report_trace_context(
+        meeting_id=meeting_id,
+        transcription_object_filename=transcription_object_filename,
+        report_type=report_type,
+        env_mode=langfuse_settings.ENV_MODE,
+    )
+
     docx_bytes = get_file_from_s3(transcription_object_filename)
     chunks = chunk_docx_to_document_list(docx_bytes)
+
+    record_chunking_metadata(
+        chunk_count=len(chunks),
+        total_chars=sum(len(c.text) for c in chunks),
+    )
 
     report_type_enum = ReportTypes(report_type)
     generator = get_generator(report_type_enum)
@@ -59,57 +75,40 @@ def generate_report_from_docx_success(
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API.
 
-    Args:
-        sender: Celery task that triggered this signal
-        result: Generated report with participants and decisions
-        **kwargs: Additional keyword arguments from the signal
+    Routes to the deliverable-centric callback when `deliverable_id` is in the
+    task kwargs, falling back to the legacy report callback otherwise.
     """
     logger.info("Report generation success signal received.")
 
-    if not sender.request.args:
+    try:
+        task_args = extract_report_task_args(sender=sender)
+    except ValueError:
         logger.error("Cannot extract meeting_id: request args are empty")
         return
 
-    meeting_id = sender.request.args[0]
-
-    payload_dict = result.model_dump()
-
-    try:
-        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
-            response = client.post(
-                f"/meetings/{meeting_id}/report/success",
-                json=payload_dict,
-            )
-            response.raise_for_status()
-    except Exception as e:
-        raise ReportCallbackError(f"Failed to POST report: {e}") from e
+    client = CoreApiClient()
+    if task_args.deliverable_id is not None:
+        client.mark_deliverable_success(
+            deliverable_id=task_args.deliverable_id, report=result
+        )
+    else:
+        client.mark_report_success(meeting_id=task_args.meeting_id, report=result)
 
 
 @task_failure.connect
 def set_meeting_failed_status_on_error(
     sender: Any | None = None, **kwargs: Any
 ) -> None:
-    meeting_id: int | None = None
-    args = kwargs.get("args")
-    if args:
-        meeting_id = args[0]
-    elif sender is not None and hasattr(sender, "request") and sender.request.args:
-        meeting_id = sender.request.args[0]
-
-    if meeting_id is None:
+    try:
+        task_args = extract_report_task_args(kwargs, sender=sender)
+    except ValueError:
         logger.error("Unable to extract meeting_id from signal args")
         return
 
-    logger.error(
-        "Meeting {} updated to REPORT_FAILED",
-        meeting_id,
-    )
+    logger.error("Meeting {} updated to REPORT_FAILED", task_args.meeting_id)
 
-    try:
-        with httpx.Client(base_url=api_settings.MCR_CORE_API_URL) as client:
-            response = client.post(f"/meetings/{meeting_id}/report/failure")
-            response.raise_for_status()
-    except Exception as e:
-        raise ReportCallbackError(
-            f"Failed to POST report generation failure: {e}"
-        ) from e
+    client = CoreApiClient()
+    if task_args.deliverable_id is not None:
+        client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)
+    else:
+        client.mark_report_failure(meeting_id=task_args.meeting_id)

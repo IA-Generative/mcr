@@ -5,7 +5,7 @@
   >
     <div
       class="rounded-sm px-2 flex items-center gap-1"
-      :class="isRecording ? 'status-badge--recording' : 'status-badge--paused'"
+      :class="isRecording ? 'bg-warning-950 text-warning-425' : 'bg-info-950 text-info-425'"
     >
       <VIcon
         name="ri-circle-fill"
@@ -73,6 +73,7 @@ import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
 import { useChunkUpload } from '@/composables/use-chunk-upload';
 import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
+import { leftPad } from '@/services/meetings/meetings-datetime';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -229,10 +230,6 @@ watch(
   },
 );
 
-function leftPad(value: number): string {
-  return value.toString().padStart(2, '0');
-}
-
 function beforeUnloadHandler(e: BeforeUnloadEvent) {
   e.preventDefault();
   e.returnValue = true; // This adds support to browsers that require a return value
@@ -306,15 +303,3 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', beforeUnloadHandler);
 });
 </script>
-
-<style scoped>
-.status-badge--recording {
-  background: var(--warning-950-100);
-  color: var(--warning-425-625);
-}
-
-.status-badge--paused {
-  background: var(--info-950-100);
-  color: var(--info-425-625);
-}
-</style>

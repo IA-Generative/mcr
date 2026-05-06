@@ -2,7 +2,9 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useAudioChunkStore, _resetDb } from './use-audio-chunk-store';
 
-const mockUploadFile = vi.fn();
+const { mockUploadFile } = vi.hoisted(() => ({
+  mockUploadFile: vi.fn(),
+}));
 
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({

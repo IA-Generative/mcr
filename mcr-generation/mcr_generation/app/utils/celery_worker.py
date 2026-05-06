@@ -1,5 +1,9 @@
+from typing import Any
+
 import sentry_sdk
 from celery import Celery
+from celery.signals import task_postrun, worker_shutdown
+from langfuse import get_client
 from sentry_sdk.integrations.celery import CeleryIntegration
 
 from mcr_generation.app.configs.settings import CelerySettings, SentrySettings
@@ -29,3 +33,13 @@ celery_app.conf.loglevel = "WARNING"
 
 
 celery_app.conf.task_acks_late = True
+
+
+@task_postrun.connect
+def _flush_langfuse_after_task(**_: Any) -> None:
+    get_client().flush()
+
+
+@worker_shutdown.connect
+def _shutdown_langfuse(**_: Any) -> None:
+    get_client().shutdown()

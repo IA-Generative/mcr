@@ -6,6 +6,7 @@ from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from mcr_meeting.app.exceptions.exceptions import (
+    BadRequestException,
     ForbiddenAccessException,
     InvalidAudioFileError,
     MCRException,
@@ -25,6 +26,7 @@ EXCEPTION_STATUS_MAP = {
     TaskCreationException: status.HTTP_500_INTERNAL_SERVER_ERROR,
     ForbiddenAccessException: status.HTTP_403_FORBIDDEN,
     MeetingMultipartException: status.HTTP_400_BAD_REQUEST,
+    BadRequestException: status.HTTP_400_BAD_REQUEST,
 }
 
 

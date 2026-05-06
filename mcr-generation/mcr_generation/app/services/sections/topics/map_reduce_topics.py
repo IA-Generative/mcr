@@ -1,5 +1,6 @@
 """Module for extracting and consolidating topics with a topic from meeting transcripts"""
 
+import contextvars
 from concurrent.futures import ThreadPoolExecutor
 
 import instructor
@@ -61,7 +62,15 @@ class MapReduceTopics:
         self, chunks: list[Chunk], max_workers: int = 4
     ) -> Content:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            topics_by_chunk = list(executor.map(self.map_extract_topics, chunks))
+            futures = [
+                executor.submit(
+                    contextvars.copy_context().run,
+                    self.map_extract_topics,
+                    chunk,
+                )
+                for chunk in chunks
+            ]
+            topics_by_chunk: list[list[MappedTopic]] = [f.result() for f in futures]
             logger.debug("Mapped topics by chunk: {}", topics_by_chunk)
             all_topics = [topic for sublist in topics_by_chunk for topic in sublist]
         return self.reduce_topics_into_content(all_topics)

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="progress-container"
+    class="progress-container bg-background-contrast-grey"
     role="progressbar"
     :aria-valuenow="progress"
     aria-valuemin="0"
@@ -8,7 +8,7 @@
     :aria-busy="progress < 100"
   >
     <div
-      class="progress-bar"
+      class="progress-bar bg-primary"
       :style="{ width: `${progress}%` }"
     ></div>
   </div>
@@ -23,14 +23,12 @@ defineProps<{
 <style scoped>
 .progress-container {
   height: 0.5rem;
-  background-color: var(--background-contrast-grey);
   border-radius: 9999px;
   overflow: hidden;
   width: 80%;
 }
 .progress-bar {
   height: 100%;
-  background-color: var(--background-action-high-blue-france);
   transition: width 1s linear;
 }
 </style>

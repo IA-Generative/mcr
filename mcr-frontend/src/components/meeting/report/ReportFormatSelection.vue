@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col justify-center items-center">
     <div class="flex flex-col justify-center items-center gap-10 mb-5">
-      <span class="text-body-grey">{{ $t('meeting.report.disclaimer.description') }}</span>
+      <span class="text-grey-625">{{ $t('meeting.report.disclaimer.description') }}</span>
       <span class="text-base"> {{ $t('meeting.report.disclaimer.title') }}</span>
     </div>
     <div class="flex flex-col gap-10 justify-center items-center">

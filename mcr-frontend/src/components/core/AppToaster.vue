@@ -23,7 +23,7 @@ const close = (id: string) => emit('closeMessage', id);
         :key="message.id"
       >
         <DsfrAlert
-          class="app-alert"
+          class="app-alert bg-grey-1000"
           v-bind="message"
           @close="close(message.id as string)"
         />
@@ -47,7 +47,6 @@ const close = (id: string) => emit('closeMessage', id);
 }
 
 .app-alert {
-  background-color: var(--grey-1000-50);
   width: 90%;
   pointer-events: all;
 }

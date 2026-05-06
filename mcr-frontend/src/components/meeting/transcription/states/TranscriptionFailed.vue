@@ -7,10 +7,10 @@
         class="w-22 h-22"
       />
       <div class="text-center">
-        <h3 class="text-xl font-bold mb-6 text-[var(--blue-france-sun-113-625)]">
+        <h3 class="text-xl font-bold mb-6 text-blue-france-sun">
           {{ $t('meeting.transcription.transcription-failed.title') }}
         </h3>
-        <p class="text-lg mb-4 text-[var(--default-text-grey)]">
+        <p class="text-lg mb-4 text-grey-625">
           {{ $t('meeting.transcription.transcription-failed.description') }}
         </p>
       </div>

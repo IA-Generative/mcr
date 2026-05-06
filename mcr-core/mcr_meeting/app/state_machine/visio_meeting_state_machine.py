@@ -139,10 +139,17 @@ class VisioMeetingStateMachine(StateMachine):
             return
         update_status_handler(self.meeting, self.current_state_value)
 
-    def after_START_REPORT(self, report_type: ReportType) -> None:
+    def after_START_REPORT(
+        self, report_type: ReportType, deliverable_id: int | None = None
+    ) -> None:
         if self.meeting is None:
             return
-        after_start_report_handler(self.meeting, self.current_state_value, report_type)
+        after_start_report_handler(
+            self.meeting,
+            self.current_state_value,
+            report_type,
+            deliverable_id=deliverable_id,
+        )
 
     def after_COMPLETE_REPORT(self, report_response: ReportResponse) -> None:
         if self.meeting is None:

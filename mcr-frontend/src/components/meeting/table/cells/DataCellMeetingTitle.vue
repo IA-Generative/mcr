@@ -1,6 +1,6 @@
 <template>
   <span
-    v-if="showAlertIcon"
+    v-if="isInAlertPeriod"
     class="tooltip-wrapper"
   >
     <DsfrTooltip
@@ -22,22 +22,16 @@
 import { RouterLink } from 'vue-router';
 import { ROUTES } from '@/router/routes';
 import type { MeetingTitleCell } from '../types';
-import {
-  getNumberOfDaysBeforeMeetingDeletion,
-  meetingDateIsInAlertPeriod,
-} from '@/services/meetings/meetings-datetime';
+import { useMeetingPeremption } from '@/composables/use-meeting-peremption';
 import { t } from '@/plugins/i18n';
 
 const { cell: meeting } = defineProps<{ cell: MeetingTitleCell }>();
 
-const showAlertIcon = computed(() => meetingDateIsInAlertPeriod(meeting.creation_date));
-const numberOfDaysBeforeDeleting = computed(() =>
-  getNumberOfDaysBeforeMeetingDeletion(meeting.creation_date),
-);
+const { isInAlertPeriod, daysBeforeDeletion } = useMeetingPeremption(() => meeting.creation_date);
 
 const tooltipContent = computed(() => {
-  const daysLeft = numberOfDaysBeforeDeleting.value;
-  if (daysLeft > 1) {
+  const daysLeft = daysBeforeDeletion.value;
+  if (daysLeft !== undefined && daysLeft > 1) {
     return t('meetings_v2.table.columns.title.tooltip', { daysLeft: daysLeft });
   } else {
     return t('meetings_v2.table.columns.title.tooltip-expired');
@@ -45,7 +39,7 @@ const tooltipContent = computed(() => {
 });
 
 const meetingTitle = computed(() => {
-  if (showAlertIcon.value) {
+  if (isInAlertPeriod.value) {
     return ' ' + meeting.name;
   } else {
     return meeting.name;

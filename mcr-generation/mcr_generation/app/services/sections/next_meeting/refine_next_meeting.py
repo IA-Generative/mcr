@@ -1,5 +1,6 @@
 import instructor
 from langchain.prompts import PromptTemplate
+from langfuse import observe
 from loguru import logger
 from openai import OpenAI
 
@@ -35,6 +36,7 @@ class RefineNextMeeting:
         )
 
     @log_execution_time
+    @observe(name="section_next_meeting_generation")
     def init_then_refine(self, chunks: list[Chunk]) -> NextMeeting:
         initial_extract = self._initial_extract_from_chunk(chunks[0])
 

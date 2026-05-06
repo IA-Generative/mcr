@@ -18,11 +18,10 @@ from tests.mocks.docx_mocks import mock_docx_loader  # noqa: F401
 from tests.mocks.llm_mocks import mock_instructor_client  # noqa: F401
 from tests.mocks.s3_mocks import mock_s3_client  # noqa: F401
 from tests.mocks.task_service_mocks import (  # noqa: F401
-    mock_api_settings,
     mock_chunk_docx_to_document_list,
+    mock_core_api_client,
     mock_get_file_from_s3,
     mock_get_generator,
-    mock_httpx_client,
 )
 
 

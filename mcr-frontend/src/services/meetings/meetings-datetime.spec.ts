@@ -1,10 +1,13 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import {
   getCalendarDateFromIso8601,
+  getNumberOfDaysBeforeMeetingDeletion,
   getTimeFromIso8601,
-  getMeetingDuration,
+  calculateDuration,
+  leftPad,
+  meetingDateIsInAlertPeriod,
 } from './meetings-datetime';
-import type { MeetingDetailDto } from './meetings.types';
+import { subDays, formatISO } from 'date-fns';
 
 vi.mock('@sentry/vue', () => ({
   logger: { error: vi.fn() },
@@ -16,6 +19,38 @@ beforeAll(() => {
 });
 afterAll(() => {
   process.env.TZ = originalTZ;
+});
+
+function creationDateDaysAgo(days: number): string {
+  return formatISO(subDays(new Date(), days));
+}
+
+describe('meetingDateIsInAlertPeriod', () => {
+  it('returns false for a meeting created 10 days ago', () => {
+    expect(meetingDateIsInAlertPeriod(creationDateDaysAgo(10))).toBe(false);
+  });
+
+  it('returns false for a meeting created exactly 20 days ago', () => {
+    expect(meetingDateIsInAlertPeriod(creationDateDaysAgo(20))).toBe(false);
+  });
+
+  it('returns true for a meeting created 25 days ago', () => {
+    expect(meetingDateIsInAlertPeriod(creationDateDaysAgo(25))).toBe(true);
+  });
+});
+
+describe('getNumberOfDaysBeforeMeetingDeletion', () => {
+  it('returns 20 for a meeting created 10 days ago', () => {
+    expect(getNumberOfDaysBeforeMeetingDeletion(creationDateDaysAgo(10))).toBe(20);
+  });
+
+  it('returns 5 for a meeting created 25 days ago', () => {
+    expect(getNumberOfDaysBeforeMeetingDeletion(creationDateDaysAgo(25))).toBe(5);
+  });
+
+  it('returns 0 for a meeting created more than 30 days ago', () => {
+    expect(getNumberOfDaysBeforeMeetingDeletion(creationDateDaysAgo(35))).toBe(0);
+  });
 });
 
 describe('getCalendarDateFromIso8601', () => {
@@ -50,45 +85,38 @@ describe('getTimeFromIso8601', () => {
   });
 });
 
-describe('getMeetingDuration', () => {
-  function makeMeeting(startDate?: string, endDate?: string): MeetingDetailDto {
-    return {
-      id: 1,
-      name: 'Test',
-      name_platform: 'VISIO',
-      status: 'NONE',
-      creation_date: '2025-01-01T00:00:00Z',
-      start_date: startDate,
-      end_date: endDate,
-      url: null,
-      meeting_password: null,
-      meeting_platform_id: null,
-      deliverables: [],
-    } as MeetingDetailDto;
-  }
+describe('leftPad', () => {
+  it('should pad single digit with leading zero', () => {
+    expect(leftPad(5)).toBe('05');
+  });
 
+  it('should leave two-digit number unchanged', () => {
+    expect(leftPad(42)).toBe('42');
+  });
+
+  it('should pad zero', () => {
+    expect(leftPad(0)).toBe('00');
+  });
+});
+
+describe('getMeetingDuration', () => {
   it('should compute a 1h30 duration', () => {
-    const meeting = makeMeeting('2025-01-01T10:00:00Z', '2025-01-01T11:30:00Z');
-    expect(getMeetingDuration(meeting)).toBe('01:30:00');
+    expect(calculateDuration('2025-01-01T10:00:00Z', '2025-01-01T11:30:00Z')).toBe('01:30:00');
   });
 
   it('should compute a duration shorter than 1 minute', () => {
-    const meeting = makeMeeting('2025-01-01T10:00:00Z', '2025-01-01T10:00:45Z');
-    expect(getMeetingDuration(meeting)).toBe('00:00:45');
+    expect(calculateDuration('2025-01-01T10:00:00Z', '2025-01-01T10:00:45Z')).toBe('00:00:45');
   });
 
   it('should compute a duration with hours, minutes and seconds', () => {
-    const meeting = makeMeeting('2025-01-01T08:00:00Z', '2025-01-01T10:15:30Z');
-    expect(getMeetingDuration(meeting)).toBe('02:15:30');
+    expect(calculateDuration('2025-01-01T08:00:00Z', '2025-01-01T10:15:30Z')).toBe('02:15:30');
   });
 
   it('should return empty string when start_date is undefined', () => {
-    const meeting = makeMeeting(undefined, '2025-01-01T11:00:00Z');
-    expect(getMeetingDuration(meeting)).toBe('');
+    expect(calculateDuration(undefined, '2025-01-01T11:00:00Z')).toBe('');
   });
 
   it('should return empty string when end_date is undefined', () => {
-    const meeting = makeMeeting('2025-01-01T10:00:00Z', undefined);
-    expect(getMeetingDuration(meeting)).toBe('');
+    expect(calculateDuration('2025-01-01T10:00:00Z', undefined)).toBe('');
   });
 });

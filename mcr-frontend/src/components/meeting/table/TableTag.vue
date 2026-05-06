@@ -23,62 +23,35 @@ const tagMeta = computed(() => getTagMeta(props.meeting));
 function getTagMeta(meeting: MeetingDto) {
   if (isMeetingInProgress(meeting.status)) {
     return {
-      class: 'info',
+      class: 'bg-info-950 text-info-425',
       label: t('meetings.status.IN_PROGRESS'),
     };
   }
 
   if (isMeetingFailed(meeting.status)) {
     return {
-      class: 'error',
+      class: 'bg-error-950 text-error-425',
       label: t('meetings.status.FAILED'),
     };
   }
 
   if (meeting.status === 'NONE') {
     return {
-      class: 'pending',
+      class: 'bg-yellow-tournesol-950 text-yellow-tournesol-sun',
       label: t('meetings.status.NONE'),
     };
   }
 
   if (meeting.name_platform === 'MCR_IMPORT') {
     return {
-      class: 'import',
+      class: 'bg-purple-glycine-925 text-purple-glycine-sun',
       label: t('meetings.status.DONE_IMPORT'),
     };
   }
 
   return {
-    class: 'success',
+    class: 'bg-success-950 text-success-425',
     label: t('meetings.status.DONE'),
   };
 }
 </script>
-
-<style>
-.fr-tag.info {
-  color: var(--info-425-625);
-  background-color: var(--info-950-100);
-}
-
-.fr-tag.pending {
-  background-color: var(--yellow-tournesol-950-100);
-  color: var(--yellow-tournesol-sun-407-moon-922);
-}
-
-.fr-tag.success {
-  color: var(--success-425-625);
-  background-color: var(--success-950-100);
-}
-
-.fr-tag.error {
-  color: var(--error-425-625);
-  background-color: var(--error-950-100);
-}
-
-.fr-tag.import {
-  color: var(--purple-glycine-sun-319-moon-630);
-  background-color: var(--purple-glycine-925-125);
-}
-</style>

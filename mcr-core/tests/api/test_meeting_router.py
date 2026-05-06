@@ -171,6 +171,37 @@ def test_get_meeting_by_id_success(
     assert_json_equal_meeting_model(json_data, meeting_fixture)
 
 
+def test_get_meeting_by_id_returns_deliverables_with_legacy_and_new_keys(
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    user_fixture: User,
+    db_session: Any,
+) -> None:
+    from mcr_meeting.app.models import Deliverable, DeliverableStatus, DeliverableType
+
+    deliverable = Deliverable(
+        meeting_id=meeting_fixture.id,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.AVAILABLE,
+        external_url="https://drive.example.com/documents/42/",
+    )
+    db_session.add(deliverable)
+    db_session.commit()
+
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+    response = meeting_client.get(f"/{meeting_fixture.id}", headers=headers)
+
+    assert response.status_code == status.HTTP_200_OK
+    deliverables = response.json()["deliverables"]
+    assert len(deliverables) == 1
+    payload = deliverables[0]
+    # Legacy key kept for old frontend compatibility.
+    assert payload["file_type"] == DeliverableType.TRANSCRIPTION
+    # New keys exposed for the v2 frontend.
+    assert payload["type"] == DeliverableType.TRANSCRIPTION
+    assert payload["status"] == DeliverableStatus.AVAILABLE
+
+
 def test_get_meeting_by_id_unauthorized(
     meeting_client: PrefixedTestClient, meeting_fixture: Meeting, user_fixture: User
 ) -> None:

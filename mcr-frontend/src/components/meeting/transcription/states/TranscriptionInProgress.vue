@@ -11,10 +11,10 @@
 
     <!-- Titre et sous-titre -->
     <div class="text-center max-w-2xl">
-      <h3 class="text-xl font-bold mb-4 text-[var(--blue-france-sun-113-625)]">
+      <h3 class="text-xl font-bold mb-4 text-blue-france-sun">
         {{ $t('meeting.transcription.transcription-in-progress.title') }}
       </h3>
-      <p class="text-lg text-[var(--default-text-grey)]">
+      <p class="text-lg text-grey-625">
         {{ $t('meeting.transcription.transcription-in-progress.description') }}
       </p>
     </div>

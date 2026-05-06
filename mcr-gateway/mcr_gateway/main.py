@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from mcr_gateway.app.api import (
     authentification_router,
+    deliverable_router,
     feedback_router,
     lookup_router,
     meeting_multipart_router,
@@ -35,6 +36,7 @@ app.include_router(lookup_router.router, prefix="/api")
 app.include_router(transcription_router.router, prefix="/api")
 app.include_router(meeting_multipart_router.router, prefix="/api")
 app.include_router(feedback_router.router, prefix="/api")
+app.include_router(deliverable_router.router, prefix="/api")
 if __name__ == "__main__":
     import uvicorn
 

@@ -15,7 +15,8 @@
     "form": {
       "update": "Mettre à jour"
     },
-    "or": "ou"
+    "or": "ou",
+    "pipe": "{'|'}"
   },
   "header": {
     "app": {
@@ -384,10 +385,41 @@
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
     },
+    "audio-card": {
+      "title": "Audio",
+      "availability": "L'audio de la réunion est disponible pendant {nbDays}",
+      "button": "Écouter l'audio",
+      "error": "L'audio de votre réunion n'a pas pu être obtenu."
+    },
+    "deliverable-card": {
+      "title": "Livrables",
+      "description": "Sélectionnez un format de compte-rendu à générer avec l'IA :",
+      "generate-button": "Générer",
+      "type": {
+        "decision-record": {
+          "label": "Relevé de décisions",
+          "hint": "Synthèse rédigée des échanges et décisions prises lors de la réunion.",
+          "title": "Relevé de décision"
+        },
+        "detailed-synthesis": {
+          "label": "Synthèse détaillée",
+          "hint": "Synthèse complète et détaillée de l'ensemble des échanges de la réunion.",
+          "title": "Synthèse détaillée"
+        },
+        "transcription": {
+          "title": "Transcription"
+        }
+      }
+    },
+    "delete": "Supprimer la réunion",
+    "edit": "Modifier le nom",
+    "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
+    "details": "{subtitle} {date} à {time}",
+    "duration-label": "Durée : {duration}",
     "subtitle": {
-      "import": "Fichier importé le ",
-      "record": "Réunion en présentiel enregistrée le ",
-      "visio": "Enregistré avec {visioPlatform} le "
+      "import": "Fichier importé le",
+      "record": "Réunion en présentiel enregistrée le",
+      "visio": "Enregistré avec {visioPlatform} le"
     },
     "visio-form": {
       "comu": {
@@ -437,6 +469,112 @@
         "url_hint": "Exemple:https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/000/creator/000/hash/0000000000000000000000000000000000000000"
       },
       "visio-tools": "Outil de visioconférence*"
+    },
+    "recording": {
+      "title": "Enregistrement",
+      "status": {
+        "in-progress": "En cours d'enregistrement",
+        "paused": "Enregistrement en pause"
+      },
+      "buttons": {
+        "pause": "Mettre en pause",
+        "resume": "Reprendre",
+        "stop": "Terminer l'enregistrement"
+      },
+      "advices": {
+        "title": "Voir les conseils pour l’enregistrements en présentiel",
+        "modal": {
+          "title": "J’enregistre une réunion en présentiel",
+          "section-1": {
+            "title": "1. Pour garantir une bonne qualité de transcription",
+            "advice-1": {
+              "bold": "Activez votre micro et placez-le au centre de la table",
+              "text": "{bold}, à proximité des intervenants."
+            },
+            "advice-2": {
+              "bold": "Limitez les bruits de fond",
+              "text": "{bold} (fenêtres, claviers, discussions croisées)."
+            },
+            "advice-3": {
+              "bold": "Parlez clairement, évitez les sigles",
+              "text": "{bold} ou expliquez-les."
+            }
+          },
+          "section-2": {
+            "title": "2. Prévenir les participants de votre réunion",
+            "advice-1": {
+              "bold": "Informez les participants",
+              "text": "{bold} de l’utilisation de MIrAI Compte-Rendu pour cette réunion. Vous avez besoin du consentement de tous les participants pour lancer l’enregistrement."
+            },
+            "advice-2": {
+              "bold": "Assurez-vous que votre réunion ne contiendra pas de données personnelles, sensibles, confidentielles ou à diffusion restreinte.",
+              "text": "{bold} Vous pouvez mettre l’enregistrement en pause si besoin. Plus de détails dans les CGU MIrAI."
+            }
+          },
+          "confirm": "J’ai compris",
+          "cgu": "CGU MIrAI"
+        }
+      },
+      "ending": {
+        "title": "Êtes-vous sûr de vouloir terminer l’enregistrement ?",
+        "description": "La transcription sera générée automatiquement.",
+        "buttons": {
+          "cancel": "Annuler",
+          "end": "Terminer l'enregistrement"
+        }
+      }
+    },
+    "visio-recording": {
+      "title": "Enregistrement",
+      "connecting": {
+        "badge": "Connexion en cours de MCR Agent",
+        "description": "Merci de patienter, cela peut prendre quelques instants."
+      },
+      "in-progress": {
+        "badge": "En cours d'enregistrement",
+        "stop-button": "Terminer l'enregistrement"
+      },
+      "error": {
+        "badge": "Erreur",
+        "description": "La connexion de MCR Agent à la réunion a échoué.",
+        "retry-button": "Relancer la connexion"
+      },
+      "advices": {
+        "link": "Voir les conseils pour préparer l'enregistrement d'une visio",
+        "modal": {
+          "title": "Préparer l'enregistrement de votre visioconférence",
+          "section-1": {
+            "title": "1. Avant et pendant la visioconférence",
+            "advice-1": {
+              "bold": "Lancez votre visioconférence",
+              "text": "{bold} (COMU, Webconf, Webinaire de l'État, Visio)."
+            },
+            "advice-2": {
+              "bold": "MCR Agent se connecte automatiquement",
+              "text": "{bold} à la visio."
+            },
+            "advice-3": {
+              "bold": "Limitez les bruits parasites",
+              "text": "{bold} (notifications, conversations autour, …)."
+            },
+            "advice-4": {
+              "bold": "Parlez distinctement",
+              "text": "{bold}, une personne à la fois."
+            }
+          },
+          "section-2": {
+            "title": "2. Après la visioconférence",
+            "advice-1": {
+              "bold": "et terminez l'enregistrement.",
+              "text": "Retournez sur France Compte Rendu {bold}"
+            },
+            "advice-1-detail": "Cela permet de lancer automatiquement la transcription."
+          },
+          "callout": "Pour en savoir plus, consultez cet article sur {link}.",
+          "callout-link": "les bons gestes d'utilisation de France Compte-Rendu",
+          "confirm": "J'ai compris"
+        }
+      }
     }
   },
   "members": {
@@ -560,6 +698,7 @@
     "meeting-creation": "Erreur lors de la création de la réunion",
     "audio-capture": "Erreur lors de la captation audio de la visioconférence",
     "report-generation": "Erreur lors de la génération du compte-rendu. Veuillez réessayer.",
-    "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer."
+    "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer.",
+    "deliverable-generation": "La génération du livrable a échoué."
   }
 }
