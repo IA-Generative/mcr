@@ -30,7 +30,7 @@ DEFAULT_REPORT_FILENAME = "report.docx"
 
 
 def deliverable_object_filename(deliverable_type: DeliverableType) -> str:
-    return f"{deliverable_type.value.lower()}.docx"
+    return f"{deliverable_type.lower()}.docx"
 
 
 def get_formatted_report_from_s3(meeting: Meeting) -> BytesIO:
