@@ -61,6 +61,22 @@ class MapReduceDetailedDiscussions:
     @observe(name="section_content_generation")
     def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
         self._last_chunk_count = len(chunks)
+        successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
+
+        if failed_chunk_ids and not successful:
+            raise AllChunksFailedError(
+                f"All {len(chunks)} chunks failed in map phase: {failed_chunk_ids}"
+            )
+
+        logger.debug("Mapped detailed discussions by chunk: {}", successful)
+        all_discussions = [
+            discussion for sublist in successful for discussion in sublist
+        ]
+        return self.reduce_discussions_into_content(all_discussions)
+
+    def _map_chunks_in_parallel(
+        self, chunks: list[Chunk]
+    ) -> tuple[list[list[MappedDetailedDiscussion]], list[int]]:
         successful: list[list[MappedDetailedDiscussion]] = []
         failed_chunk_ids: list[int] = []
 
@@ -89,16 +105,7 @@ class MapReduceDetailedDiscussions:
                     )
                     logger.warning("Chunk {} failed map phase: {}", chunk_id, e)
 
-        if failed_chunk_ids and not successful:
-            raise AllChunksFailedError(
-                f"All {len(chunks)} chunks failed in map phase: {failed_chunk_ids}"
-            )
-
-        logger.debug("Mapped detailed discussions by chunk: {}", successful)
-        all_discussions = [
-            discussion for sublist in successful for discussion in sublist
-        ]
-        return self.reduce_discussions_into_content(all_discussions)
+        return successful, failed_chunk_ids
 
     @observe(name="section_content_reduce")
     def reduce_discussions_into_content(
@@ -164,18 +171,23 @@ class MapReduceDetailedDiscussions:
         for discussion in discussions:
             discussion.chunk_id = chunk.id
 
+        self._record_low_confidence_items(discussions, chunk.id)
+
+        return discussions
+
+    def _record_low_confidence_items(
+        self, discussions: list[MappedDetailedDiscussion], chunk_id: int
+    ) -> None:
         threshold = langfuse_settings.LOW_CONFIDENCE_THRESHOLD
         low = [
-            {"topic": d.topic, "confidence": d.topic_confidence}
+            d.model_dump(include={"topic", "topic_confidence"})
             for d in discussions
             if d.topic_confidence < threshold
         ]
         if low:
             record_low_confidence_items_event(
                 section="detailed_discussions",
-                chunk_id=chunk.id,
+                chunk_id=chunk_id,
                 threshold=threshold,
                 items=low,
             )
-
-        return discussions

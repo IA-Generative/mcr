@@ -57,24 +57,28 @@ class MapReduceTopics:
         self.meeting_subject = meeting_subject
         self.speaker_mapping = str(participants) if participants else None
 
-    # rename into: process section -> generate section ?
     @log_execution_time
     @observe(name="section_content_generation")
     def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
-        content = self.process_transcript_parallel(
-            chunks=chunks, max_workers=self.max_workers
-        )
-
-        return content
-
-    def process_transcript_parallel(
-        self, chunks: list[Chunk], max_workers: int = 4
-    ) -> Content:
         self._last_chunk_count = len(chunks)
+        successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
+
+        if failed_chunk_ids and not successful:
+            raise AllChunksFailedError(
+                f"All {len(chunks)} chunks failed in map phase: {failed_chunk_ids}"
+            )
+
+        logger.debug("Mapped topics by chunk: {}", successful)
+        all_topics = [topic for sublist in successful for topic in sublist]
+        return self.reduce_topics_into_content(all_topics)
+
+    def _map_chunks_in_parallel(
+        self, chunks: list[Chunk]
+    ) -> tuple[list[list[MappedTopic]], list[int]]:
         successful: list[list[MappedTopic]] = []
         failed_chunk_ids: list[int] = []
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
                 (
                     chunk.id,
@@ -99,14 +103,7 @@ class MapReduceTopics:
                     )
                     logger.warning("Chunk {} failed map phase: {}", chunk_id, e)
 
-        if failed_chunk_ids and not successful:
-            raise AllChunksFailedError(
-                f"All {len(chunks)} chunks failed in map phase: {failed_chunk_ids}"
-            )
-
-        logger.debug("Mapped topics by chunk: {}", successful)
-        all_topics = [topic for sublist in successful for topic in sublist]
-        return self.reduce_topics_into_content(all_topics)
+        return successful, failed_chunk_ids
 
     @observe(name="section_content_reduce")
     def reduce_topics_into_content(self, all_topics: list[MappedTopic]) -> Content:
@@ -163,18 +160,23 @@ class MapReduceTopics:
         )
         topics = resp.topics
 
+        self._record_low_confidence_items(topics, chunk.id)
+
+        return topics
+
+    def _record_low_confidence_items(
+        self, topics: list[MappedTopic], chunk_id: int
+    ) -> None:
         threshold = langfuse_settings.LOW_CONFIDENCE_THRESHOLD
         low = [
-            {"topic": t.topic, "confidence": t.topic_confidence}
+            t.model_dump(include={"topic", "topic_confidence"})
             for t in topics
             if t.topic_confidence < threshold
         ]
         if low:
             record_low_confidence_items_event(
                 section="topics",
-                chunk_id=chunk.id,
+                chunk_id=chunk_id,
                 threshold=threshold,
                 items=low,
             )
-
-        return topics
