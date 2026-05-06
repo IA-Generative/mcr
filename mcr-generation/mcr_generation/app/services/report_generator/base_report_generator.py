@@ -8,8 +8,8 @@ from mcr_generation.app.services.sections.next_meeting.format_section_for_report
 from mcr_generation.app.services.sections.next_meeting.refine_next_meeting import (
     RefineNextMeeting,
 )
-from mcr_generation.app.services.sections.participants.refine_participants import (
-    RefineParticipants,
+from mcr_generation.app.services.sections.participants.get_participants import (
+    get_participants_from_chunks,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
@@ -27,9 +27,9 @@ class BaseReportGenerator(ABC):
         """
         Extract and build the report header from transcript chunks.
 
-        Runs three LLM-based extractors (intent, participants, next meeting) over
-        all chunks using an init-then-refine strategy, then assembles the results
-        into a `Header` object.
+        Runs two LLM-based extractors (intent, next meeting), and derives participants
+        from transcript lines that follow the `Name: message` pattern, then assembles
+        the results into a `Header` object.
 
         Args:
             chunks (list[Chunk]): Ordered list of transcript segments to analyse.
@@ -39,10 +39,9 @@ class BaseReportGenerator(ABC):
                 and next meeting information.
         """
         refine_intent = RefineIntent()
-        refine_participants = RefineParticipants()
         refine_next_meeting = RefineNextMeeting()
         intent = refine_intent.init_then_refine(chunks)
-        participants = refine_participants.init_then_refine(chunks)
+        participants = get_participants_from_chunks(chunks)
         next_meeting = refine_next_meeting.init_then_refine(chunks)
         header = Header(
             title=intent.title,
