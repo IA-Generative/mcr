@@ -18,8 +18,19 @@ vi.mock('@/utils/audio-level-monitor', () => ({
   })),
 }));
 
-const mockGetUserMedia = vi.fn();
-const mockMediaRecorderStart = vi.fn();
+const {
+  mockGetUserMedia,
+  mockMediaRecorderStart,
+  mockMediaRecorderStop,
+  mockMediaRecorderPause,
+  mockMediaRecorderResume,
+} = vi.hoisted(() => ({
+  mockGetUserMedia: vi.fn(),
+  mockMediaRecorderStart: vi.fn(),
+  mockMediaRecorderStop: vi.fn(),
+  mockMediaRecorderPause: vi.fn(),
+  mockMediaRecorderResume: vi.fn(),
+}));
 
 class MockMediaRecorder {
   stream: MediaStream;
@@ -34,9 +45,9 @@ class MockMediaRecorder {
   }
 
   start = mockMediaRecorderStart;
-  stop = vi.fn();
-  pause = vi.fn();
-  resume = vi.fn();
+  stop = mockMediaRecorderStop;
+  pause = mockMediaRecorderPause;
+  resume = mockMediaRecorderResume;
 }
 
 vi.stubGlobal('MediaRecorder', MockMediaRecorder);

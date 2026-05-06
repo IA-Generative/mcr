@@ -4,7 +4,9 @@ import { fireEvent } from '@testing-library/vue';
 import VisioError from '@/components/meeting/visio-recording/VisioError.vue';
 import { renderWithPlugins } from '@/vitest.setup';
 
-const mockStartCapture = vi.fn();
+const { mockStartCapture } = vi.hoisted(() => ({
+  mockStartCapture: vi.fn(),
+}));
 
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({

@@ -3,7 +3,9 @@ import TranscriptionNone from '@/components/meeting/transcription/states/Transcr
 import { renderWithPlugins } from '@/vitest.setup';
 
 // Mock du composable useToaster
-const mockAddErrorMessage = vi.fn();
+const { mockAddErrorMessage } = vi.hoisted(() => ({
+  mockAddErrorMessage: vi.fn(),
+}));
 vi.mock('@/composables/use-toaster', () => ({
   default: () => ({
     addErrorMessage: mockAddErrorMessage,
@@ -11,7 +13,9 @@ vi.mock('@/composables/use-toaster', () => ({
 }));
 
 // Mock du service des meetings
-const mockStartCapture = vi.fn();
+const { mockStartCapture } = vi.hoisted(() => ({
+  mockStartCapture: vi.fn(),
+}));
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
     startCaptureMutation: () => ({
