@@ -146,6 +146,21 @@ export function isVisioCaptureStatus(status: MeetingStatus): boolean {
   return VisioCaptureStatuses.includes(status);
 }
 
+const PostCaptureStatuses: MeetingStatus[] = [
+  'CAPTURE_DONE',
+  'TRANSCRIPTION_PENDING',
+  'TRANSCRIPTION_IN_PROGRESS',
+  'TRANSCRIPTION_DONE',
+  'TRANSCRIPTION_FAILED',
+  'REPORT_PENDING',
+  'REPORT_DONE',
+  'REPORT_FAILED',
+];
+
+export function isPostCaptureStatus(status: MeetingStatus): boolean {
+  return PostCaptureStatuses.includes(status);
+}
+
 export interface TranscriptionWaitingTimeResponse {
   estimation_duration_minutes: number;
 }
