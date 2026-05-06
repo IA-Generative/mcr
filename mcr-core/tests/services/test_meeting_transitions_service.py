@@ -35,16 +35,16 @@ def user_keycloak_uuid(orchestrator_user: User) -> UUID:
 
 
 @pytest.fixture
-def _mock_save_formatted_report(monkeypatch: Any) -> MagicMock:
-    save_formatted_report_mock = MagicMock()
+def _mock_persist_report_docx(monkeypatch: Any) -> MagicMock:
+    persist_mock = MagicMock()
 
     monkeypatch.setattr(
         meeting_actions,
-        "save_formatted_report",
-        save_formatted_report_mock,
+        "persist_report_docx",
+        persist_mock,
     )
 
-    return save_formatted_report_mock
+    return persist_mock
 
 
 # ---------------------------------------------------------------------------
@@ -396,7 +396,7 @@ def test_start_report(
 
 
 def test_complete_report(
-    _mock_save_formatted_report: MagicMock,
+    _mock_persist_report_docx: MagicMock,
     mock_send_email: MagicMock,
 ) -> None:
     """Test completing report transitions to REPORT_DONE."""
