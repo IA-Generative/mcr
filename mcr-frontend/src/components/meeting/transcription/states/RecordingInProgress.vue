@@ -73,6 +73,7 @@ import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
 import { useChunkUpload } from '@/composables/use-chunk-upload';
 import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
+import { leftPad } from '@/services/meetings/meetings-datetime';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { useModal } from 'vue-final-modal';
 import { useI18n } from 'vue-i18n';
@@ -228,10 +229,6 @@ watch(
     }
   },
 );
-
-function leftPad(value: number): string {
-  return value.toString().padStart(2, '0');
-}
 
 function beforeUnloadHandler(e: BeforeUnloadEvent) {
   e.preventDefault();
