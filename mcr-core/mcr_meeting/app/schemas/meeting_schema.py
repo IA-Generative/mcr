@@ -51,6 +51,7 @@ class MeetingBase(BaseModel):
     end_date: datetime | None = None
     meeting_password: str | None = None
     meeting_platform_id: str | None = None
+    notes: str | None = None
 
     @model_validator(mode="after")
     def validate_url_based_on_platform(self) -> Self:

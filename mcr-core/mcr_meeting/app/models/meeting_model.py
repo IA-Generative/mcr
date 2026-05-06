@@ -8,7 +8,7 @@ if TYPE_CHECKING:  # Avoid circular imports but allow proper typing
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..db.db import Base
@@ -124,6 +124,7 @@ class Meeting(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
     meeting_platform_id: Mapped[str | None] = mapped_column(String)
     meeting_password: Mapped[str | None] = mapped_column(String)
+    notes: Mapped[str | None] = mapped_column(Text)
     owner: Mapped["User"] = relationship(back_populates="meetings")
 
     transcriptions: Mapped[list["Transcription"]] = relationship(
