@@ -12,6 +12,8 @@ from mcr_generation.app.services.utils.llm_helpers import (
 )
 from mcr_generation.evaluation.pipeline.types import Criterion, ScoreResult
 
+_MAX_OUT_OF_SCALE_RETRIES = 3
+
 
 class _JudgeResponse(BaseModel):
     score: int = Field(description="Score on the 1-5 scale defined in the prompt.")
@@ -40,32 +42,45 @@ class GEvalScorer:
         reference: str | None,
     ) -> ScoreResult:
         prompt = criterion.render(report=report, reference=reference)
-        try:
-            response = call_llm_with_structured_output(
-                client=self._client,
-                response_model=_JudgeResponse,
-                user_message_content=prompt,
-            )
-        except Exception as exc:
-            logger.opt(exception=exc).warning(
-                "G-Eval scoring failed for criterion {}", criterion.name
-            )
-            return ScoreResult(value=None, justification=f"LLM call failed: {exc}")
-
         low, high = criterion.scale
-        if response.score < low or response.score > high:
+        last_response: _JudgeResponse | None = None
+
+        for attempt in range(1, _MAX_OUT_OF_SCALE_RETRIES + 1):
+            try:
+                response = call_llm_with_structured_output(
+                    client=self._client,
+                    response_model=_JudgeResponse,
+                    user_message_content=prompt,
+                )
+            except Exception as exc:
+                logger.opt(exception=exc).warning(
+                    "G-Eval scoring failed for criterion {}", criterion.name
+                )
+                return ScoreResult(value=None, justification=f"LLM call failed: {exc}")
+
+            if low <= response.score <= high:
+                return ScoreResult(
+                    value=response.score, justification=response.justification
+                )
+
             logger.warning(
-                "Criterion {} returned out-of-scale score {} (expected {}-{})",
+                "Criterion {} returned out-of-scale score {} on attempt {}/{} "
+                "(expected {}-{})",
                 criterion.name,
                 response.score,
+                attempt,
+                _MAX_OUT_OF_SCALE_RETRIES,
                 low,
                 high,
             )
-            return ScoreResult(
-                value=None,
-                justification=(
-                    f"Out-of-scale score {response.score}; raw justification: "
-                    f"{response.justification}"
-                ),
-            )
-        return ScoreResult(value=response.score, justification=response.justification)
+            last_response = response
+
+        assert last_response is not None
+        return ScoreResult(
+            value=None,
+            justification=(
+                f"Out-of-scale score after {_MAX_OUT_OF_SCALE_RETRIES} attempts; "
+                f"last value: {last_response.score}; "
+                f"last justification: {last_response.justification}"
+            ),
+        )
