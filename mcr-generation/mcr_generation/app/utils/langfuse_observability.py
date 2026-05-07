@@ -85,3 +85,84 @@ def record_generation_usage(
         )
     except Exception as e:
         logger.warning("langfuse update_current_generation (usage) failed: {}", e)
+
+
+def record_llm_retry_event(
+    attempt: int,
+    next_sleep_seconds: float | None,
+    exception_type: str | None,
+    exception_msg: str | None,
+) -> None:
+    try:
+        get_client().create_event(
+            name="llm_retry",
+            level="WARNING",
+            metadata={
+                "attempt": attempt,
+                "next_sleep_seconds": next_sleep_seconds,
+                "exception_type": exception_type,
+                "exception_msg": exception_msg,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (llm_retry) failed: {}", e)
+
+
+def record_chunk_map_failed_event(
+    section: str,
+    chunk_id: int,
+    exception_type: str,
+    exception_msg: str,
+) -> None:
+    try:
+        get_client().create_event(
+            name="chunk_map_failed",
+            level="ERROR",
+            metadata={
+                "section": section,
+                "chunk_id": chunk_id,
+                "exception_type": exception_type,
+                "exception_msg": exception_msg,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (chunk_map_failed) failed: {}", e)
+
+
+def record_empty_map_phase_event(
+    section: str,
+    chunk_count: int | None,
+) -> None:
+    try:
+        get_client().create_event(
+            name="empty_map_phase",
+            level="WARNING",
+            metadata={
+                "section": section,
+                "chunk_count": chunk_count,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (empty_map_phase) failed: {}", e)
+
+
+def record_low_confidence_items_event(
+    section: str,
+    chunk_id: int,
+    threshold: float,
+    items: list[dict[str, object]],
+) -> None:
+    try:
+        get_client().create_event(
+            name=f"low_confidence_{section}",
+            level="WARNING",
+            metadata={
+                "chunk_id": chunk_id,
+                "threshold": threshold,
+                "items": items,
+            },
+        )
+    except Exception as e:
+        logger.warning(
+            "langfuse create_event (low_confidence_{}) failed: {}", section, e
+        )
