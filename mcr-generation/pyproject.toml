@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-dotenv", "pytest-cov", "pytest-mock"]
+test = ["pytest", "pytest-dotenv", "pytest-cov", "pytest-mock", "pytest-asyncio"]
 dev = ["ruff", "mypy", "debugpy", "boto3-stubs[s3]>=1.35.0"]
 typing = ["mypy-clean-slate", "celery-types==0.23.0"]
 
@@ -53,6 +53,7 @@ ignore = ["UP017", "UP008", "UP028", "UP046", "UP047"]
 "requests".msg = "Use httpx instead of requests"
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 env_files = [
     "../.env.local.docker",
     "../.env.local.host",

@@ -33,9 +33,6 @@ def pytest_configure(config):  # noqa: ARG001
     sys.modules["openai"] = MagicMock()
     sys.modules["instructor"] = MagicMock()
 
-    # -- Internal utilities that initialise LLM clients at module level ------
-    sys.modules["mcr_generation.app.utils.function_execution_timer"] = MagicMock()
-
     # -- S3 client: calls boto3.client() at import time with live env vars ---
     sys.modules["mcr_generation.app.utils.s3_client"] = MagicMock()
 
