@@ -13,6 +13,7 @@ from mcr_generation.app.schemas.celery_types import (
     ReportTypes,
     extract_report_task_args,
 )
+from mcr_generation.app.schemas.custom_markdown_report import CustomMarkdownReport
 from mcr_generation.app.services.report_generator import get_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
@@ -37,7 +38,7 @@ def generate_report_from_docx(
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
     deliverable_id: int | None = None,
-) -> BaseReport:
+) -> BaseReport | None:
     record_report_trace_context(
         meeting_id=meeting_id,
         transcription_object_filename=transcription_object_filename,
@@ -55,7 +56,20 @@ def generate_report_from_docx(
 
     report_type_enum = ReportTypes(report_type)
     generator = get_generator(report_type_enum)
-    return generator.generate(chunks)
+    report = generator.generate(chunks)
+
+    # TODO(T4): remove once Jinja DOCX rendering for CUSTOM lands. v0 just logs
+    # the markdown so we can validate the generic pipeline on real transcripts.
+    if isinstance(report, CustomMarkdownReport):
+        logger.info(
+            "Custom markdown report (meeting_id={}, length={} chars):\n{}",
+            meeting_id,
+            len(report.markdown),
+            report.markdown,
+        )
+        return None
+
+    return report
 
 
 @task_prerun.connect(sender=generate_report_from_docx)
@@ -71,7 +85,7 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 
 @task_success.connect
 def generate_report_from_docx_success(
-    sender: Any, result: BaseReport, **kwargs: Any
+    sender: Any, result: BaseReport | None, **kwargs: Any
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API.
 
@@ -79,6 +93,12 @@ def generate_report_from_docx_success(
     task kwargs, falling back to the legacy report callback otherwise.
     """
     logger.info("Report generation success signal received.")
+
+    # TODO(T4): CUSTOM reports return None in v0 (markdown is just logged).
+    # Drop this guard once the DOCX rendering path is wired for CUSTOM.
+    if result is None:
+        logger.info("Skipping mcr-core callback: no structured report to send.")
+        return
 
     try:
         task_args = extract_report_task_args(sender=sender)
