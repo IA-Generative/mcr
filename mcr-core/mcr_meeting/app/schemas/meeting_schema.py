@@ -19,6 +19,9 @@ from mcr_meeting.app.models import (
     MeetingPlatforms,
     MeetingStatus,
 )
+from mcr_meeting.app.schemas.platform_connection_validator_schema import (
+    PlatformConnectionInfoValidator,
+)
 
 
 class PaginatedMeetings(BaseModel):
@@ -69,28 +72,21 @@ class MeetingBase(BaseModel):
             MeetingBase: The validated MeetingBase object.
 
         """
-        name_platform = self.name_platform
 
-        platform_validators = {
-            MeetingPlatforms.COMU: validate_comu_meeting,
-            MeetingPlatforms.WEBINAIRE: validate_webinaire_meeting,
-            MeetingPlatforms.WEBCONF: validate_webconf_meeting,
-            MeetingPlatforms.VISIO: validate_visio_meeting,
-            MeetingPlatforms.WEBEX: validate_webex_meeting,
-            MeetingPlatforms.MCR_IMPORT: no_validation,
-            MeetingPlatforms.MCR_RECORD: no_validation,
-        }
-
-        validation_function = platform_validators[name_platform]
-        validation_function(self)
-
+        PlatformConnectionInfoValidator(
+            name_platform=self.name_platform,
+            url=self.url,
+            meeting_password=self.meeting_password,
+            meeting_platform_id=self.meeting_platform_id,
+        )
         if self.name_platform == MeetingPlatforms.COMU:
             rewrite_comu_url_to_use_public_url(self)
-
         return self
 
-    @field_serializer("creation_date")
-    def serialize_creation_date(self, ts: datetime) -> str:
+    @field_serializer("creation_date", when_used="json")
+    def serialize_creation_date(self, ts: datetime | None) -> str | None:
+        if ts is None:
+            return None
         return ts.strftime("%Y-%m-%dT%H:%M:%S.%f")[:23] + "Z"
 
     model_config = ConfigDict(
@@ -104,10 +100,15 @@ class MeetingCreate(MeetingBase):
 
 class MeetingUpdate(MeetingBase):
     """
-    Model for updating meeting details.
+    Schema for a meeting update.
+
+    It overrides attributes to allow patch endpoint.
     """
 
-    pass
+    # As we overide the fields, we need # type: ignore[assignment] for Mypy to stay quiet
+    name: str | None = None  # type: ignore[assignment]
+    name_platform: MeetingPlatforms | None = None  # type: ignore[assignment]
+    creation_date: datetime | None = None  # type: ignore[assignment]
 
 
 class PaginatedMeetingsResponse(BaseModel):
@@ -194,174 +195,6 @@ class MeetingResponse(MeetingBase):
             return value.replace(tzinfo=timezone.utc)
         # Si la date a une timezone, on la convertit en UTC
         return value.astimezone(timezone.utc)
-
-
-def validate_comu_meeting(values: MeetingBase) -> None:
-    """Validates the values of a MeetingBase object for a COMU meeting platform.
-    Args:
-        values (MeetingBase): The values to be validated.
-    Raises:
-        ValueError: If the URL, meeting password, or meeting ID are in an invalid format.
-    """
-    comu_url_validator = ComuUrlValidator()
-
-    if values.url is not None:
-        if not comu_url_validator.validate_url(values.url):
-            raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-        return None
-    elif (values.meeting_password is not None) and (
-        values.meeting_platform_id is not None
-    ):
-        if (
-            not values.meeting_password.isdigit()
-            or not 6 <= len(values.meeting_password) <= 8
-        ):
-            raise ValueError(
-                f"Invalid password format for platform {values.name_platform}"
-            )
-        if (
-            not values.meeting_platform_id.isdigit()
-            or len(values.meeting_platform_id) <= 3
-        ):
-            raise ValueError(
-                f"Invalid meeting identifier format for platform {values.name_platform}"
-            )
-    else:
-        raise ValueError("No connection information provided")
-
-
-def validate_webinaire_meeting(values: MeetingBase) -> None:
-    """Validates the values of a MeetingBase object for a COMU meeting platform.
-    Args:
-        values (MeetingBase): The values to be validated.
-    Raises:
-        ValueError: If the URL is in an invalid format."""
-    pattern = re.compile(
-        r"^https:\/\/webinaire\.numerique\.gouv\.fr\/meeting\/signin\/moderateur\/\d+\/creator\/\d+\/hash\/[a-f0-9]{40}$"
-    )
-    if (values.url is None) or not (pattern.match(values.url)):
-        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-
-
-def validate_webconf_meeting(values: MeetingBase) -> None:
-    """Validates the values of a MeetingBase object for a WEBCONF meeting platform.
-    Args:
-        values (MeetingBase): The values to be validated.
-    Raises:
-        ValueError: If the URL is in an invalid format."""
-    webconf_url_validator = WebConfUrlValidator()
-    if not values.url:
-        raise ValueError("No connection information provided")
-    if not webconf_url_validator.validate_url(values.url):
-        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-    return None
-
-
-def validate_visio_meeting(values: MeetingBase) -> None:
-    """Validates the values of a MeetingBase object for a VISIO meeting platform.
-    Args:
-        values (MeetingBase): The values to be validated.
-    Raises:
-        ValueError: If the URL is in an invalid format."""
-    visio_url_validator = VisioUrlValidator()
-    if not values.url:
-        raise ValueError("No connection information provided")
-    if not visio_url_validator.validate_url(values.url):
-        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-    return None
-
-
-def validate_webex_meeting(values: MeetingBase) -> None:
-    webex_url_validator = WebexUrlValidator()
-    if not values.url:
-        raise ValueError("No connection information provided")
-    if not webex_url_validator.validate_url(values.url):
-        raise ValueError(f"Invalid URL format for platform {values.name_platform}")
-    return None
-
-
-def no_validation(values: MeetingBase) -> None:
-    """No validation is performed for this platform."""
-    return None
-
-
-class ComuUrlValidator:
-    domains = [
-        re.compile(r"webconf\.comu\.gouv\.fr"),
-        re.compile(r"webconf\.comu\.interieur\.rie\.gouv\.fr"),
-        re.compile(r"webconf\.comu\.minint\.fr"),
-        re.compile(r"webconf\.comu\.din\.gouv\.fr"),
-    ]
-    secret = re.compile(r"\?secret=[A-Za-z0-9_.]{22}")
-    meeting_id = re.compile(r"\d+")
-    maybe_language_code = re.compile(r"(\/[a-z]{2}-[A-Z]{2})?")
-
-    @property
-    def domain_pattern(self) -> str:
-        return f"({'|'.join(r.pattern for r in self.domains)})"
-
-    @property
-    def url_regex(self) -> re.Pattern[str]:
-        return re.compile(
-            rf"^https://{self.domain_pattern}{self.maybe_language_code.pattern}/meeting/{self.meeting_id.pattern}{self.secret.pattern}$"
-        )
-
-    def validate_url(self, url: str) -> bool:
-        return bool(self.url_regex.match(url))
-
-
-class WebinaireUrlValidator:
-    domain = re.compile(r"webinaire\.numerique\.gouv\.fr")
-    user_id = re.compile(r"\d+")
-    creator_id = re.compile(r"\d+")
-    hash = re.compile(r"[a-f0-9]{40}")
-
-    @property
-    def url_regex(self) -> re.Pattern[str]:
-        return re.compile(
-            rf"^https://{self.domain.pattern}/meeting/signin/moderateur/{self.user_id.pattern}/creator/{self.creator_id.pattern}/hash/{self.hash.pattern}$"
-        )
-
-    def validate_url(self, url: str) -> bool:
-        return bool(self.url_regex.match(url))
-
-
-class WebConfUrlValidator:
-    domain = re.compile(r"webconf\.numerique\.gouv\.fr")
-    meeting_name = re.compile(r"(?=(?:.*\d){3,})[A-Za-z0-9]{10,}")
-
-    @property
-    def url_regex(self) -> re.Pattern[str]:
-        return re.compile(
-            rf"^https://{self.domain.pattern}/{self.meeting_name.pattern}$"
-        )
-
-    def validate_url(self, url: str) -> bool:
-        return bool(self.url_regex.match(url))
-
-
-class VisioUrlValidator:
-    domain = re.compile(r"visio\.numerique\.gouv\.fr")
-    slug = re.compile(r"[a-z]{3}-[a-z]{4}-[a-z]{3}")
-
-    @property
-    def url_regex(self) -> re.Pattern[str]:
-        return re.compile(rf"^https://{self.domain.pattern}/{self.slug.pattern}$")
-
-    def validate_url(self, url: str) -> bool:
-        return bool(self.url_regex.match(url))
-
-
-class WebexUrlValidator:
-    domain = re.compile(r"[A-Za-z0-9-]+\.webex\.com")
-    slug = re.compile(r"[A-Za-z0-9._-]{1,64}")
-
-    @property
-    def url_regex(self) -> re.Pattern[str]:
-        return re.compile(rf"^https://{self.domain.pattern}/meet/{self.slug.pattern}$")
-
-    def validate_url(self, url: str) -> bool:
-        return bool(self.url_regex.match(url))
 
 
 def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
