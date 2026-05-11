@@ -1,0 +1,14 @@
+mcr-generation/mcr_generation/app/services/sections/participants/refine_participants.py
+  h_fbb4d0b2de0c1b 8-11,26-29,63,67,81,88-89,106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "85e4a1c368ed814cc86aa94eaf465a553c75edea",
+  "prompts": {},
+  "humans": {
+    "h_fbb4d0b2de0c1b": {
+      "author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
