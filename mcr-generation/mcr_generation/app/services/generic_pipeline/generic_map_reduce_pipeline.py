@@ -13,6 +13,7 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
 from mcr_generation.app.configs.settings import LLMConfig
+from mcr_generation.app.exceptions.exceptions import EmptyChunksError
 from mcr_generation.app.services.generic_pipeline.prompts import (
     MAP_PROMPT_TEMPLATE,
     REDUCE_PROMPT_TEMPLATE,
@@ -22,6 +23,9 @@ from mcr_generation.app.services.utils.llm_helpers import (
     async_call_llm_with_structured_output,
 )
 from mcr_generation.app.utils.function_execution_timer import log_execution_time
+from mcr_generation.app.utils.langfuse_observability import (
+    record_empty_map_phase_event,
+)
 
 
 class _MapResponse(BaseModel):
@@ -47,12 +51,18 @@ class GenericMapReducePipeline:
         self.semaphore = asyncio.Semaphore(max_concurrency)
 
     @log_execution_time
-    @observe(name="generic_pipeline.run")
-    async def run(self, chunks: list[Chunk], instruction: str) -> str:
+    @observe(name="generic_pipeline.map_reduce_all_steps")
+    async def map_reduce_all_steps(self, chunks: list[Chunk], instruction: str) -> str:
         if not chunks:
-            return ""
+            raise EmptyChunksError(
+                "GenericMapReducePipeline.map_reduce_all_steps called with no chunks"
+            )
         all_facts = await self._map(chunks, instruction)
         if not all_facts:
+            record_empty_map_phase_event(
+                section="generic_pipeline",
+                chunk_count=len(chunks),
+            )
             return ""
         return await self._reduce(all_facts, instruction)
 
