@@ -84,9 +84,7 @@ class MeetingBase(BaseModel):
         return self
 
     @field_serializer("creation_date", when_used="json")
-    def serialize_creation_date(self, ts: datetime | None) -> str | None:
-        if ts is None:
-            return None
+    def serialize_creation_date(self, ts: datetime) -> str:
         return ts.strftime("%Y-%m-%dT%H:%M:%S.%f")[:23] + "Z"
 
     model_config = ConfigDict(

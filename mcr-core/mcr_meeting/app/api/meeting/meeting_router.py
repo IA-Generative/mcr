@@ -124,7 +124,7 @@ def get_meeting(
     return MeetingDetailResponse.model_validate(meeting)
 
 
-@router.put("/{meeting_id}")
+@router.patch("/{meeting_id}")
 def update_meeting(
     meeting_id: int,
     meeting_update: MeetingUpdate,
