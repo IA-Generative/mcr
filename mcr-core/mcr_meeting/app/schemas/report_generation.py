@@ -84,7 +84,15 @@ class DetailedSynthesisGenerationResponse(BaseModel):
     to_monitor_list: list[str]
 
 
-ReportResponse = DetailedSynthesisGenerationResponse | ReportGenerationResponse
+class CustomReportResponse(BaseModel):
+    markdown_content: str
+
+
+ReportResponse = (
+    DetailedSynthesisGenerationResponse
+    | ReportGenerationResponse
+    | CustomReportResponse
+)
 
 
 def is_detailed_synthesis(
@@ -97,3 +105,9 @@ def is_decision_report_synthesis(
     response: ReportResponse,
 ) -> TypeGuard[ReportGenerationResponse]:
     return isinstance(response, ReportGenerationResponse)
+
+
+def is_custom_report(
+    response: ReportResponse,
+) -> TypeGuard[CustomReportResponse]:
+    return isinstance(response, CustomReportResponse)
