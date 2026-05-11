@@ -95,7 +95,10 @@ class ImportMeetingStateMachine(StateMachine):
         update_status_handler(self.meeting, self.current_state_value)
 
     def after_START_REPORT(
-        self, report_type: ReportType, deliverable_id: int | None = None
+        self,
+        report_type: ReportType,
+        deliverable_id: int | None = None,
+        custom_prompt: str | None = None,
     ) -> None:
         if self.meeting is None:
             return
@@ -104,6 +107,7 @@ class ImportMeetingStateMachine(StateMachine):
             self.current_state_value,
             report_type,
             deliverable_id=deliverable_id,
+            custom_prompt=custom_prompt,
         )
 
     def after_COMPLETE_REPORT(self, report_response: ReportResponse) -> None:

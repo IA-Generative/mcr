@@ -13,6 +13,7 @@ from mcr_meeting.app.orchestrators.deliverable_orchestrator import (
     soft_delete_deliverable,
 )
 from mcr_meeting.app.schemas.deliverable_schema import (
+    CustomDeliverableCreateRequest,
     DeliverableCreateRequest,
     DeliverableListResponse,
     DeliverableResponse,
@@ -56,10 +57,14 @@ async def create_deliverable(
     body: DeliverableCreateRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> DeliverableResponse:
+    custom_prompt = (
+        body.custom_prompt if isinstance(body, CustomDeliverableCreateRequest) else None
+    )
     deliverable = request_deliverable(
         meeting_id=body.meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         deliverable_type=body.type,
+        custom_prompt=custom_prompt,
     )
     return DeliverableResponse.model_validate(deliverable)
 
