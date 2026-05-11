@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Intent(BaseModel):
@@ -206,3 +206,8 @@ class DetailedSynthesis(BaseReport):
     detailed_discussions: list[DetailedDiscussion]
     to_do_list: list[str]
     to_monitor_list: list[str]
+
+
+class CustomMarkdownReport(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    markdown_content: str
