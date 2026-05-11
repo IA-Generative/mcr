@@ -46,13 +46,16 @@ class MeetingBase(BaseModel):
     end_date: datetime | None = None
     meeting_password: str | None = None
     meeting_platform_id: str | None = None
+    notes: str | None = None
 
     model_config = SettingsConfigDict(
         from_attributes=True,
     )
 
     @field_serializer("creation_date")
-    def serialize_datetime(self, dt: datetime) -> str:
+    def serialize_creation_date(self, dt: datetime | None) -> str | None:
+        if dt is None:
+            return None
         return dt.strftime("%Y-%m-%dT%H:%M:%S.%f")[:23] + "Z"
 
 
@@ -85,14 +88,15 @@ class MeetingCreate(MeetingBase):
 
 class MeetingUpdate(MeetingBase):
     """
-    Schema for meeting update
+    Schema for a meeting update.
 
-    Attributes:
-        see MeetingBase for details.
-        status (MeetingStatus): The status of the meeting (e.g., scheduled, canceled).
+    It overrides attributes to allow patch endpoint.
     """
 
-    pass
+    # As we overide the fields, we need # type: ignore[assignment] for Mypy to stay quiet
+    name: str | None = None  # type: ignore[assignment]
+    name_platform: str | None = None  # type: ignore[assignment]
+    creation_date: datetime | None = None  # type: ignore[assignment]
 
 
 class PaginatedMeetingsResponse(BaseModel):
