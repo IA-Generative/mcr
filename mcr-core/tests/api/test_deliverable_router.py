@@ -138,7 +138,33 @@ class TestPostDeliverableRoute:
         assert body["meeting_id"] == meeting.id
         assert "id" in body
 
-    def test_400_for_transcription_type(
+    def test_422_for_standard_type_with_custom_prompt(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={
+                "meeting_id": meeting.id,
+                "type": "DETAILED_SYNTHESIS",
+                "custom_prompt": "Un prompt qui ne devrait pas être accepté",
+            },
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 422
+        mock_celery_producer_app.send_task.assert_not_called()
+
+    def test_422_for_transcription_type(
         self,
         deliverables_client: PrefixedTestClient,
         user_fixture: User,
@@ -157,7 +183,7 @@ class TestPostDeliverableRoute:
             headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
         )
 
-        assert response.status_code == 400
+        assert response.status_code == 422
         mock_celery_producer_app.send_task.assert_not_called()
 
     def test_dispatches_celery_task_with_deliverable_id(
@@ -188,6 +214,118 @@ class TestPostDeliverableRoute:
         assert call.kwargs["kwargs"] == {
             "owner_keycloak_uuid": str(user_fixture.keycloak_uuid),
             "deliverable_id": deliverable_id,
+        }
+
+
+class TestPostCustomReportRoute:
+    def test_returns_202_for_custom_report_with_prompt(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={
+                "meeting_id": meeting.id,
+                "type": "CUSTOM_REPORT",
+                "custom_prompt": "Résume les décisions clés",
+            },
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 202
+        body = response.json()
+        assert body["type"] == "CUSTOM_REPORT"
+        assert body["status"] == "PENDING"
+
+    def test_422_for_custom_report_without_prompt(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "CUSTOM_REPORT"},
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 422
+        mock_celery_producer_app.send_task.assert_not_called()
+
+    def test_422_for_custom_report_with_empty_prompt(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={
+                "meeting_id": meeting.id,
+                "type": "CUSTOM_REPORT",
+                "custom_prompt": "",
+            },
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 422
+        mock_celery_producer_app.send_task.assert_not_called()
+
+    def test_dispatches_celery_task_with_custom_prompt(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={
+                "meeting_id": meeting.id,
+                "type": "CUSTOM_REPORT",
+                "custom_prompt": "Analyse les risques",
+            },
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        deliverable_id = response.json()["id"]
+
+        mock_celery_producer_app.send_task.assert_called_once()
+        call = mock_celery_producer_app.send_task.call_args
+        assert call.kwargs["args"][2] == "CUSTOM_REPORT"
+        assert call.kwargs["kwargs"] == {
+            "owner_keycloak_uuid": str(user_fixture.keycloak_uuid),
+            "deliverable_id": deliverable_id,
+            "custom_prompt": "Analyse les risques",
         }
 
 

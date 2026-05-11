@@ -6,7 +6,9 @@ from fastapi import HTTPException
 from pytest_httpx import HTTPXMock
 
 from mcr_gateway.app.configs.config import settings
-from mcr_gateway.app.schemas.deliverable_schema import StandardDeliverableCreateRequest
+from mcr_gateway.app.schemas.deliverable_schema import (
+    StructuredDeliverableCreateRequest,
+)
 from mcr_gateway.app.services.deliverable_service import (
     get_deliverable_file,
     list_deliverables_for_meeting,
@@ -66,7 +68,7 @@ async def test_create_deliverable_forwards_body_and_returns_202(
         status_code=202,
     )
 
-    body = StandardDeliverableCreateRequest(meeting_id=42, type="DECISION_RECORD")
+    body = StructuredDeliverableCreateRequest(meeting_id=42, type="DECISION_RECORD")
     response = await request_deliverable(body=body, user_keycloak_uuid=user_uuid)
 
     assert response.status_code == 202
@@ -84,7 +86,7 @@ async def test_create_deliverable_propagates_400_for_transcription(
         status_code=400,
     )
 
-    body = StandardDeliverableCreateRequest(meeting_id=42, type="TRANSCRIPTION")
+    body = StructuredDeliverableCreateRequest(meeting_id=42, type="TRANSCRIPTION")
     with pytest.raises(HTTPException) as exc:
         await request_deliverable(body=body, user_keycloak_uuid=user_uuid)
 
