@@ -6,7 +6,12 @@ export type DeliverableFileType = (typeof DeliverableFileType)[number];
 export const DeliverableStatus = ['PENDING', 'IN_PROGRESS', 'AVAILABLE', 'FAILED'] as const;
 export type DeliverableStatus = (typeof DeliverableStatus)[number];
 
-export const DeliverableType = ['TRANSCRIPTION', 'DECISION_RECORD', 'DETAILED_SYNTHESIS'] as const;
+export const DeliverableType = [
+  'TRANSCRIPTION',
+  'DECISION_RECORD',
+  'DETAILED_SYNTHESIS',
+  'CUSTOM_REPORT',
+] as const;
 export type DeliverableType = (typeof DeliverableType)[number];
 
 export interface DeliverableDto {
@@ -26,6 +31,7 @@ export interface DeliverableListResponse {
 export interface DeliverableCreateRequest {
   meeting_id: number;
   type: DeliverableType;
+  custom_prompt?: string;
 }
 
 const STATUS_MAP: Record<Exclude<DeliverableStatus, 'IN_PROGRESS'>, DeliverableStatus> = {
