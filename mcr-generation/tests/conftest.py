@@ -36,6 +36,12 @@ def pytest_configure(config):  # noqa: ARG001
     # -- S3 client: calls boto3.client() at import time with live env vars ---
     sys.modules["mcr_generation.app.utils.s3_client"] = MagicMock()
 
+    # -- Pre-load Pydantic schema modules (`.types`) of sections whose parent
+    # package is mocked below. notes_extractor imports `TopicsContent` and
+    # `DiscussionsContent` from these modules and needs the real classes.
+    import mcr_generation.app.services.sections.detailed_discussions.types  # noqa: F401
+    import mcr_generation.app.services.sections.topics.types  # noqa: F401
+
     # -- Section modules (refiners / map-reduce) -----------------------------
     # Note: only leaf modules that would trigger real LLM client initialisation
     # are mocked here.  The `sections` package itself is NOT mocked so that
