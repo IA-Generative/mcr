@@ -1,3 +1,4 @@
+import asyncio
 from typing import Any
 
 from celery.signals import task_failure, task_prerun, task_success
@@ -12,6 +13,10 @@ from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     ReportTypes,
     extract_report_task_args,
+)
+from mcr_generation.app.services.notes.notes_extractor import (
+    ExtractedNotes,
+    NotesExtractor,
 )
 from mcr_generation.app.services.report_generator import create_report_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
@@ -37,6 +42,7 @@ def generate_report_from_docx(
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
     deliverable_id: int | None = None,
+    notes_content: str | None = None,
     custom_prompt: str | None = None,
 ) -> BaseReport | CustomMarkdownReport:
     record_report_trace_context(
@@ -55,6 +61,17 @@ def generate_report_from_docx(
     )
 
     report_type_enum = ReportTypes(report_type)
+
+    # extracted_notes is not yet consumed by the generators.
+    _extracted_notes: ExtractedNotes | None = None
+    if notes_content and notes_content.strip():
+        _extracted_notes = asyncio.run(
+            NotesExtractor().extract_all(notes_content, report_type=report_type_enum)
+        )
+        logger.debug("Notes extraction done")
+    else:
+        logger.debug("Notes extraction skipped: no notes content")
+
     generator = create_report_generator(report_type_enum, custom_prompt=custom_prompt)
     report = generator.generate(chunks)
 
