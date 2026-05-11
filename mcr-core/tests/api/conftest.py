@@ -56,6 +56,10 @@ class PrefixedTestClient:
         self._expire_session()
         return self.client.put(f"{self.prefix}{path}", **kwargs)
 
+    def patch(self, path: str, **kwargs: Any) -> Response:
+        self._expire_session()
+        return self.client.patch(f"{self.prefix}{path}", **kwargs)
+
     def delete(self, path: str, **kwargs: Any) -> Response:
         self._expire_session()
         return self.client.delete(f"{self.prefix}{path}", **kwargs)

@@ -4,13 +4,15 @@ import pytest
 
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.meeting_schema import (
-    ComuUrlValidator,
     MeetingBase,
+    rewrite_comu_url_to_use_public_url,
+)
+from mcr_meeting.app.schemas.platform_connection_validator_schema import (
+    ComuUrlValidator,
     VisioUrlValidator,
     WebConfUrlValidator,
     WebexUrlValidator,
     WebinaireUrlValidator,
-    rewrite_comu_url_to_use_public_url,
 )
 
 comu_test_cases = [
