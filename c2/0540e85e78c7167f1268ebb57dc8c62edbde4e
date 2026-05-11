@@ -1,0 +1,14 @@
+mcr-generation/mcr_generation/app/schemas/base.py
+  h_fbb4d0b2de0c1b 107,110,112-121,123,125-126,133-139,144-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "c20540e85e78c7167f1268ebb57dc8c62edbde4e",
+  "prompts": {},
+  "humans": {
+    "h_fbb4d0b2de0c1b": {
+      "author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
