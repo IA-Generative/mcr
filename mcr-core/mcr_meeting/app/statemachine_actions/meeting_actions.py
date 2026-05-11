@@ -131,6 +131,7 @@ def after_start_report_handler(
     next_status: MeetingStatus,
     report_type: ReportType,
     deliverable_id: int | None = None,
+    custom_prompt: str | None = None,
 ) -> None:
     try:
         if meeting.transcription_filename is None:
@@ -145,6 +146,8 @@ def after_start_report_handler(
         }
         if deliverable_id is not None:
             task_kwargs["deliverable_id"] = deliverable_id
+        if custom_prompt is not None:
+            task_kwargs["custom_prompt"] = custom_prompt
 
         with UnitOfWork():
             update_meeting_status(meeting, next_status)

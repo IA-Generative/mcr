@@ -73,9 +73,10 @@ class TestRequestDeliverable:
             "deliverable_id": deliverable.id,
         }
 
-    def test_rejects_transcription_type(
+    def test_creates_pending_and_dispatches_celery_for_custom_report(
         self,
         mock_celery_producer_app: MagicMock,
+        db_session: Session,
     ) -> None:
         meeting = MeetingFactory.create(
             status=MeetingStatus.TRANSCRIPTION_DONE,
@@ -83,14 +84,42 @@ class TestRequestDeliverable:
             transcription_filename="transcription.docx",
         )
 
-        with pytest.raises(BadRequestException):
-            do.request_deliverable(
-                meeting_id=meeting.id,
-                user_keycloak_uuid=meeting.owner.keycloak_uuid,
-                deliverable_type=DeliverableType.TRANSCRIPTION,
-            )
+        deliverable = do.request_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.CUSTOM_REPORT,
+            custom_prompt="Analyse les risques",
+        )
 
-        mock_celery_producer_app.send_task.assert_not_called()
+        assert deliverable.status == DeliverableStatus.PENDING
+        assert deliverable.type == DeliverableType.CUSTOM_REPORT
+
+        mock_celery_producer_app.send_task.assert_called_once()
+        call = mock_celery_producer_app.send_task.call_args
+        assert call.kwargs["args"][2] == "CUSTOM_REPORT"
+        assert call.kwargs["kwargs"]["custom_prompt"] == "Analyse les risques"
+        assert call.kwargs["kwargs"]["deliverable_id"] == deliverable.id
+
+    def test_custom_prompt_not_in_kwargs_for_standard_types(
+        self,
+        mock_celery_producer_app: MagicMock,
+        db_session: Session,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        do.request_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        mock_celery_producer_app.send_task.assert_called_once()
+        call = mock_celery_producer_app.send_task.call_args
+        assert "custom_prompt" not in call.kwargs["kwargs"]
 
     def test_rerequest_after_done_chains_reset_then_start(
         self,
