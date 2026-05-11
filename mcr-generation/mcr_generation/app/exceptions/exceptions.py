@@ -29,3 +29,7 @@ class UnsupportedReportTypeError(MCRGenerationException):
 
 class AllChunksFailedError(MCRGenerationException):
     """Raised when every chunk failed during map phase, leaving no content to reduce."""
+
+
+class EmptyChunksError(MCRGenerationException):
+    """Raised when a pipeline is invoked with no chunks to process."""
