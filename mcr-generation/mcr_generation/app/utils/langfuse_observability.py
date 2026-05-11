@@ -166,3 +166,39 @@ def record_low_confidence_items_event(
         logger.warning(
             "langfuse create_event (low_confidence_{}) failed: {}", section, e
         )
+
+
+def record_notes_truncated_event(
+    original_length: int,
+    truncated_length: int,
+) -> None:
+    try:
+        get_client().create_event(
+            name="notes_truncated",
+            level="WARNING",
+            metadata={
+                "original_length": original_length,
+                "truncated_length": truncated_length,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (notes_truncated) failed: {}", e)
+
+
+def record_notes_extraction_failed_event(
+    theme: str,
+    exception_type: str,
+    exception_msg: str,
+) -> None:
+    try:
+        get_client().create_event(
+            name="notes_extraction_failed",
+            level="ERROR",
+            metadata={
+                "theme": theme,
+                "exception_type": exception_type,
+                "exception_msg": exception_msg,
+            },
+        )
+    except Exception as e:
+        logger.warning("langfuse create_event (notes_extraction_failed) failed: {}", e)
