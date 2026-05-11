@@ -150,3 +150,18 @@ class NotesExtractor:
             truncated_length=max_len,
         )
         return notes_content[:max_len]
+
+
+def extract_notes(
+    notes_content: str | None,
+    report_type: ReportTypes,
+) -> ExtractedNotes | None:
+    if not notes_content or not notes_content.strip():
+        logger.debug("Notes extraction skipped: no notes content")
+        return None
+
+    extracted_notes = asyncio.run(
+        NotesExtractor().extract_all(notes_content, report_type=report_type)
+    )
+    logger.debug("Notes extraction done")
+    return extracted_notes

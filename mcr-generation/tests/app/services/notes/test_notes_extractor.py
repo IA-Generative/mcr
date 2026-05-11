@@ -1,12 +1,15 @@
 """Unit tests for services.notes.notes_extractor."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from mcr_generation.app.schemas.base import Intent, NextMeeting
 from mcr_generation.app.schemas.celery_types import ReportTypes
-from mcr_generation.app.services.notes.notes_extractor import NotesExtractor
+from mcr_generation.app.services.notes.notes_extractor import (
+    NotesExtractor,
+    extract_notes,
+)
 from mcr_generation.app.services.sections.detailed_discussions.types import (
     DiscussionsContent,
 )
@@ -204,3 +207,35 @@ class TestExtractAll:
 
             mock_intent.assert_awaited_once_with(short_notes)
             mock_record_trunc.assert_not_called()
+
+
+class TestExtractNotes:
+    def test_returns_none_when_content_is_none(self) -> None:
+        with patch(f"{_MODULE}.NotesExtractor") as mock_cls:
+            assert extract_notes(None, ReportTypes.DECISION_RECORD) is None
+            mock_cls.assert_not_called()
+
+    def test_returns_none_when_content_is_blank(self) -> None:
+        with patch(f"{_MODULE}.NotesExtractor") as mock_cls:
+            assert extract_notes("   ", ReportTypes.DECISION_RECORD) is None
+            mock_cls.assert_not_called()
+
+    def test_runs_extractor_via_asyncio_run_when_content_present(self) -> None:
+        mock_instance = MagicMock()
+        mock_coro = MagicMock()
+        mock_instance.extract_all.return_value = mock_coro
+        mock_cls = MagicMock(return_value=mock_instance)
+
+        with (
+            patch(f"{_MODULE}.NotesExtractor", mock_cls),
+            patch(f"{_MODULE}.asyncio.run") as mock_run,
+        ):
+            mock_run.return_value = "extracted"
+            result = extract_notes("some notes", ReportTypes.DECISION_RECORD)
+
+            mock_cls.assert_called_once_with()
+            mock_instance.extract_all.assert_called_once_with(
+                "some notes", report_type=ReportTypes.DECISION_RECORD
+            )
+            mock_run.assert_called_once_with(mock_coro)
+            assert result == "extracted"
