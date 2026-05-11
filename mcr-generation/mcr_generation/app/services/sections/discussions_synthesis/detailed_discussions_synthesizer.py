@@ -9,7 +9,9 @@ from mcr_generation.app.schemas.base import DetailedDiscussion, Participant
 from mcr_generation.app.services.sections.discussions_synthesis.prompts import (
     SYNTHESIZE_PROMPT,
 )
-from mcr_generation.app.services.sections.discussions_synthesis.types import Content
+from mcr_generation.app.services.sections.discussions_synthesis.types import (
+    DiscussionsSynthesisContent,
+)
 from mcr_generation.app.services.utils.llm_helpers import (
     call_llm_with_structured_output,
 )
@@ -38,9 +40,9 @@ class DetailedDiscussionsSynthesizer:
     def synthesize(
         self,
         detailed_discussions: list[DetailedDiscussion],
-    ) -> Content:
+    ) -> DiscussionsSynthesisContent:
         if not detailed_discussions:
-            return Content()
+            return DiscussionsSynthesisContent()
 
         detailed_discussions_json = json.dumps(
             [discussion.model_dump() for discussion in detailed_discussions],
@@ -55,6 +57,6 @@ class DetailedDiscussionsSynthesizer:
 
         return call_llm_with_structured_output(
             client=self.client_instructor,
-            response_model=Content,
+            response_model=DiscussionsSynthesisContent,
             user_message_content=user_message_content,
         )

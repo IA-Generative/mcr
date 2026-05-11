@@ -6,7 +6,9 @@ from mcr_generation.app.schemas.base import DetailedDiscussion
 from mcr_generation.app.services.sections.discussions_synthesis.detailed_discussions_synthesizer import (
     DetailedDiscussionsSynthesizer,
 )
-from mcr_generation.app.services.sections.discussions_synthesis.types import Content
+from mcr_generation.app.services.sections.discussions_synthesis.types import (
+    DiscussionsSynthesisContent,
+)
 
 
 @pytest.fixture
@@ -37,7 +39,7 @@ class TestSynthesizeDetailedDiscussions:
             participants=[],
         )
         result = detailed_discussions_synthesizer.synthesize(detailed_discussions=[])
-        assert isinstance(result, Content)
+        assert isinstance(result, DiscussionsSynthesisContent)
         assert result.discussions_summary == []
         assert result.to_do_list == []
         assert result.to_monitor_list == []
@@ -63,7 +65,7 @@ class TestSynthesizeDetailedDiscussions:
         mock_detailed_discussions,
     ) -> None:
         """Test synthesize_detailed_discussions calls the LLM with correct parameters."""
-        expected_content = Content(
+        expected_content = DiscussionsSynthesisContent(
             discussions_summary=["Summary 1"],
             to_do_list=["Action A"],
             to_monitor_list=["Point Z"],
@@ -117,7 +119,7 @@ class TestSynthesizeDetailedDiscussions:
         mock_call_llm,
     ) -> None:
         """Test synthesize_detailed_discussions with None for subject and mapping."""
-        mock_call_llm.return_value = Content()
+        mock_call_llm.return_value = DiscussionsSynthesisContent()
 
         detailed_discussions_synthesizer = DetailedDiscussionsSynthesizer(
             meeting_subject=None,

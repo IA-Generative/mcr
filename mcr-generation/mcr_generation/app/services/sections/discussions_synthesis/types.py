@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from pydantic.fields import Field
 
 
-class Content(BaseModel):
+class DiscussionsSynthesisContent(BaseModel):
     discussions_summary: list[str] = Field(
         default_factory=list,
         description=(
