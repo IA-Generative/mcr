@@ -53,6 +53,13 @@
               :meeting-status="meeting.status"
             />
           </div>
+
+          <div class="mt-6">
+            <TipTapEditor
+              v-model="editorContent"
+              :placeholder="$t('meeting-v2.notes-placeholder')"
+            />
+          </div>
         </div>
         <div
           v-if="meeting && showRecordingCard"
@@ -90,6 +97,8 @@ import MeetingPageAlert from './MeetingPageAlert.vue';
 
 const router = useRouter();
 const route = useRoute();
+
+const editorContent = ref('');
 const { id } = route.params;
 
 const { getMeetingQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
