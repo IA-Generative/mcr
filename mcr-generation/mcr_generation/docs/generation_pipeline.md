@@ -88,6 +88,7 @@ flowchart TB
     OUT[/"BaseReport<br/>(DecisionRecord | DetailedSynthesis)"/]:::out
     H --> OUT
     R1 --> OUT
+    R2 --> OUT
     SY --> OUT
     OUT --> POST["POST /meetings/{id}/report/success<br/>→ mcr-core"]:::proc
 ```
