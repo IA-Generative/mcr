@@ -147,7 +147,7 @@ async def update_meeting_service(
         )
 
         async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.put(f"{meeting_id}", json=meeting_update_dict)
+            response = await client.patch(f"{meeting_id}", json=meeting_update_dict)
             response.raise_for_status()
 
             updated_meeting_data = response.json()
@@ -473,7 +473,8 @@ async def get_meeting_audio_service(
 def update_dict_with_iso_dates(
     meeting_dict: dict[str, Any], meeting: MeetingBase
 ) -> dict[str, Any]:
-    meeting_dict["creation_date"] = meeting.creation_date.isoformat()
+    if meeting.creation_date is not None:
+        meeting_dict["creation_date"] = meeting.creation_date.isoformat()
     if meeting.start_date is not None:
         meeting_dict["start_date"] = meeting.start_date.isoformat()
     if meeting.end_date is not None:
