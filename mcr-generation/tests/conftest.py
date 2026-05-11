@@ -40,6 +40,16 @@ def pytest_configure(config):  # noqa: ARG001
     # -- S3 client: calls boto3.client() at import time with live env vars ---
     sys.modules["mcr_generation.app.utils.s3_client"] = MagicMock()
 
+    # -- Pre-load real Pydantic type modules ---------------------------------
+    # The metadata collectors import their `*Content` Pydantic types from these
+    # submodules. Loading them BEFORE the mocking loop below ensures
+    # `sys.modules` already holds the real modules, so `from <parent>.types
+    # import <Name>Content` resolves directly without traversing the (mocked)
+    # parent package.
+    # These modules are pure Pydantic schemas — no LLM client init.
+    import mcr_generation.app.services.sections.detailed_discussions.types  # noqa: F401
+    import mcr_generation.app.services.sections.topics.types  # noqa: F401
+
     # -- Section modules (refiners / map-reduce) -----------------------------
     # Note: only leaf modules that would trigger real LLM client initialisation
     # are mocked here.  Parent packages are NOT mocked so that importlib can

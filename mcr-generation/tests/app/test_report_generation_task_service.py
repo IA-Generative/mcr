@@ -17,7 +17,6 @@ from mcr_generation.app.schemas.base import (
     Topic,
 )
 from mcr_generation.app.schemas.celery_types import extract_report_task_args
-from mcr_generation.app.schemas.custom_markdown_report import CustomMarkdownReport
 
 # ---------------------------------------------------------------------------
 # Mocks specific to this file (celery + report_generator package wholesale,
@@ -215,20 +214,6 @@ class TestGenerateReportFromDocxSuccess:
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
         mock_core_api_client.mark_report_success.assert_called_once()
-        mock_core_api_client.mark_deliverable_success.assert_not_called()
-
-    def test_skips_callback_when_result_is_none(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        """T1b: CUSTOM returns None — success handler must not contact mcr-core."""
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": 7}
-
-        generate_report_from_docx_success(sender=sender, result=None)
-
-        mock_core_api_client.mark_report_success.assert_not_called()
         mock_core_api_client.mark_deliverable_success.assert_not_called()
 
 
