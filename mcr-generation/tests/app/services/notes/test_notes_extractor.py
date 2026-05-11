@@ -1,10 +1,8 @@
 """Unit tests for services.notes.notes_extractor."""
 
-from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from pydantic import BaseModel
 
 from mcr_generation.app.schemas.base import Intent, NextMeeting
 from mcr_generation.app.schemas.celery_types import ReportTypes
@@ -44,32 +42,17 @@ def _discussions_fixture() -> DiscussionsContent:
     return DiscussionsContent(detailed_discussions=[])
 
 
-def _fake_llm_side_effect(**kwargs: Any) -> BaseModel:
-    """Routes an async LLM call to the right Pydantic fixture based on its
-    response_model. Used by integration tests to mock the LLM helper while
-    still letting NotesExtractor exercise its full code path."""
-    response_model = kwargs["response_model"]
-    if response_model is Intent:
-        return _intent_fixture()
-    if response_model is NextMeeting:
-        return _next_meeting_fixture()
-    if response_model is TopicsContent:
-        return _topics_fixture()
-    if response_model is DiscussionsContent:
-        return _discussions_fixture()
-    raise AssertionError(f"unexpected response_model: {response_model}")
-
-
 class TestExtractAll:
     @pytest.mark.asyncio
-    async def test_decision_record_integration(self) -> None:
+    async def test_decision_record_integration(
+        self, fake_async_call_llm_with_structured_output
+    ) -> None:
         """Integration: extract_all in DECISION_RECORD mode triggers 3 LLM
         calls (Intent + NextMeeting + TopicsContent) with the notes content
         in the prompt and produces the expected ExtractedNotes."""
-        with patch(
-            f"{_MODULE}.async_call_llm_with_structured_output",
-            new_callable=AsyncMock,
-            side_effect=_fake_llm_side_effect,
+        with fake_async_call_llm_with_structured_output(
+            _MODULE,
+            [_intent_fixture(), _next_meeting_fixture(), _topics_fixture()],
         ) as mock_call:
             result = await NotesExtractor().extract_all(
                 "notes here", report_type=ReportTypes.DECISION_RECORD
@@ -89,14 +72,15 @@ class TestExtractAll:
                 assert "notes here" in call.kwargs["user_message_content"]
 
     @pytest.mark.asyncio
-    async def test_detailed_synthesis_integration(self) -> None:
+    async def test_detailed_synthesis_integration(
+        self, fake_async_call_llm_with_structured_output
+    ) -> None:
         """Integration: extract_all in DETAILED_SYNTHESIS mode triggers 3 LLM
         calls (Intent + NextMeeting + DiscussionsContent) and leaves topics
         unset."""
-        with patch(
-            f"{_MODULE}.async_call_llm_with_structured_output",
-            new_callable=AsyncMock,
-            side_effect=_fake_llm_side_effect,
+        with fake_async_call_llm_with_structured_output(
+            _MODULE,
+            [_intent_fixture(), _next_meeting_fixture(), _discussions_fixture()],
         ) as mock_call:
             result = await NotesExtractor().extract_all(
                 "notes here", report_type=ReportTypes.DETAILED_SYNTHESIS
