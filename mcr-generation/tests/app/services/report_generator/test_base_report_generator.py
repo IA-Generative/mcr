@@ -57,7 +57,6 @@ def mock_participants() -> MagicMock:
         name="Alice Martin",
         role="Directrice financière",
         confidence=0.9,
-        association_justification=None,
     )
     participants = MagicMock()
     participants.participants = [participant]
