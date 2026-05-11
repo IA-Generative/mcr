@@ -1,4 +1,7 @@
-from mcr_generation.app.exceptions.exceptions import UnsupportedReportTypeError
+from mcr_generation.app.exceptions.exceptions import (
+    MissingCustomPromptError,
+    UnsupportedReportTypeError,
+)
 from mcr_generation.app.schemas.celery_types import ReportTypes
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
@@ -13,30 +16,37 @@ from mcr_generation.app.services.report_generator.detailed_synthesis_generator i
     DetailedSynthesisGenerator,
 )
 
-# Union temporaire: CustomReportGenerator ne dérive pas de BaseReportGenerator
-# (sortie markdown vs BaseReport structuré). À harmoniser en T5.
-_Generator = BaseReportGenerator | CustomReportGenerator
 
-
-def get_generator(report_type: ReportTypes) -> _Generator:
+def create_report_generator(
+    report_type: ReportTypes,
+    *,
+    custom_prompt: str | None = None,
+) -> BaseReportGenerator | CustomReportGenerator:
     """
     Factory function that returns the appropriate report generator for the given report type.
 
     Args:
         report_type (ReportTypes): The type of report to generate.
+        custom_prompt (str | None): End-user instruction. Required for
+            CUSTOM_REPORT, ignored for the structured report types.
 
     Returns:
         BaseReportGenerator | CustomReportGenerator: A concrete report generator instance.
 
     Raises:
         UnsupportedReportTypeError: If the report type is not supported.
+        MissingCustomPromptError: If CUSTOM_REPORT is requested without a prompt.
     """
     match report_type:
         case ReportTypes.DECISION_RECORD:
             return DecisionRecordGenerator()
         case ReportTypes.DETAILED_SYNTHESIS:
             return DetailedSynthesisGenerator()
-        case ReportTypes.CUSTOM:
-            return CustomReportGenerator()
+        case ReportTypes.CUSTOM_REPORT:
+            if custom_prompt is None:
+                raise MissingCustomPromptError(
+                    "CUSTOM_REPORT requires a non-empty custom_prompt"
+                )
+            return CustomReportGenerator(instruction=custom_prompt)
         case _:
             raise UnsupportedReportTypeError(f"Unknown report type: {report_type}")

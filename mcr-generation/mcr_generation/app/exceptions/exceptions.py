@@ -33,3 +33,7 @@ class AllChunksFailedError(MCRGenerationException):
 
 class EmptyChunksError(MCRGenerationException):
     """Raised when a pipeline is invoked with no chunks to process."""
+
+
+class MissingCustomPromptError(MCRGenerationException):
+    """Raised when a CUSTOM_REPORT is requested without a user-provided prompt."""
