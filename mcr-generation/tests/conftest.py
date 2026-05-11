@@ -20,8 +20,8 @@ from tests.mocks.s3_mocks import mock_s3_client  # noqa: F401
 from tests.mocks.task_service_mocks import (  # noqa: F401
     mock_chunk_docx_to_document_list,
     mock_core_api_client,
+    mock_create_report_generator,
     mock_get_file_from_s3,
-    mock_get_generator,
 )
 
 

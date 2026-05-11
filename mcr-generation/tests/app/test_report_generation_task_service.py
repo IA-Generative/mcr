@@ -10,13 +10,13 @@ import pytest
 from pytest import fixture
 
 from mcr_generation.app.schemas.base import (
+    CustomMarkdownReport,
     DecisionRecord,
     Header,
     Participant,
     Topic,
 )
 from mcr_generation.app.schemas.celery_types import extract_report_task_args
-from mcr_generation.app.schemas.custom_markdown_report import CustomMarkdownReport
 
 # ---------------------------------------------------------------------------
 # Mocks specific to this file (celery + report_generator package wholesale,
@@ -71,7 +71,7 @@ class TestGenerateReportFromDocx:
         decision_record: DecisionRecord,
         mock_get_file_from_s3: MagicMock,
         mock_chunk_docx_to_document_list: MagicMock,
-        mock_get_generator: MagicMock,
+        mock_create_report_generator: MagicMock,
     ) -> None:
         """Happy path: get_generator is mocked and its generate() return value is
         forwarded as-is by the task."""
@@ -79,14 +79,16 @@ class TestGenerateReportFromDocx:
         chunk2 = SimpleNamespace(id=1, text="chunk2")
         mock_get_file_from_s3.return_value = b"docx content"
         mock_chunk_docx_to_document_list.return_value = [chunk1, chunk2]
-        mock_get_generator.return_value.generate.return_value = decision_record
+        mock_create_report_generator.return_value.generate.return_value = (
+            decision_record
+        )
 
         generate_report_from_docx(1, "transcription.docx")
 
         mock_get_file_from_s3.assert_called_once_with("transcription.docx")
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
-        mock_get_generator.assert_called_once()
-        mock_get_generator.return_value.generate.assert_called_once_with(
+        mock_create_report_generator.assert_called_once()
+        mock_create_report_generator.return_value.generate.assert_called_once_with(
             [chunk1, chunk2]
         )
 
@@ -97,27 +99,31 @@ class TestGenerateReportFromDocx:
         with pytest.raises(RuntimeError, match="S3 unavailable"):
             generate_report_from_docx(1, "transcription.docx")
 
-    def test_returns_none_and_logs_for_custom_markdown_report(
+    def test_returns_custom_markdown_report_built_from_generator(
         self,
         mock_get_file_from_s3: MagicMock,
         mock_chunk_docx_to_document_list: MagicMock,
-        mock_get_generator: MagicMock,
+        mock_create_report_generator: MagicMock,
     ) -> None:
-        """T1b: CUSTOM produces markdown that is logged, and the task returns None
-        so the success signal does not call mcr-core."""
+        """CUSTOM_REPORT: the generator's CustomMarkdownReport is forwarded as-is."""
         mock_get_file_from_s3.return_value = b"docx content"
         mock_chunk_docx_to_document_list.return_value = [
             SimpleNamespace(id=0, text="x")
         ]
-        mock_get_generator.return_value.generate.return_value = CustomMarkdownReport(
-            markdown="## Risques\n- R1"
-        )
+        custom_report = CustomMarkdownReport(markdown_content="## Risques\n- R1")
+        mock_create_report_generator.return_value.generate.return_value = custom_report
 
         result = generate_report_from_docx(
-            1, "transcription.docx", report_type="CUSTOM"
+            1,
+            "transcription.docx",
+            report_type="CUSTOM_REPORT",
+            custom_prompt="Liste les risques",
         )
 
-        assert result is None
+        assert result is custom_report
+        mock_create_report_generator.assert_called_once()
+        _, factory_kwargs = mock_create_report_generator.call_args
+        assert factory_kwargs == {"custom_prompt": "Liste les risques"}
 
 
 class TestExtractReportTaskArgs:
@@ -209,20 +215,6 @@ class TestGenerateReportFromDocxSuccess:
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
         mock_core_api_client.mark_report_success.assert_called_once()
-        mock_core_api_client.mark_deliverable_success.assert_not_called()
-
-    def test_skips_callback_when_result_is_none(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        """T1b: CUSTOM returns None — success handler must not contact mcr-core."""
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": 7}
-
-        generate_report_from_docx_success(sender=sender, result=None)
-
-        mock_core_api_client.mark_report_success.assert_not_called()
         mock_core_api_client.mark_deliverable_success.assert_not_called()
 
 

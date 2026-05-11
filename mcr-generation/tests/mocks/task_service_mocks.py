@@ -23,14 +23,14 @@ def mock_chunk_docx_to_document_list(
 
 
 @pytest.fixture
-def mock_get_generator(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
-    """get_generator returns a generator mock exposing .generate().
+def mock_create_report_generator(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
+    """create_report_generator returns a generator mock exposing .generate().
 
     The returned MagicMock is the factory; its .return_value is the generator.
     """
     generator = MagicMock()
     factory = MagicMock(return_value=generator)
-    monkeypatch.setattr(f"{MODULE}.get_generator", factory)
+    monkeypatch.setattr(f"{MODULE}.create_report_generator", factory)
     return factory
 
 
