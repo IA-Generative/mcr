@@ -1,13 +1,15 @@
 from datetime import datetime
 from enum import StrEnum
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DeliverableType(StrEnum):
     TRANSCRIPTION = "TRANSCRIPTION"
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+    CUSTOM_REPORT = "CUSTOM_REPORT"
 
 
 class DeliverableStatus(StrEnum):
@@ -31,6 +33,24 @@ class DeliverableListResponse(BaseModel):
     deliverables: list[DeliverableResponse]
 
 
-class DeliverableCreateRequest(BaseModel):
+class StructuredDeliverableCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     meeting_id: int
-    type: DeliverableType
+    type: Literal[
+        DeliverableType.TRANSCRIPTION,
+        DeliverableType.DECISION_RECORD,
+        DeliverableType.DETAILED_SYNTHESIS,
+    ]
+
+
+class CustomDeliverableCreateRequest(BaseModel):
+    meeting_id: int
+    type: Literal[DeliverableType.CUSTOM_REPORT]
+    custom_prompt: str = Field(min_length=1)
+
+
+DeliverableCreateRequest = Annotated[
+    StructuredDeliverableCreateRequest | CustomDeliverableCreateRequest,
+    Field(discriminator="type"),
+]

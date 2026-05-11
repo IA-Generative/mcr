@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class ReportType(StrEnum):
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
+    CUSTOM_REPORT = "CUSTOM_REPORT"
 
 
 class ReportGenerationRequest(BaseModel):

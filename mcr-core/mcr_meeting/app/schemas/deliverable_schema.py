@@ -1,6 +1,7 @@
 from datetime import datetime
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
@@ -25,9 +26,23 @@ class DeliverableListResponse(BaseModel):
     deliverables: list[DeliverableResponse]
 
 
-class DeliverableCreateRequest(BaseModel):
+class StructuredDeliverableCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     meeting_id: int
-    type: DeliverableType
+    type: Literal[DeliverableType.DECISION_RECORD, DeliverableType.DETAILED_SYNTHESIS]
+
+
+class CustomDeliverableCreateRequest(BaseModel):
+    meeting_id: int
+    type: Literal[DeliverableType.CUSTOM_REPORT]
+    custom_prompt: str = Field(min_length=1)
+
+
+DeliverableCreateRequest = Annotated[
+    StructuredDeliverableCreateRequest | CustomDeliverableCreateRequest,
+    Field(discriminator="type"),
+]
 
 
 class DeliverableSuccessRequest(BaseModel):
