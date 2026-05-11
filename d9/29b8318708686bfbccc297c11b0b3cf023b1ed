@@ -1,0 +1,14 @@
+mcr-generation/tests/app/client/test_core_api_client.py
+  h_fbb4d0b2de0c1b 82
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "d929b8318708686bfbccc297c11b0b3cf023b1ed",
+  "prompts": {},
+  "humans": {
+    "h_fbb4d0b2de0c1b": {
+      "author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
