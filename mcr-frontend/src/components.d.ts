@@ -90,6 +90,7 @@ declare module 'vue' {
     TableHeaderActions: typeof import('./components/meeting/table/TableHeaderActions.vue')['default']
     TablePagination: typeof import('./components/table/TablePagination.vue')['default']
     TableTag: typeof import('./components/meeting/table/TableTag.vue')['default']
+    TipTapEditor: typeof import('./components/core/TipTapEditor.vue')['default']
     TranscriptionActions: typeof import('./components/meeting/transcription/TranscriptionActions.vue')['default']
     TranscriptionContainer: typeof import('./components/meeting/transcription/TranscriptionContainer.vue')['default']
     TranscriptionDone: typeof import('./components/meeting/transcription/states/TranscriptionDone.vue')['default']
