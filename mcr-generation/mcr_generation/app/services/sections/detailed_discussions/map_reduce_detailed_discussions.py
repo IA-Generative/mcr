@@ -17,7 +17,7 @@ from mcr_generation.app.services.sections.detailed_discussions.prompts import (
     REDUCE_PROMPT_TEMPLATE,
 )
 from mcr_generation.app.services.sections.detailed_discussions.types import (
-    Content,
+    DiscussionsContent,
     MappedDetailedDiscussion,
     MappedDetailedDiscussions,
 )
@@ -59,7 +59,7 @@ class MapReduceDetailedDiscussions:
 
     @log_execution_time
     @observe(name="section_content_generation")
-    def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
+    def map_reduce_all_steps(self, chunks: list[Chunk]) -> DiscussionsContent:
         self._last_chunk_count = len(chunks)
         successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
 
@@ -110,7 +110,7 @@ class MapReduceDetailedDiscussions:
     @observe(name="section_content_reduce")
     def reduce_discussions_into_content(
         self, all_discussions: list[MappedDetailedDiscussion]
-    ) -> Content:
+    ) -> DiscussionsContent:
         """
         Deduplicate and merge related detailed discussions using the LLM.
 
@@ -119,14 +119,14 @@ class MapReduceDetailedDiscussions:
                 objects extracted from chunks.
 
         Returns:
-            Content: Deduplicated and consolidated list of detailed discussions.
+            DiscussionsContent: Deduplicated and consolidated list of detailed discussions.
         """
         if not all_discussions:
             record_empty_map_phase_event(
                 section="detailed_discussions",
                 chunk_count=self._last_chunk_count,
             )
-            return Content(detailed_discussions=[])
+            return DiscussionsContent(detailed_discussions=[])
 
         discussions_input = [d.model_dump() for d in all_discussions]
 
@@ -138,7 +138,7 @@ class MapReduceDetailedDiscussions:
 
         resp = call_llm_with_structured_output(
             client=self.client_instructor,
-            response_model=Content,
+            response_model=DiscussionsContent,
             user_message_content=reduce_message,
         )
 

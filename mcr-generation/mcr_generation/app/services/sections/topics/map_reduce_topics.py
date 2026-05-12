@@ -17,9 +17,9 @@ from mcr_generation.app.services.sections.topics.prompts import (
     REDUCE_PROMPT_TEMPLATE,
 )
 from mcr_generation.app.services.sections.topics.types import (
-    Content,
     MappedTopic,
     MappedTopics,
+    TopicsContent,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
 from mcr_generation.app.services.utils.llm_helpers import (
@@ -59,7 +59,7 @@ class MapReduceTopics:
 
     @log_execution_time
     @observe(name="section_content_generation")
-    def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
+    def map_reduce_all_steps(self, chunks: list[Chunk]) -> TopicsContent:
         self._last_chunk_count = len(chunks)
         successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
 
@@ -106,7 +106,9 @@ class MapReduceTopics:
         return successful, failed_chunk_ids
 
     @observe(name="section_content_reduce")
-    def reduce_topics_into_content(self, all_topics: list[MappedTopic]) -> Content:
+    def reduce_topics_into_content(
+        self, all_topics: list[MappedTopic]
+    ) -> TopicsContent:
         """
         Deduplicate and merge related topics using the LLM.
 
@@ -114,14 +116,14 @@ class MapReduceTopics:
             all_topics (List[MappedTopic]): List of MappedTopic objects extracted from chunks.
 
         Returns:
-            Content: Deduplicated and consolidated list of topics.
+            TopicsContent: Deduplicated and consolidated list of topics.
         """
         if not all_topics:
             record_empty_map_phase_event(
                 section="topics",
                 chunk_count=self._last_chunk_count,
             )
-            return Content(topics=[], next_steps=[])
+            return TopicsContent(topics=[], next_steps=[])
 
         topics_input = [d.model_dump() for d in all_topics]
 
@@ -133,7 +135,7 @@ class MapReduceTopics:
 
         resp = call_llm_with_structured_output(
             client=self.client_instructor,
-            response_model=Content,
+            response_model=TopicsContent,
             user_message_content=reduce_message,
         )
 
