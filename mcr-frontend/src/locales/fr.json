@@ -50,6 +50,12 @@
       "meetings": "Liste des réunions",
       "directory": "Annuaire",
       "users": "Gestion des utilisateurs"
+    },
+    "notice": {
+      "title": "Contribuez au glossaire du MI !",
+      "desc": "400 acronymes {articleLink}. Pour en proposer d'autres, {formLink}.",
+      "article-link-text": "déjà intégrés",
+      "form-link-text": "cliquez sur ce lien"
     }
   },
   "about-us": {

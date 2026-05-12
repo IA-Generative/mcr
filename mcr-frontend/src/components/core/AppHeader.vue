@@ -35,6 +35,35 @@
       />
     </template>
   </DsfrHeader>
+  <DsfrNotice
+    v-if="isLogged"
+    type="info"
+    :title="$t('header.notice.title')"
+  >
+    <template #desc>
+      <i18n-t
+        keypath="header.notice.desc"
+        tag="span"
+      >
+        <template #articleLink>
+          <a
+            href="https://mirai.interieur.gouv.fr/actualites/mcr-apprend-a-parler-le-mi-glossaire/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ $t('header.notice.article-link-text') }}</a
+          >
+        </template>
+        <template #formLink>
+          <a
+            href="https://grist.numerique.gouv.fr/o/docs/forms/3ceLBDoSMPmT4ScMosbJWd/4"
+            target="_blank"
+            rel="noopener noreferrer"
+            >{{ $t('header.notice.form-link-text') }}</a
+          >
+        </template>
+      </i18n-t>
+    </template>
+  </DsfrNotice>
 </template>
 
 <script setup lang="ts">
@@ -87,23 +116,6 @@ function redirectTo(url: string): void {
 </script>
 
 <style scoped>
-:deep() div.fr-notice__body > p {
-  display: flex;
-  flex-direction: column;
-}
-
-/* Breakpoint used in dsfr, close to tw md: */
-@media (min-width: 48em) {
-  :deep() div.fr-notice__body > p {
-    display: flex;
-    flex-direction: row;
-  }
-
-  :deep() .fr-notice__title {
-    margin-bottom: 0;
-  }
-}
-
 :deep(.fr-badge) {
   background-color: #e8edff;
   color: #0063cb;
