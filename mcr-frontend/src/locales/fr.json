@@ -16,7 +16,13 @@
       "update": "Mettre à jour"
     },
     "or": "ou",
-    "pipe": "{'|'}"
+    "pipe": "{'|'}",
+    "editor": {
+      "bold": "Gras",
+      "italic": "Italique",
+      "bullet-list": "Liste à puces",
+      "ordered-list": "Liste numérotée"
+    }
   },
   "header": {
     "app": {
@@ -381,6 +387,7 @@
     }
   },
   "meeting-v2": {
+    "notes-placeholder": "Prenez des notes ici...",
     "audio-player": {
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."

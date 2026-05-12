@@ -53,6 +53,16 @@
               :meeting-status="meeting.status"
             />
           </div>
+
+          <div
+            v-if="isMeetingNotesEnabled"
+            class="mt-6"
+          >
+            <TipTapEditor
+              v-model="editorContent"
+              :placeholder="$t('meeting-v2.notes-placeholder')"
+            />
+          </div>
         </div>
         <div
           v-if="meeting && showRecordingCard"
@@ -87,9 +97,12 @@ import { useMeetings } from '@/services/meetings/use-meeting';
 import RecordingCard from '@/components/meeting/RecordingCard.vue';
 import { useModal } from 'vue-final-modal';
 import MeetingPageAlert from './MeetingPageAlert.vue';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 
 const router = useRouter();
 const route = useRoute();
+
+const editorContent = ref('');
 const { id } = route.params;
 
 const { getMeetingQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
@@ -98,6 +111,8 @@ const { mutate: updateMeeting } = updateMeetingMutation();
 const { mutateAsync: deleteMeeting } = deleteMeetingMutation();
 
 const { abortRecording } = useRecorder();
+
+const isMeetingNotesEnabled = useFeatureFlag('meeting-notes');
 
 const isRecordingLocally = computed(
   () =>
