@@ -48,7 +48,6 @@ def decision_record() -> DecisionRecord:
                     name="Alice Martin",
                     role="Directrice financière",
                     confidence=0.9,
-                    association_justification="Mentionné plusieurs fois par son nom",
                 )
             ],
             next_meeting="15/03/2026 à 10h00",

@@ -45,7 +45,6 @@ def mock_header() -> Header:
         name="Alice Martin",
         role="Directrice financière",
         confidence=0.9,
-        association_justification=None,
     )
     return Header(
         title="Réunion Budget Q1",

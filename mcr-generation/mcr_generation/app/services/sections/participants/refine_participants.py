@@ -5,7 +5,10 @@ from loguru import logger
 from openai import OpenAI
 
 from mcr_generation.app.configs.settings import LLMConfig
-from mcr_generation.app.schemas.base import Participants
+from mcr_generation.app.schemas.base import (
+    Participants,
+    ParticipantsWithThinkingListWrapper,
+)
 from mcr_generation.app.services.sections.participants.prompts import (
     INITIAL_PROMPT_TEMPLATE,
     REFINE_PROMPT_TEMPLATE,
@@ -53,9 +56,11 @@ class RefineParticipants:
 
         logger.debug("Final refined extract: {}", refined_extract)
 
-        return refined_extract
+        return refined_extract.to_public()
 
-    def _initial_extract_from_chunk(self, chunk: Chunk) -> Participants:
+    def _initial_extract_from_chunk(
+        self, chunk: Chunk
+    ) -> ParticipantsWithThinkingListWrapper:
         prompt = PromptTemplate(
             template=INITIAL_PROMPT_TEMPLATE,
             input_variables=["chunk_text"],
@@ -69,15 +74,15 @@ class RefineParticipants:
         )
         resp = call_llm_with_structured_output(
             client=self.client_instructor,
-            response_model=Participants,
+            response_model=ParticipantsWithThinkingListWrapper,
             user_message_content=content,
         )
         logger.debug("Initial response: {}", resp)
         return resp
 
     def _refine_with_chunk(
-        self, current: Participants, chunk_text: str
-    ) -> Participants:
+        self, current: ParticipantsWithThinkingListWrapper, chunk_text: str
+    ) -> ParticipantsWithThinkingListWrapper:
         current_json = current.model_dump_json()
 
         prompt = PromptTemplate(
@@ -94,7 +99,7 @@ class RefineParticipants:
 
         resp = call_llm_with_structured_output(
             client=self.client_instructor,
-            response_model=Participants,
+            response_model=ParticipantsWithThinkingListWrapper,
             user_message_content=content,
         )
         logger.debug("Refined response: {}", resp)
