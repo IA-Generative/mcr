@@ -5,13 +5,15 @@ from pydantic import UUID4
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
-from mcr_meeting.app.exceptions.exceptions import ForbiddenAccessException
+from mcr_meeting.app.exceptions.exceptions import (
+    ForbiddenAccessException,
+)
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.services.meeting_transition_record_service import (
     create_transition_record_service,
 )
 from mcr_meeting.app.services.user_service import get_user_by_keycloak_uuid_service
-from mcr_meeting.app.utils.db_utils import update_model
+from mcr_meeting.app.utils.db_utils import patch_model
 
 from ..db.meeting_repository import (
     get_meeting_by_id,
@@ -96,12 +98,13 @@ def update_meeting_service(
         Meeting: The updated meeting object, or None if no meeting was found.
     """
 
+    # try:
     with UnitOfWork():
         meeting = get_meeting_service(
-            meeting_id=meeting_id, current_user_keycloak_uuid=current_user_keycloak_uuid
+            meeting_id=meeting_id,
+            current_user_keycloak_uuid=current_user_keycloak_uuid,
         )
-        update_model(meeting, meeting_update)
-
+        patch_model(meeting, meeting_update)
         return update_meeting(meeting)
 
 
