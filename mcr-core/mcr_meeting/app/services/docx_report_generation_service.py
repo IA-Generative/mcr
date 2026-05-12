@@ -5,6 +5,7 @@ from typing import Any
 from docxtpl import RichText
 
 from mcr_meeting.app.schemas.report_generation import (
+    CustomReportResponse,
     DetailedSynthesisGenerationResponse,
     ReportGenerationResponse,
     ReportHeader,
@@ -13,6 +14,7 @@ from mcr_meeting.app.schemas.report_generation import (
 from mcr_meeting.app.services.docx_generation.templated_docx_generator import (
     TemplatedDocxGenerator,
 )
+from mcr_meeting.app.services.report_content.markdown_to_docx import markdown_to_docx
 from mcr_meeting.app.services.report_content.template_renderer import render_to_docx
 
 
@@ -181,6 +183,10 @@ def _get_style_template_path() -> str:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Style template not found at {path}")
     return path
+
+
+def generate_custom_report_docx(response: CustomReportResponse) -> BytesIO:
+    return markdown_to_docx(response.markdown_content, _get_style_template_path())
 
 
 def _format_title_detailed_synthesis(
