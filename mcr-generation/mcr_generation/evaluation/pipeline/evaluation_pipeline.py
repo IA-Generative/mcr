@@ -17,7 +17,10 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_generation.app.schemas.celery_types import ReportTypes
-from mcr_generation.app.services.report_generator import get_generator
+from mcr_generation.app.services.report_generator import create_report_generator
+from mcr_generation.app.services.report_generator.base_report_generator import (
+    BaseReportGenerator,
+)
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.evaluation.criteria import CRITERIA
 from mcr_generation.evaluation.pipeline.csv_writer import write_csv, write_summary
@@ -144,7 +147,12 @@ class ReportEvaluationPipeline:
     def _generate_report(self, item: EvalItem) -> str:
         with item.transcript_path.open("rb") as fh:
             chunks = chunk_docx_to_document_list(BytesIO(fh.read()))
-        generator = get_generator(self._report_type)
+        generator = create_report_generator(self._report_type)
+        if not isinstance(generator, BaseReportGenerator):
+            raise TypeError(
+                f"Evaluation pipeline only supports structured reports, "
+                f"got {type(generator).__name__} for {self._report_type}."
+            )
         report = generator.generate(chunks)
         markdown = render_report(report)
         save_text_as_docx(markdown, self._output.generated_report(item.uid))
