@@ -12,6 +12,7 @@ module.exports = {
           900:  'var(--grey-900-175)',
           950:  'var(--grey-950-100)',
           1000: 'var(--grey-1000-50)',
+          mention: 'var(--text-mention-grey)',
         },
         'blue-france': {
           sun: {
