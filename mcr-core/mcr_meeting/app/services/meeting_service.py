@@ -1,14 +1,12 @@
 from datetime import datetime
 from uuid import UUID
 
-from loguru import logger
 from pydantic import UUID4
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.exceptions.exceptions import (
     ForbiddenAccessException,
-    NotSavedException,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.services.meeting_transition_record_service import (
@@ -100,21 +98,14 @@ def update_meeting_service(
         Meeting: The updated meeting object, or None if no meeting was found.
     """
 
-    try:
-        with UnitOfWork():
-            meeting = get_meeting_service(
-                meeting_id=meeting_id,
-                current_user_keycloak_uuid=current_user_keycloak_uuid,
-            )
-            patch_model(meeting, meeting_update)
-            return update_meeting(meeting)
-    except NotSavedException:
-        logger.error(
-            "Failed to save meeting %s with update %s",
-            meeting_id,
-            meeting_update.model_dump(exclude_unset=True),
+    # try:
+    with UnitOfWork():
+        meeting = get_meeting_service(
+            meeting_id=meeting_id,
+            current_user_keycloak_uuid=current_user_keycloak_uuid,
         )
-        raise
+        patch_model(meeting, meeting_update)
+        return update_meeting(meeting)
 
 
 def update_meeting_status(meeting: Meeting, meeting_status: MeetingStatus) -> Meeting:
