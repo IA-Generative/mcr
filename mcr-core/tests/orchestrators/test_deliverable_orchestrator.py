@@ -333,12 +333,16 @@ class TestRequestDeliverable:
 
 
 class TestMarkDeliverableSuccess:
-    def test_flips_status_persists_url_and_completes_sm(
+    def test_flips_status_persists_drive_url_and_completes_sm(
         self,
         mock_send_email: MagicMock,
         mock_persist_report_docx: MagicMock,
+        mock_upload_authenticated_for_user: MagicMock,
         db_session: Session,
     ) -> None:
+        mock_upload_authenticated_for_user.return_value = (
+            "https://drive.example.com/explorer/items/files/abc"
+        )
         meeting = MeetingFactory.create(
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
@@ -351,19 +355,118 @@ class TestMarkDeliverableSuccess:
 
         do.mark_deliverable_success(
             deliverable_id=pending.id,
-            external_url="https://drive.example.com/abc",
             report_response=_decision_record_response(),
         )
 
         db_session.refresh(pending)
         db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.AVAILABLE
-        assert pending.external_url == "https://drive.example.com/abc"
+        assert pending.external_url == (
+            "https://drive.example.com/explorer/items/files/abc"
+        )
         assert meeting.status == MeetingStatus.REPORT_DONE
         mock_send_email.assert_called_once()
-        mock_persist_report_docx.assert_called_once_with(
+        mock_upload_authenticated_for_user.assert_called_once()
+        # Called twice (orchestrator + SM handler); duplicate S3 PUT is the
+        # accepted cost of keeping the legacy /report/success path working.
+        mock_persist_report_docx.assert_any_call(
             meeting_id=meeting.id, report_response=_decision_record_response()
         )
+
+    def test_drive_failure_marks_available_with_null_external_url(
+        self,
+        mock_send_email: MagicMock,
+        mock_persist_report_docx: MagicMock,
+        mock_upload_authenticated_for_user: MagicMock,
+        db_session: Session,
+    ) -> None:
+        mock_upload_authenticated_for_user.side_effect = RuntimeError("Drive down")
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+            external_url=None,
+        )
+
+        do.mark_deliverable_success(
+            deliverable_id=pending.id,
+            report_response=_decision_record_response(),
+        )
+
+        db_session.refresh(pending)
+        db_session.refresh(meeting)
+        assert pending.status == DeliverableStatus.AVAILABLE
+        assert pending.external_url is None
+        assert meeting.status == MeetingStatus.REPORT_DONE
+        mock_send_email.assert_called_once()
+
+    def test_s3_failure_leaves_status_pending_and_raises(
+        self,
+        mock_send_email: MagicMock,
+        mock_persist_report_docx: MagicMock,
+        mock_upload_authenticated_for_user: MagicMock,
+        db_session: Session,
+    ) -> None:
+        mock_persist_report_docx.side_effect = RuntimeError("S3 down")
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+            external_url=None,
+        )
+
+        with pytest.raises(RuntimeError, match="S3 down"):
+            do.mark_deliverable_success(
+                deliverable_id=pending.id,
+                report_response=_decision_record_response(),
+            )
+
+        db_session.refresh(pending)
+        db_session.refresh(meeting)
+        assert pending.status == DeliverableStatus.PENDING
+        assert pending.external_url is None
+        assert meeting.status == MeetingStatus.REPORT_PENDING
+        mock_upload_authenticated_for_user.assert_not_called()
+        mock_send_email.assert_not_called()
+
+    def test_retry_drive_failure_preserves_prior_external_url(
+        self,
+        mock_send_email: MagicMock,
+        mock_persist_report_docx: MagicMock,
+        mock_upload_authenticated_for_user: MagicMock,
+        db_session: Session,
+    ) -> None:
+        # First call succeeded: row already has an external_url. Simulate a
+        # Celery retry where Drive is now down. The prior URL must survive.
+        prior_url = "https://drive.example.com/explorer/items/files/prior"
+        mock_upload_authenticated_for_user.side_effect = RuntimeError("Drive down")
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_DONE,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        already_available = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.AVAILABLE,
+            external_url=prior_url,
+        )
+
+        do.mark_deliverable_success(
+            deliverable_id=already_available.id,
+            report_response=_decision_record_response(),
+        )
+
+        db_session.refresh(already_available)
+        assert already_available.status == DeliverableStatus.AVAILABLE
+        assert already_available.external_url == prior_url
 
 
 class TestMarkDeliverableFailure:

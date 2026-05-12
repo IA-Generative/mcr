@@ -336,8 +336,12 @@ class TestSuccessCallbackRoute:
         user_fixture: User,
         mock_send_email: MagicMock,
         mock_persist_report_docx: MagicMock,
+        mock_upload_authenticated_for_user: MagicMock,
         db_session: Any,
     ) -> None:
+        mock_upload_authenticated_for_user.return_value = (
+            "https://drive.example.com/explorer/items/files/abc"
+        )
         meeting = MeetingFactory.create(
             owner=user_fixture,
             status=MeetingStatus.REPORT_PENDING,
@@ -351,19 +355,18 @@ class TestSuccessCallbackRoute:
 
         response = deliverables_client.post(
             f"/{pending.id}/success",
-            json={
-                "external_url": "https://drive.example.com/abc",
-                "report_response": _decision_record_body(),
-            },
+            json={"report_response": _decision_record_body()},
         )
 
         assert response.status_code == 200
         db_session.refresh(pending)
         db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.AVAILABLE
-        assert pending.external_url == "https://drive.example.com/abc"
+        assert pending.external_url == (
+            "https://drive.example.com/explorer/items/files/abc"
+        )
         assert meeting.status == MeetingStatus.REPORT_DONE
-        mock_persist_report_docx.assert_called_once()
+        mock_upload_authenticated_for_user.assert_called_once()
 
 
 class TestFailureCallbackRoute:
