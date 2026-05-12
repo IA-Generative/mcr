@@ -74,7 +74,9 @@ def save_formatted_report(
     )
 
 
-def persist_report_docx(meeting_id: int, report_response: ReportResponse) -> None:
+def persist_report_docx(
+    meeting_id: int, report_response: ReportResponse
+) -> BytesIO:
     meeting = get_meeting_by_id(meeting_id=meeting_id)
     if is_detailed_synthesis(report_response):
         docx_buffer = generate_detailed_synthesis_docx(report_response, meeting.name)
@@ -95,3 +97,4 @@ def persist_report_docx(meeting_id: int, report_response: ReportResponse) -> Non
         file_like_object=docx_buffer,
         filename=deliverable_object_filename(deliverable_type),
     )
+    return docx_buffer

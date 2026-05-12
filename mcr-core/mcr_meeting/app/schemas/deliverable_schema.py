@@ -46,5 +46,4 @@ DeliverableCreateRequest = Annotated[
 
 
 class DeliverableSuccessRequest(BaseModel):
-    external_url: str | None = None
     report_response: ReportResponse

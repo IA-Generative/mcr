@@ -149,7 +149,6 @@ class TestMarkDeliverableSuccess:
         call = mock_httpx_client.post.call_args
         assert call.args[0] == "/deliverables/7/success"
         assert call.kwargs["json"] == {
-            "external_url": None,
             "report_response": _expected_payload(decision_record),
         }
 

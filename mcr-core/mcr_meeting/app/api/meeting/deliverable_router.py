@@ -100,7 +100,6 @@ async def deliverable_success_callback(
 ) -> DeliverableResponse:
     deliverable = mark_deliverable_success(
         deliverable_id=deliverable_id,
-        external_url=body.external_url,
         report_response=body.report_response,
     )
     return DeliverableResponse.model_validate(deliverable)

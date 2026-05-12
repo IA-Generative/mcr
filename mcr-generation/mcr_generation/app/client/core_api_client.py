@@ -29,14 +29,10 @@ class CoreApiClient:
         self,
         deliverable_id: int,
         report: BaseReport | CustomMarkdownReport,
-        external_url: str | None = None,
     ) -> None:
         self._post(
             f"/deliverables/{deliverable_id}/success",
-            json={
-                "external_url": external_url,
-                "report_response": report.model_dump(),
-            },
+            json={"report_response": report.model_dump()},
             swallow_404=True,
         )
 
