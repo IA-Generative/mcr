@@ -147,6 +147,8 @@ def after_start_report_handler(
             task_kwargs["deliverable_id"] = deliverable_id
         if custom_prompt is not None:
             task_kwargs["custom_prompt"] = custom_prompt
+        if meeting.notes is not None:
+            task_kwargs["notes_content"] = meeting.notes
 
         with UnitOfWork():
             update_meeting_status(meeting, next_status)
