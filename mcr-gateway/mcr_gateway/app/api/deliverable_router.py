@@ -6,7 +6,7 @@ from mcr_gateway.app.schemas.deliverable_schema import (
     DeliverableListResponse,
 )
 from mcr_gateway.app.schemas.user_schema import Role, TokenUser
-from mcr_gateway.app.services.authentification_service import authorize_user
+from mcr_gateway.app.services.authentification_service import authorize_user, security
 from mcr_gateway.app.services.deliverable_service import (
     get_deliverable_file,
     list_deliverables_for_meeting,
@@ -35,9 +35,12 @@ async def list_meeting_deliverables(
 async def create_deliverable(
     body: DeliverableCreateRequest,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+    token: str = Depends(security),
 ) -> Response:
     return await request_deliverable(
-        body=body, user_keycloak_uuid=current_user.keycloak_uuid
+        body=body,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+        access_token=token,
     )
 
 
