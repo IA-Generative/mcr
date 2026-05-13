@@ -17,3 +17,13 @@ export function formatMeetingDate(date: string) {
 export function sanitizeFilename(name: string) {
   return sanitize(name, { replacement: '_' }).replace(/\./g, '_');
 }
+
+const MEETING_TITLE_MAX_LENGTH = 30;
+const EMPTY_TITLE_FALLBACK = 'Sans_Titre';
+
+export function buildDeliverableFilename(typeLabel: string, meetingName: string): string {
+  const withUnderscores = meetingName.replace(/\s+/g, '_');
+  const sanitized = sanitizeFilename(withUnderscores).slice(0, MEETING_TITLE_MAX_LENGTH);
+  const titlePart = sanitized.length > 0 ? sanitized : EMPTY_TITLE_FALLBACK;
+  return `${typeLabel}_${titlePart}.docx`;
+}
