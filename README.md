@@ -65,7 +65,22 @@ Ces outils permettent de visualiser et d’explorer le contenu de la base de don
 
 ---
 
-### **4. Lancement de MCR en local**
+### **4. Configuration Claude Code (MCP)**
+
+Un fichier `.mcp.json` à la racine déclare les serveurs **MCP** partagés par l’équipe (actuellement : **Sentry**). Au premier lancement de Claude Code dans ce repository, un prompt de confiance s’affiche pour approuver les serveurs MCP du projet.
+
+Les serveurs MCP sont lancés par Claude Code et héritent de l’environnement du shell parent. Les variables suivantes doivent être exportées (par exemple dans `~/.zshrc`, `~/.bashrc`, ou via `direnv`) :
+
+| Variable        | Description                                                                 |
+| --------------- | --------------------------------------------------------------------------- |
+| `SENTRY_PAT`    | Personal Access Token Sentry (scopes `org:read`, `project:read`, `event:read`, `issue:read`). |
+| `SENTRY_HOST`   | Hôte Sentry (`sentry.io` pour le SaaS, ou le hostname de l’instance self-hosted). |
+
+Ces variables ne sont **pas** des variables de runtime des services MCR : elles ne doivent pas figurer dans les fichiers `.env.local.*`.
+
+---
+
+### **5. Lancement de MCR en local**
 
 Clonez le repository et lancez le projet à l’aide de la commande `make` :
 
@@ -77,11 +92,11 @@ make start
 
 ---
 
-### **5. Licence**
+### **6. Licence**
 
 Ce projet est distribué sous licence Apache 2.0.
 
-### **6. Avis de sécurité**
+### **7. Avis de sécurité**
 
 Tous les identifiants, noms d’utilisateurs, adresses e-mail, mots de passe et clés présents dans ce dépôt sont **des valeurs fictives**, utilisées **uniquement à des fins de développement local**.
 

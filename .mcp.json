@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "sentry": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server@0.33.0"],
+      "env": {
+        "SENTRY_ACCESS_TOKEN": "${SENTRY_PAT}",
+        "SENTRY_HOST": "${SENTRY_HOST}"
+      }
+    }
+  }
+}
