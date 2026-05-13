@@ -36,7 +36,7 @@ class DetailedDiscussionsCollector(MetadataCollector):
         if not result.detailed_discussions:
             return "_Aucune discussion détaillée identifiée._"
 
-        out: list[str] = ["## Discussions détaillées", ""]
+        out: list[str] = []
         for d in result.detailed_discussions:
             out.append(f"### {d.title}")
             if d.key_ideas:

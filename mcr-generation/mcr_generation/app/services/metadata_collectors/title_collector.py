@@ -22,7 +22,7 @@ class TitleCollector(MetadataCollector):
 
     def _to_markdown(self, result: Intent) -> str:
         title = result.title or "_Titre non identifié_"
-        out = [f"# {title}"]
+        out = [f"**{title}**"]
         if result.objective:
             out += ["", f"_Objectif : {result.objective}_"]
         return "\n".join(out)
