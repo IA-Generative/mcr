@@ -19,6 +19,7 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableResponse,
     DeliverableSuccessRequest,
 )
+from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -56,7 +57,9 @@ async def list_meeting_deliverables(
 async def create_deliverable(
     body: DeliverableCreateRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
+    x_user_access_token: str | None = Header(default=None),
 ) -> DeliverableResponse:
+    ensure_offline_token(str(x_user_keycloak_uuid), x_user_access_token)
     custom_prompt = (
         body.custom_prompt if isinstance(body, CustomDeliverableCreateRequest) else None
     )

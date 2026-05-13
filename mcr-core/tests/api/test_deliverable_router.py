@@ -15,10 +15,12 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingStatus,
 )
 from mcr_meeting.app.models.user_model import User
+from mcr_meeting.app.services.redis_token_store import get_refresh_token
 from mcr_meeting.main import app
 from tests.api.conftest import PrefixedTestClient
 from tests.factories import MeetingFactory, UserFactory
 from tests.factories.deliverable_factory import DeliverableFactory
+from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 
 api_settings = ApiSettings()
 
@@ -215,6 +217,58 @@ class TestPostDeliverableRoute:
             "owner_keycloak_uuid": str(user_fixture.keycloak_uuid),
             "deliverable_id": deliverable_id,
         }
+
+    def test_stores_offline_token_when_access_token_header_provided(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        in_memory_keycloak: InMemoryKeycloak,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        in_memory_keycloak.exchange_refresh_token = "offline-refresh-token"
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
+            headers={
+                "X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid),
+                "X-User-Access-Token": "user-access-token",
+            },
+        )
+
+        assert response.status_code == 202
+        assert (
+            get_refresh_token(str(user_fixture.keycloak_uuid))
+            == "offline-refresh-token"
+        )
+
+    def test_returns_202_without_access_token_header(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 202
+        assert get_refresh_token(str(user_fixture.keycloak_uuid)) is None
 
 
 class TestPostCustomReportRoute:
