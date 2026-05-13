@@ -9,6 +9,7 @@ import type {
   ReportGenerationRequest,
   TranscriptionWaitingTimeResponse,
   UpdateMeetingDto,
+  UpdateNotesDto,
 } from './meetings.types';
 import type { AxiosProgressEvent, AxiosResponse } from 'axios';
 
@@ -48,6 +49,11 @@ export async function uploadFileWithPresignedUrl(url: string, file: File): Promi
 }
 
 export async function update(id: number, payload: UpdateMeetingDto): Promise<MeetingDto> {
+  const { data } = await HttpService.patch(`${API_PATHS.MEETINGS}/${id}`, payload);
+  return data;
+}
+
+export async function updateNotes(id: number, payload: UpdateNotesDto): Promise<MeetingDto> {
   const { data } = await HttpService.patch(`${API_PATHS.MEETINGS}/${id}`, payload);
   return data;
 }

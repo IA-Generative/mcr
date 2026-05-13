@@ -40,6 +40,7 @@ type MeetingDtoBase = {
   creation_date: string;
   start_date?: string;
   end_date?: string;
+  notes: string | null;
 };
 
 export interface OnlineMeetingDto extends MeetingDtoBase {
@@ -74,12 +75,12 @@ export type MeetingDetailDto = MeetingDto & {
 
 export type AddOnlineMeetingDto = Omit<
   OnlineMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date'
+  'id' | 'status' | 'start_date' | 'end_date' | 'notes'
 >;
-export type AddImportMeetingDto = Omit<ImportMeetingDto, 'id' | 'status'>;
+export type AddImportMeetingDto = Omit<ImportMeetingDto, 'id' | 'status' | 'notes'>;
 export type AddRecordMeetingDto = Omit<
   RecordMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date'
+  'id' | 'status' | 'start_date' | 'end_date' | 'notes'
 >;
 
 export type UpdateOnlineMeetingDto = Partial<AddOnlineMeetingDto>;
@@ -91,6 +92,8 @@ export type UpdateMeetingDto =
   | UpdateOnlineMeetingDto
   | UpdateImportMeetingDto
   | UpdateRecordMeetingDto;
+
+export type UpdateNotesDto = { notes: string | null };
 
 export type AddImportMeetingDtoAndFile = {
   dto: AddImportMeetingDto;

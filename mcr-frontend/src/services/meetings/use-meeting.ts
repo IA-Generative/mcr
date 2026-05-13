@@ -14,16 +14,19 @@ import {
   startTranscription,
   stopCapture,
   update,
+  updateNotes,
   uploadFileWithPresignedUrl,
   uploadTranscription,
 } from './meetings.service';
 import { QUERY_KEYS } from '@/plugins/vue-query';
 import type {
   AddMeetingDto,
+  MeetingDetailDto,
   MeetingDto,
   MeetingStatus,
   ReportGenerationRequest,
   UpdateMeetingDto,
+  UpdateNotesDto,
 } from './meetings.types';
 import { type Ref } from 'vue';
 import type { ExtraMutationOptions } from '@/utils/types';
@@ -220,6 +223,19 @@ function generateReportMutation(options?: { onError?: (error: Error) => void }) 
   });
 }
 
+function updateNotesMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, notes }: { id: number } & UpdateNotesDto) => updateNotes(id, { notes }),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDetailDto | undefined) =>
+        old ? { ...old, notes: data.notes } : undefined,
+      );
+    },
+  });
+}
+
 function resetReportMutation() {
   const queryClient = useQueryClient();
 
@@ -300,6 +316,7 @@ export function useMeetings() {
     addMeetingMutation,
     deleteMeetingMutation,
     updateMeetingMutation,
+    updateNotesMutation,
     startCaptureMutation,
     stopCaptureMutation,
     startTranscriptionMutation,
