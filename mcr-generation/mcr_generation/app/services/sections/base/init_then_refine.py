@@ -19,7 +19,12 @@ T = TypeVar("T", bound=BaseModel)
 
 
 class BaseInitThenRefine(ABC, Generic[T]):
-    """Seed the result with the first chunk, then refine it iteratively chunk-by-chunk."""
+    """Seed the result, then refine it iteratively chunk-by-chunk.
+
+    The seed comes from ``init_hint`` when provided (all chunks are then used for
+    refinement); otherwise it is extracted from the first chunk and the remaining
+    chunks are used for refinement.
+    """
 
     response_model: ClassVar[type[BaseModel]]
     initial_prompt_template: ClassVar[str]
