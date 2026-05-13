@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mcr_generation.app.schemas.base import BaseReport, Header, Participant
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 # Mock the sibling so __init__.py can import it without executing its body.
@@ -28,8 +29,14 @@ BaseReportGenerator = _base_rg_module.BaseReportGenerator
 class ConcreteReportGenerator(BaseReportGenerator):
     """Minimal concrete subclass used to exercise the abstract base class."""
 
-    def generate(self, chunks: list[Chunk]) -> BaseReport:
-        return BaseReport(header=self.generate_header(chunks))
+    def generate(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> BaseReport:
+        return BaseReport(
+            header=self.generate_header(chunks, extracted_notes=extracted_notes)
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -200,13 +207,13 @@ class TestGenerateHeader:
             ConcreteReportGenerator().generate_header(chunks)
 
         mock_refine_intent_cls.return_value.init_then_refine.assert_called_once_with(
-            chunks
+            chunks, init_hint=None
         )
         mock_refine_participants_cls.return_value.init_then_refine.assert_called_once_with(
             chunks
         )
         mock_refine_next_meeting_cls.return_value.init_then_refine.assert_called_once_with(
-            chunks
+            chunks, init_hint=None
         )
 
     def test_format_next_meeting_is_called_with_next_meeting_result(
