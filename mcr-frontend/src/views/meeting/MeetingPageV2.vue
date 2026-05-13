@@ -42,37 +42,43 @@
           <MeetingPageAlert />
 
           <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6 items-start">
-            <MeetingAudioCard
-              :meeting-id="meeting.id"
-              :creation-date="meeting.creation_date"
-              :status="meeting.status"
-            />
+            <div class="grid gap-6 items-start">
+              <MeetingAudioCard
+                :meeting-id="meeting.id"
+                :creation-date="meeting.creation_date"
+                :status="meeting.status"
+              />
+              <MeetingNotesEditor
+                v-if="isMeetingNotesEnabled && !showRecordingCard"
+                :meeting-id="meeting.id"
+                :notes="meeting.notes"
+                :description="$t('meeting-v2.notes.description')"
+                :placeholder="$t('meeting-v2.notes.placeholder')"
+              />
+            </div>
             <MeetingDeliverableCard
               v-if="isPostCaptureStatus(meeting.status)"
               :meeting-id="meeting.id"
               :meeting-status="meeting.status"
             />
           </div>
-
-          <div
-            v-if="isMeetingNotesEnabled"
-            class="mt-6"
-          >
-            <TipTapEditor
-              v-model="editorContent"
-              :placeholder="$t('meeting-v2.notes-placeholder')"
-            />
-          </div>
         </div>
         <div
           v-if="meeting && showRecordingCard"
-          class="mt-6 py-5 bg-grey-1000"
+          class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6 items-start"
         >
           <RecordingCard
             :meeting-id="meeting.id"
             :status="meeting.status"
             :name-platform="meeting.name_platform"
             :start-date="meeting.start_date"
+          />
+          <MeetingNotesEditor
+            v-if="isMeetingNotesEnabled"
+            :meeting-id="meeting.id"
+            :notes="meeting.notes"
+            :description="$t('meeting-v2.notes.description')"
+            :placeholder="$t('meeting-v2.notes.placeholder')"
           />
         </div>
       </div>
@@ -102,7 +108,6 @@ import { useFeatureFlag } from '@/composables/use-feature-flag';
 const router = useRouter();
 const route = useRoute();
 
-const editorContent = ref('');
 const { id } = route.params;
 
 const { getMeetingQuery, updateMeetingMutation, deleteMeetingMutation } = useMeetings();
@@ -126,6 +131,7 @@ const isVisioCapture = computed(() => {
 });
 
 const showRecordingCard = computed(() => isRecordingLocally.value || isVisioCapture.value);
+
 watch(isError, () => {
   if (isError.value && (is403Error(error.value) || is404Error(error.value))) {
     router.push({ name: ROUTES.NOT_FOUND.name });

@@ -2,13 +2,13 @@
   <div class="tiptap-editor border border-grey-900 rounded">
     <div
       v-if="editor"
-      class="flex gap-1 p-1 border-b border-grey-900"
+      class="flex justify-end gap-1 border-b border-grey-900"
     >
       <button
         v-for="action in toolbarActions"
         :key="action.name"
         type="button"
-        class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm"
+        class="fr-btn--tertiary-no-outline tiptap-toolbar-btn"
         :aria-label="t(action.labelKey)"
         :aria-pressed="action.isActive()"
         @click="action.command()"
@@ -19,10 +19,9 @@
         />
       </button>
     </div>
-    <EditorContent
-      class="p-3"
-      :editor="editor"
-    />
+    <div class="p-3 mb-0 fr-text--sm">
+      <EditorContent :editor="editor" />
+    </div>
   </div>
 </template>
 
@@ -91,10 +90,13 @@ onBeforeUnmount(() => {
 
 <style>
 .tiptap-editor .ProseMirror {
-  min-height: 120px;
-  max-height: 400px;
+  min-height: 140px;
+  max-height: 600px;
   overflow-y: auto;
   outline: none;
+}
+.tiptap-editor .ProseMirror p {
+  font-size: inherit;
 }
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
@@ -103,11 +105,24 @@ onBeforeUnmount(() => {
   float: left;
   height: 0;
 }
+
+/* Compact toolbar buttons */
+.tiptap-editor .tiptap-toolbar-btn {
+  padding: 0.25rem;
+  min-height: unset;
+  min-width: unset;
+  line-height: 1;
+}
+.tiptap-editor .tiptap-toolbar-btn [class*='fr-icon-']::before {
+  font-size: 1.15rem;
+  --icon-size: 1.15rem;
+}
 /* Active state for toolbar toggle buttons */
 .tiptap-editor button[aria-pressed='true'] {
   background-color: var(--background-action-low-blue-france);
   color: var(--text-action-high-blue-france);
 }
+
 /* Restore list styles reset by Tailwind preflight */
 .tiptap-editor .ProseMirror ul {
   list-style-type: disc;
