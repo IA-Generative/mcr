@@ -1,0 +1,25 @@
+.gitignore
+  s_94e8f5bb63e1e7::t_24154fc3dd9ccb 8-9
+scripts/check_changed.py
+  s_94e8f5bb63e1e7::t_c283456f5f964a 213
+  s_94e8f5bb63e1e7::t_2c448c0a54ed25 129
+  s_94e8f5bb63e1e7::t_54d8c08578e05b 152-153,157,159,161-162,171-173,178,181,185
+  s_94e8f5bb63e1e7::t_3c56e394661187 44-45,47-52
+  s_94e8f5bb63e1e7::t_04d31598f3f698 99,108-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "f227d1aecbfefd4486a66ec8f0d92d595e54f109",
+  "prompts": {},
+  "sessions": {
+    "s_94e8f5bb63e1e7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9a01ff36-f00c-436e-b1aa-20862b4ab99a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
