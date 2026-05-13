@@ -20,7 +20,7 @@ dependencies = [
     "httpx>=0.28.1",
     "python-docx>=1.2.0",
     "sentry-sdk[celery]>=2.34.1",
-    "langfuse>=3.10.5",
+    "langfuse>=3.10.5,<4",
 ]
 
 [project.optional-dependencies]

@@ -42,7 +42,7 @@ class BaseReportGenerator(ABC):
         refine_participants = RefineParticipants()
         refine_next_meeting = RefineNextMeeting()
         intent = refine_intent.init_then_refine(chunks)
-        participants = refine_participants.init_then_refine(chunks)
+        participants = refine_participants.init_then_refine(chunks).to_public()
         next_meeting = refine_next_meeting.init_then_refine(chunks)
         header = Header(
             title=intent.title,

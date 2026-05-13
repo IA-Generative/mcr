@@ -82,9 +82,7 @@ def _patch_refiners(
     mock_next_meeting: MagicMock,
 ) -> None:
     mock_refine_intent_cls.return_value.init_then_refine.return_value = mock_intent
-    mock_refine_participants_cls.return_value.init_then_refine.return_value = (
-        mock_participants
-    )
+    mock_refine_participants_cls.return_value.init_then_refine.return_value.to_public.return_value = mock_participants
     mock_refine_next_meeting_cls.return_value.init_then_refine.return_value = (
         mock_next_meeting
     )
