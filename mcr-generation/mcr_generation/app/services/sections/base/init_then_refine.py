@@ -38,14 +38,24 @@ class BaseInitThenRefine(ABC, Generic[T]):
 
     @log_execution_time
     @observe(name="init_then_refine")
-    def init_then_refine(self, chunks: list[Chunk]) -> T:
+    def init_then_refine(
+        self,
+        chunks: list[Chunk],
+        init_hint: T | None = None,
+    ) -> T:
         get_client().update_current_span(
             name=f"section_{self.section_name}_generation",
         )
 
-        initial = self._initial_extract_from_chunk(chunks[0])
-        refined = initial
-        for chunk in chunks[1:]:
+        if init_hint is not None:
+            refined, chunks_to_refine = init_hint, chunks
+        else:
+            refined, chunks_to_refine = (
+                self._initial_extract_from_chunk(chunks[0]),
+                chunks[1:],
+            )
+
+        for chunk in chunks_to_refine:
             refined = self._refine_with_chunk(current=refined, chunk_text=chunk.text)
 
         logger.debug("Final {} extract: {}", self.response_model.__name__, refined)

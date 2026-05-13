@@ -122,6 +122,44 @@ class TestInitThenRefineLoop:
         assert result == responses[-1]
 
 
+class TestInitThenRefineWithHint:
+    def test_hint_skips_initial_extract_and_refines_every_chunk(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+    ) -> None:
+        hint = _StubModel(text="from-notes")
+        responses = [_StubModel(text="r0"), _StubModel(text="r1")]
+
+        with fake_call_llm_with_structured_output(_MODULE_PATH, responses) as mock_call:
+            refiner = _StubRefiner()
+            refiner.init_then_refine(
+                [Chunk(id=0, text="c0"), Chunk(id=1, text="c1")],
+                init_hint=hint,
+            )
+
+        assert mock_call.call_count == 2
+        for call in mock_call.call_args_list:
+            content = call.kwargs["user_message_content"]
+            assert content.startswith("REFINE: ")
+
+    def test_first_refine_uses_hint_as_current_json(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+    ) -> None:
+        hint = _StubModel(text="seed-from-notes")
+        refined = _StubModel(text="after-refine")
+
+        with fake_call_llm_with_structured_output(_MODULE_PATH, refined) as mock_call:
+            refiner = _StubRefiner()
+            refiner.init_then_refine([Chunk(id=0, text="c0")], init_hint=hint)
+
+        assert mock_call.call_count == 1
+        content = mock_call.call_args.kwargs["user_message_content"]
+        assert content.startswith("REFINE: ")
+        assert hint.model_dump_json() in content
+        assert "c0" in content
+
+
 class TestLangfuseSpanRename:
     def test_init_then_refine_renames_langfuse_span(
         self,
