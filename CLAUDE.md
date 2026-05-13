@@ -122,6 +122,9 @@ mcr-generation/mcr_generation/app/
 - **Architecture layers**: API routers → Services → Repositories → DB
 - **Commits**: Gitmoji convention — see the `/commit` skill for details
 - **PRs**: Target the `dev` branch (not `main`)
+- **Docstrings**:
+  - No module-level (file header) docstrings unless explicitly requested.
+  - No automatic function docstrings: the function name + signature should be enough. Only add a docstring when the behavior is non-obvious or the logic is genuinely complex.
 
 ## Constraints (do NOT)
 
