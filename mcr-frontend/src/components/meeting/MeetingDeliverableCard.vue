@@ -45,12 +45,17 @@ import { getTranscriptionStatus } from '@/services/deliverables/deliverables.ser
 import type { MeetingStatus } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { downloadFileFromAxios } from '@/utils/file';
+import { buildDeliverableFilename } from '@/utils/formatters';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 
-const props = defineProps<{ meetingId: number; meetingStatus: MeetingStatus }>();
+const props = defineProps<{
+  meetingId: number;
+  meetingStatus: MeetingStatus;
+  meetingName: string;
+}>();
 
 const { getDeliverablesQuery, createDeliverableMutation, downloadDeliverableMutation } =
   useDeliverables();
@@ -171,9 +176,17 @@ const TYPE_KEY_MAP: Record<string, string> = {
   CUSTOM_REPORT: 'custom-report',
 };
 
+const TYPE_FILENAME_LABEL: Record<DeliverableType, string> = {
+  DECISION_RECORD: 'Releve_Decision',
+  DETAILED_SYNTHESIS: 'Synthese_Detaillee',
+  CUSTOM_REPORT: 'Compte_Rendu_Personnalise',
+  TRANSCRIPTION: 'Transcription',
+};
+
 const displayedDeliverables = computed(() =>
   activeDeliverables.value.map((d) => ({
     id: d.id,
+    type: d.type,
     title: t(`meeting-v2.deliverable-card.type.${TYPE_KEY_MAP[d.type]}.title`),
     status: mapDeliverableStatus(d.status as Exclude<typeof d.status, 'IN_PROGRESS'>),
     fileFormat: 'DOCX',
@@ -181,10 +194,14 @@ const displayedDeliverables = computed(() =>
   })),
 );
 
-function onDownload(deliverableId: number): void {
+function onDownload(deliverableId: number, deliverableType: DeliverableType): void {
+  const filename = buildDeliverableFilename(
+    TYPE_FILENAME_LABEL[deliverableType],
+    props.meetingName,
+  );
   downloadMutate(deliverableId, {
     onSuccess: (response) => {
-      downloadFileFromAxios(response, `livrable_${deliverableId}.docx`);
+      downloadFileFromAxios(response, filename);
     },
     onError: () => {
       toaster.addErrorMessage(t('error.default')!);
@@ -204,9 +221,10 @@ const transcriptionItem = computed(() => {
 const { mutate: downloadTranscription } = downloadMutation();
 
 function onDownloadTranscription(): void {
+  const filename = buildDeliverableFilename(TYPE_FILENAME_LABEL.TRANSCRIPTION, props.meetingName);
   downloadTranscription(props.meetingId, {
     onSuccess: (response) => {
-      downloadFileFromAxios(response, `transcription_${props.meetingId}.docx`);
+      downloadFileFromAxios(response, filename);
     },
     onError: () => {
       toaster.addErrorMessage(t('error.default')!);

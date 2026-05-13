@@ -51,6 +51,7 @@
               v-if="isPostCaptureStatus(meeting.status)"
               :meeting-id="meeting.id"
               :meeting-status="meeting.status"
+              :meeting-name="meeting.name"
             />
           </div>
 

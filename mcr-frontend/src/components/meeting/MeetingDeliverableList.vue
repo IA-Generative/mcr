@@ -20,14 +20,17 @@
       :status="item.status as DeliverableStatus"
       :file-format="item.fileFormat"
       :file-size="item.fileSize"
-      @download="$emit('downloadDeliverable', $event)"
+      @download="$emit('downloadDeliverable', item.id, item.type)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import DeliverableItem from './DeliverableItem.vue';
-import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
+import type {
+  DeliverableStatus,
+  DeliverableType,
+} from '@/services/deliverables/deliverables.types';
 
 const TRANSCRIPTION_ITEM_ID = -1;
 
@@ -35,6 +38,7 @@ defineProps<{
   transcriptionItem: { title: string; status: string; fileFormat: string } | null;
   displayedDeliverables: {
     id: number;
+    type: DeliverableType;
     title: string;
     status: string;
     fileFormat: string;
@@ -44,6 +48,6 @@ defineProps<{
 
 defineEmits<{
   downloadTranscription: [];
-  downloadDeliverable: [deliverableId: number];
+  downloadDeliverable: [deliverableId: number, deliverableType: DeliverableType];
 }>();
 </script>
