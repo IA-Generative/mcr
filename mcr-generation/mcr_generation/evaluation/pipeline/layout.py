@@ -1,9 +1,3 @@
-"""On-disk layout helpers for the offline evaluation pipeline.
-
-Centralizes every subpath the pipeline reads from or writes to, so the
-orchestrator never spells layout strings inline.
-"""
-
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict

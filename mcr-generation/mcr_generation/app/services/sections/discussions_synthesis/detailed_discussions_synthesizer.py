@@ -18,8 +18,6 @@ from mcr_generation.app.services.utils.llm_helpers import (
 
 
 class DetailedDiscussionsSynthesizer:
-    """Synthesizes detailed discussions into a concise summary, to-do list, and to-monitor list."""
-
     def __init__(
         self,
         meeting_subject: str | None = None,

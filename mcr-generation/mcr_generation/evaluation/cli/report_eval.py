@@ -1,9 +1,3 @@
-"""Entry point for the offline report evaluation runner.
-
-Usage:
-    uv run python -m mcr_generation.evaluation.cli.cli [--limit N]
-"""
-
 import os
 
 # The eval runner does not need traces; it produces a local CSV.

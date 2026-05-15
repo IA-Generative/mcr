@@ -22,21 +22,6 @@ def create_report_generator(
     *,
     custom_prompt: str | None = None,
 ) -> BaseReportGenerator | CustomReportGenerator:
-    """
-    Factory function that returns the appropriate report generator for the given report type.
-
-    Args:
-        report_type (ReportTypes): The type of report to generate.
-        custom_prompt (str | None): End-user instruction. Required for
-            CUSTOM_REPORT, ignored for the structured report types.
-
-    Returns:
-        BaseReportGenerator | CustomReportGenerator: A concrete report generator instance.
-
-    Raises:
-        UnsupportedReportTypeError: If the report type is not supported.
-        MissingCustomPromptError: If CUSTOM_REPORT is requested without a prompt.
-    """
     match report_type:
         case ReportTypes.DECISION_RECORD:
             return DecisionRecordGenerator()

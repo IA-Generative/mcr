@@ -1,6 +1,4 @@
-"""
-Custom exceptions for MCR Generation.
-"""
+# lint-ignore-file: no-docstring
 
 
 class MCRGenerationException(Exception):

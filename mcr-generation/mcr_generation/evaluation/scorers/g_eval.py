@@ -1,5 +1,3 @@
-"""G-Eval scorer: drives the LLM-judge from a `Criterion`'s prompt template."""
-
 import instructor
 from instructor import Instructor
 from loguru import logger
@@ -23,8 +21,6 @@ class _JudgeResponse(BaseModel):
 
 
 class GEvalScorer:
-    """Calls the configured LLM to score a single criterion."""
-
     def __init__(self, client: Instructor | None = None) -> None:
         llm_config = LLMConfig()
         self._client = client or instructor.from_openai(

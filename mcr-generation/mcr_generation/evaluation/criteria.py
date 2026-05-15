@@ -1,11 +1,3 @@
-"""Definition of the 6 quality criteria used to evaluate generated reports.
-
-Each `Criterion` carries the LLM-judge prompt inline. To add a criterion, append
-a new entry to `CRITERIA`. To modify a criterion, edit the existing entry.
-
-The runner iterates over `CRITERIA` and routes each item through a `GEvalScorer`.
-"""
-
 from mcr_generation.evaluation.pipeline.types import Criterion
 
 INFORMATION_PRECISION = Criterion(

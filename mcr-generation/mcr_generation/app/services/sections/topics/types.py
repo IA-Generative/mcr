@@ -142,10 +142,6 @@ class MappedTopicDetails(BaseModel):
 
 
 class MappedTopic(BaseModel):
-    """
-    Modèle de sortie pour un sujet de reunion avec ses details et decisions extrait d’une transcription de réunion.
-    """
-
     topic: str = Field(
         ...,
         description=(
@@ -186,11 +182,6 @@ class MappedTopic(BaseModel):
 
 
 class MappedTopics(BaseModel):
-    """
-    Modèle regroupant l'ensemble des décisions extraites d'un même extrait
-    de transcription.
-    """
-
     topics: list[MappedTopic] = Field(
         ...,
         description=(

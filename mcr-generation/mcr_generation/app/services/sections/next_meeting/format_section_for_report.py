@@ -4,12 +4,6 @@ from mcr_generation.app.schemas.base import NextMeeting
 
 
 def format_next_meeting_for_report(next_meeting: NextMeeting) -> str | None:
-    """Format NextMeeting information into a string for the report.
-
-    Args:
-        next_meeting (NextMeeting): NextMeeting object with title, objective, date, and time attributes
-    return f"Titre: {next_meeting.title}\nObjectif: {next_meeting.objective}\nDate: {next_meeting.date}\nHeure: {next_meeting.time}"
-    """
     date = next_meeting.date
     time = next_meeting.time
     confidence = next_meeting.confidence

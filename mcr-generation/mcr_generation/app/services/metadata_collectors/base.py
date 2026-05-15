@@ -5,18 +5,18 @@ from typing import Any
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 
-class MetadataCollector(ABC):
+class MetadataCollector(ABC):  # lint-ignore: no-docstring
     """Wrap a legacy sync extractor behind a uniform async/markdown interface."""
 
     id: str
     description: str
 
     @abstractmethod
-    def _extract(self, chunks: list[Chunk]) -> Any:
+    def _extract(self, chunks: list[Chunk]) -> Any:  # lint-ignore: no-docstring
         """Run the underlying sync extractor and return its Pydantic output."""
 
     @abstractmethod
-    def _to_markdown(self, result: Any) -> str:
+    def _to_markdown(self, result: Any) -> str:  # lint-ignore: no-docstring
         """Render the extractor's Pydantic output as markdown."""
 
     async def collect(self, chunks: list[Chunk]) -> str:
