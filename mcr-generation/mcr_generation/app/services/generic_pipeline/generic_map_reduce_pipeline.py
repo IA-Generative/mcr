@@ -5,12 +5,13 @@ Callers (rewriter / orchestrator) are responsible for crafting the instruction.
 """
 
 import asyncio
+import re
 
 import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import observe
 from openai import AsyncOpenAI
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from mcr_generation.app.configs.settings import LLMConfig
 from mcr_generation.app.exceptions.exceptions import EmptyChunksError
@@ -32,8 +33,22 @@ class _MapResponse(BaseModel):
     facts: list[str] = Field(default_factory=list)
 
 
+_FORBIDDEN_HEADING_RE = re.compile(r"^#{1,2}\s", re.MULTILINE)
+
+
 class _ReduceResponse(BaseModel):
     markdown: str
+
+    @field_validator("markdown")
+    @classmethod
+    def _no_top_level_heading(cls, value: str) -> str:
+        if _FORBIDDEN_HEADING_RE.search(value):
+            raise ValueError(
+                "markdown must not contain top-level headings (`# ` or `## `). "
+                "The section title is added by the caller. "
+                "Use `###`/`####` for sub-headings instead."
+            )
+        return value
 
 
 class GenericMapReducePipeline:
