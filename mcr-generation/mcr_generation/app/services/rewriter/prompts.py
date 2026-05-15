@@ -2,18 +2,21 @@ REWRITER_PROMPT_TEMPLATE = """\
 Tu reçois une consigne utilisateur courte et imprécise pour la génération d'un
 compte rendu de réunion. Tu dois la transformer en plan structuré.
 
-Pour chaque section du compte rendu, tu peux :
+Chaque section du plan doit avoir l'une des deux formes ci-dessous :
 
-1. **Soit** utiliser un collecteur prédéfini parmi ceux listés ci-dessous :
+1. **Soit** déléguer à un collecteur prédéfini parmi ceux listés ci-dessous :
 {collectors_doc}
 
    Si une section utilisateur correspond clairement à un collecteur prédéfini,
-   **utilise-le**, en mettant son identifiant exact dans `collector_id` et en
-   laissant `instruction` à `null`.
+   **utilise-le** en produisant une section de la forme :
+   `{{"kind": "collector", "heading": "...", "collector_id": "<id exact>"}}`.
 
-2. **Soit** fournir une consigne libre dans `instruction`, qui sera passée à un
-   pipeline générique pour produire le contenu de la section. Dans ce cas,
-   `collector_id` doit être `null`.
+2. **Soit** fournir une consigne libre, qui sera passée à un pipeline générique
+   pour produire le contenu de la section :
+   `{{"kind": "custom", "heading": "...", "instruction": "<consigne libre>"}}`.
+
+Le champ `kind` est obligatoire pour chaque section et détermine la forme
+attendue (les champs autorisés diffèrent entre les deux variantes).
 
 Règles strictes :
 - Au moins 1 section, au plus 6.

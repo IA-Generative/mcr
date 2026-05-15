@@ -1,7 +1,11 @@
 import asyncio
 
 from mcr_generation.app.schemas.base import CustomMarkdownReport
-from mcr_generation.app.schemas.custom_prompt import SectionSpec
+from mcr_generation.app.schemas.custom_prompt import (
+    CollectorSection,
+    CustomSection,
+    SectionSpec,
+)
 from mcr_generation.app.services.generic_pipeline.generic_map_reduce_pipeline import (
     GenericMapReducePipeline,
 )
@@ -39,11 +43,13 @@ class CustomReportGenerator:
         return asyncio.run(self.generate_async(chunks))
 
     async def _render_section(self, spec: SectionSpec, chunks: list[Chunk]) -> str:
-        if spec.collector_id is not None:
-            collector = METADATA_COLLECTORS[spec.collector_id]
-            return await collector.collect(chunks)
-        assert spec.instruction is not None  # Mandatory assert for mypy
-        return await self.pipeline.map_reduce_all_steps(chunks, spec.instruction)
+        match spec:
+            case CollectorSection():
+                return await METADATA_COLLECTORS[spec.collector_id].collect(chunks)
+            case CustomSection():
+                return await self.pipeline.map_reduce_all_steps(
+                    chunks, spec.instruction
+                )
 
     def _assemble_markdown(
         self,

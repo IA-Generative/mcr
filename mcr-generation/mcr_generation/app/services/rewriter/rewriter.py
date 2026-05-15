@@ -5,7 +5,12 @@ from loguru import logger
 from openai import AsyncOpenAI
 
 from mcr_generation.app.configs.settings import LLMConfig
-from mcr_generation.app.schemas.custom_prompt import RewriterOutput, SectionSpec
+from mcr_generation.app.schemas.custom_prompt import (
+    CollectorSection,
+    CustomSection,
+    RewriterOutput,
+    SectionSpec,
+)
 from mcr_generation.app.services.metadata_collectors import METADATA_COLLECTORS
 from mcr_generation.app.services.rewriter.prompts import REWRITER_PROMPT_TEMPLATE
 
@@ -55,21 +60,17 @@ class Rewriter:
 
 
 def _sanitize(out: RewriterOutput) -> RewriterOutput:
-    """Fallback unknown collector_ids to generic instructions, log warnings."""
+    """Fallback unknown collector_ids to generic sections, log warnings."""
     valid_ids = set(METADATA_COLLECTORS.keys())
     sanitized: list[SectionSpec] = []
     for spec in out.sections:
-        if spec.collector_id is not None and spec.collector_id not in valid_ids:
+        if isinstance(spec, CollectorSection) and spec.collector_id not in valid_ids:
             logger.warning(
                 "Rewriter returned unknown collector_id={!r}, falling back to generic.",
                 spec.collector_id,
             )
             sanitized.append(
-                SectionSpec(
-                    heading=spec.heading,
-                    collector_id=None,
-                    instruction=spec.instruction or spec.heading,
-                )
+                CustomSection(heading=spec.heading, instruction=spec.heading)
             )
         else:
             sanitized.append(spec)

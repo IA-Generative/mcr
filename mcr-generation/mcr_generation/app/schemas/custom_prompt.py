@@ -1,26 +1,28 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Annotated, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
-class SectionSpec(BaseModel):
-    """One section of the requested custom report.
-
-    Either delegates to a predefined metadata collector (collector_id set,
-    instruction null) or runs the generic pipeline with a free-text instruction.
-    """
-
+class CollectorSection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
+    kind: Literal["collector"] = "collector"
     heading: str = Field(min_length=1)
-    collector_id: str | None = None
-    instruction: str | None = None
+    collector_id: str = Field(min_length=1)
 
-    @model_validator(mode="after")
-    def _exactly_one_source(self) -> "SectionSpec":
-        if (self.collector_id is None) == (self.instruction is None):
-            raise ValueError(
-                "SectionSpec requires exactly one of collector_id or instruction."
-            )
-        return self
+
+class CustomSection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    kind: Literal["custom"] = "custom"
+    heading: str = Field(min_length=1)
+    instruction: str = Field(min_length=1)
+
+
+SectionSpec = Annotated[
+    CollectorSection | CustomSection,
+    Field(discriminator="kind"),
+]
 
 
 class RewriterOutput(BaseModel):
