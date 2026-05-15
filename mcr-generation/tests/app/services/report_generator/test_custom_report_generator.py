@@ -5,7 +5,11 @@ import pytest
 from mcr_generation.app.exceptions.exceptions import MissingCustomPromptError
 from mcr_generation.app.schemas.base import CustomMarkdownReport
 from mcr_generation.app.schemas.celery_types import ReportTypes
-from mcr_generation.app.schemas.custom_prompt import RewriterOutput, SectionSpec
+from mcr_generation.app.schemas.custom_prompt import (
+    CollectorSection,
+    CustomSection,
+    RewriterOutput,
+)
 from mcr_generation.app.services.report_generator import create_report_generator
 from mcr_generation.app.services.report_generator.custom_report_generator import (
     CustomReportGenerator,
@@ -27,8 +31,8 @@ async def test_generate_async_dispatches_collector_and_generic(
     plan = RewriterOutput(
         title="Réunion sprint",
         sections=[
-            SectionSpec(heading="Participants", collector_id="participants"),
-            SectionSpec(heading="Risques", instruction="Liste les risques évoqués"),
+            CollectorSection(heading="Participants", collector_id="participants"),
+            CustomSection(heading="Risques", instruction="Liste les risques évoqués"),
         ],
     )
 
@@ -59,7 +63,7 @@ async def test_generate_async_dispatches_collector_and_generic(
 async def test_generate_async_omits_h1_when_title_is_none() -> None:
     plan = RewriterOutput(
         title=None,
-        sections=[SectionSpec(heading="Risques", instruction="Liste les risques")],
+        sections=[CustomSection(heading="Risques", instruction="Liste les risques")],
     )
     gen = CustomReportGenerator(raw_prompt="prompt")
     gen.rewriter = MagicMock()
