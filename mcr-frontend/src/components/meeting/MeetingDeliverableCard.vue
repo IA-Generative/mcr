@@ -11,6 +11,7 @@
       v-model="selectedType"
       name="deliverable-type"
       :options="radioOptions"
+      @update:model-value="onSelectType"
     />
 
     <DsfrButton
@@ -34,6 +35,7 @@
 
 <script setup lang="ts">
 import MeetingDeliverableList from './MeetingDeliverableList.vue';
+import CustomReportModal from './modals/CustomReportModal.vue';
 import { useDeliverables } from '@/services/deliverables/use-deliverables';
 import {
   mapDeliverableStatus,
@@ -45,6 +47,8 @@ import { useMeetings } from '@/services/meetings/use-meeting';
 import { downloadFileFromAxios } from '@/utils/file';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
+import { useModal } from 'vue-final-modal';
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 
 const props = defineProps<{ meetingId: number; meetingStatus: MeetingStatus }>();
 
@@ -58,10 +62,46 @@ const { mutate: downloadMutate } = downloadDeliverableMutation();
 
 const toaster = useToaster();
 
-const selectedType = ref<DeliverableType>('DECISION_RECORD');
+const isCustomReportEnabled = useFeatureFlag('custom_cr');
+const selectedType = ref<DeliverableType | undefined>(undefined);
+const customPrompt = ref('');
+
+const { open: openCustomReportModal } = useModal({
+  component: CustomReportModal,
+  attrs: {
+    get initialPrompt() {
+      return customPrompt.value;
+    },
+    onGenerate: (prompt: string) => {
+      createMutate(
+        { meeting_id: props.meetingId, type: 'CUSTOM_REPORT', custom_prompt: prompt },
+        {
+          onError: () => {
+            toaster.addErrorMessage(t('error.deliverable-generation')!);
+          },
+        },
+      );
+      customPrompt.value = '';
+      selectedType.value = undefined;
+    },
+    onUpdatePrompt: (value: string) => {
+      customPrompt.value = value;
+      selectedType.value = undefined;
+    },
+  },
+});
+
+function onSelectType(newType: string | number | boolean): void {
+  if (newType === 'CUSTOM_REPORT') {
+    openCustomReportModal();
+  }
+}
 
 const activeDeliverables = computed(() =>
-  (deliverables.value ?? []).filter((d) => d.type !== 'TRANSCRIPTION'),
+  (deliverables.value ?? []).filter(
+    (d) =>
+      d.type !== 'TRANSCRIPTION' && (d.type !== 'CUSTOM_REPORT' || isCustomReportEnabled.value),
+  ),
 );
 
 const generatedTypes = computed(() => new Set(activeDeliverables.value.map((d) => d.type)));
@@ -70,24 +110,34 @@ const hasPendingDeliverable = computed(() =>
   activeDeliverables.value.some((d) => d.status === 'PENDING'),
 );
 
-const radioOptions = computed(() => [
-  {
-    label: t('meeting-v2.deliverable-card.type.decision-record.label'),
-    hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
-    value: 'DECISION_RECORD' as DeliverableType,
-    disabled: generatedTypes.value.has('DECISION_RECORD'),
-  },
-  {
-    label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
-    hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
-    value: 'DETAILED_SYNTHESIS' as DeliverableType,
-    disabled: generatedTypes.value.has('DETAILED_SYNTHESIS'),
-  },
-]);
+const radioOptions = computed(() =>
+  [
+    {
+      label: t('meeting-v2.deliverable-card.type.decision-record.label'),
+      hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
+      value: 'DECISION_RECORD' as DeliverableType,
+      disabled: generatedTypes.value.has('DECISION_RECORD'),
+    },
+    {
+      label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
+      hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
+      value: 'DETAILED_SYNTHESIS' as DeliverableType,
+      disabled: generatedTypes.value.has('DETAILED_SYNTHESIS'),
+    },
+    {
+      label: t('meeting-v2.deliverable-card.type.custom-report.label'),
+      hint: t('meeting-v2.deliverable-card.type.custom-report.hint'),
+      value: 'CUSTOM_REPORT' as DeliverableType,
+      disabled: false,
+    },
+  ].filter((o) => o.value !== 'CUSTOM_REPORT' || isCustomReportEnabled.value),
+);
 
 const transcriptionStatus = computed(() => getTranscriptionStatus(props.meetingStatus));
 
-const allGenerated = computed(() => radioOptions.value.every((o) => o.disabled));
+const allGenerated = computed(() =>
+  radioOptions.value.filter((o) => o.value !== 'CUSTOM_REPORT').every((o) => o.disabled),
+);
 
 const isTranscriptionInProgress = computed(
   () => transcriptionStatus.value !== null && transcriptionStatus.value !== 'AVAILABLE',
@@ -95,6 +145,8 @@ const isTranscriptionInProgress = computed(
 
 const generateDisabled = computed(
   () =>
+    selectedType.value === undefined ||
+    selectedType.value === 'CUSTOM_REPORT' ||
     allGenerated.value ||
     isCreating.value ||
     hasPendingDeliverable.value ||
@@ -102,6 +154,7 @@ const generateDisabled = computed(
 );
 
 function generate(): void {
+  if (selectedType.value === undefined || selectedType.value === 'CUSTOM_REPORT') return;
   createMutate(
     { meeting_id: props.meetingId, type: selectedType.value },
     {
@@ -115,6 +168,7 @@ function generate(): void {
 const TYPE_KEY_MAP: Record<string, string> = {
   DECISION_RECORD: 'decision-record',
   DETAILED_SYNTHESIS: 'detailed-synthesis',
+  CUSTOM_REPORT: 'custom-report',
 };
 
 const displayedDeliverables = computed(() =>

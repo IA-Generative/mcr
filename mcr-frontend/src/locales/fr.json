@@ -16,7 +16,13 @@
       "update": "Mettre à jour"
     },
     "or": "ou",
-    "pipe": "{'|'}"
+    "pipe": "{'|'}",
+    "editor": {
+      "bold": "Gras",
+      "italic": "Italique",
+      "bullet-list": "Liste à puces",
+      "ordered-list": "Liste numérotée"
+    }
   },
   "header": {
     "app": {
@@ -44,6 +50,12 @@
       "meetings": "Liste des réunions",
       "directory": "Annuaire",
       "users": "Gestion des utilisateurs"
+    },
+    "notice": {
+      "title": "Contribuez au glossaire du MI !",
+      "desc": "400 acronymes {articleLink}. Pour en proposer d'autres, {formLink}.",
+      "article-link-text": "déjà intégrés",
+      "form-link-text": "cliquez sur ce lien"
     }
   },
   "about-us": {
@@ -381,6 +393,7 @@
     }
   },
   "meeting-v2": {
+    "notes-placeholder": "Prenez des notes ici...",
     "audio-player": {
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
@@ -393,7 +406,7 @@
     },
     "deliverable-card": {
       "title": "Livrables",
-      "description": "Sélectionnez un format de compte-rendu à générer avec l'IA :",
+      "description": "Sélectionnez un format de compte-rendu à générer :",
       "generate-button": "Générer",
       "type": {
         "decision-record": {
@@ -408,6 +421,38 @@
         },
         "transcription": {
           "title": "Transcription"
+        },
+        "custom-report": {
+          "label": "Compte-rendu personnalisé avec prompt",
+          "hint": "Faites votre compte-rendu sur mesure.",
+          "title": "Compte-rendu personnalisé"
+        }
+      }
+    },
+    "custom-report-modal": {
+      "title": "Rédigez votre prompt",
+      "description": "Décrivez librement le compte-rendu que vous voulez obtenir, ou partez d'une suggestion.",
+      "prompt-label": "votre prompt",
+      "prompt-placeholder": "Ex : Génère un compte-rendu en trois parties — ...",
+      "suggestions-label": "suggestions",
+      "cancel-button": "Annuler",
+      "generate-button": "Générer",
+      "suggestions": {
+        "classic-3-parts": {
+          "title": "3 parties classiques",
+          "prompt": "Génère un compte-rendu en trois parties : participants, décisions prises, prochaines étapes. Ton professionnel, format en bullet points."
+        },
+        "action-plan": {
+          "title": "Plan d'actions",
+          "prompt": "Liste toutes les actions décidées lors de cette réunion. Pour chaque action : responsable, description, deadline si mentionnée. Format tableau."
+        },
+        "executive-summary": {
+          "title": "Synthèse exécutive",
+          "prompt": "Rédige une synthèse de 10 lignes maximum à destination d’un dirigeant. Ton concis, factuel. Mets en avant les décisions clés et les points de blocage."
+        },
+        "themed-verbatim": {
+          "title": "Verbatim thématisé",
+          "prompt": "Regroupe les échanges par thématique. Pour chaque thématique, restitue les arguments principaux évoqués, sans interprétation."
         }
       }
     },

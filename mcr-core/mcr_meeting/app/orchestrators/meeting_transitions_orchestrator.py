@@ -110,6 +110,7 @@ def start_report(
     user_keycloak_uuid: UUID4,
     report_type: ReportType,
     deliverable_id: int | None = None,
+    custom_prompt: str | None = None,
 ) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
@@ -123,6 +124,7 @@ def start_report(
         MeetingEvent.START_REPORT,
         report_type=report_type,
         deliverable_id=deliverable_id,
+        custom_prompt=custom_prompt,
     )
 
 

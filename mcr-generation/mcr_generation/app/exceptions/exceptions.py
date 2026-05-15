@@ -25,3 +25,15 @@ class ReportCallbackError(MCRGenerationException):
 
 class UnsupportedReportTypeError(MCRGenerationException):
     """Raised when an unknown report type is requested."""
+
+
+class AllChunksFailedError(MCRGenerationException):
+    """Raised when every chunk failed during map phase, leaving no content to reduce."""
+
+
+class EmptyChunksError(MCRGenerationException):
+    """Raised when a pipeline is invoked with no chunks to process."""
+
+
+class MissingCustomPromptError(MCRGenerationException):
+    """Raised when a CUSTOM_REPORT is requested without a user-provided prompt."""

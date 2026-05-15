@@ -7,13 +7,14 @@ from loguru import logger
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
 from mcr_generation.app.configs.settings import LangfuseSettings
-from mcr_generation.app.schemas.base import BaseReport
+from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     ReportTypes,
     extract_report_task_args,
 )
-from mcr_generation.app.services.report_generator import get_generator
+from mcr_generation.app.services.notes.notes_extractor import extract_notes
+from mcr_generation.app.services.report_generator import create_report_generator
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
@@ -37,7 +38,9 @@ def generate_report_from_docx(
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
     deliverable_id: int | None = None,
-) -> BaseReport:
+    notes_content: str | None = None,
+    custom_prompt: str | None = None,
+) -> BaseReport | CustomMarkdownReport:
     record_report_trace_context(
         meeting_id=meeting_id,
         transcription_object_filename=transcription_object_filename,
@@ -54,8 +57,14 @@ def generate_report_from_docx(
     )
 
     report_type_enum = ReportTypes(report_type)
-    generator = get_generator(report_type_enum)
-    return generator.generate(chunks)
+
+    # extracted_notes is not yet consumed by the generators.
+    _extracted_notes = extract_notes(notes_content, report_type_enum)
+
+    generator = create_report_generator(report_type_enum, custom_prompt=custom_prompt)
+    report = generator.generate(chunks)
+
+    return report
 
 
 @task_prerun.connect(sender=generate_report_from_docx)
@@ -71,7 +80,7 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 
 @task_success.connect
 def generate_report_from_docx_success(
-    sender: Any, result: BaseReport, **kwargs: Any
+    sender: Any, result: BaseReport | CustomMarkdownReport, **kwargs: Any
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API.
 

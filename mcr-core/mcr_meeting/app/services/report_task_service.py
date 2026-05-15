@@ -10,10 +10,12 @@ from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.report_generation import (
     ReportResponse,
+    is_custom_report,
     is_decision_report_synthesis,
     is_detailed_synthesis,
 )
 from mcr_meeting.app.services.docx_report_generation_service import (
+    generate_custom_report_docx,
     generate_detailed_synthesis_docx,
     generate_docx_decisions_reports_from_template,
 )
@@ -82,6 +84,9 @@ def persist_report_docx(meeting_id: int, report_response: ReportResponse) -> Non
             report_response, meeting.name
         )
         deliverable_type = DeliverableType.DECISION_RECORD
+    elif is_custom_report(report_response):
+        docx_buffer = generate_custom_report_docx(report_response)
+        deliverable_type = DeliverableType.CUSTOM_REPORT
     else:
         raise MCRException("Invalid report_response type")
 

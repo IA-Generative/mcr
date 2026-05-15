@@ -6,7 +6,7 @@ from loguru import logger
 from mcr_generation.app.client.http_client import HttpClient
 from mcr_generation.app.configs.settings import ApiSettings
 from mcr_generation.app.exceptions.exceptions import ReportCallbackError
-from mcr_generation.app.schemas.base import BaseReport
+from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 
 
 class CoreApiClient:
@@ -14,7 +14,9 @@ class CoreApiClient:
         self.api_settings = ApiSettings()
         self.client = HttpClient(base_url=self.api_settings.MCR_CORE_API_URL)
 
-    def mark_report_success(self, meeting_id: int, report: BaseReport) -> None:
+    def mark_report_success(
+        self, meeting_id: int, report: BaseReport | CustomMarkdownReport
+    ) -> None:
         self._post(
             f"/meetings/{meeting_id}/report/success",
             json=report.model_dump(),
@@ -26,7 +28,7 @@ class CoreApiClient:
     def mark_deliverable_success(
         self,
         deliverable_id: int,
-        report: BaseReport,
+        report: BaseReport | CustomMarkdownReport,
         external_url: str | None = None,
     ) -> None:
         self._post(

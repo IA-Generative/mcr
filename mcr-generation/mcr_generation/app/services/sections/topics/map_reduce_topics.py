@@ -9,28 +9,37 @@ from langfuse import observe
 from loguru import logger
 from openai import OpenAI
 
-from mcr_generation.app.configs.settings import LLMConfig
+from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
+from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.schemas.base import Participant
 from mcr_generation.app.services.sections.topics.prompts import (
     MAP_PROMPT_TEMPLATE,
     REDUCE_PROMPT_TEMPLATE,
 )
 from mcr_generation.app.services.sections.topics.types import (
-    Content,
     MappedTopic,
     MappedTopics,
+    TopicsContent,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
 from mcr_generation.app.services.utils.llm_helpers import (
     call_llm_with_structured_output,
 )
 from mcr_generation.app.utils.function_execution_timer import log_execution_time
+from mcr_generation.app.utils.langfuse_observability import (
+    record_chunk_map_failed_event,
+    record_empty_map_phase_event,
+    record_low_confidence_items_event,
+)
+
+langfuse_settings = LangfuseSettings()
 
 
 class MapReduceTopics:
     max_workers: int = 4
     meeting_subject: str | None
     speaker_mapping: str | None
+    _last_chunk_count: int | None = None
 
     def __init__(
         self,
@@ -48,35 +57,58 @@ class MapReduceTopics:
         self.meeting_subject = meeting_subject
         self.speaker_mapping = str(participants) if participants else None
 
-    # rename into: process section -> generate section ?
     @log_execution_time
     @observe(name="section_content_generation")
-    def map_reduce_all_steps(self, chunks: list[Chunk]) -> Content:
-        content = self.process_transcript_parallel(
-            chunks=chunks, max_workers=self.max_workers
-        )
+    def map_reduce_all_steps(self, chunks: list[Chunk]) -> TopicsContent:
+        self._last_chunk_count = len(chunks)
+        successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
 
-        return content
+        if failed_chunk_ids and not successful:
+            raise AllChunksFailedError(
+                f"All {len(chunks)} chunks failed in map phase: {failed_chunk_ids}"
+            )
 
-    def process_transcript_parallel(
-        self, chunks: list[Chunk], max_workers: int = 4
-    ) -> Content:
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        logger.debug("Mapped topics by chunk: {}", successful)
+        all_topics = [topic for sublist in successful for topic in sublist]
+        return self.reduce_topics_into_content(all_topics)
+
+    def _map_chunks_in_parallel(
+        self, chunks: list[Chunk]
+    ) -> tuple[list[list[MappedTopic]], list[int]]:
+        successful: list[list[MappedTopic]] = []
+        failed_chunk_ids: list[int] = []
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = [
-                executor.submit(
-                    contextvars.copy_context().run,
-                    self.map_extract_topics,
-                    chunk,
+                (
+                    chunk.id,
+                    executor.submit(
+                        contextvars.copy_context().run,
+                        self.map_extract_topics,
+                        chunk,
+                    ),
                 )
                 for chunk in chunks
             ]
-            topics_by_chunk: list[list[MappedTopic]] = [f.result() for f in futures]
-            logger.debug("Mapped topics by chunk: {}", topics_by_chunk)
-            all_topics = [topic for sublist in topics_by_chunk for topic in sublist]
-        return self.reduce_topics_into_content(all_topics)
+            for chunk_id, fut in futures:
+                try:
+                    successful.append(fut.result())
+                except Exception as e:
+                    failed_chunk_ids.append(chunk_id)
+                    record_chunk_map_failed_event(
+                        section="topics",
+                        chunk_id=chunk_id,
+                        exception_type=type(e).__name__,
+                        exception_msg=str(e)[:500],
+                    )
+                    logger.warning("Chunk {} failed map phase: {}", chunk_id, e)
+
+        return successful, failed_chunk_ids
 
     @observe(name="section_content_reduce")
-    def reduce_topics_into_content(self, all_topics: list[MappedTopic]) -> Content:
+    def reduce_topics_into_content(
+        self, all_topics: list[MappedTopic]
+    ) -> TopicsContent:
         """
         Deduplicate and merge related topics using the LLM.
 
@@ -84,10 +116,14 @@ class MapReduceTopics:
             all_topics (List[MappedTopic]): List of MappedTopic objects extracted from chunks.
 
         Returns:
-            Content: Deduplicated and consolidated list of topics.
+            TopicsContent: Deduplicated and consolidated list of topics.
         """
         if not all_topics:
-            return Content(topics=[], next_steps=[])
+            record_empty_map_phase_event(
+                section="topics",
+                chunk_count=self._last_chunk_count,
+            )
+            return TopicsContent(topics=[], next_steps=[])
 
         topics_input = [d.model_dump() for d in all_topics]
 
@@ -99,7 +135,7 @@ class MapReduceTopics:
 
         resp = call_llm_with_structured_output(
             client=self.client_instructor,
-            response_model=Content,
+            response_model=TopicsContent,
             user_message_content=reduce_message,
         )
 
@@ -126,4 +162,23 @@ class MapReduceTopics:
         )
         topics = resp.topics
 
+        self._record_low_confidence_items(topics, chunk.id)
+
         return topics
+
+    def _record_low_confidence_items(
+        self, topics: list[MappedTopic], chunk_id: int
+    ) -> None:
+        threshold = langfuse_settings.LOW_CONFIDENCE_THRESHOLD
+        low = [
+            t.model_dump(include={"topic", "topic_confidence"})
+            for t in topics
+            if t.topic_confidence < threshold
+        ]
+        if low:
+            record_low_confidence_items_event(
+                section="topics",
+                chunk_id=chunk_id,
+                threshold=threshold,
+                items=low,
+            )

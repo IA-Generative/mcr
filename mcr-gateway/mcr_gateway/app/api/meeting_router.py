@@ -145,7 +145,7 @@ async def get_meeting(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put(
+@router.patch(
     "/meetings/{meeting_id}",
     response_model=Meeting,
     tags=["Meetings"],

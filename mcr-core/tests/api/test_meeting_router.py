@@ -229,20 +229,18 @@ def test_get_meeting_by_id_not_found(
 def test_update_meeting_success(
     meeting_client: PrefixedTestClient, meeting_fixture: Meeting, user_fixture: User
 ) -> None:
-    # Arrange
-    meeting_update = MeetingUpdate(
-        name="Updated Team Meeting",
-        creation_date=datetime(2024, 9, 29, 16, 0),
-        name_platform="COMU",
-        url="https://webconf.comu.gouv.fr/meeting/306356457?secret=GF2e74BjOcDR1Bq6nvv5wA",
-        meeting_password="123456",
-        meeting_platform_id="123456",
-    )
-    payload = meeting_update.model_dump()
+    payload = {
+        "name": "Updated Team Meeting",
+        "creation_date": "2024-09-29T16:00:00.000Z",
+        "name_platform": "COMU",
+        "url": "https://webconf.comu.gouv.fr/meeting/306356457?secret=GF2e74BjOcDR1Bq6nvv5wA",
+        "meeting_password": "123456",
+        "meeting_platform_id": "123456",
+    }
     headers = get_user_auth_header(user_fixture.keycloak_uuid)
 
     # Act
-    response = meeting_client.put(
+    response = meeting_client.patch(
         f"/{meeting_fixture.id}", json=payload, headers=headers
     )
 
@@ -255,7 +253,13 @@ def test_update_meeting_success(
 
     json_data = get_after_update_response.json()
     assert get_after_update_response.status_code == status.HTTP_200_OK
-    assert_json_equal_meeting_model(json_data, meeting_update)  # type: ignore[arg-type]
+
+    assert json_data["name"] == payload["name"]
+    assert json_data["creation_date"] == payload["creation_date"]
+    assert json_data["name_platform"] == payload["name_platform"]
+    assert json_data["url"] == payload["url"]
+    assert json_data["meeting_password"] == payload["meeting_password"]
+    assert json_data["meeting_platform_id"] == payload["meeting_platform_id"]
 
 
 def test_update_meeting_not_found(
@@ -270,11 +274,11 @@ def test_update_meeting_not_found(
         meeting_password="123456",
         meeting_platform_id="123456",
     )
-    payload = meeting_update.model_dump()
+    payload = meeting_update.model_dump(mode="json")
     headers = get_user_auth_header(user_fixture.keycloak_uuid)
 
     # Act
-    response = meeting_client.put("/999", json=payload, headers=headers)
+    response = meeting_client.patch("/999", json=payload, headers=headers)
 
     # Assert
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -298,7 +302,7 @@ def test_update_meeting_invalid_input(
     headers = get_user_auth_header(user_fixture.keycloak_uuid)
 
     # Act
-    response = meeting_client.put(
+    response = meeting_client.patch(
         f"/{meeting_fixture.id}", json=payload, headers=headers
     )
     # Assert
@@ -379,3 +383,25 @@ def assert_json_equal_meeting_model(
 
 def get_user_auth_header(user_keycloak_uuid: UUID4) -> dict[str, str]:
     return {"X-User-keycloak-uuid": str(user_keycloak_uuid)}
+
+
+def test_update_meeting_notes_only(
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    user_fixture: User,
+) -> None:
+    # Arrange — on n'envoie que notes, les autres champs ne doivent pas être écrasés
+    original_name = meeting_fixture.name
+    payload = {"notes": "Notes de test"}
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+
+    # Act
+    response = meeting_client.patch(
+        f"/{meeting_fixture.id}", json=payload, headers=headers
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_200_OK
+    json_data = response.json()
+    assert json_data["notes"] == "Notes de test"
+    assert json_data["name"] == original_name

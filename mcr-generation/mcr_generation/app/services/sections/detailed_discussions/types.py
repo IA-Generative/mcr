@@ -230,7 +230,7 @@ class MappedDetailedDiscussions(BaseModel):
     )
 
 
-class Content(BaseModel):
+class DiscussionsContent(BaseModel):
     detailed_discussions: list[DetailedDiscussion] = Field(
         default_factory=list,
         description=(

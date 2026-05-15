@@ -9,6 +9,7 @@ The `mcr-generation` service is a Celery worker that turns a meeting transcript 
 | **In** `meeting_id` | `int` | Meeting identifier on the `mcr-core` side |
 | **In** `transcription_object_filename` | `str` | S3 key of the transcription DOCX |
 | **In** `report_type` | `ReportTypes` | `DECISION_RECORD` or `DETAILED_SYNTHESIS` |
+| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — not yet consumed by generators (planned in US3–US6). |
 | **Out** | `BaseReport` | `DecisionRecord` or `DetailedSynthesis` (Pydantic) |
 
 ## Pipeline diagram
@@ -29,7 +30,7 @@ flowchart TB
     classDef out fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
 
     %% Input
-    IN[/"transcription_object_filename<br/>+ report_type<br/>+ meeting_id"/]:::io
+    IN[/"transcription_object_filename<br/>+ report_type<br/>+ meeting_id<br/>+ notes_content (optional)"/]:::io
     IN --> TASK["generate_report_from_docx<br/>(Celery task)"]:::proc
 
     %% Preparation
@@ -42,6 +43,16 @@ flowchart TB
       FETCH --> S3 -->|"DOCX bytes"| CHUNK --> CHUNKS
     end
     TASK --> FETCH
+
+    %% Notes extraction (introduced in US1 — output not yet consumed by generators)
+    subgraph NOTES["Notes extraction (US1 — extracted but not yet wired)"]
+      direction TB
+      NX["NotesExtractor.extract_all<br/>async, 3 parallel LLM calls"]:::llm
+      EN[/"ExtractedNotes<br/>(intent, next_meeting,<br/>topics OR discussions)"/]:::out
+      NX --> EN
+    end
+    TASK -.->|"if notes_content"| NX
+    %% TODO US3-US6: wire EN into RI / RN / M1 / M2.
 
     %% Header (shared — same logic regardless of report_type)
     subgraph HEADER["Header — 3 independent refines (shared)"]
@@ -88,6 +99,7 @@ flowchart TB
     OUT[/"BaseReport<br/>(DecisionRecord | DetailedSynthesis)"/]:::out
     H --> OUT
     R1 --> OUT
+    R2 --> OUT
     SY --> OUT
     OUT --> POST["POST /meetings/{id}/report/success<br/>→ mcr-core"]:::proc
 ```
@@ -117,6 +129,6 @@ Pointers to key files if you want to dive into the code:
 - **Generator factory**: `app/services/report_generator/__init__.py` — dispatch via `match` on `ReportTypes`.
 - **Base class + shared header**: `app/services/report_generator/base_report_generator.py`.
 - **Map-reduce**: `app/services/sections/topics/map_reduce_topics.py`, `app/services/sections/detailed_discussions/map_reduce_detailed_discussions.py`.
-- **Refine**: `app/services/sections/{intent,participants,next_meeting}/refine_*.py`.
+- **Refine**: `app/services/sections/base/init_then_refine.py` defines the generic `BaseInitThenRefine[T]` that owns the loop, prompt rendering and Langfuse span. The three concrete refiners (`app/services/sections/{intent,participants,next_meeting}/refine_*.py`) only declare four class attributes (`response_model`, two prompt templates, `section_name`). `RefineParticipants` returns an internal chain-of-thought wrapper; `BaseReportGenerator.generate_header` finalises it via `.to_public()`.
 - **Shared LLM client**: `app/services/utils/llm_helpers.py` — `call_llm_with_structured_output()` (Instructor + exponential retry + Langfuse observability).
 - **Output schemas**: `app/schemas/base.py` (`BaseReport`, `DecisionRecord`, `DetailedSynthesis`, `Header`).

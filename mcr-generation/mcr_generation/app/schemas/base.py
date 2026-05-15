@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Intent(BaseModel):
@@ -104,14 +104,26 @@ class Participant(BaseModel):
         description="Fonction/rôle si mentionné ou déduit (ex. PO, Tech Lead, Directeur financier).",
     )
     confidence: float | None = Field(
+        ...,
         ge=0.0,
         le=1.0,
-        description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur.",
+        description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur. null si aucune association n'est faite.",
     )
+
+
+class ParticipantWithThinking(Participant):
+    """LLM-internal participant carrying chain-of-thought reasoning.
+
+    Used during the refine loop so the LLM can read its prior reasoning when
+    evaluating new chunks. Required-but-nullable: the LLM must explicitly emit
+    a string or null — a missing key indicates a malformed response.
+    """
+
     association_justification: str | None = Field(
-        exclude=True,
+        ...,
         description=(
-            "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id."
+            "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id. "
+            "null si aucun indice pertinent."
         ),
     )
 
@@ -119,8 +131,28 @@ class Participant(BaseModel):
 class Participants(BaseModel):
     participants: list[Participant] = Field(
         ...,
+        description="Liste des participants identifiés dans la réunion.",
+    )
+
+
+class ParticipantsWithThinkingListWrapper(BaseModel):
+    participants: list[ParticipantWithThinking] = Field(
+        ...,
         description="Liste des participants identifiés dans la réunion avec un speaker_id unique avec leur nom ou role si disponible. Si aucun participant n'a pu être identifié, renvoyer une liste vide.",
     )
+
+    def to_public(self) -> Participants:
+        return Participants(
+            participants=[
+                Participant(
+                    speaker_id=p.speaker_id,
+                    name=p.name,
+                    role=p.role,
+                    confidence=p.confidence,
+                )
+                for p in self.participants
+            ]
+        )
 
 
 class Decision(BaseModel):
@@ -206,3 +238,8 @@ class DetailedSynthesis(BaseReport):
     detailed_discussions: list[DetailedDiscussion]
     to_do_list: list[str]
     to_monitor_list: list[str]
+
+
+class CustomMarkdownReport(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    markdown_content: str

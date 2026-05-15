@@ -8,6 +8,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     TaskCreationException,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus
+from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -17,8 +18,7 @@ from mcr_meeting.app.schemas.report_generation import (
     ReportResponse,
     ReportType,
 )
-
-# from mcr_meeting.app.services.deliverable_storage_service import store_deliverable
+from mcr_meeting.app.services.deliverable_storage_service import store_deliverable
 from mcr_meeting.app.services.email.email_service import (
     send_report_generation_success_email,
     send_transcription_generation_success_email,
@@ -34,10 +34,9 @@ from mcr_meeting.app.services.meeting_transition_record_service import (
 )
 from mcr_meeting.app.services.report_task_service import persist_report_docx
 from mcr_meeting.app.services.s3_service import get_transcription_object_name
-
-# from mcr_meeting.app.services.transcription_task_service import (
-#     retrieve_or_create_formatted_docx_transcription,
-# )
+from mcr_meeting.app.services.transcription_task_service import (
+    retrieve_or_create_formatted_docx_transcription,
+)
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -109,19 +108,19 @@ def after_complete_transcription_handler(
     with UnitOfWork():
         update_meeting_status(meeting, next_status)
 
-    # try:
-    #     docx_buffer = retrieve_or_create_formatted_docx_transcription(meeting)
-    #     store_deliverable(
-    #         meeting_id=meeting.id,
-    #         user_keycloak_uuid=str(meeting.owner.keycloak_uuid),
-    #         file_bytes=docx_buffer.getvalue(),
-    #         type=DeliverableType.TRANSCRIPTION,
-    #         filename=f"Transcription_{meeting.name}.docx",
-    #     )
-    # except Exception:
-    #     logger.exception(
-    #         "Failed to upload transcription to Drive for meeting {}", meeting.id
-    #     )
+    try:
+        docx_buffer = retrieve_or_create_formatted_docx_transcription(meeting)
+        store_deliverable(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=str(meeting.owner.keycloak_uuid),
+            file_bytes=docx_buffer.getvalue(),
+            type=DeliverableType.TRANSCRIPTION,
+            filename=f"Transcription_{meeting.name}.docx",
+        )
+    except Exception:
+        logger.exception(
+            "Failed to upload transcription to Drive for meeting {}", meeting.id
+        )
 
     send_transcription_generation_success_email(meeting_id=meeting.id)
 
@@ -131,6 +130,7 @@ def after_start_report_handler(
     next_status: MeetingStatus,
     report_type: ReportType,
     deliverable_id: int | None = None,
+    custom_prompt: str | None = None,
 ) -> None:
     try:
         if meeting.transcription_filename is None:
@@ -145,6 +145,8 @@ def after_start_report_handler(
         }
         if deliverable_id is not None:
             task_kwargs["deliverable_id"] = deliverable_id
+        if custom_prompt is not None:
+            task_kwargs["custom_prompt"] = custom_prompt
 
         with UnitOfWork():
             update_meeting_status(meeting, next_status)

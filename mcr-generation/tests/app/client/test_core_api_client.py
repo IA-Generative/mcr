@@ -55,7 +55,6 @@ def decision_record() -> DecisionRecord:
                     name="A",
                     role="r",
                     confidence=0.9,
-                    association_justification="j",
                 )
             ],
             next_meeting=None,
@@ -80,10 +79,7 @@ def _expected_payload(report: DecisionRecord) -> dict[str, Any]:
             "title": report.header.title,
             "objective": report.header.objective,
             "next_meeting": report.header.next_meeting,
-            "participants": [
-                p.model_dump(exclude={"association_justification"})
-                for p in report.header.participants
-            ],
+            "participants": [p.model_dump() for p in report.header.participants],
         },
     }
 

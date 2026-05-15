@@ -8,6 +8,7 @@ from mcr_meeting.app.exceptions.exceptions import MCRException
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms, MeetingStatus
 from mcr_meeting.app.schemas.report_generation import (
+    CustomReportResponse,
     DetailedSynthesisGenerationResponse,
     ReportGenerationResponse,
     ReportHeader,
@@ -107,6 +108,29 @@ class TestPersistReportDocx:
 
         save_mock.assert_called_once()
         assert save_mock.call_args.kwargs["filename"] == "detailed_synthesis.docx"
+
+    def test_custom_report_writes_typed_filename(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING, name_platform=MeetingPlatforms.COMU
+        )
+        save_mock = mocker.patch(
+            "mcr_meeting.app.services.report_task_service.save_formatted_report"
+        )
+        mocker.patch(
+            "mcr_meeting.app.services.report_task_service.generate_custom_report_docx",
+            return_value=BytesIO(b"docx"),
+        )
+
+        rts.persist_report_docx(
+            meeting_id=meeting.id,
+            report_response=CustomReportResponse(markdown_content="# Test"),
+        )
+
+        save_mock.assert_called_once()
+        assert save_mock.call_args.kwargs["filename"] == "custom_report.docx"
 
     def test_raises_for_unknown_response_type(
         self,

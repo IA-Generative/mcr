@@ -201,7 +201,7 @@ class MappedTopics(BaseModel):
     )
 
 
-class Content(BaseModel):
+class TopicsContent(BaseModel):
     topics: list[Topic] = Field(
         ...,
         description=(

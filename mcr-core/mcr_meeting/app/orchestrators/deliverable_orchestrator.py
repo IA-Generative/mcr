@@ -43,6 +43,7 @@ from mcr_meeting.app.services.transcription_task_service import (
 _REPORT_TYPE_BY_DELIVERABLE = {
     DeliverableType.DECISION_RECORD: ReportType.DECISION_RECORD,
     DeliverableType.DETAILED_SYNTHESIS: ReportType.DETAILED_SYNTHESIS,
+    DeliverableType.CUSTOM_REPORT: ReportType.CUSTOM_REPORT,
 }
 
 
@@ -94,13 +95,8 @@ def request_deliverable(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
     deliverable_type: DeliverableType,
+    custom_prompt: str | None = None,
 ) -> Deliverable:
-    if deliverable_type == DeliverableType.TRANSCRIPTION:
-        raise BadRequestException(
-            "TRANSCRIPTION deliverables are produced by the capture pipeline "
-            "and cannot be requested through this endpoint."
-        )
-
     report_type = _REPORT_TYPE_BY_DELIVERABLE[deliverable_type]
 
     meeting = get_meeting(meeting_id=meeting_id, user_keycloak_uuid=user_keycloak_uuid)
@@ -137,6 +133,7 @@ def request_deliverable(
         user_keycloak_uuid=user_keycloak_uuid,
         report_type=report_type,
         deliverable_id=deliverable.id,
+        custom_prompt=custom_prompt,
     )
 
     return deliverable

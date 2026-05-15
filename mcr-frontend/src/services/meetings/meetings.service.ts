@@ -48,7 +48,7 @@ export async function uploadFileWithPresignedUrl(url: string, file: File): Promi
 }
 
 export async function update(id: number, payload: UpdateMeetingDto): Promise<MeetingDto> {
-  const { data } = await HttpService.put(`${API_PATHS.MEETINGS}/${id}`, payload);
+  const { data } = await HttpService.patch(`${API_PATHS.MEETINGS}/${id}`, payload);
   return data;
 }
 

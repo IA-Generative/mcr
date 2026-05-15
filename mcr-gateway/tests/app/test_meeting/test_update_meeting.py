@@ -34,7 +34,7 @@ async def test_update_meeting_service_http_error() -> None:
         response=AsyncMock(status_code=404, text="Meeting not found"),
     )
 
-    with patch("httpx.AsyncClient.put", return_value=mock_response):
+    with patch("httpx.AsyncClient.patch", return_value=mock_response):
         with pytest.raises(HTTPException) as exc_info:
             await update_meeting_service(
                 meeting_id=meeting_id,
@@ -63,7 +63,7 @@ async def test_update_meeting_service_unexpected_error() -> None:
     )
 
     # Simulate unexpected error
-    with patch("httpx.AsyncClient.put", side_effect=Exception("Unexpected error")):
+    with patch("httpx.AsyncClient.patch", side_effect=Exception("Unexpected error")):
         with pytest.raises(HTTPException) as exc_info:
             await update_meeting_service(
                 meeting_id=meeting_id,
