@@ -10,8 +10,18 @@ from markdowntodocx.markdownconverter import (  # type: ignore[import-untyped]
 )
 
 # Styles required by markdowntodocx even if unused in the markdown content.
-_REQUIRED_PARAGRAPH_STYLES = ("Code", "No Spacing", "List Paragraph")
-_REQUIRED_CHARACTER_STYLES = ("Code Car",)
+# markdowntodocx looks some of these up by literal key (e.g. styles["Cell"] in
+# fill_cell, styles["footnote text"] / styles["footnote reference"] in the
+# footnote path) — bypassing its own resolver — so the document must define
+# them or the table / footnote branches raise KeyError.
+_REQUIRED_PARAGRAPH_STYLES = (
+    "Code",
+    "No Spacing",
+    "List Paragraph",
+    "Cell",
+    "footnote text",
+)
+_REQUIRED_CHARACTER_STYLES = ("Code Car", "footnote reference")
 _REQUIRED_TABLE_STYLES = ("Table Grid",)
 
 

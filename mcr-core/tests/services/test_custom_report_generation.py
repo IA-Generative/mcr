@@ -70,3 +70,34 @@ class TestGenerateCustomReportDocx:
         assert "Synthèse" in full_text
         assert "Risques identifiés" in full_text
         assert "Retard possible sur le lot 2" in full_text
+
+    def test_renders_markdown_table_without_error(self) -> None:
+        # Regression: markdowntodocx's fill_cell looks up styles["Cell"]
+        # by literal key, so the style must be present on the document.
+        response = CustomReportResponse(
+            markdown_content="""\
+## Synthèse
+
+| Sujet  | Décision |
+|--------|----------|
+| Budget | Validé   |
+| Délai  | Décalé   |
+""",
+        )
+        result = generate_custom_report_docx(response)
+        assert result.getvalue()
+
+    def test_renders_markdown_footnote_without_error(self) -> None:
+        # Regression: markdowntodocx looks up styles["footnote text"] and
+        # styles["footnote reference"] by literal key.
+        response = CustomReportResponse(
+            markdown_content="""\
+## Synthèse
+
+Le projet avance[^1] correctement.
+
+[^1]: D'après le suivi hebdomadaire.
+""",
+        )
+        result = generate_custom_report_docx(response)
+        assert result.getvalue()
