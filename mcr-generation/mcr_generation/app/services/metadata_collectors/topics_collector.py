@@ -25,7 +25,7 @@ class TopicsCollector(MetadataCollector):
     @observe(name="metadata_collector.topics")
     def _extract(self, chunks: list[Chunk]) -> TopicsContent:
         meeting_subject = RefineIntent().init_then_refine(chunks)
-        participants = RefineParticipants().init_then_refine(chunks)
+        participants = RefineParticipants().init_then_refine(chunks).to_public()
         return MapReduceTopics(
             meeting_subject.title, participants.participants
         ).map_reduce_all_steps(chunks)

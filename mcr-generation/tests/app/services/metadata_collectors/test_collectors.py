@@ -17,6 +17,8 @@ from mcr_generation.app.schemas.base import (
     NextMeeting,
     Participant,
     Participants,
+    ParticipantsWithThinkingListWrapper,
+    ParticipantWithThinking,
     Topic,
 )
 from mcr_generation.app.services.metadata_collectors import METADATA_COLLECTORS
@@ -282,8 +284,18 @@ def test_detailed_discussions_to_markdown_handles_empty_list() -> None:
     "mcr_generation.app.services.metadata_collectors.participants_collector.RefineParticipants"
 )
 async def test_participants_collect_end_to_end(mock_cls: MagicMock) -> None:
-    mock_cls.return_value.init_then_refine.return_value = Participants(
-        participants=[_participant(name="Alice", role="PO")]
+    mock_cls.return_value.init_then_refine.return_value = (
+        ParticipantsWithThinkingListWrapper(
+            participants=[
+                ParticipantWithThinking(
+                    speaker_id="LOCUTEUR_00",
+                    name="Alice",
+                    role="PO",
+                    confidence=0.9,
+                    association_justification="ok",
+                )
+            ]
+        )
     )
 
     md = await METADATA_COLLECTORS["participants"].collect([Chunk(text="x", id=0)])
