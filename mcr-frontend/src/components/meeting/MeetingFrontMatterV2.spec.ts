@@ -29,6 +29,7 @@ function makeMeeting(namePlatform: string): MeetingDetailDto {
     meeting_password: null,
     meeting_platform_id: null,
     deliverables: [],
+    notes: null,
   } as MeetingDetailDto;
 }
 

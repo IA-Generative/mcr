@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center gap-5">
+  <div class="flex flex-col items-center gap-5 py-5 bg-grey-1000 border border-grey-900">
     <h2 class="font-bold text-3xl/10 text-blue-france-sun">
       {{ $t('meeting-v2.visio-recording.title') }}
     </h2>

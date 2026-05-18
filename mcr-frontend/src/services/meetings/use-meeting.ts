@@ -20,6 +20,7 @@ import {
 import { QUERY_KEYS } from '@/plugins/vue-query';
 import type {
   AddMeetingDto,
+  MeetingDetailDto,
   MeetingDto,
   MeetingStatus,
   ReportGenerationRequest,
@@ -220,6 +221,19 @@ function generateReportMutation(options?: { onError?: (error: Error) => void }) 
   });
 }
 
+function updateMeetingOptimistically() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateMeetingDto }) => update(id, payload),
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDetailDto | undefined) =>
+        old ? { ...old, notes: data.notes } : undefined,
+      );
+    },
+  });
+}
+
 function resetReportMutation() {
   const queryClient = useQueryClient();
 
@@ -300,6 +314,7 @@ export function useMeetings() {
     addMeetingMutation,
     deleteMeetingMutation,
     updateMeetingMutation,
+    updateMeetingOptimistically,
     startCaptureMutation,
     stopCaptureMutation,
     startTranscriptionMutation,

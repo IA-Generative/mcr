@@ -393,7 +393,16 @@
     }
   },
   "meeting-v2": {
-    "notes-placeholder": "Prenez des notes ici...",
+    "notes": {
+      "title": "Prise de notes",
+      "description": "Notez librement les points importants, pendant et après votre réunion. Vos notes seront automatiquement utilisées pour enrichir la qualité des compte-rendus générés",
+      "placeholder": "Tapez vos notes ici",
+      "sync": {
+        "pending": "Modification en cours…",
+        "saving": "Enregistrement…",
+        "saved": "Enregistré"
+      }
+    },
     "audio-player": {
       "button": "Réécouter l'audio de la réunion",
       "error": "L'audio de votre réunion n'a pas pu être obtenu."
