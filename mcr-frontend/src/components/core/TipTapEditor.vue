@@ -90,8 +90,8 @@ onBeforeUnmount(() => {
 
 <style>
 .tiptap-editor .ProseMirror {
-  min-height: 140px;
-  max-height: 600px;
+  min-height: 20vh;
+  max-height: 60vh;
   overflow-y: auto;
   outline: none;
 }
