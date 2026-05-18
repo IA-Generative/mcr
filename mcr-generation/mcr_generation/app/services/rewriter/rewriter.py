@@ -1,25 +1,20 @@
 import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import observe
-from loguru import logger
 from openai import AsyncOpenAI
 
 from mcr_generation.app.configs.settings import LLMConfig
-from mcr_generation.app.schemas.custom_prompt import (
-    CollectorSection,
-    CustomSection,
-    RewriterOutput,
-    SectionSpec,
-)
+from mcr_generation.app.exceptions.exceptions import LLMCallError
+from mcr_generation.app.schemas.custom_prompt import RewriterOutput
 from mcr_generation.app.services.metadata_collectors import METADATA_COLLECTORS
 from mcr_generation.app.services.rewriter.prompts import REWRITER_PROMPT_TEMPLATE
 
 
 def _format_collectors_doc() -> str:
-    lines = []
-    for cid, collector in METADATA_COLLECTORS.items():
-        lines.append(f"   - `{cid}` : {collector.description}")
-    return "\n".join(lines)
+    return "\n".join(
+        f"   - `{cid}` : {collector.description}"
+        for cid, collector in METADATA_COLLECTORS.items()
+    )
 
 
 class Rewriter:
@@ -48,30 +43,13 @@ class Rewriter:
             )
             .to_string()
         )
-
-        raw_output: RewriterOutput = await self.client.chat.completions.create(
-            model=self.llm_config.LLM_MODEL_NAME,
-            response_model=RewriterOutput,
-            temperature=self.llm_config.TEMPERATURE,
-            messages=[{"role": "user", "content": message}],
-        )
-
-        return _sanitize(raw_output)
-
-
-def _sanitize(out: RewriterOutput) -> RewriterOutput:
-    """Fallback unknown collector_ids to generic sections, log warnings."""
-    valid_ids = set(METADATA_COLLECTORS.keys())
-    sanitized: list[SectionSpec] = []
-    for spec in out.sections:
-        if isinstance(spec, CollectorSection) and spec.collector_id not in valid_ids:
-            logger.warning(
-                "Rewriter returned unknown collector_id={!r}, falling back to generic.",
-                spec.collector_id,
+        try:
+            output: RewriterOutput = await self.client.chat.completions.create(
+                model=self.llm_config.LLM_MODEL_NAME,
+                response_model=RewriterOutput,
+                temperature=self.llm_config.TEMPERATURE,
+                messages=[{"role": "user", "content": message}],
             )
-            sanitized.append(
-                CustomSection(heading=spec.heading, instruction=spec.heading)
-            )
-        else:
-            sanitized.append(spec)
-    return RewriterOutput(title=out.title, sections=sanitized)
+        except Exception as e:
+            raise LLMCallError(f"Rewriter LLM call failed: {e}") from e
+        return output

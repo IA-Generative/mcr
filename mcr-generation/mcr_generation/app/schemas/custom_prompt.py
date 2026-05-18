@@ -2,13 +2,15 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from mcr_generation.app.services.metadata_collectors.base import CollectorId
+
 
 class CollectorSection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     kind: Literal["collector"] = "collector"
     heading: str = Field(min_length=1)
-    collector_id: str = Field(min_length=1)
+    collector_id: CollectorId
 
 
 class CustomSection(BaseModel):

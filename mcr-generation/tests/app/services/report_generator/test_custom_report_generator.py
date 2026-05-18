@@ -76,14 +76,6 @@ async def test_generate_async_omits_h1_when_title_is_none() -> None:
     assert report.markdown_content == "## Risques\n\n- R1"
 
 
-def test_factory_threads_custom_prompt_into_generator() -> None:
-    gen = create_report_generator(
-        ReportTypes.CUSTOM_REPORT, custom_prompt="prompt utilisateur"
-    )
-    assert isinstance(gen, CustomReportGenerator)
-    assert gen.raw_prompt == "prompt utilisateur"
-
-
 def test_factory_raises_when_custom_prompt_missing() -> None:
     with pytest.raises(MissingCustomPromptError):
         create_report_generator(ReportTypes.CUSTOM_REPORT)

@@ -22,6 +22,10 @@ from mcr_generation.app.schemas.base import (
     Topic,
 )
 from mcr_generation.app.services.metadata_collectors import METADATA_COLLECTORS
+from mcr_generation.app.services.metadata_collectors.base import (
+    MetadataCollector,
+    register,
+)
 from mcr_generation.app.services.metadata_collectors.detailed_discussions_collector import (  # noqa: E501
     DetailedDiscussionsCollector,
 )
@@ -61,6 +65,21 @@ def test_registry_contains_expected_ids() -> None:
 def test_registry_entries_have_description() -> None:
     for collector in METADATA_COLLECTORS.values():
         assert isinstance(collector.description, str) and collector.description
+
+
+def test_register_rejects_id_not_in_literal() -> None:
+    class BogusCollector(MetadataCollector):
+        id = "nope"  # type: ignore[assignment]
+        description = "bogus"
+
+        def _extract(self, chunks: list[Chunk]) -> Any:
+            return None
+
+        def _to_markdown(self, result: Any) -> str:
+            return ""
+
+    with pytest.raises(RuntimeError, match="not in CollectorId Literal"):
+        register(BogusCollector())
 
 
 # ---------------------------------------------------------------------------
