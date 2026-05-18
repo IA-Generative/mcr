@@ -43,7 +43,7 @@ Voici la liste initiale des discussions détaillées extraites (au format JSON) 
 <detailed_discussions>
 {detailed_discussions}
 </detailed_discussions>
-
+{notes_section}
 ## Ta tâche de consolidation
 
 1. **Regrouper et fusionner** les discussions similaires ou redondantes :

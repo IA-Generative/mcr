@@ -27,13 +27,14 @@ class DetailedSynthesisGenerator(BaseReportGenerator):
         chunks: list[Chunk],
         extracted_notes: ExtractedNotes | None = None,
     ) -> DetailedSynthesis:
+        notes = extracted_notes or ExtractedNotes()
         header = self.generate_header(chunks, extracted_notes=extracted_notes)
 
         map_reduce = MapReduceDetailedDiscussions(
             meeting_subject=header.title,
             participants=header.participants,
         )
-        content = map_reduce.map_reduce_all_steps(chunks)
+        content = map_reduce.map_reduce_all_steps(chunks, notes_hint=notes.discussions)
 
         detailed_discussions_synthesizer = DetailedDiscussionsSynthesizer(
             meeting_subject=header.title,
