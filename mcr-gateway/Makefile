@@ -33,7 +33,7 @@ test:
 	uv sync --group test --quiet --inexact
 	uv run pytest .
 
-pre-commit: type-check lint format test
+pre-commit: type-check lint format deps-check test
 
 test-coverage:
 	@make test-coverage-integration

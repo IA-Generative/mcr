@@ -32,7 +32,7 @@ format:
 	uv run ruff format
 	uv run ruff check --select I . --fix
 
-pre-commit: type-check lint format
+pre-commit: type-check lint format test
 
 show-trace:
 	uv run playwright show-trace $(trace)

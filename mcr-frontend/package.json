@@ -16,7 +16,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "pre-commit": "run-s type-check lint format"
+    "static-analysis": "run-s type-check lint format",
+    "pre-commit": "run-s static-analysis test:unit"
   },
   "dependencies": {
     "@dsb-norge/vue-keycloak-js": "^3.0.2",

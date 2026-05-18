@@ -38,7 +38,7 @@ deps-check:
 	uv sync --group tools --inexact
 	uv run deptry -v .
 
-pre-commit: format type-check lint test
+pre-commit: format type-check lint deps-check test
 
 # Main db command help
 db:
