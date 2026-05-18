@@ -20,7 +20,7 @@ class ParticipantsCollector(MetadataCollector):
 
     @observe(name="metadata_collector.participants")
     def _extract(self, chunks: list[Chunk]) -> Participants:
-        return RefineParticipants().init_then_refine(chunks)
+        return RefineParticipants().init_then_refine(chunks).to_public()
 
     def _to_markdown(self, result: Participants) -> str:
         if not result.participants:

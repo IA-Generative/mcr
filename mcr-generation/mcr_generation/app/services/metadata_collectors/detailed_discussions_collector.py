@@ -27,7 +27,7 @@ class DetailedDiscussionsCollector(MetadataCollector):
     @observe(name="metadata_collector.detailed_discussions")
     def _extract(self, chunks: list[Chunk]) -> DiscussionsContent:
         meeting_subject = RefineIntent().init_then_refine(chunks)
-        participants = RefineParticipants().init_then_refine(chunks)
+        participants = RefineParticipants().init_then_refine(chunks).to_public()
         return MapReduceDetailedDiscussions(
             meeting_subject.title, participants.participants
         ).map_reduce_all_steps(chunks)
