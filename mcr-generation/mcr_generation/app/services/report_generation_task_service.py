@@ -15,6 +15,9 @@ from mcr_generation.app.schemas.celery_types import (
 )
 from mcr_generation.app.services.notes.notes_extractor import extract_notes
 from mcr_generation.app.services.report_generator import create_report_generator
+from mcr_generation.app.services.report_generator.base_report_generator import (
+    BaseReportGenerator,
+)
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
@@ -58,11 +61,14 @@ def generate_report_from_docx(
 
     report_type_enum = ReportTypes(report_type)
 
-    # extracted_notes is not yet consumed by the generators.
-    _extracted_notes = extract_notes(notes_content, report_type_enum)
+    extracted_notes = extract_notes(notes_content, report_type_enum)
 
     generator = create_report_generator(report_type_enum, custom_prompt=custom_prompt)
-    report = generator.generate(chunks)
+    report: BaseReport | CustomMarkdownReport
+    if isinstance(generator, BaseReportGenerator):
+        report = generator.generate(chunks, extracted_notes=extracted_notes)
+    else:
+        report = generator.generate(chunks)
 
     return report
 

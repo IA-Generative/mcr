@@ -1,4 +1,5 @@
 from mcr_generation.app.schemas.base import DetailedSynthesis
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
 )
@@ -21,8 +22,12 @@ class DetailedSynthesisGenerator(BaseReportGenerator):
     list, and items to monitor).
     """
 
-    def generate(self, chunks: list[Chunk]) -> DetailedSynthesis:
-        header = self.generate_header(chunks)
+    def generate(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> DetailedSynthesis:
+        header = self.generate_header(chunks, extracted_notes=extracted_notes)
 
         map_reduce = MapReduceDetailedDiscussions(
             meeting_subject=header.title,
