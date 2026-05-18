@@ -1,10 +1,12 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pydantic import ValidationError
 
 from mcr_generation.app.exceptions.exceptions import EmptyChunksError
 from mcr_generation.app.services.generic_pipeline.generic_map_reduce_pipeline import (
     GenericMapReducePipeline,
+    _ReduceResponse,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
@@ -55,3 +57,37 @@ async def test_run_skips_reduce_when_no_facts(
         section="generic_pipeline",
         chunk_count=1,
     )
+
+
+class TestReduceResponseHeadingValidator:
+    def test_rejects_h1_at_start(self) -> None:
+        with pytest.raises(ValidationError, match="top-level headings"):
+            _ReduceResponse(markdown="# Titre\n\nCorps du texte.")
+
+    def test_rejects_h2_at_start(self) -> None:
+        with pytest.raises(ValidationError, match="top-level headings"):
+            _ReduceResponse(markdown="## Sous-titre\n\nCorps.")
+
+    def test_rejects_h1_in_middle(self) -> None:
+        with pytest.raises(ValidationError, match="top-level headings"):
+            _ReduceResponse(markdown="Intro.\n\n# Titre tardif\n\nSuite.")
+
+    def test_rejects_h2_in_middle(self) -> None:
+        with pytest.raises(ValidationError, match="top-level headings"):
+            _ReduceResponse(markdown="Intro.\n\n## Tardif.\n\nSuite.")
+
+    def test_accepts_h3_h4_h5_h6(self) -> None:
+        md = "### h3\n#### h4\n##### h5\n###### h6\nParagraphe."
+        assert _ReduceResponse(markdown=md).markdown == md
+
+    def test_accepts_hash_inside_word(self) -> None:
+        md = "Couleur #ff0000 et issue #123 dans le PR."
+        assert _ReduceResponse(markdown=md).markdown == md
+
+    def test_accepts_hash_without_space(self) -> None:
+        md = "Tags : #urgent #refacto"
+        assert _ReduceResponse(markdown=md).markdown == md
+
+    def test_accepts_short_no_content_message(self) -> None:
+        md = "Aucun élément pertinent dans le transcript."
+        assert _ReduceResponse(markdown=md).markdown == md

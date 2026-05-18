@@ -22,6 +22,10 @@ from mcr_generation.app.schemas.base import (
     Topic,
 )
 from mcr_generation.app.services.metadata_collectors import METADATA_COLLECTORS
+from mcr_generation.app.services.metadata_collectors.base import (
+    MetadataCollector,
+    register,
+)
 from mcr_generation.app.services.metadata_collectors.detailed_discussions_collector import (  # noqa: E501
     DetailedDiscussionsCollector,
 )
@@ -61,6 +65,21 @@ def test_registry_contains_expected_ids() -> None:
 def test_registry_entries_have_description() -> None:
     for collector in METADATA_COLLECTORS.values():
         assert isinstance(collector.description, str) and collector.description
+
+
+def test_register_rejects_id_not_in_literal() -> None:
+    class BogusCollector(MetadataCollector):
+        id = "nope"  # type: ignore[assignment]
+        description = "bogus"
+
+        def _extract(self, chunks: list[Chunk]) -> Any:
+            return None
+
+        def _to_markdown(self, result: Any) -> str:
+            return ""
+
+    with pytest.raises(RuntimeError, match="not in CollectorId Literal"):
+        register(BogusCollector())
 
 
 # ---------------------------------------------------------------------------
@@ -107,7 +126,7 @@ def _intent(
 
 def test_title_to_markdown_renders_title_and_objective() -> None:
     md = TitleCollector()._to_markdown(_intent())
-    assert md.startswith("# Réunion Budget")
+    assert md.startswith("**Réunion Budget**")
     assert "_Objectif : Valider le budget_" in md
 
 
@@ -139,9 +158,9 @@ def test_participants_to_markdown_lists_each_participant() -> None:
     md = ParticipantsCollector()._to_markdown(
         Participants(participants=[_participant(name="Alice", role="PO")])
     )
-    assert md.startswith("## Participants")
     assert "**Alice**" in md
     assert "PO" in md
+    assert not md.lstrip().startswith("#")
 
 
 def test_participants_to_markdown_falls_back_to_speaker_id() -> None:
@@ -175,9 +194,9 @@ def test_next_meeting_to_markdown_renders_when_reliable(_mock: MagicMock) -> Non
             justification="ok",
         )
     )
-    assert md.startswith("## Prochaine réunion")
     assert "Suivi budget" in md
     assert "15/03/2026" in md
+    assert not md.lstrip().startswith("#")
 
 
 @patch(
@@ -225,11 +244,12 @@ def test_topics_to_markdown_renders_topics_and_next_steps() -> None:
             next_steps=["Envoyer le CR"],
         )
     )
-    assert "## Sujets et décisions" in md
-    assert "### Budget marketing" in md
+    assert "### Sujets et décisions" in md
+    assert "#### Budget marketing" in md
     assert "**Décision** : Réduire de 10%" in md
-    assert "## Prochaines étapes" in md
+    assert "### Prochaines étapes" in md
     assert "- Envoyer le CR" in md
+    assert not md.lstrip().startswith("## ")
 
 
 def test_topics_to_markdown_handles_empty_content() -> None:
@@ -258,8 +278,7 @@ def test_detailed_discussions_to_markdown_renders_all_sections() -> None:
     md = DetailedDiscussionsCollector()._to_markdown(
         DiscussionsContent(detailed_discussions=[_discussion()])
     )
-    assert md.startswith("## Discussions détaillées")
-    assert "### Préparation démo" in md
+    assert md.startswith("### Préparation démo")
     assert "**Idées clés**" in md
     assert "- Préparer un POC" in md
     assert "**Décisions**" in md
@@ -301,5 +320,5 @@ async def test_participants_collect_end_to_end(mock_cls: MagicMock) -> None:
     md = await METADATA_COLLECTORS["participants"].collect([Chunk(text="x", id=0)])
 
     assert "**Alice**" in md
-    assert md.startswith("## Participants")
+    assert not md.lstrip().startswith("#")
     mock_cls.return_value.init_then_refine.assert_called_once()

@@ -37,8 +37,11 @@ Faits :
 Règles strictes :
 - N'invente rien qui ne soit pas dans les faits.
 - Tu peux ignorer / omettre les faits redondants ou hors-sujet.
-- Sortie : un objet JSON {{ "markdown": string }}, où `markdown` est le texte final
-  formatté en markdown (titres `##` autorisés, listes à puces, paragraphes).
+- **N'émets aucun titre de niveau `#` ou `##` au début ou ailleurs.** Le titre de
+  la section est ajouté par l'appelant. Tu peux utiliser des sous-titres
+  `###`/`####`, du gras, des listes à puces et des paragraphes.
+- Sortie : un objet JSON {{ "markdown": string }}, où `markdown` est le corps
+  de la section, sans titre top-level.
 - Si aucun fait n'est pertinent, renvoie un markdown court qui dit explicitement
   "Aucun élément pertinent dans le transcript".
 """

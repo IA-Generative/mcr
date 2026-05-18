@@ -25,7 +25,7 @@ class ParticipantsCollector(MetadataCollector):
     def _to_markdown(self, result: Participants) -> str:
         if not result.participants:
             return "_Aucun participant identifié._"
-        lines = ["## Participants", ""]
+        lines: list[str] = []
         for p in result.participants:
             label = p.name or p.speaker_id
             role = f" — {p.role}" if p.role else ""
