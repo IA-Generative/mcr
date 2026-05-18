@@ -109,7 +109,9 @@ class TestDetailedSynthesisGeneratorGenerate:
 
                 DetailedSynthesisGenerator().generate(test_chunks)
 
-            mock_generate_header.assert_called_once_with(test_chunks)
+            mock_generate_header.assert_called_once_with(
+                test_chunks, extracted_notes=None
+            )
 
     def test_map_reduce_initialized_and_executed(
         self,
