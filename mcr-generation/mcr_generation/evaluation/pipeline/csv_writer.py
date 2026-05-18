@@ -1,5 +1,3 @@
-"""Write the per-item CSV and the run summary JSON."""
-
 import csv
 import json
 from pathlib import Path
@@ -25,7 +23,7 @@ def _format_cell(value: float | int | None) -> str:
     return str(value)
 
 
-def write_csv(
+def write_csv(  # lint-ignore: no-docstring
     csv_path: Path,
     criteria: list[Criterion],
     results: list[ItemRunResult],

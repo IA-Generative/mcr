@@ -7,15 +7,13 @@ from mcr_generation.app.services.generic_pipeline.generic_map_reduce_pipeline im
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 
-class CustomReportGenerator:
+class CustomReportGenerator:  # lint-ignore: no-docstring
     """Async orchestrator (v0) that runs only `GenericMapReducePipeline`.
 
     Note: does NOT inherit from `BaseReportGenerator` because (a) it's async
     under the hood, and (b) it returns a `CustomMarkdownReport` instead of a
     structured `BaseReport`. The factory exposes a sync `generate()` facade
     via `asyncio.run` for the Celery entrypoint.
-
-    The instruction comes from the constructor argument.
     """
 
     def __init__(self, instruction: str) -> None:

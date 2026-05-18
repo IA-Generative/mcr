@@ -1,5 +1,3 @@
-"""Module for extracting and consolidating detailed discussions from meeting transcripts"""
-
 import contextvars
 from concurrent.futures import ThreadPoolExecutor
 
@@ -111,16 +109,6 @@ class MapReduceDetailedDiscussions:
     def reduce_discussions_into_content(
         self, all_discussions: list[MappedDetailedDiscussion]
     ) -> DiscussionsContent:
-        """
-        Deduplicate and merge related detailed discussions using the LLM.
-
-        Args:
-            all_discussions (list[MappedDetailedDiscussion]): List of MappedDetailedDiscussion
-                objects extracted from chunks.
-
-        Returns:
-            DiscussionsContent: Deduplicated and consolidated list of detailed discussions.
-        """
         if not all_discussions:
             record_empty_map_phase_event(
                 section="detailed_discussions",

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class Intent(BaseModel):
+class Intent(BaseModel):  # lint-ignore: no-docstring - used as prompt to model
     """
     Modèle de sortie pour l'extraction du titre et de l'objet d'une réunion
     à partir d'une transcription diarizée. Toutes les informations doivent être
@@ -43,7 +43,7 @@ class Intent(BaseModel):
     )
 
 
-class NextMeeting(BaseModel):
+class NextMeeting(BaseModel):  # lint-ignore: no-docstring - used as prompt to model
     """
     Modèle de sortie pour l'extraction des informations sur la prochaine réunion
     à partir d'une transcription diarizée. Toutes les informations doivent être
@@ -111,7 +111,7 @@ class Participant(BaseModel):
     )
 
 
-class ParticipantWithThinking(Participant):
+class ParticipantWithThinking(Participant):  # lint-ignore: no-docstring
     """LLM-internal participant carrying chain-of-thought reasoning.
 
     Used during the refine loop so the LLM can read its prior reasoning when

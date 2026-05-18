@@ -1,14 +1,13 @@
-"""Offline evaluation pipeline orchestrator.
-
-Flow per item:
-1. Load transcript → chunks via `chunk_docx_to_document_list`.
-2. Generate a `BaseReport` via the existing report generator.
-3. Render the report to markdown and persist it under `outputs/generated_reports/`.
-4. Score each `Criterion` via the G-Eval scorer:
-   - `scope=global` → compare full markdown vs `expected/reports/<uid>.docx`.
-   - `scope=section:X` → split section X then compare vs `expected/<X>/<uid>.docx`.
-5. Aggregate every item into a CSV + summary JSON.
-"""
+# Offline evaluation pipeline orchestrator.
+#
+# Flow per item:
+# 1. Load transcript → chunks via `chunk_docx_to_document_list`.
+# 2. Generate a `BaseReport` via the existing report generator.
+# 3. Render the report to markdown and persist it under `outputs/generated_reports/`.
+# 4. Score each `Criterion` via the G-Eval scorer:
+#    - `scope=global` → compare full markdown vs `expected/reports/<uid>.docx`.
+#    - `scope=section:X` → split section X then compare vs `expected/<X>/<uid>.docx`.
+# 5. Aggregate every item into a CSV + summary JSON.
 
 from datetime import datetime, timezone
 from io import BytesIO

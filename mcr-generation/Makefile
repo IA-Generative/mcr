@@ -20,9 +20,10 @@ type-check:
 	uv sync --all-extras
 	uv run mypy -p mcr_generation
 
-lint: 
+lint:
 	uv sync --all-extras
 	uv run ruff check
+	uv run python ../scripts/lint_rules/no_docstring.py mcr_generation/
 
 format:
 	uv sync --all-extras

@@ -1,7 +1,3 @@
-"""
-Settings of MCR Generation
-"""
-
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings
 
@@ -9,10 +5,6 @@ ALLOWED_ENVIRONMENTS = ["test", "DEV", "DATA", "STAGING", "PREPROD", "PROD"]
 
 
 class EnvBaseSettings(BaseSettings):
-    """
-    Base settings class to define common configurations
-    """
-
     ENV_MODE: str = Field(description="Environment mode", default="DEV")
 
     @field_validator("ENV_MODE")
@@ -31,10 +23,6 @@ class LoggingSettings(BaseSettings):
 
 
 class LLMConfig(BaseSettings):
-    """
-    Settings parameters for calling an API hosted LLM
-    """
-
     LLM_HUB_API_URL: str = Field(
         ...,
         description="llm hub endpoint serving the llm",
@@ -65,10 +53,6 @@ class LLMConfig(BaseSettings):
 
 
 class LangfuseSettings(EnvBaseSettings):
-    """
-    Settings parameters for Langfuse monitoring
-    """
-
     LANGFUSE_PUBLIC_KEY: str = Field(description="Langfuse public key")
     LANGFUSE_SECRET_KEY: str = Field(description="Langfuse secret key")
     LANGFUSE_HOST: str = Field(description="Langfuse host URL")
@@ -81,10 +65,6 @@ class LangfuseSettings(EnvBaseSettings):
 
 
 class ChunkingConfig(BaseSettings):
-    """
-    Settings of the chunking process
-    """
-
     CHUNK_SIZE: int = Field(
         default=20000, description="Maximum number of character of per chunk"
     )
@@ -111,10 +91,6 @@ class CelerySettings(BaseSettings):
 
 
 class S3Settings(BaseSettings):
-    """
-    Configuration settings for the S3 bucket
-    """
-
     S3_ENDPOINT: str
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
@@ -134,10 +110,6 @@ class ApiSettings(BaseSettings):
 
 
 class SentrySettings(EnvBaseSettings):
-    """
-    Configuration settings for Sentry
-    """
-
     SENTRY_GENERATION_DSN: str = Field(description="Sentry DSN for core service")
     SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
     TRACES_SAMPLE_RATE: float = Field(

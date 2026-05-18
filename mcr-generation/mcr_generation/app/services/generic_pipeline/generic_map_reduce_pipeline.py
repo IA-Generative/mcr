@@ -1,9 +1,3 @@
-"""Generic async map-reduce pipeline producing markdown.
-
-The instruction string is injected verbatim into both map and reduce prompts.
-Callers (rewriter / orchestrator) are responsible for crafting the instruction.
-"""
-
 import asyncio
 
 import instructor
@@ -37,8 +31,6 @@ class _ReduceResponse(BaseModel):
 
 
 class GenericMapReducePipeline:
-    """Generic async map-reduce engine producing markdown."""
-
     def __init__(self, max_concurrency: int = 4) -> None:
         self.llm_config = LLMConfig()
         self.client = instructor.from_openai(

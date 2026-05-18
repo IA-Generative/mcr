@@ -166,10 +166,6 @@ class MappedTakeaway(BaseModel):
 
 
 class MappedDetailedDiscussion(BaseModel):
-    """
-    Modèle de sortie pour une discussion de reunion avec ses détails et decisions extrait d'une transcription de réunion.
-    """
-
     topic: str = Field(
         ...,
         description=(
@@ -214,11 +210,6 @@ class MappedDetailedDiscussion(BaseModel):
 
 
 class MappedDetailedDiscussions(BaseModel):
-    """
-    Modèle regroupant l'ensemble des discussions détaillées extraites d'un même extrait
-    de transcription.
-    """
-
     detailed_discussions: list[MappedDetailedDiscussion] = Field(
         default_factory=list,
         description=(

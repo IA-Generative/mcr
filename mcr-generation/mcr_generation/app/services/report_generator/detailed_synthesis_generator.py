@@ -12,15 +12,6 @@ from mcr_generation.app.services.utils.input_chunker import Chunk
 
 
 class DetailedSynthesisGenerator(BaseReportGenerator):
-    """
-    Concrete report generator for detailed syntheses.
-
-    Extends `BaseReportGenerator` by implementing the `generate` method to produce
-    a `DetailedSynthesis` report. After extracting the header, it populates the
-    various synthesis sections (discussions summary, detailed discussions, to-do
-    list, and items to monitor).
-    """
-
     def generate(self, chunks: list[Chunk]) -> DetailedSynthesis:
         header = self.generate_header(chunks)
 

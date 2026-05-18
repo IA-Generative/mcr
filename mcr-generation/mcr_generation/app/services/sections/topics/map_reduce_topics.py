@@ -1,5 +1,3 @@
-"""Module for extracting and consolidating topics with a topic from meeting transcripts"""
-
 import contextvars
 from concurrent.futures import ThreadPoolExecutor
 
@@ -109,15 +107,6 @@ class MapReduceTopics:
     def reduce_topics_into_content(
         self, all_topics: list[MappedTopic]
     ) -> TopicsContent:
-        """
-        Deduplicate and merge related topics using the LLM.
-
-        Args:
-            all_topics (List[MappedTopic]): List of MappedTopic objects extracted from chunks.
-
-        Returns:
-            TopicsContent: Deduplicated and consolidated list of topics.
-        """
         if not all_topics:
             record_empty_map_phase_event(
                 section="topics",

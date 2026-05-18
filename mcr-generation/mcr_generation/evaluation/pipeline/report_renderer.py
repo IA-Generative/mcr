@@ -1,10 +1,3 @@
-"""Render a generated `BaseReport` into markdown for evaluation.
-
-The rendered markdown uses `## ` section headings whose text is mirrored in
-`section_splitter.SECTION_HEADERS`, so that section-scoped criteria can extract
-the right block.
-"""
-
 from mcr_generation.app.schemas.base import (
     BaseReport,
     DecisionRecord,

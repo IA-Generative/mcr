@@ -18,7 +18,7 @@ from mcr_generation.app.utils.function_execution_timer import log_execution_time
 T = TypeVar("T", bound=BaseModel)
 
 
-class BaseInitThenRefine(ABC, Generic[T]):
+class BaseInitThenRefine(ABC, Generic[T]):  # lint-ignore: no-docstring
     """Seed the result with the first chunk, then refine it iteratively chunk-by-chunk."""
 
     response_model: ClassVar[type[BaseModel]]

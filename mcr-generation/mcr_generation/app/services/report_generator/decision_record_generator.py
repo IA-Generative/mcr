@@ -9,14 +9,6 @@ from mcr_generation.app.services.utils.input_chunker import Chunk
 
 
 class DecisionRecordGenerator(BaseReportGenerator):
-    """
-    Concrete report generator for decision records.
-
-    Extends `BaseReportGenerator` by implementing the `generate` method to produce
-    a `DecisionRecord` report. After extracting the header, it runs a map-reduce
-    step over the transcript chunks to identify topics and next steps.
-    """
-
     def generate(self, chunks: list[Chunk]) -> DecisionRecord:
         header = self.generate_header(chunks)
 
