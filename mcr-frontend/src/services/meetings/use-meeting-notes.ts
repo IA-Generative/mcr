@@ -8,15 +8,15 @@ export type SyncStatus = 'idle' | 'pending' | 'saved';
 const LOCALSTORAGE_DEBOUNCE_MS = 500; // 0.5 seconds
 const API_THROTTLE_MS = 5000; // 5 seconds
 
-export function useMeetingNotes(meetingId: number, serverNotes: string | null) {
+export function useMeetingNotes(meetingId: number, serverNotes?: string | null) {
   const localStorageKey = `meeting-notes-${meetingId}`;
   const savedLocally = localStorage.getItem(localStorageKey);
 
   const note = ref<string>(savedLocally ?? serverNotes ?? '');
   const syncStatus = ref<SyncStatus>('idle');
 
-  const { updateNotesMutation } = useMeetings();
-  const { mutateAsync } = updateNotesMutation();
+  const { updateMeetingOptimistically } = useMeetings();
+  const { mutateAsync } = updateMeetingOptimistically();
 
   const debouncedSaveToLocalStorage = useDebounceFn(() => {
     localStorage.setItem(localStorageKey, note.value);
@@ -24,7 +24,7 @@ export function useMeetingNotes(meetingId: number, serverNotes: string | null) {
   }, LOCALSTORAGE_DEBOUNCE_MS);
 
   const doSaveToServer = async () => {
-    await mutateAsync({ id: meetingId, notes: note.value });
+    await mutateAsync({ id: meetingId, payload: { notes: note.value } });
     localStorage.removeItem(localStorageKey);
   };
 

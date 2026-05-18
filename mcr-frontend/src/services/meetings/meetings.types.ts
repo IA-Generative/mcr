@@ -40,7 +40,7 @@ type MeetingDtoBase = {
   creation_date: string;
   start_date?: string;
   end_date?: string;
-  notes: string | null;
+  notes?: string | null;
 };
 
 export interface OnlineMeetingDto extends MeetingDtoBase {
@@ -73,14 +73,23 @@ export type MeetingDetailDto = MeetingDto & {
   deliverables: DeliverableDto[];
 };
 
-export type AddOnlineMeetingDto = Omit<
+export type AddOnlineMeetingDto = Pick<
   OnlineMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date' | 'notes'
+  | 'name'
+  | 'name_platform'
+  | 'creation_date'
+  | 'url'
+  | 'meeting_password'
+  | 'meeting_platform_id'
+  | 'notes'
 >;
-export type AddImportMeetingDto = Omit<ImportMeetingDto, 'id' | 'status' | 'notes'>;
-export type AddRecordMeetingDto = Omit<
+export type AddImportMeetingDto = Pick<
+  ImportMeetingDto,
+  'name' | 'name_platform' | 'creation_date' | 'start_date' | 'end_date' | 'notes'
+>;
+export type AddRecordMeetingDto = Pick<
   RecordMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date' | 'notes'
+  'name' | 'name_platform' | 'creation_date' | 'notes'
 >;
 
 export type UpdateOnlineMeetingDto = Partial<AddOnlineMeetingDto>;
@@ -92,8 +101,6 @@ export type UpdateMeetingDto =
   | UpdateOnlineMeetingDto
   | UpdateImportMeetingDto
   | UpdateRecordMeetingDto;
-
-export type UpdateNotesDto = { notes: string | null };
 
 export type AddImportMeetingDtoAndFile = {
   dto: AddImportMeetingDto;

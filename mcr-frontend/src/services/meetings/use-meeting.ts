@@ -14,7 +14,6 @@ import {
   startTranscription,
   stopCapture,
   update,
-  updateNotes,
   uploadFileWithPresignedUrl,
   uploadTranscription,
 } from './meetings.service';
@@ -26,7 +25,6 @@ import type {
   MeetingStatus,
   ReportGenerationRequest,
   UpdateMeetingDto,
-  UpdateNotesDto,
 } from './meetings.types';
 import { type Ref } from 'vue';
 import type { ExtraMutationOptions } from '@/utils/types';
@@ -223,11 +221,11 @@ function generateReportMutation(options?: { onError?: (error: Error) => void }) 
   });
 }
 
-function updateNotesMutation() {
+function updateMeetingOptimistically() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, notes }: { id: number } & UpdateNotesDto) => updateNotes(id, { notes }),
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateMeetingDto }) => update(id, payload),
     onSuccess: (data, { id }) => {
       queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDetailDto | undefined) =>
         old ? { ...old, notes: data.notes } : undefined,
@@ -316,7 +314,7 @@ export function useMeetings() {
     addMeetingMutation,
     deleteMeetingMutation,
     updateMeetingMutation,
-    updateNotesMutation,
+    updateMeetingOptimistically,
     startCaptureMutation,
     stopCaptureMutation,
     startTranscriptionMutation,

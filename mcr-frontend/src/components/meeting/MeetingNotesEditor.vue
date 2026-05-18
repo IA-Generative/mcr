@@ -32,7 +32,7 @@ import { useMeetingNotes } from '@/services/meetings/use-meeting-notes';
 
 const props = defineProps<{
   meetingId: number;
-  notes: string | null;
+  notes?: string | null;
 }>();
 
 const { note, syncStatus, onUpdate } = useMeetingNotes(props.meetingId, props.notes);
