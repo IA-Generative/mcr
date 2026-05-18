@@ -37,7 +37,7 @@ Voici la liste initiale des topics extraits (au format JSON) :
 <topics>
 {topics}
 </topics>
-
+{notes_section}
 ## Ta tâche de consolidation
 
 1. **Regrouper et fusionner** les sujets similaires ou redondants:

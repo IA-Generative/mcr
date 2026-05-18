@@ -12,6 +12,9 @@ from openai import OpenAI
 from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.schemas.base import Participant
+from mcr_generation.app.services.sections.base.prompts import (
+    NOTES_SECTION_TEMPLATE,
+)
 from mcr_generation.app.services.sections.topics.prompts import (
     MAP_PROMPT_TEMPLATE,
     REDUCE_PROMPT_TEMPLATE,
@@ -58,8 +61,12 @@ class MapReduceTopics:
         self.speaker_mapping = str(participants) if participants else None
 
     @log_execution_time
-    @observe(name="section_content_generation")
-    def map_reduce_all_steps(self, chunks: list[Chunk]) -> TopicsContent:
+    @observe(name="section_topics_generation")
+    def map_reduce_all_steps(
+        self,
+        chunks: list[Chunk],
+        notes_hint: TopicsContent | None = None,
+    ) -> TopicsContent:
         self._last_chunk_count = len(chunks)
         successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
 
@@ -70,7 +77,7 @@ class MapReduceTopics:
 
         logger.debug("Mapped topics by chunk: {}", successful)
         all_topics = [topic for sublist in successful for topic in sublist]
-        return self.reduce_topics_into_content(all_topics)
+        return self.reduce_topics_into_content(all_topics, notes_hint=notes_hint)
 
     def _map_chunks_in_parallel(
         self, chunks: list[Chunk]
@@ -105,20 +112,30 @@ class MapReduceTopics:
 
         return successful, failed_chunk_ids
 
-    @observe(name="section_content_reduce")
+    @observe(name="section_topics_reduce")
     def reduce_topics_into_content(
-        self, all_topics: list[MappedTopic]
+        self,
+        all_topics: list[MappedTopic],
+        notes_hint: TopicsContent | None = None,
     ) -> TopicsContent:
         """
         Deduplicate and merge related topics using the LLM.
 
         Args:
             all_topics (List[MappedTopic]): List of MappedTopic objects extracted from chunks.
+            notes_hint (TopicsContent | None): Optional topics extracted from the meeting
+                notes, used as a human-priority signal during consolidation.
 
         Returns:
             TopicsContent: Deduplicated and consolidated list of topics.
         """
         if not all_topics:
+            if notes_hint is not None:
+                logger.warning(
+                    "Section topics: notes hint provided but 0 item produced by the "
+                    "map phase. Short-circuiting to empty TopicsContent (notes do "
+                    "not substitute for the transcript)."
+                )
             record_empty_map_phase_event(
                 section="topics",
                 chunk_count=self._last_chunk_count,
@@ -131,6 +148,7 @@ class MapReduceTopics:
             topics=topics_input,
             meeting_subject=self.meeting_subject or "Inconnu",
             speaker_mapping=self.speaker_mapping or "Non fourni",
+            notes_section=self._build_notes_section(notes_hint),
         )
 
         resp = call_llm_with_structured_output(
@@ -141,7 +159,14 @@ class MapReduceTopics:
 
         return resp
 
-    @observe(name="section_content_map")
+    def _build_notes_section(self, notes_hint: TopicsContent | None) -> str:
+        if notes_hint is None:
+            return ""
+        return NOTES_SECTION_TEMPLATE.format(
+            notes_hint_json=notes_hint.model_dump_json(),
+        )
+
+    @observe(name="section_topics_map")
     def map_extract_topics(self, chunk: Chunk) -> list[MappedTopic]:
         prompt = PromptTemplate(
             template=MAP_PROMPT_TEMPLATE,
