@@ -3,7 +3,6 @@ from mcr_meeting.app.db.deliverable_repository import (
     get_by_id,
     list_by_meeting,
     save_deliverable,
-    set_external_url,
     set_status,
     soft_delete_by_id,
 )
@@ -26,17 +25,6 @@ def create_pending_deliverable(
                 status=DeliverableStatus.PENDING,
             )
         )
-
-
-def mark_deliverable_available(
-    deliverable_id: int, external_url: str | None
-) -> Deliverable:
-    deliverable = get_by_id(deliverable_id=deliverable_id)
-    with UnitOfWork():
-        if external_url is not None:
-            set_external_url(deliverable_id=deliverable_id, external_url=external_url)
-        set_status(deliverable_id=deliverable_id, status=DeliverableStatus.AVAILABLE)
-    return deliverable
 
 
 def mark_deliverable_failed(deliverable_id: int) -> Deliverable:

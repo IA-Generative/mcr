@@ -14,15 +14,13 @@ from mcr_meeting.app.models.deliverable_model import (
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    complete_report,
     fail_report,
 )
-from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
+from mcr_meeting.app.schemas.report_generation import ReportType
 from mcr_meeting.app.services.deliverable_service import (
     create_pending_deliverable,
     find_active_deliverable,
     get_deliverable,
-    mark_deliverable_available,
     mark_deliverable_failed,
     soft_delete_deliverable_row,
 )
@@ -88,23 +86,6 @@ def _create_pending_with_race_recovery(
         if existing is None:
             raise
         return existing
-
-
-def mark_deliverable_success(
-    deliverable_id: int,
-    external_url: str | None,
-    report_response: ReportResponse,
-) -> Deliverable:
-    deliverable = mark_deliverable_available(
-        deliverable_id=deliverable_id, external_url=external_url
-    )
-    _apply_idempotent_sm_call(
-        complete_report,
-        meeting_id=deliverable.meeting_id,
-        expected_target_status=MeetingStatus.REPORT_DONE,
-        report_response=report_response,
-    )
-    return deliverable
 
 
 def mark_deliverable_failure(deliverable_id: int) -> Deliverable:
