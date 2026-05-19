@@ -2,11 +2,11 @@
 
 from collections.abc import Iterable
 
-from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
+from mcr_meeting.app.configs.base import TranscriptionApiSettings
 from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
-_settings = WhisperTranscriptionSettings()
+_settings = TranscriptionApiSettings()
 MAX_CHUNK_DURATION = _settings.MAX_CHUNK_DURATION
 SPLIT_SEARCH_WINDOW_RATIO = _settings.SPLIT_SEARCH_WINDOW_RATIO
 
