@@ -1,9 +1,3 @@
-"""Single Playwright bot that joins a Visio meeting and streams a WAV file.
-
-The bot joins as a guest (no auth), un-mutes itself, and lets Chromium emit
-the WAV file via ``--use-file-for-fake-audio-capture``. No recording happens.
-"""
-
 import asyncio
 
 from loguru import logger
@@ -13,9 +7,6 @@ from config import BenchmarkConfig, BotTask
 
 WAITING_ROOM_TIMEOUT_MS = 300_000
 DEFAULT_ACTION_TIMEOUT_MS = 60_000
-
-# mirror of VisioStrategy — keep in sync
-# Source: mcr-capture-worker/mcr_capture_worker/services/connection_strategies/visio_connection.py
 NAME_INPUT_SELECTOR = 'input[autocomplete="name"]'
 DISABLE_CAMERA_BUTTON_NAME = "Disable camera"
 JOIN_BUTTON_NAME = "Join"
