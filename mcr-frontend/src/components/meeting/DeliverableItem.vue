@@ -14,7 +14,7 @@
       </span>
       <div class="flex items-center gap-1">
         <a
-          v-if="externalUrl"
+          v-if="externalUrl && isFichierEnabled"
           :href="externalUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { useFeatureFlag } from '@/composables/use-feature-flag';
 import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
 
 defineProps<{
@@ -52,6 +53,8 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{ download: [id: number] }>();
+
+const isFichierEnabled = useFeatureFlag('fichier-integration');
 </script>
 
 <style scoped>
