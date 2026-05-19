@@ -182,3 +182,122 @@ class TestReplaceSpeakerNameIfAvailable:
         assert segments[0].speaker == "John Doe"
         assert segments[1].speaker == "Jane Smith"
         assert segments[2].speaker == "John Doe"
+
+
+class TestMergeParticipants:
+    """Tests for ParticipantExtraction._merge_participants."""
+
+    def _make(self, speaker_id: str, name: str | None) -> Participant:
+        return Participant(
+            speaker_id=speaker_id,
+            name=name,
+            confidence=1.0 if name else None,
+            association_justification=None,
+        )
+
+    def test_should_preserve_participants_absent_from_refined(self) -> None:
+        current = [
+            self._make("LOCUTEUR_01", "Alice"),
+            self._make("LOCUTEUR_02", "Bob"),
+        ]
+        refined = [self._make("LOCUTEUR_03", "Charlie")]
+        merged = ParticipantExtraction._merge_participants(current, refined)
+        by_id = {p.speaker_id: p for p in merged}
+        assert set(by_id) == {"LOCUTEUR_01", "LOCUTEUR_02", "LOCUTEUR_03"}
+        assert by_id["LOCUTEUR_01"].name == "Alice"
+        assert by_id["LOCUTEUR_02"].name == "Bob"
+        assert by_id["LOCUTEUR_03"].name == "Charlie"
+
+    def test_should_overwrite_existing_speaker_when_refined(self) -> None:
+        current = [self._make("LOCUTEUR_01", None)]
+        refined = [self._make("LOCUTEUR_01", "Alice")]
+        merged = ParticipantExtraction._merge_participants(current, refined)
+        assert len(merged) == 1
+        assert merged[0].name == "Alice"
+
+    def test_should_handle_empty_refined(self) -> None:
+        current = [self._make("LOCUTEUR_01", "Alice")]
+        merged = ParticipantExtraction._merge_participants(current, [])
+        assert [p.name for p in merged] == ["Alice"]
+
+    def test_should_not_downgrade_when_refined_has_lower_confidence(self) -> None:
+        current = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Alice",
+                confidence=0.95,
+                association_justification="auto-presentation",
+            )
+        ]
+        refined = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Jeanne",
+                confidence=0.3,
+                association_justification="no clue in this chunk",
+            )
+        ]
+        merged = ParticipantExtraction._merge_participants(current, refined)
+        assert merged[0].name == "Alice"
+        assert merged[0].confidence == 0.95
+
+    def test_should_not_downgrade_when_refined_confidence_is_none(self) -> None:
+        current = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Alice",
+                confidence=0.7,
+                association_justification="interpellation",
+            )
+        ]
+        refined = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Jeanne",
+                confidence=None,
+                association_justification=None,
+            )
+        ]
+        merged = ParticipantExtraction._merge_participants(current, refined)
+        assert merged[0].name == "Alice"
+
+    def test_should_upgrade_when_refined_has_higher_confidence(self) -> None:
+        current = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Alice",
+                confidence=0.6,
+                association_justification="weak inference",
+            )
+        ]
+        refined = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Alice Dupont",
+                confidence=0.95,
+                association_justification="explicit auto-presentation",
+            )
+        ]
+        merged = ParticipantExtraction._merge_participants(current, refined)
+        assert merged[0].name == "Alice Dupont"
+        assert merged[0].confidence == 0.95
+
+    def test_should_promote_from_null_current_confidence(self) -> None:
+        current = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name=None,
+                confidence=None,
+                association_justification=None,
+            )
+        ]
+        refined = [
+            Participant(
+                speaker_id="LOCUTEUR_01",
+                name="Alice",
+                confidence=0.4,
+                association_justification="hint in chunk 2",
+            )
+        ]
+        merged = ParticipantExtraction._merge_participants(current, refined)
+        assert merged[0].name == "Alice"
