@@ -1,4 +1,4 @@
-.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage
+.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage init-drive start-drive stop-drive
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
 
@@ -15,6 +15,9 @@ help:
 	@echo "pre-commit                : Run the all 3 previous command in all python packages."
 	@echo "coverage                  : Run test coverage in all python packages."
 	@echo "start-playwright-with-gui : Stop playwright docker service and run the bot locally with a browser gui."
+	@echo "init-drive                : One-time Drive setup (build images, copy config)"
+	@echo "start-drive               : Start MCR + Drive, configure Keycloak"
+	@echo "stop-drive                : Stop both stacks"
 
 define CALL_TARGET_CMD_ON_ALL_PKGS
 	for pkg in $(PACKAGES); do \
@@ -56,6 +59,22 @@ start-playwright-with-gui:
 	cd mcr-capture-worker && \
 	uv run playwright install && \
 	uv run -m mcr_capture_worker.worker
+
+init-drive:  ## One-time: copy config, build images
+	./docker/drive/setup-drive.sh
+
+start-drive:  ## Start MCR + Drive
+	docker network create shared-network 2>/dev/null || true
+	docker compose --env-file .env.local.docker --env-file .env up -d --wait keycloak
+	@echo "Keycloak ready — starting Drive..."
+	cd ../drive && docker compose up -d
+	cd ../drive && make migrate
+	cd ../drive && make configure-wopi
+	@echo "Drive ready at http://localhost:3000"
+
+stop-drive:  ## Stop both stacks
+	cd ../drive && docker compose down
+	docker compose down
 
 coverage:
 	@sh -c '\
