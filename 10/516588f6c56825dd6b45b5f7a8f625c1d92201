@@ -1,0 +1,30 @@
+mcr-frontend/src/locales/fr.json
+  s_486081e617e3d3::t_ffe23fb9eedb8c 439-442
+mcr-frontend/src/components/meeting/DeliverableItem.vue
+  s_486081e617e3d3::t_3f532d38acfc31 21
+  s_486081e617e3d3::t_40d48a4326e77b 78-79
+  s_486081e617e3d3::t_5cbcd7383a95cf 77
+  s_486081e617e3d3::t_a0127c3ad75790 2,4,15-20,22-37,39,51,69
+  s_486081e617e3d3::t_e2ce902f2ada68 72-76
+mcr-frontend/src/components/meeting/MeetingDeliverableList.vue
+  s_486081e617e3d3::t_4e4e14240c29c8 43
+  s_486081e617e3d3::t_98931119669f9c 23
+mcr-frontend/src/components/meeting/MeetingDeliverableCard.vue
+  s_486081e617e3d3::t_a9ea2df8a1a274 181
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "10516588f6c56825dd6b45b5f7a8f625c1d92201",
+  "prompts": {},
+  "sessions": {
+    "s_486081e617e3d3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "714754cd-ee36-4dba-a74b-394609295398",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
