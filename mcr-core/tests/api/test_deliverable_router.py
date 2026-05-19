@@ -1,6 +1,6 @@
 from io import BytesIO
 from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,6 +19,8 @@ from mcr_meeting.main import app
 from tests.api.conftest import PrefixedTestClient
 from tests.factories import MeetingFactory, UserFactory
 from tests.factories.deliverable_factory import DeliverableFactory
+from tests.mocks.in_memory_email import InMemoryEmailClient
+from tests.mocks.in_memory_s3 import InMemoryS3
 
 api_settings = ApiSettings()
 
@@ -334,8 +336,8 @@ class TestSuccessCallbackRoute:
         self,
         deliverables_client: PrefixedTestClient,
         user_fixture: User,
-        mock_send_email: MagicMock,
-        mock_persist_report_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
         db_session: Any,
     ) -> None:
         meeting = MeetingFactory.create(
@@ -363,7 +365,8 @@ class TestSuccessCallbackRoute:
         assert pending.status == DeliverableStatus.AVAILABLE
         assert pending.external_url == "https://drive.example.com/abc"
         assert meeting.status == MeetingStatus.REPORT_DONE
-        mock_persist_report_docx.assert_called_once()
+        assert len(in_memory_s3.objects) == 1
+        assert len(in_memory_email.sent) == 1
 
 
 class TestFailureCallbackRoute:
