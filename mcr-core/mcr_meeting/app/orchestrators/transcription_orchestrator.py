@@ -1,6 +1,7 @@
 from fastapi import UploadFile
 from pydantic import UUID4
 
+from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_transcription,
     update_transcription,
@@ -24,6 +25,7 @@ from mcr_meeting.app.services.transcription_task_service import (
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
+from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 
 
 def finalize_transcription(
@@ -46,7 +48,10 @@ async def get_or_create_transcription_docx(
 
     docx_buffer = retrieve_or_create_formatted_docx_transcription(meeting)
 
-    filename = f"Transcription_{meeting.name}.docx"
+    filename = build_deliverable_filename(
+        deliverable_type=DeliverableType.TRANSCRIPTION,
+        meeting_name=meeting.name or "",
+    )
 
     return TranscriptionDocxResult(
         buffer=docx_buffer,
