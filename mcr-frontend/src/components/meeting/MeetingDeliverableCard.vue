@@ -44,7 +44,7 @@ import {
 import { getTranscriptionStatus } from '@/services/deliverables/deliverables.service';
 import type { MeetingStatus } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
-import { downloadFileFromAxios } from '@/utils/file';
+import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
@@ -184,7 +184,7 @@ const displayedDeliverables = computed(() =>
 function onDownload(deliverableId: number): void {
   downloadMutate(deliverableId, {
     onSuccess: (response) => {
-      downloadFileFromAxios(response, `livrable_${deliverableId}.docx`);
+      downloadFileFromAxios(response, extractFilenameFromResponse(response));
     },
     onError: () => {
       toaster.addErrorMessage(t('error.default')!);
@@ -206,7 +206,7 @@ const { mutate: downloadTranscription } = downloadMutation();
 function onDownloadTranscription(): void {
   downloadTranscription(props.meetingId, {
     onSuccess: (response) => {
-      downloadFileFromAxios(response, `transcription_${props.meetingId}.docx`);
+      downloadFileFromAxios(response, extractFilenameFromResponse(response));
     },
     onError: () => {
       toaster.addErrorMessage(t('error.default')!);

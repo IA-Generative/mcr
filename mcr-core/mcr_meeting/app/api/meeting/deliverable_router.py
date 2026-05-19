@@ -19,6 +19,7 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableResponse,
     DeliverableSuccessRequest,
 )
+from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -88,7 +89,9 @@ async def get_deliverable_file_route(
     result = get_deliverable_file(
         deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
-    filename = f"compte_rendu_{result.meeting_name}.docx"
+    filename = build_deliverable_filename(
+        deliverable_type=result.deliverable_type, meeting_name=result.meeting_name
+    )
     headers = create_safe_filename_header(filename)
     return StreamingResponse(result.buffer, media_type=DOCX_MIME_TYPE, headers=headers)
 
