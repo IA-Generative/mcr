@@ -26,7 +26,6 @@ from mcr_meeting.app.services.feature_flag_service import (
     get_feature_flag_client,
 )
 from mcr_meeting.main import app
-from tests.mocks.email_mocks import mock_send_email as mock_send_email  # noqa: F401
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 from tests.mocks.in_memory_redis import InMemoryRedis
@@ -34,7 +33,6 @@ from tests.mocks.in_memory_s3 import InMemoryS3
 from tests.mocks.report_task_mocks import (
     mock_persist_report_docx as mock_persist_report_docx,  # noqa: F401
 )
-from tests.mocks.s3_mocks import mock_s3_put as mock_s3_put  # noqa: F401
 
 # --- TEST DB SETUP ---
 # Use a temporary SQLite file for the test DB
