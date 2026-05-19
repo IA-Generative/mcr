@@ -26,12 +26,15 @@ def _is_keycloak_configured() -> bool:
     )
 
 
+_KEYCLOAK_TIMEOUT_SECONDS = 10
+
 _keycloak: KeycloakOpenID | None = (
     KeycloakOpenID(
         server_url=_settings.KEYCLOAK_URL,
         client_id=_settings.KEYCLOAK_CORE_CLIENT_ID,
         client_secret_key=_settings.KEYCLOAK_CORE_CLIENT_SECRET,
         realm_name=_settings.KEYCLOAK_REALM,
+        timeout=_KEYCLOAK_TIMEOUT_SECONDS,
     )
     if _is_keycloak_configured()
     else None

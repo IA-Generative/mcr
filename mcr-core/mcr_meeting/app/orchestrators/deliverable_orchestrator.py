@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import UUID4, BaseModel, ConfigDict
 from sqlalchemy.exc import IntegrityError
 
+from mcr_meeting.app.db.meeting_repository import get_meeting_by_id
 from mcr_meeting.app.exceptions.exceptions import BadRequestException
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
@@ -31,10 +32,12 @@ from mcr_meeting.app.services.deliverable_service import (
 from mcr_meeting.app.services.deliverable_service import (
     list_deliverables_for_meeting as _service_list_for_meeting,
 )
+from mcr_meeting.app.services.drive_upload_service import try_upload_to_drive
 from mcr_meeting.app.services.meeting_service import get_meeting_service
 from mcr_meeting.app.services.report_task_service import (
     get_formatted_report_from_s3,
     get_typed_deliverable_from_s3,
+    persist_report_docx,
 )
 from mcr_meeting.app.services.transcription_task_service import (
     get_formatted_transcription_from_s3,
@@ -141,9 +144,21 @@ def request_deliverable(
 
 def mark_deliverable_success(
     deliverable_id: int,
-    external_url: str | None,
     report_response: ReportResponse,
 ) -> Deliverable:
+    deliverable = get_deliverable(deliverable_id=deliverable_id)
+    meeting = get_meeting_by_id(meeting_id=deliverable.meeting_id)
+
+    docx_buffer = persist_report_docx(
+        meeting_id=deliverable.meeting_id, report_response=report_response
+    )
+
+    external_url = try_upload_to_drive(
+        user_keycloak_uuid=str(meeting.owner.keycloak_uuid),
+        filename=f"Compte_Rendu_{meeting.name}.docx",
+        content=docx_buffer.getvalue(),
+    )
+
     deliverable = mark_deliverable_available(
         deliverable_id=deliverable_id, external_url=external_url
     )

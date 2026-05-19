@@ -15,10 +15,12 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingStatus,
 )
 from mcr_meeting.app.models.user_model import User
+from mcr_meeting.app.services.redis_token_store import get_refresh_token
 from mcr_meeting.main import app
 from tests.api.conftest import PrefixedTestClient
 from tests.factories import MeetingFactory, UserFactory
 from tests.factories.deliverable_factory import DeliverableFactory
+from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 
 api_settings = ApiSettings()
 
@@ -216,6 +218,58 @@ class TestPostDeliverableRoute:
             "deliverable_id": deliverable_id,
         }
 
+    def test_stores_offline_token_when_access_token_header_provided(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        in_memory_keycloak: InMemoryKeycloak,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        in_memory_keycloak.exchange_refresh_token = "offline-refresh-token"
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
+            headers={
+                "X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid),
+                "X-User-Access-Token": "user-access-token",
+            },
+        )
+
+        assert response.status_code == 202
+        assert (
+            get_refresh_token(str(user_fixture.keycloak_uuid))
+            == "offline-refresh-token"
+        )
+
+    def test_returns_202_without_access_token_header(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 202
+        assert get_refresh_token(str(user_fixture.keycloak_uuid)) is None
+
 
 class TestPostCustomReportRoute:
     def test_returns_202_for_custom_report_with_prompt(
@@ -336,8 +390,12 @@ class TestSuccessCallbackRoute:
         user_fixture: User,
         mock_send_email: MagicMock,
         mock_persist_report_docx: MagicMock,
+        mock_upload_authenticated_for_user: MagicMock,
         db_session: Any,
     ) -> None:
+        mock_upload_authenticated_for_user.return_value = (
+            "https://drive.example.com/explorer/items/files/abc"
+        )
         meeting = MeetingFactory.create(
             owner=user_fixture,
             status=MeetingStatus.REPORT_PENDING,
@@ -351,19 +409,18 @@ class TestSuccessCallbackRoute:
 
         response = deliverables_client.post(
             f"/{pending.id}/success",
-            json={
-                "external_url": "https://drive.example.com/abc",
-                "report_response": _decision_record_body(),
-            },
+            json={"report_response": _decision_record_body()},
         )
 
         assert response.status_code == 200
         db_session.refresh(pending)
         db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.AVAILABLE
-        assert pending.external_url == "https://drive.example.com/abc"
+        assert pending.external_url == (
+            "https://drive.example.com/explorer/items/files/abc"
+        )
         assert meeting.status == MeetingStatus.REPORT_DONE
-        mock_persist_report_docx.assert_called_once()
+        mock_upload_authenticated_for_user.assert_called_once()
 
 
 class TestFailureCallbackRoute:

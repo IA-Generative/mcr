@@ -30,6 +30,9 @@ from tests.mocks.in_memory_redis import InMemoryRedis
 from tests.mocks.report_task_mocks import (
     mock_persist_report_docx as mock_persist_report_docx,  # noqa: F401
 )
+from tests.mocks.report_task_mocks import (
+    mock_upload_authenticated_for_user as mock_upload_authenticated_for_user,  # noqa: F401
+)
 from tests.mocks.s3_mocks import mock_s3_put as mock_s3_put  # noqa: F401
 
 # --- TEST DB SETUP ---
