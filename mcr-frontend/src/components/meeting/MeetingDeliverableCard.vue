@@ -178,6 +178,7 @@ const displayedDeliverables = computed(() =>
     status: mapDeliverableStatus(d.status as Exclude<typeof d.status, 'IN_PROGRESS'>),
     fileFormat: 'DOCX',
     fileSize: undefined,
+    externalUrl: d.external_url,
   })),
 );
 
