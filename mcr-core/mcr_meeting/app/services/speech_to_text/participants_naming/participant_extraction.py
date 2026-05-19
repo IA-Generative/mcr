@@ -55,9 +55,24 @@ class ParticipantExtraction(LLMPostProcessing):
         # Refine with subsequent chunks
         if len(chunks) > 1:
             for chunk in chunks[1:]:
-                participants = self._refine(participants, chunk)
+                refined = self._refine(participants, chunk)
+                participants = self._merge_participants(participants, refined)
 
         return participants
+
+    @staticmethod
+    def _merge_participants(
+        current: list[Participant], refined: list[Participant]
+    ) -> list[Participant]:
+        def _conf(p: Participant) -> float:
+            return p.confidence if p.confidence is not None else -1.0
+
+        merged: dict[str, Participant] = {p.speaker_id: p for p in current}
+        for p in refined:
+            existing = merged.get(p.speaker_id)
+            if existing is None or _conf(p) >= _conf(existing):
+                merged[p.speaker_id] = p
+        return list(merged.values())
 
     def _format_segments_for_llm(
         self, segments: list[DiarizedTranscriptionSegment]
