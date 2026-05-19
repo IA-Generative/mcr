@@ -7,6 +7,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
     TaskCreationException,
 )
+from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.deliverable_model import DeliverableType
@@ -40,7 +41,6 @@ from mcr_meeting.app.services.transcription_task_service import (
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
-from mcr_meeting.app.utils.celery_producer import celery_producer_app
 
 
 def after_start_capture_bot_handler(
