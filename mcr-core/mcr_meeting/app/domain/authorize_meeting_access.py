@@ -4,7 +4,7 @@ from mcr_meeting.app.exceptions.exceptions import ForbiddenAccessException
 from mcr_meeting.app.models.meeting_model import Meeting
 
 
-def validate_meeting_ownership(
+def authorize_meeting_access(
     meeting: Meeting, current_user_keycloak_uuid: UUID4
 ) -> None:
     if (
