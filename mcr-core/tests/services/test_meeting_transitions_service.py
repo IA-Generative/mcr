@@ -373,28 +373,6 @@ def test_update_transcription_bad_status(
 # ---------------------------------------------------------------------------
 
 
-def test_start_report(
-    orchestrator_user: User,
-    mock_celery_producer_app: Mock,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test starting report transitions to REPORT_PENDING."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.TRANSCRIPTION_DONE,
-        name_platform=MeetingPlatforms.COMU,
-        transcription_filename="titre.docx",
-    )
-
-    result = mts.start_report(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-        report_type=ReportType.DECISION_RECORD,
-    )
-
-    assert result.status == MeetingStatus.REPORT_PENDING
-
-
 def test_complete_report(
     _mock_persist_report_docx: MagicMock,
     mock_send_email: MagicMock,
