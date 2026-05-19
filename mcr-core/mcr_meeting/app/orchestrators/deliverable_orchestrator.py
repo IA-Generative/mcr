@@ -17,7 +17,6 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_report,
     fail_report,
     reset_report,
-    start_report,
 )
 from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
 from mcr_meeting.app.services.deliverable_service import (
@@ -90,54 +89,6 @@ def _create_pending_with_race_recovery(
         if existing is None:
             raise
         return existing
-
-
-def request_deliverable(
-    meeting_id: int,
-    user_keycloak_uuid: UUID4,
-    deliverable_type: DeliverableType,
-    custom_prompt: str | None = None,
-) -> Deliverable:
-    report_type = _REPORT_TYPE_BY_DELIVERABLE[deliverable_type]
-
-    meeting = get_meeting(meeting_id=meeting_id, user_keycloak_uuid=user_keycloak_uuid)
-
-    existing = find_active_deliverable(
-        meeting_id=meeting.id, deliverable_type=deliverable_type
-    )
-    if existing is not None and existing.status == DeliverableStatus.PENDING:
-        return existing
-
-    if existing is not None:
-        # Soft-delete (not hard) so the partial unique index — which excludes
-        # DELETED rows — admits the next INSERT.
-        soft_delete_deliverable_row(deliverable_id=existing.id)
-
-    deliverable = _create_pending_with_race_recovery(
-        meeting_id=meeting.id, deliverable_type=deliverable_type
-    )
-    if deliverable.status != DeliverableStatus.PENDING:
-        return deliverable
-
-    if meeting.status in (MeetingStatus.REPORT_DONE, MeetingStatus.REPORT_FAILED):
-        _apply_idempotent_sm_call(
-            reset_report,
-            meeting_id=meeting.id,
-            expected_target_status=MeetingStatus.TRANSCRIPTION_DONE,
-            user_keycloak_uuid=user_keycloak_uuid,
-        )
-
-    _apply_idempotent_sm_call(
-        start_report,
-        meeting_id=meeting.id,
-        expected_target_status=MeetingStatus.REPORT_PENDING,
-        user_keycloak_uuid=user_keycloak_uuid,
-        report_type=report_type,
-        deliverable_id=deliverable.id,
-        custom_prompt=custom_prompt,
-    )
-
-    return deliverable
 
 
 def mark_deliverable_success(
