@@ -7,6 +7,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
     TaskCreationException,
 )
+from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
@@ -33,7 +34,6 @@ from mcr_meeting.app.services.meeting_transition_record_service import (
     create_transition_record_service,
 )
 from mcr_meeting.app.services.report_task_service import persist_report_docx
-from mcr_meeting.app.services.s3_service import get_transcription_object_name
 from mcr_meeting.app.services.transcription_task_service import (
     retrieve_or_create_formatted_docx_transcription,
 )
