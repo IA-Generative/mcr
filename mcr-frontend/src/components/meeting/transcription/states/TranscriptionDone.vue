@@ -98,9 +98,8 @@
 <script setup lang="ts">
 import { useMeetings } from '@/services/meetings/use-meeting';
 import useToaster from '@/composables/use-toaster';
-import { downloadFileFromAxios } from '@/utils/file';
+import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file';
 import { useI18n } from 'vue-i18n';
-import { sanitizeFilename } from '@/utils/formatters';
 import { isAxiosError } from 'axios';
 import HttpService, { API_PATHS } from '@/services/http/http.service';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
@@ -111,7 +110,6 @@ import { MAX_DELAY_TO_FETCH_AUDIO } from '@/config/meeting';
 const props = withDefaults(
   defineProps<{
     meetingId: number;
-    meetingName: string;
     meetingStatus: string;
     creationDate: string;
     deliverables?: DeliverableDto[];
@@ -144,8 +142,7 @@ function handleRequireMeetingAudio(): void {
 
 const { mutate: downloadTranscription, isPending: isDownloadPending } = downloadMutation({
   onSuccess: (response) => {
-    const filename = `Transcription_${props.meetingName}`;
-    downloadFileFromAxios(response, sanitizeFilename(filename));
+    downloadFileFromAxios(response, extractFilenameFromResponse(response));
   },
   onError: (err) => {
     console.log(err);
