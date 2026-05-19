@@ -1,0 +1,6 @@
+{
+  "headless": true,
+  "tasks": [
+    {"audio": "test_audio/processed/reunionderom_sto_13.wav", "url": "https://visio.numerique.gouv.fr/ufj-pvtm-rey"}
+  ]
+}
