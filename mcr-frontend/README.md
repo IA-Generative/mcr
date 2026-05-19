@@ -107,6 +107,12 @@ npm run test:e2e
 npm run lint
 ```
 
+### Détecter le code mort avec [Knip](https://knip.dev/)
+
+```sh
+npm run knip
+```
+
 ## Docker
 
 ### Build l'image
