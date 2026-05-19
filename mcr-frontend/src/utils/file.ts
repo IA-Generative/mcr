@@ -17,3 +17,11 @@ export function getFileExtension(file: File): string | undefined {
   const parts = file.name.split('.');
   return parts.length > 1 ? parts.pop() : undefined;
 }
+
+export function extractFilenameFromResponse(response: AxiosResponse): string | undefined {
+  // mcr-core always emits Content-Disposition as filename*=UTF-8''<url-encoded>
+  const header = response.headers['content-disposition'];
+  if (typeof header !== 'string') return undefined;
+  const match = header.match(/filename\*=UTF-8''([^;]+)/i);
+  return match ? decodeURIComponent(match[1]) : undefined;
+}
