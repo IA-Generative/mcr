@@ -19,6 +19,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
+from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 
 
 class MCRCoreCustomAuth(httpx.Auth):
@@ -306,14 +307,7 @@ async def generate_meeting_transcription_document(
             response = await client.post(url=f"{meeting_id}/transcription")
             response.raise_for_status()  # Raise an error for non-200 responses
 
-            # Return the DOCX file as a StreamingResponse with appropriate headers
-            return StreamingResponse(
-                response.aiter_bytes(),
-                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                headers={
-                    "Content-Disposition": f"attachment; filename=meeting_{meeting_id}_transcription.docx"
-                },
-            )
+            return proxy_streaming_response(response)
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception:
