@@ -18,7 +18,7 @@
     "test:coverage": "vitest run --coverage",
     "static-analysis": "run-s type-check lint format",
     "pre-commit": "run-s static-analysis test:unit",
-    "knip": "knip"
+    "find:dead-code": "knip"
   },
   "dependencies": {
     "@dsb-norge/vue-keycloak-js": "^3.0.2",
