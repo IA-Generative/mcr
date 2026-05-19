@@ -15,7 +15,6 @@ import {
   stopCapture,
   update,
   uploadFileWithPresignedUrl,
-  uploadTranscription,
 } from './meetings.service';
 import { QUERY_KEYS } from '@/plugins/vue-query';
 import type {
@@ -182,22 +181,6 @@ function downloadMutation(options?: ExtraMutationOptions<typeof generateMeetingT
   });
 }
 
-function uploadMutation(options?: ExtraMutationOptions<typeof uploadTranscription>) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) => uploadTranscription({ id, file }),
-    ...options,
-    onSuccess: (data, variables, context) => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.MEETINGS, variables.id],
-      });
-
-      options?.onSuccess?.(data, variables, context);
-    },
-  });
-}
-
 function getReportMutation(options?: ExtraMutationOptions<typeof getReport>) {
   return useMutation({
     mutationFn: (id: number) => getReport(id),
@@ -319,7 +302,6 @@ export function useMeetings() {
     stopCaptureMutation,
     startTranscriptionMutation,
     downloadMutation,
-    uploadMutation,
     uploadFileWithPresignedUrlMutation,
     getReportMutation,
     generateReportMutation,

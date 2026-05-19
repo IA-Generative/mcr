@@ -166,8 +166,6 @@
       "imported": "Importée le",
       "recorded": "Enregistrement du"
     },
-    "edit": "Éditer la réunion",
-    "delete": "Supprimer la réunion",
     "modal": {
       "title": "Éditer la réunion"
     },
@@ -224,8 +222,7 @@
       "errors": {
         "file-size": "Le fichier est trop volumineux. Taille maximale : 200 Mo",
         "file-type": "Type de fichier non pris en charge",
-        "file-invalid": "Le fichier sélectionné n'a pas pu être converti.",
-        "unsupported-format": "Désolé, ce format de fichier n'est pas encore supporté par MCR."
+        "file-invalid": "Le fichier sélectionné n'a pas pu être converti."
       },
       "submit": "Importer et transcrire",
       "update": "@:common.form.update"
@@ -260,43 +257,13 @@
       }
     },
     "transcription": {
-      "start": "Démarrer l'enregistrement",
-      "stop": "Arrêter l'enregistrement",
-      "download": "Télécharger la transcription",
-      "open-on-drive": "Voir la transcription sur MyMirai",
-      "transcription-in-progress": {
-        "title": "Votre transcription est en cours de génération",
-        "description": "Nous vous avertirons par mail lorsque celle-ci sera disponible.",
-        "wait-message": "Temps de traitement estimé :"
-      },
-      "transcription-pending": {
-        "title": "Votre transcription est dans la file d'attente :",
-        "description": "En raison d'une forte affluence sur la plateforme, votre transcription est actuellement en file d'attente. Nous vous avertirons par mail lorsque celle-ci sera disponible.",
-        "wait-message": "Temps d'attente avant le début de votre transcription :"
-      },
       "wait-time": {
         "estimation": "Temps d'attente restant estimé : ",
-        "reached-deadline": "La transcription prend plus de temps que prévu.",
         "computing-estimation": "Calcul en cours...",
         "duration": {
           "less-than": "Moins de {formattedTime}",
           "more-than-24h": "Plus de 24 h"
         }
-      },
-      "bot-connecting": {
-        "title": "Connexion en cours...",
-        "subtitle": "Le bot MCR Agent va rejoindre la réunion pour lancer l’enregistrement.",
-        "description": "Le bot va rejoindre la réunion dans la liste des participants. Veuillez patienter quelques instants."
-      },
-      "bot-disconnecting": {
-        "title": "Déconnexion en cours...",
-        "subtitle": "Le bot MCR Agent va se déconnecter de la réunion pour lancer la transcription.",
-        "description": "Le bot est en train de se déconnecter de la réunion, veuillez patienter quelques instants"
-      },
-      "bot-connection-failed": {
-        "title": "Une erreur est survenue",
-        "description": "Un problème technique est survenu. Veuillez réessayer.",
-        "retry-button": "Réessayer"
       },
       "recording": {
         "offline": {
@@ -307,52 +274,18 @@
             "bold": "dans les 24 heures."
           }
         },
-        "confirm-modal": {
-          "title": "Êtes-vous sûr de vouloir terminer l'enregistrement\u00a0?",
-          "button": "Terminer l'enregistrement"
-        },
         "confirm-quit": {
           "title": "Êtes-vous sûr de vouloir quitter la page\u00a0?",
           "description": "Cela mettra fin à l'enregistrement.",
           "button": "Quitter"
-        },
-        "status": {
-          "in-progress": "Enregistrement en cours",
-          "paused": "Enregistrement en pause"
-        },
-        "actions": {
-          "pause": "Mettre en pause",
-          "resume": "Reprendre",
-          "start-transcription": "Lancer ma transcription"
-        },
-        "upload-failed": "Certains extraits audio n'ont pas pu être envoyés. Vérifiez votre connexion et réessayez.",
-        "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez.",
-        "empty-chunk": "Un problème est survenu lors de la capture audio. Vérifiez votre microphone."
+        }
       },
       "transcription-failed": {
         "title": "Une erreur est survenue",
         "description": "Un problème technique est survenu. Veuillez réessayer.",
         "button": "Réessayer"
       },
-      "import-failed": {
-        "text": "Une erreur est survenue",
-        "description": "Une erreur est survenue lors de l’import du fichier. Veuillez réessayer.",
-        "button": "@:meetings.table.actions.add-import"
-      },
-      "upload": "Envoyer la transcription modifiée",
-      "upload-success": "Transcription envoyée avec succès",
-      "upload-invalid-format": "Le fichier envoyé n'est pas un document DOCX valide.",
-      "format-accepted": "Format accepté : .docx",
-      "modal-stop": {
-        "title": "Êtes vous sûr de vouloir terminer la transcription\u00a0?"
-      },
-      "modal-start": {
-        "title": "Avez-vous informé les participants de l'utilisation de l'outil MCR pour cette réunion\u00a0?",
-        "description": "Assurez-vous que l'organisateur a démarré la visioconférence avant de lancer l'enregistrement."
-      },
       "tab": {
-        "transcription": "Transcription",
-        "report": "Compte rendu",
         "members": "Participants"
       }
     },
@@ -402,10 +335,6 @@
         "saving": "Enregistrement…",
         "saved": "Enregistré"
       }
-    },
-    "audio-player": {
-      "button": "Réécouter l'audio de la réunion",
-      "error": "L'audio de votre réunion n'a pas pu être obtenu."
     },
     "audio-card": {
       "title": "Audio",
