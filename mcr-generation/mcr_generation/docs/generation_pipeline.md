@@ -9,7 +9,7 @@ The `mcr-generation` service is a Celery worker that turns a meeting transcript 
 | **In** `meeting_id` | `int` | Meeting identifier on the `mcr-core` side |
 | **In** `transcription_object_filename` | `str` | S3 key of the transcription DOCX |
 | **In** `report_type` | `ReportTypes` | `DECISION_RECORD` or `DETAILED_SYNTHESIS` |
-| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — `intent` and `next_meeting` seed the corresponding refiners (US3, US4); `topics` and `discussions` will feed the reduce step (US5, US6). |
+| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — `intent` and `next_meeting` seed the corresponding refiners ; `topics` and `discussions` are injected as a human-priority hint into the reduce step. |
 | **Out** | `BaseReport` | `DecisionRecord` or `DetailedSynthesis` (Pydantic) |
 
 ## Pipeline diagram
@@ -54,7 +54,8 @@ flowchart TB
     TASK -.->|"if notes_content"| NX
     EN -.->|"intent (init_hint)"| RI
     EN -.->|"next_meeting (init_hint)"| RN
-    %% TODO US5-US6: wire EN.topics and EN.discussions into the reduce step (R1, R2).
+    EN -.->|"topics (reduce hint)"| R1
+    EN -.->|"discussions (reduce hint)"| R2
 
     %% Header (shared — same logic regardless of report_type)
     subgraph HEADER["Header — 3 independent refines (shared)"]
@@ -120,7 +121,7 @@ flowchart TB
 | Strategy | Where | How it works | Why this choice |
 |---|---|---|---|
 | **Sequential refine** (no map) | Header (Intent, Participants, NextMeeting) | First chunk seeds the object; each subsequent chunk iteratively refines the same object via one LLM call. When notes are provided, `extracted_notes.intent` and `extracted_notes.next_meeting` replace the initial LLM extract as the seed: the refine loop then runs over **every** chunk against that notes-derived seed, saving one LLM call and grounding subsequent refines on what the notes author explicitly wrote. | The header is a single coherent object (one title, one participant list): we enrich it progressively rather than aggregating fragments. |
-| **Parallel map-reduce** | Content (Topics, DetailedDiscussions) | Map: one LLM call per chunk in parallel (ThreadPoolExecutor, 4 workers) extracts candidate items. Reduce: one final LLM call dedupes and merges. | Content is inherently multi-item (multiple topics, multiple discussions): we parallelise extraction and let the LLM handle final coherence. |
+| **Parallel map-reduce** | Content (Topics, DetailedDiscussions) | Map: one LLM call per chunk in parallel (ThreadPoolExecutor, 4 workers) extracts candidate items. Reduce: one final LLM call dedupes and merges. When notes are provided, the corresponding `extracted_notes.topics` / `extracted_notes.discussions` is injected into the reduce prompt as a **human-priority signal**: the transcription remains the primary source but the notes take precedence on direct contradictions, and a topic absent from notes is not invalidated (notes are not exhaustive). The map phase is untouched. The reduce span is `section_topics_reduce` / `section_discussions_reduce` in Langfuse (rebranded from the previous shared `section_content_*` to disambiguate). | Content is inherently multi-item (multiple topics, multiple discussions): we parallelise extraction and let the LLM handle final coherence. |
 | **Single-shot synthesis** | DETAILED_SYNTHESIS only (`DetailedDiscussionsSynthesizer`) | One LLM call over the consolidated `Content` to produce `discussions_summary`, `to_do_list`, `to_monitor_list`. | These outputs are derivatives of already-reduced content — no need to revisit raw chunks. |
 
 ## Going further

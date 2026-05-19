@@ -150,5 +150,7 @@ class TestDetailedSynthesisGeneratorGenerate:
             participants=mock_header.participants,
         )
         # Verify map_reduce_all_steps execution and result
-        mock_map_reduce.map_reduce_all_steps.assert_called_once_with(chunks)
+        mock_map_reduce.map_reduce_all_steps.assert_called_once_with(
+            chunks, notes_hint=None
+        )
         assert result.detailed_discussions == mock_discussions
