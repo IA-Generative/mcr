@@ -20,6 +20,7 @@
       :status="item.status as DeliverableStatus"
       :file-format="item.fileFormat"
       :file-size="item.fileSize"
+      :external-url="item.externalUrl"
       @download="$emit('downloadDeliverable', $event)"
     />
   </div>
@@ -39,6 +40,7 @@ defineProps<{
     status: string;
     fileFormat: string;
     fileSize?: string;
+    externalUrl?: string | null;
   }[];
 }>();
 
