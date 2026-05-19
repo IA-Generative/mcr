@@ -52,6 +52,7 @@ class DeliverableFileResult(BaseModel):
 
     buffer: BytesIO
     meeting_name: str
+    deliverable_type: DeliverableType
 
 
 def _refresh_meeting_status(meeting_id: int) -> MeetingStatus:
@@ -206,4 +207,8 @@ def get_deliverable_file(
             meeting=meeting, deliverable_type=deliverable.type
         )
         buffer = typed if typed is not None else get_formatted_report_from_s3(meeting)
-    return DeliverableFileResult(buffer=buffer, meeting_name=meeting.name or "")
+    return DeliverableFileResult(
+        buffer=buffer,
+        meeting_name=meeting.name or "",
+        deliverable_type=deliverable.type,
+    )
