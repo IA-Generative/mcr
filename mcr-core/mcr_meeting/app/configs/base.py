@@ -455,6 +455,10 @@ class TranscriptionApiSettings(BaseSettings):
         description="Base URL for diarization API endpoint"
     )
     DIARIZATION_API_KEY: str = Field(description="API key for diarization service")
+    DIARIZATION_API_MODEL: str = Field(
+        default="pyannote-diarization",
+        description="Model name for diarization API",
+    )
 
     # Shared settings
     API_LANGUAGE: str = Field(

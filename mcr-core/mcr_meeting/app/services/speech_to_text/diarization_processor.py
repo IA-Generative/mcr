@@ -96,6 +96,7 @@ class DiarizationProcessor:
             client = self._get_http_client()
 
             form_data = {
+                "model": api_settings.DIARIZATION_API_MODEL,
                 "min_duration_off": diarization_params.min_duration_off,
                 "clustering_threshold": diarization_params.threshold,
             }
@@ -104,7 +105,7 @@ class DiarizationProcessor:
                 f"{api_settings.DIARIZATION_API_BASE_URL}/audio/diarizations",
                 files={"file": ("audio.wav", audio_bytes, "audio/wav")},
                 data=form_data,
-                headers={"apikey": api_settings.DIARIZATION_API_KEY},
+                headers={"Authorization": f"Bearer {api_settings.DIARIZATION_API_KEY}"},
             )
 
             audio_bytes.seek(0)
