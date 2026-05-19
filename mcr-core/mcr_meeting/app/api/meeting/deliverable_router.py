@@ -9,7 +9,6 @@ from mcr_meeting.app.orchestrators.deliverable_orchestrator import (
     list_deliverables_for_meeting,
     mark_deliverable_failure,
     mark_deliverable_success,
-    request_deliverable,
     soft_delete_deliverable,
 )
 from mcr_meeting.app.schemas.deliverable_schema import (
@@ -18,6 +17,9 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableListResponse,
     DeliverableResponse,
     DeliverableSuccessRequest,
+)
+from mcr_meeting.app.use_cases.request_deliverable import (
+    request_deliverable as request_deliverable_use_case,
 )
 from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
@@ -61,7 +63,7 @@ async def create_deliverable(
     custom_prompt = (
         body.custom_prompt if isinstance(body, CustomDeliverableCreateRequest) else None
     )
-    deliverable = request_deliverable(
+    deliverable = request_deliverable_use_case(
         meeting_id=body.meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         deliverable_type=body.type,
