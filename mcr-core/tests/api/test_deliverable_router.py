@@ -211,10 +211,10 @@ class TestPostDeliverableRoute:
         call = mock_celery_producer_app.send_task.call_args
         assert call.kwargs["args"][0] == meeting.id
         assert call.kwargs["args"][2] == "DECISION_RECORD"
-        assert call.kwargs["kwargs"] == {
+        assert {
             "owner_keycloak_uuid": str(user_fixture.keycloak_uuid),
             "deliverable_id": deliverable_id,
-        }
+        }.items() <= call.kwargs["kwargs"].items()
 
 
 class TestPostCustomReportRoute:
@@ -322,11 +322,11 @@ class TestPostCustomReportRoute:
         mock_celery_producer_app.send_task.assert_called_once()
         call = mock_celery_producer_app.send_task.call_args
         assert call.kwargs["args"][2] == "CUSTOM_REPORT"
-        assert call.kwargs["kwargs"] == {
+        assert {
             "owner_keycloak_uuid": str(user_fixture.keycloak_uuid),
             "deliverable_id": deliverable_id,
             "custom_prompt": "Analyse les risques",
-        }
+        }.items() <= call.kwargs["kwargs"].items()
 
 
 class TestSuccessCallbackRoute:

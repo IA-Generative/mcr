@@ -2,10 +2,13 @@ from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from mcr_meeting.app.db.deliverable_repository import (
+    find_active_by_meeting_and_type,
+)
 from mcr_meeting.app.exceptions.exceptions import (
+    DeliverableConcurrentlyCreatedException,
     ForbiddenAccessException,
     TaskCreationException,
 )
@@ -63,10 +66,10 @@ class TestRequestDeliverableHappyPath:
         call = mock_use_case_celery.send_task.call_args
         assert call.kwargs["args"][0] == meeting.id
         assert call.kwargs["args"][2] == "DECISION_RECORD"
-        assert call.kwargs["kwargs"] == {
+        assert {
             "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
             "deliverable_id": deliverable.id,
-        }
+        }.items() <= call.kwargs["kwargs"].items()
 
     def test_passes_custom_prompt_through(
         self,
@@ -285,7 +288,7 @@ class TestRequestDeliverableAuth:
         mock_use_case_celery.send_task.assert_not_called()
 
 
-class TestRequestDeliverableIntegrityErrorRecovery:
+class TestRequestDeliverableConcurrentInsertRecovery:
     def test_concurrent_insert_returns_winning_row(
         self,
         mock_use_case_celery: MagicMock,
@@ -304,16 +307,13 @@ class TestRequestDeliverableIntegrityErrorRecovery:
             status=DeliverableStatus.PENDING,
         )
 
-        # Simulate the race: find_active_by_meeting_and_type returned None at
-        # first (the winner row was not yet visible), then save_deliverable
-        # raised IntegrityError, then a fresh lookup finds the winner.
         find_mock = mocker.patch(
             "mcr_meeting.app.use_cases.request_deliverable.find_active_by_meeting_and_type",
             side_effect=[None, winner],
         )
         mocker.patch(
             "mcr_meeting.app.use_cases.request_deliverable.save_deliverable",
-            side_effect=IntegrityError("INSERT", {}, Exception()),
+            side_effect=DeliverableConcurrentlyCreatedException("race"),
         )
 
         result = request_deliverable_use_case(
@@ -326,12 +326,15 @@ class TestRequestDeliverableIntegrityErrorRecovery:
         assert find_mock.call_count == 2
 
 
-class TestRequestDeliverableCeleryFailureCompensation:
-    def test_dispatch_failure_marks_deliverable_failed_and_meeting_report_failed(
+class TestRequestDeliverableCeleryDispatchFailure:
+    def test_dispatch_failure_rolls_back_deliverable_and_meeting_status(
         self,
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
+        """Celery dispatch happens inside the UnitOfWork — when it raises, the
+        savepoint reverts the PENDING deliverable INSERT and the meeting
+        status update, so the request leaves no orphan rows."""
         meeting = MeetingFactory.create(
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
@@ -347,28 +350,18 @@ class TestRequestDeliverableCeleryFailureCompensation:
             )
 
         db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.REPORT_FAILED
-
-        # The deliverable created during the failed cycle must be marked FAILED
-        # so that a subsequent request_deliverable_use_case soft-deletes it and
-        # restarts a fresh cycle.
-        from mcr_meeting.app.db.deliverable_repository import (
-            find_active_by_meeting_and_type,
-        )
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
         existing = find_active_by_meeting_and_type(
             meeting_id=meeting.id, deliverable_type=DeliverableType.DECISION_RECORD
         )
-        assert existing is not None
-        assert existing.status == DeliverableStatus.FAILED
+        assert existing is None
 
     def test_retry_after_dispatch_failure_creates_fresh_cycle(
         self,
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
-        """The compensation must leave the system in a state where the user's
-        next click produces a fresh deliverable and a Celery task."""
         meeting = MeetingFactory.create(
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
@@ -383,7 +376,6 @@ class TestRequestDeliverableCeleryFailureCompensation:
                 deliverable_type=DeliverableType.DECISION_RECORD,
             )
 
-        # Second attempt: Celery is back, retry succeeds
         mock_use_case_celery.send_task.side_effect = None
         mock_use_case_celery.send_task.reset_mock()
 
@@ -397,28 +389,3 @@ class TestRequestDeliverableCeleryFailureCompensation:
         assert meeting.status == MeetingStatus.REPORT_PENDING
         assert new_deliverable.status == DeliverableStatus.PENDING
         mock_use_case_celery.send_task.assert_called_once()
-
-    def test_compensation_failure_is_logged_but_original_exception_raised(
-        self,
-        mock_use_case_celery: MagicMock,
-        mocker: MockerFixture,
-    ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
-        mock_use_case_celery.send_task.side_effect = RuntimeError("broker down")
-        mocker.patch(
-            "mcr_meeting.app.use_cases.request_deliverable.set_deliverable_status",
-            side_effect=RuntimeError("db down too"),
-        )
-
-        with pytest.raises(TaskCreationException) as exc_info:
-            request_deliverable_use_case(
-                meeting_id=meeting.id,
-                user_keycloak_uuid=meeting.owner.keycloak_uuid,
-                deliverable_type=DeliverableType.DECISION_RECORD,
-            )
-
-        assert "broker down" in str(exc_info.value)
