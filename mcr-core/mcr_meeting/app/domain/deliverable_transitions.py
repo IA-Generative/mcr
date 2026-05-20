@@ -48,12 +48,13 @@ def soft_delete(deliverable: Deliverable) -> Deliverable:
 
 
 def _send(deliverable: Deliverable, event: DeliverableEvent) -> None:
-    sm = DeliverableStateMachine(start_value=deliverable.status)
+    current = DeliverableStatus(deliverable.status)
+    sm = DeliverableStateMachine(start_value=current)
     try:
         sm.send(event.value)
     except TransitionNotAllowed as e:
         raise DeliverableStateConflictException(
             f"Cannot apply event {event.value!r} on deliverable in state "
-            f"{deliverable.status.value!r}"
+            f"{current.value!r}"
         ) from e
     deliverable.status = sm.current_state_value

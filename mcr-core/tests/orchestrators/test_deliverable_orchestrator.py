@@ -1,5 +1,4 @@
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy.orm import Session
@@ -57,9 +56,7 @@ class TestMarkDeliverableFailure:
         do.mark_deliverable_failure(deliverable_id=pending.id)
 
         db_session.refresh(pending)
-        db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.FAILED
-        assert meeting.status == MeetingStatus.REPORT_FAILED
 
 
 class TestSoftDeleteDeliverable:

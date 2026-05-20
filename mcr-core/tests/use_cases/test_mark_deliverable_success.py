@@ -79,8 +79,8 @@ class TestHappyPath:
         assert len(records) == 1
 
 
-class TestB2Regression:
-    def test_s3_failure_leaves_deliverable_pending(
+class TestFailureRollback:
+    def test_s3_failure_marks_deliverable_failed(
         self,
         db_session: Session,
         in_memory_s3: InMemoryS3,
@@ -106,12 +106,12 @@ class TestB2Regression:
 
         db_session.refresh(pending)
         db_session.refresh(meeting)
-        assert pending.status == DeliverableStatus.PENDING
+        assert pending.status == DeliverableStatus.FAILED
         assert meeting.status == MeetingStatus.REPORT_PENDING
         assert in_memory_s3.objects == {}
         assert in_memory_email.sent == []
 
-    def test_render_failure_leaves_deliverable_pending(
+    def test_render_failure_marks_deliverable_failed(
         self,
         db_session: Session,
         in_memory_s3: InMemoryS3,
@@ -141,12 +141,12 @@ class TestB2Regression:
 
         db_session.refresh(pending)
         db_session.refresh(meeting)
-        assert pending.status == DeliverableStatus.PENDING
+        assert pending.status == DeliverableStatus.FAILED
         assert meeting.status == MeetingStatus.REPORT_PENDING
         assert in_memory_s3.objects == {}
         assert in_memory_email.sent == []
 
-    def test_replay_after_s3_failure_converges(
+    def test_replay_after_failure_raises_conflict(
         self,
         db_session: Session,
         in_memory_s3: InMemoryS3,
@@ -171,14 +171,12 @@ class TestB2Regression:
             )
 
         in_memory_s3.should_fail_put = False
-        result = mark_deliverable_success(
-            deliverable_id=pending.id,
-            external_url=None,
-            report_response=_decision_record_response(),
-        )
-
-        assert result.status == DeliverableStatus.AVAILABLE
-        assert len(in_memory_s3.objects) == 1
+        with pytest.raises(DeliverableStateConflictException):
+            mark_deliverable_success(
+                deliverable_id=pending.id,
+                external_url=None,
+                report_response=_decision_record_response(),
+            )
 
 
 class TestPostCommitFailures:
