@@ -1,0 +1,58 @@
+LOCUTEUR_04 : On a des nouvelles de Léo ? On va commencer par toi Théodore. 
+LOCUTEUR_05 :  J'ai fait une réunion d'apprentissage de la 
+LOCUTEUR_00 :  En fait, Théo, je prends la review juste après le daily, donc je te ferai des commentaires sur les tests qui ne me semblent pas nécessaires si tu veux. 
+LOCUTEUR_05 :  Bah, je regarderai pas forcément besoin de vos tests, parce que je regarderai moi-même avant que tu fasses, mais sinon le reste, pour moi, c'est bon. Et puis voilà. Ok, ça marche. Et puis, en plus de ça, du coup, de faire passer ça en donne, l'idée, ça va être de commencer le ticket numéro 5. 
+LOCUTEUR_04 :  Ok. Et du coup, par rapport à la... tu penses que ça va être terminé pour mercredi ou pas, la track pour une mec mercredi ? 
+LOCUTEUR_05 :  Ouais, ouais, parce qu'en fait, ce qui reste nécessaire, c'est 5 points, là. Et donc, 5 points, en deux jours, je peux combattre l'histoire, ça peut être merde, donc mercredi, ou sinon ça sera merde le mercredi matin, tout sera en staging. Ok. En tout cas, c'est faisable. Ok, ça marche. Le ticket numéro 7, c'est optionnel, c'est pas nécessaire. 
+LOCUTEUR_04 :  Ok. Là, tu dois te coordonner avec des gens aujourd'hui ou là, c'est bon ? 
+LOCUTEUR_05 :  Non, non, j'ai pas besoin d'une 
+LOCUTEUR_04 :  Ok, bah merci beaucoup. On va passer à Titouan, du coup, on va faire les sujets DS. Yes. 
+LOCUTEUR_00 :  Alors, du coup, on n'a pas à merge, finalement, mon ticket vendredi qui route vers les Metadata Collector avec le Rewriter. J'ai pris tes commentaires ce matin, Thomas, tu viens juste de push à l'instant. Ok. Donc, a priori, ça devrait être... donc, ma track devrait être finie dans la matinée, a priori. Donc, ça, c'est cool. Aujourd'hui, en doing... pardon, en... d'ailleurs, je ne sais pas pourquoi il en doing, je n'avais pas commencé. Dans mon daily goal, je me suis mis le petit ticket qu'on avait créé à la suite du Dantotsu avec Thomas, ouais. Pour ajouter MyPy dans la CI. Je vais même aller plus loin que ça. Je vais m'assurer que tous les pré-commits correspondent au check de la CI sur chacun des différents projets qu'on a. Donc, voilà, ça, c'est un petit ticket que je prends ce matin. Donc, je vais aussi faire de la review. Et il me semble que J.A. et Thomas, vous aviez parlé que je refasse une passe sur les participants aussi. 
+LOCUTEUR_04 :  Oui, bah, ça sera plus pour le prochain sprint. Ok. Enfin, on va voir, du coup, s'il y a des... Si tu as de la dispo, tu pourras commencer plus tôt, ouais. Mais bon... 
+LOCUTEUR_00 :  On va voir un peu de dispo. Et sinon, il me reste quelques tickets dans mon backlog, si jamais tu veux aller voir. Si jamais tu veux aller voir. Notamment un... Pour faire une espèce de... Enfin, pour modifier le dataset que j'avais constitué. Pour le... Pour l'évaluation des comptes rendus. Donc, je peux prendre ça aussi aujourd'hui. 
+LOCUTEUR_04 :  Ok. Juste, peut-être, Thomas, du coup... Est-ce que tu as des sujets transversaux à aborder ? Parce que Théodore va devoir nous quitter. Donc, si quelqu'un a des sujets transversaux à dire avant que Théodore parte... 
+LOCUTEUR_01 :  Non. Pas particulièrement. Ça marche. 
+LOCUTEUR_04 :  Ok. Bon, à tous. Euh... Du coup, Théodore... Bah, je me cale avec Thomas. Et on te dit, sauf si toi, Thomas, tu sais déjà ce sur quoi peut avancer Théodore. 
+LOCUTEUR_01 :  Bah, enfin... Déjà, je pense que ça va t'occuper de remonter, Théodore, le changement de format de dataset. Mais tu peux dire oui, comment serait-ce que le 
+LOCUTEUR_05 :  Ok. Ouais, ça marche. Ouais, bah, j'avais commencé à collecter pas mal de transcriptions, euh... Tu sais, c'est toi, sur mon doc. Et puis, je vais continuer à en mettre et peut-être mettre dans la colonne commentaire. Voilà. Des choses pour... Ouais, ouais. Ça... Est-ce que de ton côté, Titouan, il y avait des sujets encore liés au CR Custom Via Prompte, à part le sujet de la routing vers collecteur ? 
+LOCUTEUR_00 :  Euh... Non, moi, je suis bon de mon côté. Maintenant, je pense qu'il va falloir qu'on fasse des tests un peu extensifs, qu'on teste plein de différents trucs sur différentes réunions. 
+LOCUTEUR_05 :  Ouais. Surtout qu'il y a... Du coup, on n'a pas mis en production vendredi. Euh... Parce qu'on arrive... Enfin, j'avais des bugs. Ok. 
+LOCUTEUR_00 :  Par rapport à ça ? 
+LOCUTEUR_04 :  Ou... Par rapport au CR Custom Via Prompte, ouais. Enfin, les... Enfin, ce qu'on a... Enfin, ce que j'ai constaté, c'était qu'il y avait des CR que j'arrivais pas à générer. Il y avait des temps d'attente trop long. Après, il y avait un prompt de base qui... Ouais. J'ai remarqué que je pouvais laisser le... Je pouvait lancer un CR Custom... Avant... Alors que les autres livrables, c'était pas le cas avant. Donc, il y a peut-être un truc là-dessus. Ouais. Ok. 
+LOCUTEUR_01 :  Intéressant. Euh... J'ai créé un ticket de bug sur le tableau. Est-ce que tu peux créer les deux autres ? Comme ça, on peut les traquer, les assigner et avancer dessus. Juste, euh... 
+LOCUTEUR_00 :  Je reteste ce matin et je vous... Je vous valide que j'ai bien ce bug systématiquement. Ok. 
+LOCUTEUR_04 :  Bah là, je suis en train d'enregistrer la visio. Je vais aussi checker ça après. Euh... Euh... D'autres sujets te concernant, Titouan ? Non, c'est bon pour moi. 
+LOCUTEUR_00 :  Ok. 
+LOCUTEUR_04 :  Ça marche. Euh... Léo ? Yes. Euh... 
+LOCUTEUR_02 :  J'ai un ticket en review que Thomas m'a... M'a review ce matin. Donc, j'ai commencé à regarder les retours. J'ai vraiment quelques trucs à apprendre. Et puis, j'ai quelques sujets que tu m'avais transmis, je dis, en fin de semaine dernière. Enfin, au milieu de semaine, du coup, c'était la fin de semaine. Euh... Avec, du coup, les CR qui échouent que j'ai commencé à prendre. Et, euh... La partie sur le curseur audio. Qui ne fonctionne pas correctement. Ça va être un chantier un peu plus long et sur lequel il n'y a pas de strat encore. Donc, euh... Voilà. Je vais l'embarquer. Je n'ai pas toujours le temps de finir ça aujourd'hui. Ok. Voilà. Je suis un peu incertain pour moi cette partie-là. 
+LOCUTEUR_03 :  ONU se charger. Je ne sais pas si tu entouré Léo, mais du coup, ça peut peut-être te diriger. J'avais vu ça quand j'étais en train de faire des tests en local. 
+LOCUTEUR_02 :  Il bouge un peu tout seul. 
+LOCUTEUR_03 :  ONU se charger un peu au fur et à mesure. Le truc, au lieu de rester à 6 secondes, en fait, il va augmenter. Ah oui, oui. 
+LOCUTEUR_02 :  ONU au fur et à mesure, quoi. Ouais, c'est ça. Ouais. 
+LOCUTEUR_04 :  Et du coup, il y aura peut-être, enfin, quand on va mettre les sujets des bugs du CR custom via prompt, sera peut-être un prio, enfin, je ne sais pas ce qu'on pense. 
+LOCUTEUR_01 :  Enfin, je pense que, enfin, Léo, il a une journée bien chargée. Ouais. Il y a une partie des bugs que moi, j'ai commencé à traiter déjà. Donc, on a dit que, enfin, plutôt Thibaut allait reprendre le DK. Je pense que c'est pas mal de partager les... 
+LOCUTEUR_00 :  D'ailleurs, j'avais juste une petite question par rapport à une autre remarque que j'avais faite, au sujet de la persistance du prompt, comme je disais, quand tu fermes et que tu réouvres la fenêtre, tu gardes ton prompt, mais entre deux réunions, il n'est pas gardé. Est-ce que c'est un comportement qui est volontaire ? Oui. Ok, d'accord. 
+LOCUTEUR_02 :  En tout cas, pour l'instant, on n'a pas mis de feature dans justement du prompt. 
+LOCUTEUR_00 :  C'est ça. 
+LOCUTEUR_02 :  C'est un truc qui serait cool à voir, je pense, à réfléchir à l'avenir, mais c'est pas dans la VR, quoi. 
+LOCUTEUR_04 :  Ouais, tout à fait, c'est ça. Ok, merci Léo. Thibaut ? 
+LOCUTEUR_03 :  Yes. Alors, moi, pour le coup, mon tableau commence à se vider pas mal. Donc, dans ma review, j'ai toujours la fin de mes notes. Donc là, j'attends juste vos retours, Léo et Thomas, pour pouvoir avoir... Léo ou Thomas, d'ailleurs, quoi. Pour pouvoir finaliser ça et les mettre en staging. Et du coup, j'ai commencé quelque chose vendredi et ce matin. C'est pas vendredi du coup, pardon, mercredi et ce matin. Que j'ai pas mis là-dedans, c'est que j'ai commencé à regarder un peu justement le côté des cas. J'avais voulu commencer à regarder pourquoi est-ce qu'on avait le bug de la machine à état qui était lancée, alors qu'elle était déjà lancée, mais elle était déjà dans un autre machin. Mais du coup, comme je disais à Thomas ce matin, je sais pas trop, en fait, sur quel bug me lancer, où les trouver, etc. Et du coup, je voulais savoir si vous aviez un petit input de votre part. Ok. 
+LOCUTEUR_04 :  Bah déjà, il y a l'onglet bug dans... 
+LOCUTEUR_03 :  Ça, j'en ai parlé du coup à Thomas. Ouais. Et après, s'il y en a des P1, etc. qu'on avait commencé à regarder et tout. Mais il y en a d'ailleurs qu'on a résolu parce qu'en fait, il était déjà résolu. 
+LOCUTEUR_04 :  CNAPS. Donc, à voir si Léo est... Enfin, je sais pas si tu avais commencé à investiguer déjà ou quoi dessus. Et... Ou si. Ouais, voilà. 
+LOCUTEUR_02 :  J'ai assez peu commencé dessus, donc éventuellement, on peut se caler pour passer les infos à Thibault et je te passe la main si c'est ok. Ok. Ça m'arrange toi. 
+LOCUTEUR_04 :  Ouais, ça c'est un potentiel que j'avais identifié de te le passer après ton sujet. Thibault vu que tu vas effectivement prendre le rôle de DK. Donc, voilà. Euh... Merci. Thomas ? 
+LOCUTEUR_01 :  DSI, le fait de me faire un custom avec un tableau donc le bug qu'on a remonté. 
+LOCUTEUR_04 :  Ok. Ça marche. Top. Bah de mon côté du coup je me suis noté que je crée l'étiquette bug identifié sur CR custom. Je peux mettre qui dessus du coup quand je les crée je mets comme owner ? 
+LOCUTEUR_03 :  Du coup moi si j'ai bien compris ? 
+LOCUTEUR_01 :  Bah en fait c'est plus que ça c'est déjà on les crée et après on les remonte peut-être dans le panel des retours utilisateurs. Ok. Et après on les priorise et on les prête quoi ? Hum. 
+LOCUTEUR_04 :  Hum hummm... ăuh... Ensuite, écoutez, on peut peut-être se laisser là si vous avez d'autres choses à ajouter ou c'est bon. 
+LOCUTEUR_03 :  C'est bon de mon côté. Ok, ça marche. 
+LOCUTEUR_02 :  C'est juste une question. Du coup, Hugo, il est là à partir de quand ? Il est là aujourd'hui ? 
+LOCUTEUR_01 :  Ouais, il est là aujourd'hui. Moi, je vais le voir ce matin. Et je pense qu'il sera en Shadow, soit de Léo, soit de Thibaut. 
+LOCUTEUR_03 :  Ok. Ok, on va voir. Cette semaine, c'est peut-être plus logique que ce soit Léo, parce que je suis en télétravail demain, je ne suis pas là après-demain. 
+LOCUTEUR_02 :  Je suis présent mardi, mercredi, jeudi. Juste aujourd'hui, je suis en télétravail. Donc, éventuellement, Thibaut, si tu prends le truc aujourd'hui, il faut voir un peu nos deux profils et tout, c'est pas de quoi. 
+LOCUTEUR_00 :  Yes. Yes. Juste un instant, je confirme que ça plante quand on lance les deux en même temps. 
+LOCUTEUR_04 :  Ok. Tu veux bien créer un... Et je vais même mettre l'erreur directement. Trop bien. Merci. Pas de souci. 
+LOCUTEUR_01 :  Bon, à tous. A plus. Bon courage. 
+LOCUTEUR_04 :  Ciao.
