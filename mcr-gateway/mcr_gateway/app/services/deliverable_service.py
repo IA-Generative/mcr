@@ -16,6 +16,7 @@ from mcr_gateway.app.services.meeting_service import (
     MCRCoreCustomAuth,
     get_meeting_http_client,
 )
+from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 
 
 @asynccontextmanager
@@ -88,18 +89,7 @@ async def get_deliverable_file(
         async with get_deliverable_http_client(user_keycloak_uuid) as client:
             response = await client.get(url=f"{deliverable_id}/file")
             response.raise_for_status()
-            return StreamingResponse(
-                response.aiter_bytes(),
-                media_type=(
-                    "application/vnd.openxmlformats-officedocument."
-                    "wordprocessingml.document"
-                ),
-                headers={
-                    "Content-Disposition": (
-                        f"attachment; filename=deliverable_{deliverable_id}.docx"
-                    )
-                },
-            )
+            return proxy_streaming_response(response)
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
