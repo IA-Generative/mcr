@@ -7,14 +7,15 @@ from mcr_generation.app.services.sections.topics.prompts import (
 )
 from mcr_generation.app.services.sections.topics.types import (
     MappedTopic,
-    MappedTopics,
+    MappedTopicsLLM,
     TopicsContent,
 )
 
 
 class MapReduceTopics(BaseMapReduce[MappedTopic, TopicsContent]):
     section_name = "topics"
-    map_response_model = MappedTopics
+    map_response_model = MappedTopicsLLM
+    item_model = MappedTopic
     content_model = TopicsContent
     map_prompt_template = MAP_PROMPT_TEMPLATE
     reduce_prompt_template = REDUCE_PROMPT_TEMPLATE

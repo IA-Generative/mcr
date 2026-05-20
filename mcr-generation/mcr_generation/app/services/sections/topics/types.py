@@ -141,9 +141,10 @@ class MappedTopicDetails(BaseModel):
     )
 
 
-class MappedTopic(BaseModel):
+class MappedTopicLLM(BaseModel):
     """
-    Modèle de sortie pour un sujet de reunion avec ses details et decisions extrait d’une transcription de réunion.
+    LLM-facing model: what the LLM is asked to produce for each topic
+    detected in a chunk.
     """
 
     topic: str = Field(
@@ -176,27 +177,29 @@ class MappedTopic(BaseModel):
             "Si aucune décision n’est prise sur ce sujet, renvoyer une liste vide."
         ),
     )
-    chunk_id: int = Field(
-        ...,
-        description=(
-            "Identifiant du segment de transcript d'où provient cette décision. "
-            "Permet de relier chaque décision à son extrait source."
-        ),
-    )
 
 
-class MappedTopics(BaseModel):
+class MappedTopic(MappedTopicLLM):
     """
-    Modèle regroupant l'ensemble des décisions extraites d'un même extrait
-    de transcription.
+    Internal model: enriches the LLM output with the chunk identifier
+    where the topic was extracted. Never sent back to the LLM as a
+    response schema.
     """
 
-    topics: list[MappedTopic] = Field(
+    chunk_id: int
+
+
+class MappedTopicsLLM(BaseModel):
+    """
+    LLM-facing wrapper grouping every topic extracted from a single chunk.
+    """
+
+    topics: list[MappedTopicLLM] = Field(
         ...,
         description=(
             "Liste de toutes les sujets détectées dans l'extrait de "
-            "transcription analysé. Chaque entrée correspond à un sujet unique avec  "
-            "avec ses faits et métadonnées (chunk_id, score de confiance etc)."
+            "transcription analysé. Chaque entrée correspond à un sujet unique "
+            "avec ses faits et métadonnées (score de confiance etc)."
         ),
     )
 

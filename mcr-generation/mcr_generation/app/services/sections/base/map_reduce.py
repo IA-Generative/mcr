@@ -59,8 +59,14 @@ ContentT = TypeVar("ContentT", bound=BaseModel)
 class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
     """Parallel map + single reduce against an LLM.
 
-    Subclasses declare 6 ``ClassVar``s — see ``MapReduceTopics`` and
+    Subclasses declare 7 ``ClassVar``s — see ``MapReduceTopics`` and
     ``MapReduceDetailedDiscussions`` for canonical examples.
+
+    ``map_response_model`` is the LLM-facing wrapper class (the JSON
+    schema sent to the LLM). ``item_model`` is the internal model used
+    after the map phase; it must accept all fields of the LLM item plus
+    a ``chunk_id`` keyword argument. Typically ``item_model`` is a
+    subclass of the LLM item type adding only ``chunk_id``.
 
     ``items_field`` is dual-use: it names both the attribute on
     ``map_response_model`` that holds the per-chunk items list, and the
@@ -72,6 +78,7 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
 
     section_name: ClassVar[str]
     map_response_model: ClassVar[type[BaseModel]]
+    item_model: ClassVar[type[BaseModel]]
     content_model: ClassVar[type[BaseModel]]
     map_prompt_template: ClassVar[str]
     reduce_prompt_template: ClassVar[str]
@@ -173,10 +180,15 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
             response_model=self.map_response_model,
             user_message_content=content,
         )
-        items = cast(list[MappedT], getattr(resp, self.items_field))
+        llm_items = getattr(resp, self.items_field)
 
-        for item in items:
-            item.chunk_id = chunk.id
+        items = cast(
+            list[MappedT],
+            [
+                self.item_model(**llm_item.model_dump(), chunk_id=chunk.id)
+                for llm_item in llm_items
+            ],
+        )
 
         self._record_low_confidence_items(items, chunk.id)
         return items

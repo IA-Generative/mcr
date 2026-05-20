@@ -9,20 +9,27 @@ from pydantic import BaseModel, Field
 
 from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.services.sections.base.map_reduce import BaseMapReduce
+from mcr_generation.app.services.sections.detailed_discussions.types import (
+    MappedDetailedDiscussionsLLM,
+)
+from mcr_generation.app.services.sections.topics.types import MappedTopicsLLM
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 _MODULE_PATH = "mcr_generation.app.services.sections.base.map_reduce"
 
 
-class _StubMapped(BaseModel):
+class _StubMappedLLM(BaseModel):
     topic: str
     topic_confidence: float
-    chunk_id: int = 0
     payload: str = ""
 
 
+class _StubMapped(_StubMappedLLM):
+    chunk_id: int
+
+
 class _StubMapResp(BaseModel):
-    items: list[_StubMapped] = Field(default_factory=list)
+    items: list[_StubMappedLLM] = Field(default_factory=list)
 
 
 class _StubContent(BaseModel):
@@ -32,6 +39,7 @@ class _StubContent(BaseModel):
 class _StubMapReduce(BaseMapReduce[_StubMapped, _StubContent]):
     section_name = "stub"
     map_response_model = _StubMapResp
+    item_model = _StubMapped
     content_model = _StubContent
     map_prompt_template = "MAP {chunk_text} | {meeting_subject} | {speaker_mapping}"
     reduce_prompt_template = (
@@ -46,20 +54,19 @@ def _build_hint(topic: str = "from-notes") -> _StubContent:
     )
 
 
-class TestOrchestrationAndChunkIdNormalization:
-    def test_map_reduce_runs_map_then_reduce_and_normalizes_chunk_id(
+class TestOrchestrationAndChunkIdProvenance:
+    def test_map_reduce_runs_map_then_reduce_and_stamps_chunk_id(
         self,
         fake_call_llm_with_structured_output: Callable[..., Any],
     ) -> None:
-        """End-to-end via map_reduce_all_steps. The LLM intentionally returns
-        chunk_id=999 in the map response; the base must overwrite it with the
-        actual chunk.id (proves the post-map normalization)."""
-        # Two distinct map responses to avoid in-place mutation across calls.
+        """End-to-end via map_reduce_all_steps. The LLM produces items
+        without a chunk_id (it's not part of the LLM-facing schema); the
+        base stamps each item with the chunk.id of the chunk it came from."""
         map_resp_a = _StubMapResp(
-            items=[_StubMapped(topic="A", topic_confidence=0.9, chunk_id=999)]
+            items=[_StubMappedLLM(topic="A", topic_confidence=0.9)]
         )
         map_resp_b = _StubMapResp(
-            items=[_StubMapped(topic="B", topic_confidence=0.9, chunk_id=999)]
+            items=[_StubMappedLLM(topic="B", topic_confidence=0.9)]
         )
         reduce_resp = _StubContent(
             items=[_StubMapped(topic="X-reduced", topic_confidence=0.9, chunk_id=0)]
@@ -170,3 +177,26 @@ class TestMapPhaseFailures:
                 _StubMapReduce().map_reduce_all_steps(
                     [Chunk(id=0, text="a"), Chunk(id=1, text="b")]
                 )
+
+
+class TestLLMSchemaCleanliness:
+    """Verifies that chunk_id, which is an internal-only field, is not
+    exposed to the LLM through the JSON schema generated for the map
+    response model (the wrapper Instructor sends to the LLM)."""
+
+    @pytest.mark.parametrize(
+        ("wrapper_cls", "item_def_name"),
+        [
+            (MappedTopicsLLM, "MappedTopicLLM"),
+            (MappedDetailedDiscussionsLLM, "MappedDetailedDiscussionLLM"),
+        ],
+    )
+    def test_chunk_id_absent_from_item_schema(
+        self,
+        wrapper_cls: type[BaseModel],
+        item_def_name: str,
+    ) -> None:
+        schema = wrapper_cls.model_json_schema()
+        item_schema = schema["$defs"][item_def_name]
+        assert "chunk_id" not in item_schema.get("properties", {})
+        assert "chunk_id" not in item_schema.get("required", [])
