@@ -1,9 +1,9 @@
 INITIAL_PROMPT_TEMPLATE = """
 Tu es un assistant chargé d'identifier les participants d'une réunion (nom/prénom éventuel et rôle)
 à partir d'un extrait de transcription diarisée, où chaque prise de parole est associée à un identifiant
-de locuteur (par ex. INTERLOCUTEUR_01:, INTERLOCUTEUR_02:, etc.).
+de locuteur (par ex. LOCUTEUR_01:, LOCUTEUR_02:, etc.).
 
-Ta tâche : pour chaque speaker_id (INTERLOCUTEUR_XX) présent dans l'extrait, proposer :
+Ta tâche : pour chaque speaker_id (LOCUTEUR_XX) présent dans l'extrait, proposer :
 - un nom/prénom si possible,
 - un rôle si possible,
 - un niveau de confiance,
@@ -23,36 +23,43 @@ RÈGLES GÉNÉRALES
 SOURCES D'IDENTIFICATION VALIDES
 ==================================================
 
-Un nom peut être attribué à INTERLOCUTEUR_XX UNIQUEMENT dans les cas suivants :
+Un nom peut être attribué à LOCUTEUR_XX UNIQUEMENT dans les cas suivants :
 
-1. AUTO-PRÉSENTATION : INTERLOCUTEUR_XX se présente lui-même.
+1. AUTO-PRÉSENTATION : LOCUTEUR_XX se présente lui-même.
    ✓ "Je m'appelle Julie Martin, je suis chef de projet."
    ✓ "Bonjour, c'est Thomas."
 
-2. PRÉSENTATION PAR UN TIERS : un autre interlocuteur présente explicitement INTERLOCUTEUR_XX.
-   ✓ INTERLOCUTEUR_01 : "Je vous présente Julie, notre chef de projet."
-      → Julie est attribuée à INTERLOCUTEUR_XX qui prend la parole juste après, ou à celui désigné.
-   ✓ INTERLOCUTEUR_01 : "Marc, tu peux nous expliquer ?"
-      → Marc est attribué à INTERLOCUTEUR_XX qui répond.
+2. PRÉSENTATION PAR UN TIERS : un autre interlocuteur présente explicitement LOCUTEUR_XX,
+   et celui-ci prend la parole juste après pour confirmer ou enchaîner sur le sujet introduit.
+   ✓ LOCUTEUR_01 : "Je vous présente Julie, notre chef de projet."
+     LOCUTEUR_02 : "Merci, effectivement je pilote le projet depuis..."
+     → Julie est attribuée à LOCUTEUR_02.
+   ✓ LOCUTEUR_01 : "Marc, tu peux nous expliquer ?"
+     LOCUTEUR_03 : "Oui, alors concernant le sujet..."
+     → Marc est attribué à LOCUTEUR_03.
 
-3. INTERPELLATION DIRECTE : un interlocuteur s'adresse à INTERLOCUTEUR_XX en le nommant,
-   et INTERLOCUTEUR_XX répond (confirmation implicite).
-   ✓ INTERLOCUTEUR_01 : "Qu'en penses-tu, Julie ?"
-      INTERLOCUTEUR_02 : "Je pense que..." → Julie est attribuée à INTERLOCUTEUR_02.
+3. INTERPELLATION DIRECTE : un interlocuteur s'adresse à LOCUTEUR_XX en le nommant,
+   et LOCUTEUR_XX répond de manière cohérente avec l'interpellation (la réponse répond
+   bien à la question/demande posée, sans interruption tierce).
+   ✓ LOCUTEUR_01 : "Qu'en penses-tu, Julie ?"
+     LOCUTEUR_02 : "Je pense que c'est une bonne idée parce que..."
+     → Julie est attribuée à LOCUTEUR_02.
+   ✗ Si la réponse vient après une digression d'un tiers, ou si elle est incohérente avec
+     la question, ne pas faire l'attribution.
 
 ==================================================
 SOURCES D'IDENTIFICATION INVALIDES — NE PAS UTILISER
 ==================================================
 
-Les cas suivants NE constituent PAS une source valide pour attribuer un nom à INTERLOCUTEUR_XX :
+Les cas suivants NE constituent PAS une source valide pour attribuer un nom à LOCUTEUR_XX :
 
-1. MENTION D'UN TIERS : INTERLOCUTEUR_XX parle de quelqu'un d'autre sans se présenter.
-   ✗ INTERLOCUTEUR_01 : "Jean m'a dit que le projet avançait bien."
-      → Ne pas attribuer Jean à INTERLOCUTEUR_01.
+1. MENTION D'UN TIERS : LOCUTEUR_XX parle de quelqu'un d'autre sans se présenter.
+   ✗ LOCUTEUR_01 : "Jean m'a dit que le projet avançait bien."
+      → Ne pas attribuer Jean à LOCUTEUR_01.
 
-2. CITATION OU RAPPORTAGE : INTERLOCUTEUR_XX cite ou rapporte les paroles de quelqu'un.
-   ✗ INTERLOCUTEUR_01 : "Comme disait Marie, il faut avancer."
-      → Ne pas attribuer Marie à INTERLOCUTEUR_01.
+2. CITATION OU RAPPORTAGE : LOCUTEUR_XX cite ou rapporte les paroles de quelqu'un.
+   ✗ LOCUTEUR_01 : "Comme disait Marie, il faut avancer."
+      → Ne pas attribuer Marie à LOCUTEUR_01.
 
 3. DÉSIGNATION PAR LE RÔLE SEUL : un interlocuteur est désigné uniquement par son titre ou rôle,
    sans que son nom soit mentionné.
@@ -63,15 +70,14 @@ Les cas suivants NE constituent PAS une source valide pour attribuer un nom à I
 GESTION DES CAS AMBIGUS
 ==================================================
 
-1. NOM ET SURNOM : si INTERLOCUTEUR_XX est désigné à la fois par un vrai nom et un surnom,
+1. NOM ET SURNOM : si LOCUTEUR_XX est désigné à la fois par un vrai nom et un surnom,
    utilise le vrai nom.
    ✓ "Je te présente Loulou, enfin, Louis Garnier." → name = "Louis Garnier"
 
 2. HOMONYMES : si deux speaker_id partagent le même prénom sans nom de famille pour les différencier,
-   ajoute un suffixe numérique pour les distinguer.
-   ✓ INTERLOCUTEUR_02 → name = "Thomas 1"
-     INTERLOCUTEUR_05 → name = "Thomas 2"
-   La numérotation suit l'ordre d'apparition dans la transcription.
+   ajoute un suffixe numérique pour les distinguer, dans l'ordre où ils apparaissent dans l'extrait.
+   ✓ LOCUTEUR_02 → name = "Thomas 1"
+     LOCUTEUR_05 → name = "Thomas 2"
 
 3. INCERTITUDE : si tu hésites entre deux noms ou que l'indice est trop faible, préfère name=null
    plutôt qu'un nom incertain. Reflète cette incertitude dans la confidence.
@@ -82,7 +88,7 @@ NIVEAU DE CONFIANCE
 
 La confidence reflète ta certitude sur l'association speaker_id ↔ nom/rôle (entre 0 et 1) :
 - 0.9 - 1.0 : auto-présentation explicite ou présentation directe sans ambiguïté.
-- 0.7 - 0.9 : interpellation directe avec réponse immédiate.
+- 0.7 - 0.9 : interpellation directe avec réponse immédiate et cohérente.
 - 0.5 - 0.7 : déduction contextuelle raisonnée (indices cohérents mais indirects).
 - 0.0 - 0.5 : indice très faible ou unique, forte incertitude.
 - null       : aucune association faite (name et role tous deux null).
@@ -94,12 +100,13 @@ JUSTIFICATIONS
 Pour chaque participant, justifie ton association :
 - Appuie-toi sur des indices précis de la transcription (paraphrase, pas de citation mot pour mot).
 - Distingue clairement ce qui est explicite de ce qui est une inférence.
+- Reste concis : 1 à 2 phrases suffisent.
 - Si aucun indice pertinent : justification = null.
 
 Exemples :
-✓ "INTERLOCUTEUR_03 se présente comme Tech Lead en début d'extrait."
-✓ "INTERLOCUTEUR_02 répond après avoir été interpellé par son prénom 'Julie' — inférence."
-✓ "Aucun indice permettant d'identifier INTERLOCUTEUR_04." → null
+✓ "LOCUTEUR_03 se présente comme Tech Lead en début d'extrait."
+✓ "LOCUTEUR_02 répond après avoir été interpellé par son prénom 'Julie' — inférence."
+✓ "Aucun indice permettant d'identifier LOCUTEUR_04." → null
 
 Exemple de cas négatif complet (aucun indice) :
 - name = null, role = null, confidence = null, justification = null.
@@ -111,6 +118,14 @@ BRUIT / ERREURS ASR
 - La transcription peut contenir des erreurs, répétitions ou hallucinations.
 - N'utilise pas une phrase isolée, incohérente ou manifestement bruitée comme seul indice d'identification.
 - Privilégie les informations cohérentes et confirmées par plusieurs indices.
+
+==================================================
+RAPPELS CRITIQUES
+==================================================
+
+- Ne JAMAIS attribuer un nom sur la base d'une mention d'un tiers ou d'une citation.
+- Mieux vaut name=null qu'un nom incorrect.
+- Une interpellation ne suffit que si la réponse qui suit est cohérente avec elle.
 
 ==================================================
 EXTRAIT À TRAITER
@@ -141,8 +156,7 @@ RÈGLES DE MISE À JOUR
 Tu peux mettre à jour name, role, confidence, justification UNIQUEMENT si :
   a) Le nouvel extrait apporte une information plus précise (ex: rôle était null, maintenant explicite).
   b) Le nouvel extrait corrige clairement une information erronée (contradiction explicite).
-  c) Le nouvel extrait apporte un indice supplémentaire cohérent avec l'hypothèse existante :
-     dans ce cas, augmente la confidence de manière proportionnelle à la solidité du nouvel indice.
+  c) Le nouvel extrait apporte un indice supplémentaire cohérent avec l'hypothèse existante.
 
 En cas de contradiction entre deux informations :
   - Privilégie les informations explicites (auto-présentation, présentation directe) sur les déductions.
@@ -156,13 +170,25 @@ SOURCES D'IDENTIFICATION VALIDES ET INVALIDES
 Les mêmes règles que pour l'extraction initiale s'appliquent ici. Pour rappel :
 
 VALIDES :
-✓ Auto-présentation de INTERLOCUTEUR_XX.
-✓ Présentation explicite de INTERLOCUTEUR_XX par un tiers.
-✓ Interpellation directe de INTERLOCUTEUR_XX par son nom, suivie d'une réponse.
+✓ Auto-présentation de LOCUTEUR_XX.
+✓ Présentation explicite de LOCUTEUR_XX par un tiers, suivie d'une prise de parole cohérente.
+✓ Interpellation directe de LOCUTEUR_XX par son nom, suivie d'une réponse cohérente
+  avec l'interpellation.
 
 INVALIDES :
-✗ INTERLOCUTEUR_XX mentionne un nom dans une citation ou en parlant d'un tiers.
-✗ INTERLOCUTEUR_XX est désigné uniquement par son rôle ou titre, sans nom associé.
+✗ LOCUTEUR_XX mentionne un nom dans une citation ou en parlant d'un tiers.
+✗ LOCUTEUR_XX est désigné uniquement par son rôle ou titre, sans nom associé.
+
+==================================================
+BARÈME D'INCRÉMENTATION DE LA CONFIDENCE
+==================================================
+
+Quand un nouvel indice cohérent vient renforcer une hypothèse existante :
+- +0.05 à +0.10 : indice contextuel secondaire (rôle évoqué de manière cohérente, etc.).
+- +0.10 à +0.20 : interpellation directe cohérente avec l'hypothèse antérieure.
+- Passage à 0.95-1.0 : uniquement si une auto-présentation explicite ou une présentation directe
+  par un tiers confirme une hypothèse antérieurement déduite.
+- Plafond à 0.90 tant qu'il n'y a pas eu d'auto-présentation ou de présentation directe.
 
 ==================================================
 GESTION DES CAS AMBIGUS
@@ -172,13 +198,15 @@ GESTION DES CAS AMBIGUS
    remplace-le par le vrai nom et mets à jour la justification.
 
 2. HOMONYMES : si le nouvel extrait révèle qu'un autre speaker_id partage le même prénom :
-   - Renomme les deux participants en "<Prénom> 1" / "<Prénom> 2" selon leur ordre d'apparition
-     dans la transcription globale.
+   - Renomme les participants concernés en "<Prénom> 1" / "<Prénom> 2", en numérotant selon
+     l'ordre des speaker_id dans le JSON courant (les speaker_id sont numérotés dans l'ordre
+     d'apparition dans la transcription globale).
    - Mets à jour la justification des deux participants concernés.
 
-3. ACCUMULATION DE JUSTIFICATION : ne remplace pas la justification précédente,
-   mais enrichis-la avec les nouveaux indices apportés par cet extrait.
-   Format suggéré : "[Extrait N] <nouvel indice>" ajouté à la justification existante.
+3. JUSTIFICATION : garde une justification concise et consolidée (3 phrases maximum). Si le nouvel
+   extrait apporte un indice fort, réécris la justification en synthétisant les indices les plus
+   solides plutôt qu'en empilant tous les indices passés. Ne conserve que ce qui justifie réellement
+   l'identification actuelle.
 
 ==================================================
 PARTICIPANTS DÉJÀ RÉSOLUS
@@ -194,6 +222,15 @@ BRUIT / ERREURS ASR
 
 - Ignore les phrases manifestement incohérentes ou isolées.
 - Ne révise pas une association existante sur la base d'un seul indice bruité.
+
+==================================================
+RAPPELS CRITIQUES
+==================================================
+
+- Ne JAMAIS attribuer un nom sur la base d'une mention d'un tiers ou d'une citation.
+- Mieux vaut name=null qu'un nom incorrect.
+- Conserve les valeurs existantes si le nouvel extrait n'apporte rien.
+- Garde la justification synthétique, ne l'accumule pas indéfiniment.
 
 ==================================================
 ENTRÉES À TRAITER
