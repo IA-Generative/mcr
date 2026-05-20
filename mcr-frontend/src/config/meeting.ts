@@ -1,4 +1,3 @@
-export const TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL = 60 * 1000; // 1 minute
 export const PART_SIZE = 50 * 1024 * 1024; // 50Mo
 export const MAX_RETRIES = 5;
 export const BASE_BACKOFF_MS = 1000; // 1 second

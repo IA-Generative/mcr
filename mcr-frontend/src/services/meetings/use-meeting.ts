@@ -2,15 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import {
   create,
   generateMeetingTranscription,
-  generateReport,
   generateUploadUrl,
   getAll,
   getOne,
-  getReport,
-  getTranscriptionWaitingTime,
   initCapture,
   removeOne,
-  resetReport,
   startTranscription,
   stopCapture,
   update,
@@ -22,7 +18,6 @@ import type {
   MeetingDetailDto,
   MeetingDto,
   MeetingStatus,
-  ReportGenerationRequest,
   UpdateMeetingDto,
 } from './meetings.types';
 import { type Ref } from 'vue';
@@ -31,7 +26,6 @@ import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { lookupComu, lookupComuByPasscode } from '../lookup/lookup.service';
 import throttle from 'lodash.throttle';
-import { TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL } from '@/config/meeting';
 
 const POLLING_INTERVAL = 10 * 1000; // 10 seconds
 const THROTTLING_INTERVAL = 200; // 200 milliseconds
@@ -181,29 +175,6 @@ function downloadMutation(options?: ExtraMutationOptions<typeof generateMeetingT
   });
 }
 
-function getReportMutation(options?: ExtraMutationOptions<typeof getReport>) {
-  return useMutation({
-    mutationFn: (id: number) => getReport(id),
-    ...options,
-  });
-}
-
-type GenerateReportInput = { id: number; body: ReportGenerationRequest };
-
-function generateReportMutation(options?: { onError?: (error: Error) => void }) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, body }: GenerateReportInput) => generateReport(id, body),
-    ...options,
-    onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.MEETINGS, id],
-      });
-    },
-  });
-}
-
 function updateMeetingOptimistically() {
   const queryClient = useQueryClient();
 
@@ -213,19 +184,6 @@ function updateMeetingOptimistically() {
       queryClient.setQueryData([QUERY_KEYS.MEETINGS, id], (old: MeetingDetailDto | undefined) =>
         old ? { ...old, notes: data.notes } : undefined,
       );
-    },
-  });
-}
-
-function resetReportMutation() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) => resetReport(id),
-    onSuccess: (_, id) => {
-      queryClient.invalidateQueries({
-        queryKey: [QUERY_KEYS.MEETINGS, id],
-      });
     },
   });
 }
@@ -282,14 +240,6 @@ function lookupMeetingByPasscodeMutation(
   });
 }
 
-function getMeetingTranscriptionWaitTime(id: number) {
-  return useQuery({
-    queryKey: [QUERY_KEYS.TRANSCRIPTION_WAIT_TIME, id],
-    queryFn: () => getTranscriptionWaitingTime(id),
-    refetchInterval: TRANSCRIPTION_WAITING_TIME_POLLING_INTERVAL,
-  });
-}
-
 export function useMeetings() {
   return {
     getMeetingQuery,
@@ -303,11 +253,7 @@ export function useMeetings() {
     startTranscriptionMutation,
     downloadMutation,
     uploadFileWithPresignedUrlMutation,
-    getReportMutation,
-    generateReportMutation,
-    resetReportMutation,
     lookupMeetingUrlMutation,
     lookupMeetingByPasscodeMutation,
-    getMeetingTranscriptionWaitTime,
   };
 }

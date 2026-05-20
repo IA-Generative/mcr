@@ -6,7 +6,6 @@ import type {
   MeetingDetailDto,
   MeetingDto,
   Part,
-  ReportGenerationRequest,
   UpdateMeetingDto,
 } from './meetings.types';
 import type { AxiosResponse } from 'axios';
@@ -83,35 +82,6 @@ export async function generateMeetingTranscription(id: number): Promise<AxiosRes
   );
 
   return response;
-}
-
-export async function getReport(id: number): Promise<AxiosResponse> {
-  const config = {
-    responseType: 'blob' as const,
-    headers: {
-      'Content-Type': DOCX_MIME_TYPE,
-    },
-  };
-
-  const response = await HttpService.get(`${API_PATHS.MEETINGS}/${id}/report`, config);
-  return response;
-}
-
-export async function generateReport(id: number, body: ReportGenerationRequest): Promise<void> {
-  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report`, body);
-}
-
-export async function resetReport(id: number): Promise<void> {
-  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report/reset`);
-}
-
-export async function getTranscriptionWaitingTime(
-  meeting_id: number,
-): Promise<import('./meetings.types').TranscriptionWaitingTimeResponse> {
-  const { data } = await HttpService.get(
-    `${API_PATHS.MEETINGS}/${meeting_id}/transcription/wait-time`,
-  );
-  return data;
 }
 
 export async function initMultipartUploadService(
