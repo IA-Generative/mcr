@@ -118,9 +118,7 @@ class TestSoftDeleteDeliverable:
         )
 
         db_session.refresh(available)
-        db_session.refresh(meeting)
         assert available.status == DeliverableStatus.DELETED
-        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
     def test_403_for_non_owner(self) -> None:
         meeting = MeetingFactory.create(

@@ -102,13 +102,6 @@ def delete(meeting_id: int, user_keycloak_uuid: UUID4 | None = None) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.DELETE)
 
 
-def reset_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.RESET_REPORT)
-
-
 def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting:
     meeting = get_meeting_service(meeting_id=meeting_id)
 

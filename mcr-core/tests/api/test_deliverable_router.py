@@ -420,8 +420,6 @@ class TestDeleteRoute:
         assert response.status_code == 204
         db_session.refresh(deliverable)
         assert deliverable.status == DeliverableStatus.DELETED
-        db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
 
 class TestGetFileRoute:

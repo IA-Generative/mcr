@@ -16,7 +16,6 @@ from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_report,
     fail_report,
-    reset_report,
 )
 from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
 from mcr_meeting.app.services.deliverable_service import (
@@ -124,12 +123,6 @@ def soft_delete_deliverable(deliverable_id: int, user_keycloak_uuid: UUID4) -> N
         meeting_id=deliverable.meeting_id, user_keycloak_uuid=user_keycloak_uuid
     )
     soft_delete_deliverable_row(deliverable_id=deliverable_id)
-    _apply_idempotent_sm_call(
-        reset_report,
-        meeting_id=deliverable.meeting_id,
-        expected_target_status=MeetingStatus.TRANSCRIPTION_DONE,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
 
 
 def list_deliverables_for_meeting(
