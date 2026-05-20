@@ -203,13 +203,13 @@ class MappedTopics(BaseModel):
 
 class TopicsContent(BaseModel):
     topics: list[Topic] = Field(
-        ...,
+        default_factory=list,
         description=(
             "Liste des sujets discutés lors de la réunion avec leur détails et décisions associées."
         ),
     )
     next_steps: list[str] = Field(
-        ...,
+        default_factory=list,
         description=(
             "Liste des prochaines étapes suite à la réunion."
             "Ne reprend pas les actions de suivi associées aux décisions precedemments extraites."
