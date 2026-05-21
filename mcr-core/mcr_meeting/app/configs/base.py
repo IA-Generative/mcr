@@ -386,6 +386,16 @@ class SentrySettings(BaseSettings):
     TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
 
 
+class LangfuseSettings(BaseSettings):
+    """
+    Settings parameters for Langfuse monitoring
+    """
+
+    LANGFUSE_PUBLIC_KEY: str = Field(description="Langfuse public key")
+    LANGFUSE_SECRET_KEY: str = Field(description="Langfuse secret key")
+    LANGFUSE_HOST: str = Field(description="Langfuse host URL")
+
+
 class LLMSettings(BaseSettings):
     """
     Settings parameters for calling an API hosted LLM
