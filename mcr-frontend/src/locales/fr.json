@@ -376,21 +376,21 @@
       "cancel-button": "Annuler",
       "generate-button": "Générer",
       "suggestions": {
-        "classic-3-parts": {
-          "title": "3 parties classiques",
-          "prompt": "Génère un compte-rendu en trois parties : participants, décisions prises, prochaines étapes. Ton professionnel, format en bullet points."
-        },
         "action-plan": {
           "title": "Plan d'actions",
-          "prompt": "Liste toutes les actions décidées lors de cette réunion. Pour chaque action : responsable, description, deadline si mentionnée. Format tableau."
+          "prompt": "Génère un plan d'actions avec pour chaque action : le responsable, la priorité et la date d'échéance."
         },
         "executive-summary": {
-          "title": "Synthèse exécutive",
-          "prompt": "Rédige une synthèse de 10 lignes maximum à destination d’un dirigeant. Ton concis, factuel. Mets en avant les décisions clés et les points de blocage."
+          "title": "Note de direction",
+          "prompt": "Rédige une note synthétique à destination de la direction avec les points essentiels, les décisions stratégiques et les risques à surveiller."
         },
-        "themed-verbatim": {
-          "title": "Verbatim thématisé",
-          "prompt": "Regroupe les échanges par thématique. Pour chaque thématique, restitue les arguments principaux évoqués, sans interprétation."
+        "quick-report": {
+          "title": "Compte-rendu flash",
+          "prompt": "Prépare un compte-rendu d'une page maximum : liste les 5 points clés à retenir, les décisions actées et les actions immédiates à lancer. Supprime les digressions."
+        },
+        "structured-roundtable": {
+          "title": "Tour de table structuré",
+          "prompt": "Pour chaque point à l'ordre du jour, résume les contributions des participants, les décisions prises et les points restant à statuer."
         }
       }
     },
