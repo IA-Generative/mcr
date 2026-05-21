@@ -123,11 +123,7 @@ const generateDisabled = computed(
 );
 
 const modalGenerateDisabled = computed(
-  () =>
-    allGenerated.value ||
-    isCreating.value ||
-    hasPendingDeliverable.value ||
-    isTranscriptionInProgress.value,
+  () => isCreating.value || hasPendingDeliverable.value || isTranscriptionInProgress.value,
 );
 
 const { open: openCustomReportModal } = useModal({
