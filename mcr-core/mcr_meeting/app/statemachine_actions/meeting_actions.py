@@ -3,20 +3,15 @@ from datetime import datetime, timezone
 from loguru import logger
 
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
-from mcr_meeting.app.exceptions.exceptions import (
-    NotFoundException,
-    TaskCreationException,
-)
+from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.celery_types import (
-    MCRReportGenerationTasks,
     MCRTranscriptionTasks,
 )
 from mcr_meeting.app.schemas.report_generation import (
     ReportResponse,
-    ReportType,
 )
 from mcr_meeting.app.services.deliverable_storage_service import store_deliverable
 from mcr_meeting.app.services.email.email_service import (
@@ -33,14 +28,12 @@ from mcr_meeting.app.services.meeting_transition_record_service import (
     create_transition_record_service,
 )
 from mcr_meeting.app.services.report_task_service import persist_report_docx
-from mcr_meeting.app.services.s3_service import get_transcription_object_name
 from mcr_meeting.app.services.transcription_task_service import (
     retrieve_or_create_formatted_docx_transcription,
 )
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
-from mcr_meeting.app.utils.celery_producer import celery_producer_app
 
 
 def after_start_capture_bot_handler(
@@ -123,46 +116,6 @@ def after_complete_transcription_handler(
         )
 
     send_transcription_generation_success_email(meeting_id=meeting.id)
-
-
-def after_start_report_handler(
-    meeting: Meeting,
-    next_status: MeetingStatus,
-    report_type: ReportType,
-    deliverable_id: int | None = None,
-    custom_prompt: str | None = None,
-) -> None:
-    try:
-        if meeting.transcription_filename is None:
-            raise NotFoundException("Could not find meeting transcription")
-
-        transcription_object_name = get_transcription_object_name(
-            meeting_id=meeting.id, filename=meeting.transcription_filename
-        )
-
-        task_kwargs: dict[str, str | int] = {
-            "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
-        }
-        if deliverable_id is not None:
-            task_kwargs["deliverable_id"] = deliverable_id
-        if custom_prompt is not None:
-            task_kwargs["custom_prompt"] = custom_prompt
-        if meeting.notes is not None:
-            task_kwargs["notes_content"] = meeting.notes
-
-        with UnitOfWork():
-            update_meeting_status(meeting, next_status)
-            celery_producer_app.send_task(
-                MCRReportGenerationTasks.REPORT,
-                args=[meeting.id, transcription_object_name, report_type],
-                kwargs=task_kwargs,
-            )
-
-        logger.info("Report generation task created for meeting: {}", meeting.id)
-
-    except Exception as e:
-        logger.error("Error creating transcription task: {}", e)
-        raise TaskCreationException(str(e))
 
 
 def after_complete_report_handler(

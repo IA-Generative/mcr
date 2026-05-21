@@ -18,7 +18,6 @@ from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mt
 from mcr_meeting.app.schemas.report_generation import (
     ReportGenerationResponse,
     ReportHeader,
-    ReportType,
 )
 from mcr_meeting.app.statemachine_actions import meeting_actions
 from tests.factories import MeetingFactory
@@ -373,28 +372,6 @@ def test_update_transcription_bad_status(
 # ---------------------------------------------------------------------------
 
 
-def test_start_report(
-    orchestrator_user: User,
-    mock_celery_producer_app: Mock,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test starting report transitions to REPORT_PENDING."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.TRANSCRIPTION_DONE,
-        name_platform=MeetingPlatforms.COMU,
-        transcription_filename="titre.docx",
-    )
-
-    result = mts.start_report(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-        report_type=ReportType.DECISION_RECORD,
-    )
-
-    assert result.status == MeetingStatus.REPORT_PENDING
-
-
 def test_complete_report(
     _mock_persist_report_docx: MagicMock,
     mock_send_email: MagicMock,
@@ -419,25 +396,6 @@ def test_complete_report(
 
     assert result.status == MeetingStatus.REPORT_DONE
     assert mock_send_email.call_count == 1
-
-
-def test_reset_report(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test resetting report transitions to TRANSCRIPTION_DONE."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.REPORT_DONE,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.reset_report(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
 
 
 def test_reset_report_bad_status(

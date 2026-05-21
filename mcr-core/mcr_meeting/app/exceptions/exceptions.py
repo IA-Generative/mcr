@@ -39,6 +39,11 @@ class TaskCreationException(MCRException):
     """Raised when a transcription task couldn't be created."""
 
 
+class DeliverableConcurrentlyCreatedException(MCRException):
+    """Raised when a concurrent INSERT trips the partial unique index that
+    forbids more than one active deliverable per (meeting, type)."""
+
+
 class ForbiddenAccessException(MCRException):
     """Raised when a user try to access a ressource they don't have rights to
     (e.g Admin resources or Resources possessed by others)"""

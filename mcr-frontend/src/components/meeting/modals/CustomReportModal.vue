@@ -65,8 +65,8 @@
           {{ $t('meeting-v2.custom-report-modal.cancel-button') }}
         </DsfrButton>
         <DsfrButton
+          icon="ri-refresh-line"
           :disabled="isGenerateDisabled"
-          icon="fr-icon-square-fill"
           @click="handleGenerate"
         >
           {{ $t('meeting-v2.custom-report-modal.generate-button') }}
@@ -91,6 +91,7 @@ const MODAL_ID = 'custom-report-modal';
 
 const props = defineProps<{
   initialPrompt: string;
+  modalGenerateDisabled: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -102,7 +103,9 @@ const { t } = useI18n();
 
 const prompt = ref(props.initialPrompt);
 
-const isGenerateDisabled = computed(() => prompt.value.trim().length === 0);
+const isGenerateDisabled = computed(
+  () => prompt.value.trim().length === 0 || props.modalGenerateDisabled,
+);
 
 type SuggestionKey = keyof MessageSchema['meeting-v2']['custom-report-modal']['suggestions'];
 

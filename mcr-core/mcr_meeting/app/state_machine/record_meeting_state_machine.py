@@ -1,12 +1,11 @@
 from statemachine import State, StateMachine
 
 from mcr_meeting.app.models import Meeting, MeetingStatus
-from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
+from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.statemachine_actions.meeting_actions import (
     after_complete_report_handler,
     after_complete_transcription_handler,
     after_init_transcription_handler,
-    after_start_report_handler,
     after_start_transcription_handler,
     after_transition_handler,
     update_status_handler,
@@ -93,33 +92,12 @@ class RecordMeetingStateMachine(StateMachine):
             return
         update_status_handler(self.meeting, self.current_state_value)
 
-    def after_START_REPORT(
-        self,
-        report_type: ReportType,
-        deliverable_id: int | None = None,
-        custom_prompt: str | None = None,
-    ) -> None:
-        if self.meeting is None:
-            return
-        after_start_report_handler(
-            self.meeting,
-            self.current_state_value,
-            report_type,
-            deliverable_id=deliverable_id,
-            custom_prompt=custom_prompt,
-        )
-
     def after_COMPLETE_REPORT(self, report_response: ReportResponse) -> None:
         if self.meeting is None:
             return
         after_complete_report_handler(
             self.meeting, self.current_state_value, report_response
         )
-
-    def after_RESET_REPORT(self) -> None:
-        if self.meeting is None:
-            return
-        update_status_handler(self.meeting, self.current_state_value)
 
     def after_FAIL_REPORT(self) -> None:
         if self.meeting is None:

@@ -1,8 +1,10 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
+from mcr_meeting.app.exceptions.exceptions import (
+    DeliverableConcurrentlyCreatedException,
+)
 from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
@@ -111,7 +113,7 @@ class TestUniqueActiveConstraint:
             status=DeliverableStatus.PENDING,
         )
 
-        with pytest.raises(IntegrityError):
+        with pytest.raises(DeliverableConcurrentlyCreatedException):
             with UnitOfWork():
                 deliverable_service.create_pending_deliverable(
                     meeting_id=meeting.id,

@@ -311,6 +311,10 @@ def mock_celery_producer_app(
     mock_celery_producer_app = mocker.patch(
         "mcr_meeting.app.statemachine_actions.meeting_actions.celery_producer_app"
     )
+    mocker.patch(
+        "mcr_meeting.app.use_cases.request_deliverable.celery_producer_app",
+        mock_celery_producer_app,
+    )
 
     return_value = getattr(request, "param", None)
     if isinstance(return_value, Exception):

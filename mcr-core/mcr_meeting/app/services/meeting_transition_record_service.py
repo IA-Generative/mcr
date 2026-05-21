@@ -45,6 +45,7 @@ def create_transition_record_service(
     status_with_special_transition_record_handlers = [
         MeetingStatus.TRANSCRIPTION_PENDING,
         MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        MeetingStatus.REPORT_PENDING,
     ]
 
     if next_status in status_with_special_transition_record_handlers:

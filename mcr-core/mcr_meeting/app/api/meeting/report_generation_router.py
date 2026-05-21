@@ -8,11 +8,8 @@ from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting
 from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_report,
     fail_report,
-    reset_report,
-    start_report,
 )
 from mcr_meeting.app.schemas.report_generation import (
-    ReportGenerationRequest,
     ReportResponse,
 )
 from mcr_meeting.app.services.report_task_service import (
@@ -60,44 +57,12 @@ async def get_meeting_report(
     )
 
 
-@router.post("/{meeting_id}/report")
-async def generate_meeting_report(
-    meeting_id: int,
-    body: ReportGenerationRequest,
-    x_user_keycloak_uuid: UUID4 = Header(),
-) -> None:
-    """
-    Create the report
-
-    Args:
-        meeting_id (int): The ID of the meeting.
-        body (ReportGenerationRequest): The report generation request containing report types.
-
-    Returns:
-        None
-
-    """
-    start_report(
-        meeting_id=meeting_id,
-        user_keycloak_uuid=x_user_keycloak_uuid,
-        report_type=body.report_types[0],
-    )
-
-
 @router.post("/{meeting_id}/report/success")
 async def generate_meeting_report_success(
     meeting_id: int,
     report_response: ReportResponse,
 ) -> None:
     complete_report(meeting_id=meeting_id, report_response=report_response)
-
-
-@router.post("/{meeting_id}/report/reset", status_code=204)
-async def reset_meeting_report(
-    meeting_id: int,
-    x_user_keycloak_uuid: UUID4 = Header(),
-) -> None:
-    reset_report(meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid)
 
 
 @router.post("/{meeting_id}/report/failure")

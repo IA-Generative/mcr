@@ -226,10 +226,6 @@ def delete_objects(object_iterable: Iterable[S3Object]) -> bool:
         return False
 
 
-def get_transcription_object_name(meeting_id: int, filename: str) -> str:
-    return f"{s3_settings.S3_TRANSCRIPTION_FOLDER}/{meeting_id}/{filename}"
-
-
 def get_report_object_name(meeting_id: int, filename: str) -> str:
     return f"{s3_settings.S3_REPORT_FOLDER}/{meeting_id}/{filename}"
 

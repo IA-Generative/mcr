@@ -8,6 +8,8 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
     TaskCreationException,
 )
+from mcr_meeting.app.infrastructure.celery import celery_producer_app
+from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.services.docx_transcription_generation_service import (
@@ -19,10 +21,8 @@ from mcr_meeting.app.services.meeting_service import (
 )
 from mcr_meeting.app.services.s3_service import (
     get_file_from_s3,
-    get_transcription_object_name,
     put_file_to_s3,
 )
-from mcr_meeting.app.utils.celery_producer import celery_producer_app
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 
 DEFAULT_TRANSCRIPTION_FILENAME = "transcription.docx"
