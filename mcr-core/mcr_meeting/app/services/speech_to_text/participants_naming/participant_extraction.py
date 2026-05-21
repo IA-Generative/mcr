@@ -54,10 +54,41 @@ class ParticipantExtraction(LLMPostProcessing):
 
         # Refine with subsequent chunks
         if len(chunks) > 1:
-            for chunk in chunks[1:]:
+            for step_index, chunk in enumerate(chunks[1:], start=1):
+                previous = participants
                 participants = self._refine(participants, chunk)
+                self._warn_on_name_loss(
+                    previous=previous, current=participants, step_index=step_index
+                )
 
         return participants
+
+    @staticmethod
+    def _warn_on_name_loss(
+        previous: list[Participant],
+        current: list[Participant],
+        step_index: int,
+    ) -> None:
+        previous_by_id = {p.speaker_id: p for p in previous}
+        current_by_id = {p.speaker_id: p for p in current}
+        for speaker_id, prev in previous_by_id.items():
+            if prev.name is None:
+                continue
+            current_participant = current_by_id.get(speaker_id)
+            if current_participant is None:
+                logger.warning(
+                    "Participant {} (name={!r}) disappeared from the list at step {}",
+                    speaker_id,
+                    prev.name,
+                    step_index,
+                )
+            elif current_participant.name is None:
+                logger.warning(
+                    "Participant {} lost their name at step {} (was {!r})",
+                    speaker_id,
+                    step_index,
+                    prev.name,
+                )
 
     def _format_segments_for_llm(
         self, segments: list[DiarizedTranscriptionSegment]
