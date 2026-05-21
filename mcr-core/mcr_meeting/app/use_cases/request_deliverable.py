@@ -146,4 +146,6 @@ def _build_report_task_kwargs(
     }
     if custom_prompt is not None:
         kwargs["custom_prompt"] = custom_prompt
+    if meeting.notes is not None:
+        kwargs["notes_content"] = meeting.notes
     return kwargs

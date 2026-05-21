@@ -112,6 +112,49 @@ class TestRequestDeliverableHappyPath:
         call = mock_use_case_celery.send_task.call_args
         assert "custom_prompt" not in call.kwargs["kwargs"]
 
+    def test_passes_meeting_notes_through(
+        self,
+        mock_use_case_celery: MagicMock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+            notes="Points discutés : roadmap Q3 et budget",
+        )
+
+        request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        call = mock_use_case_celery.send_task.call_args
+        assert (
+            call.kwargs["kwargs"]["notes_content"]
+            == "Points discutés : roadmap Q3 et budget"
+        )
+
+    def test_no_notes_content_key_when_meeting_has_no_notes(
+        self,
+        mock_use_case_celery: MagicMock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+            notes=None,
+        )
+
+        request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        call = mock_use_case_celery.send_task.call_args
+        assert "notes_content" not in call.kwargs["kwargs"]
+
 
 class TestRequestDeliverableExistingActive:
     def test_pending_same_type_returns_existing_no_new_task(
