@@ -7,11 +7,8 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingEvent,
     MeetingPlatforms,
 )
-from mcr_meeting.app.schemas.report_generation import ReportResponse, ReportType
+from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.services.meeting_service import get_meeting_service
-from mcr_meeting.app.services.transcription_task_service import (
-    create_formatted_docx_transcription,
-)
 from mcr_meeting.app.state_machine.import_meeting_state_machine import (
     ImportMeetingStateMachine,
 )
@@ -105,36 +102,6 @@ def delete(meeting_id: int, user_keycloak_uuid: UUID4 | None = None) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.DELETE)
 
 
-def start_report(
-    meeting_id: int,
-    user_keycloak_uuid: UUID4,
-    report_type: ReportType,
-    deliverable_id: int | None = None,
-    custom_prompt: str | None = None,
-) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-
-    if meeting.transcription_filename is None:
-        create_formatted_docx_transcription(meeting, meeting.transcriptions)
-
-    return _apply_transition(
-        meeting,
-        MeetingEvent.START_REPORT,
-        report_type=report_type,
-        deliverable_id=deliverable_id,
-        custom_prompt=custom_prompt,
-    )
-
-
-def reset_report(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.RESET_REPORT)
-
-
 def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting:
     meeting = get_meeting_service(meeting_id=meeting_id)
 
@@ -155,7 +122,7 @@ def _apply_transition(  # type: ignore[explicit-any]
     transition_name: MeetingEvent,
     **kwargs: Any,
 ) -> Meeting:
-    sm = _get_state_machine(meeting)
+    sm = get_state_machine_for_meeting(meeting)
     try:
         sm.send(transition_name, **kwargs)
     except Exception as e:
@@ -166,7 +133,7 @@ def _apply_transition(  # type: ignore[explicit-any]
     return meeting
 
 
-def _get_state_machine(
+def get_state_machine_for_meeting(
     meeting: Meeting,
 ) -> VisioMeetingStateMachine | RecordMeetingStateMachine | ImportMeetingStateMachine:
     match meeting.name_platform:

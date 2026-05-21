@@ -40,6 +40,7 @@ type MeetingDtoBase = {
   creation_date: string;
   start_date?: string;
   end_date?: string;
+  notes?: string | null;
 };
 
 export interface OnlineMeetingDto extends MeetingDtoBase {
@@ -72,14 +73,23 @@ export type MeetingDetailDto = MeetingDto & {
   deliverables: DeliverableDto[];
 };
 
-export type AddOnlineMeetingDto = Omit<
+export type AddOnlineMeetingDto = Pick<
   OnlineMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date'
+  | 'name'
+  | 'name_platform'
+  | 'creation_date'
+  | 'url'
+  | 'meeting_password'
+  | 'meeting_platform_id'
+  | 'notes'
 >;
-export type AddImportMeetingDto = Omit<ImportMeetingDto, 'id' | 'status'>;
-export type AddRecordMeetingDto = Omit<
+export type AddImportMeetingDto = Pick<
+  ImportMeetingDto,
+  'name' | 'name_platform' | 'creation_date' | 'start_date' | 'end_date' | 'notes'
+>;
+export type AddRecordMeetingDto = Pick<
   RecordMeetingDto,
-  'id' | 'status' | 'start_date' | 'end_date'
+  'name' | 'name_platform' | 'creation_date' | 'notes'
 >;
 
 export type UpdateOnlineMeetingDto = Partial<AddOnlineMeetingDto>;
@@ -161,13 +171,5 @@ export function isPostCaptureStatus(status: MeetingStatus): boolean {
   return PostCaptureStatuses.includes(status);
 }
 
-export interface TranscriptionWaitingTimeResponse {
-  estimation_duration_minutes: number;
-}
-
 export const ReportType = ['DECISION_RECORD', 'DETAILED_SYNTHESIS'] as const;
 export type ReportType = (typeof ReportType)[number];
-
-export interface ReportGenerationRequest {
-  report_types: ReportType[];
-}

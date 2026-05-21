@@ -141,6 +141,9 @@ jobs:
         working-directory: mcr-generation
         run: |
           uv run ruff check .
+      - name: Run Type checker
+        working-directory: mcr-generation
+        run: make type-check
       - name: Run tests
         working-directory: mcr-generation
         run: |

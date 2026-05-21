@@ -1,4 +1,5 @@
 from mcr_generation.app.schemas.base import DecisionRecord
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
 )
@@ -17,14 +18,19 @@ class DecisionRecordGenerator(BaseReportGenerator):
     step over the transcript chunks to identify topics and next steps.
     """
 
-    def generate(self, chunks: list[Chunk]) -> DecisionRecord:
-        header = self.generate_header(chunks)
+    def generate(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> DecisionRecord:
+        notes = extracted_notes or ExtractedNotes()
+        header = self.generate_header(chunks, extracted_notes=extracted_notes)
 
         map_reduce = MapReduceTopics(
             meeting_subject=header.title,
             participants=header.participants,
         )
-        content = map_reduce.map_reduce_all_steps(chunks)
+        content = map_reduce.map_reduce_all_steps(chunks, notes_hint=notes.topics)
 
         return DecisionRecord(
             header=header,

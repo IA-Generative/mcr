@@ -7,7 +7,7 @@ import { t } from '@/plugins/i18n';
 
 type AddImportMeetingFields = Omit<
   AddImportMeetingDto,
-  'name_platform' | 'creation_date' | 'start_date' | 'end_date'
+  'name_platform' | 'creation_date' | 'start_date' | 'end_date' | 'notes'
 > & {
   file: File;
 };

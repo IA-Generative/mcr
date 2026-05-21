@@ -44,7 +44,7 @@ import {
 import { getTranscriptionStatus } from '@/services/deliverables/deliverables.service';
 import type { MeetingStatus } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
-import { downloadFileFromAxios } from '@/utils/file';
+import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
@@ -65,37 +65,6 @@ const toaster = useToaster();
 const isCustomReportEnabled = useFeatureFlag('custom_cr');
 const selectedType = ref<DeliverableType | undefined>(undefined);
 const customPrompt = ref('');
-
-const { open: openCustomReportModal } = useModal({
-  component: CustomReportModal,
-  attrs: {
-    get initialPrompt() {
-      return customPrompt.value;
-    },
-    onGenerate: (prompt: string) => {
-      createMutate(
-        { meeting_id: props.meetingId, type: 'CUSTOM_REPORT', custom_prompt: prompt },
-        {
-          onError: () => {
-            toaster.addErrorMessage(t('error.deliverable-generation')!);
-          },
-        },
-      );
-      customPrompt.value = '';
-      selectedType.value = undefined;
-    },
-    onUpdatePrompt: (value: string) => {
-      customPrompt.value = value;
-      selectedType.value = undefined;
-    },
-  },
-});
-
-function onSelectType(newType: string | number | boolean): void {
-  if (newType === 'CUSTOM_REPORT') {
-    openCustomReportModal();
-  }
-}
 
 const activeDeliverables = computed(() =>
   (deliverables.value ?? []).filter(
@@ -153,6 +122,44 @@ const generateDisabled = computed(
     isTranscriptionInProgress.value,
 );
 
+const modalGenerateDisabled = computed(
+  () => isCreating.value || hasPendingDeliverable.value || isTranscriptionInProgress.value,
+);
+
+const { open: openCustomReportModal } = useModal({
+  component: CustomReportModal,
+  attrs: {
+    get initialPrompt() {
+      return customPrompt.value;
+    },
+    get modalGenerateDisabled() {
+      return modalGenerateDisabled.value;
+    },
+    onGenerate: (prompt: string) => {
+      createMutate(
+        { meeting_id: props.meetingId, type: 'CUSTOM_REPORT', custom_prompt: prompt },
+        {
+          onError: () => {
+            toaster.addErrorMessage(t('error.deliverable-generation')!);
+          },
+        },
+      );
+      customPrompt.value = '';
+      selectedType.value = undefined;
+    },
+    onUpdatePrompt: (value: string) => {
+      customPrompt.value = value;
+      selectedType.value = undefined;
+    },
+  },
+});
+
+function onSelectType(newType: string | number | boolean): void {
+  if (newType === 'CUSTOM_REPORT') {
+    openCustomReportModal();
+  }
+}
+
 function generate(): void {
   if (selectedType.value === undefined || selectedType.value === 'CUSTOM_REPORT') return;
   createMutate(
@@ -184,7 +191,7 @@ const displayedDeliverables = computed(() =>
 function onDownload(deliverableId: number): void {
   downloadMutate(deliverableId, {
     onSuccess: (response) => {
-      downloadFileFromAxios(response, `livrable_${deliverableId}.docx`);
+      downloadFileFromAxios(response, extractFilenameFromResponse(response));
     },
     onError: () => {
       toaster.addErrorMessage(t('error.default')!);
@@ -206,7 +213,7 @@ const { mutate: downloadTranscription } = downloadMutation();
 function onDownloadTranscription(): void {
   downloadTranscription(props.meetingId, {
     onSuccess: (response) => {
-      downloadFileFromAxios(response, `transcription_${props.meetingId}.docx`);
+      downloadFileFromAxios(response, extractFilenameFromResponse(response));
     },
     onError: () => {
       toaster.addErrorMessage(t('error.default')!);

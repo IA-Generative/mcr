@@ -13,6 +13,8 @@ from mcr_meeting.app.models.meeting_model import (
 from mcr_meeting.app.orchestrators import transcription_orchestrator as to
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from tests.factories import MeetingFactory
+from tests.mocks.in_memory_email import InMemoryEmailClient
+from tests.mocks.in_memory_s3 import InMemoryS3
 
 
 @pytest.fixture
@@ -64,8 +66,8 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
-        mock_send_email: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
     ) -> None:
         to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
@@ -82,23 +84,23 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
-        mock_send_email: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
     ) -> None:
         to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
 
-        mock_s3_put.assert_called_once()
+        assert len(in_memory_s3.objects) == 1
 
     def test_updates_meeting_status_to_transcription_done(
         self,
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
-        mock_send_email: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
         db_session: Session,
     ) -> None:
         to.finalize_transcription(
@@ -116,8 +118,8 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
-        mock_send_email: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
         db_session: Session,
     ) -> None:
         to.finalize_transcription(
@@ -133,12 +135,12 @@ class TestHandleTranscriptionSuccess:
         transcription_in_progress_meeting: Meeting,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
-        mock_s3_put: MagicMock,
-        mock_send_email: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
     ) -> None:
         to.finalize_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
 
-        assert mock_send_email.call_count == 1
+        assert len(in_memory_email.sent) == 1

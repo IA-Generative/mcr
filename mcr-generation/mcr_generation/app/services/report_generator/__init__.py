@@ -47,6 +47,6 @@ def create_report_generator(
                 raise MissingCustomPromptError(
                     "CUSTOM_REPORT requires a non-empty custom_prompt"
                 )
-            return CustomReportGenerator(instruction=custom_prompt)
+            return CustomReportGenerator(raw_prompt=custom_prompt)
         case _:
             raise UnsupportedReportTypeError(f"Unknown report type: {report_type}")

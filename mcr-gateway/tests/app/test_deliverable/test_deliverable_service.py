@@ -120,7 +120,10 @@ async def test_get_file_streams_docx(httpx_mock: HTTPXMock) -> None:
         headers={
             "content-type": (
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
+            ),
+            "content-disposition": (
+                "attachment; filename*=UTF-8''Releve_Decision_Ma%20r%C3%A9union.docx"
+            ),
         },
     )
 
@@ -131,6 +134,33 @@ async def test_get_file_streams_docx(httpx_mock: HTTPXMock) -> None:
     assert response.media_type == (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
+    assert response.headers["content-disposition"] == (
+        "attachment; filename*=UTF-8''Releve_Decision_Ma%20r%C3%A9union.docx"
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_file_omits_disposition_when_upstream_did_not_send_one(
+    httpx_mock: HTTPXMock,
+) -> None:
+    user_uuid = uuid.uuid4()
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{settings.DELIVERABLE_SERVICE_URL}77/file",
+        content=b"fake docx content",
+        status_code=200,
+        headers={
+            "content-type": (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ),
+        },
+    )
+
+    response = await get_deliverable_file(
+        deliverable_id=77, user_keycloak_uuid=user_uuid
+    )
+
+    assert "content-disposition" not in response.headers
 
 
 @pytest.mark.asyncio

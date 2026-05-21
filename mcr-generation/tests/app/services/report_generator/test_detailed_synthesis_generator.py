@@ -109,7 +109,9 @@ class TestDetailedSynthesisGeneratorGenerate:
 
                 DetailedSynthesisGenerator().generate(test_chunks)
 
-            mock_generate_header.assert_called_once_with(test_chunks)
+            mock_generate_header.assert_called_once_with(
+                test_chunks, extracted_notes=None
+            )
 
     def test_map_reduce_initialized_and_executed(
         self,
@@ -148,5 +150,7 @@ class TestDetailedSynthesisGeneratorGenerate:
             participants=mock_header.participants,
         )
         # Verify map_reduce_all_steps execution and result
-        mock_map_reduce.map_reduce_all_steps.assert_called_once_with(chunks)
+        mock_map_reduce.map_reduce_all_steps.assert_called_once_with(
+            chunks, notes_hint=None
+        )
         assert result.detailed_discussions == mock_discussions

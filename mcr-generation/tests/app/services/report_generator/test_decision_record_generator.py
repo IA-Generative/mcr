@@ -203,7 +203,7 @@ class TestDecisionRecordGeneratorGenerate:
             DecisionRecordGenerator().generate(chunks)
 
         mock_map_reduce_cls.return_value.map_reduce_all_steps.assert_called_once_with(
-            chunks
+            chunks, notes_hint=None
         )
 
     def test_generate_header_called_once_with_chunks(
@@ -225,7 +225,7 @@ class TestDecisionRecordGeneratorGenerate:
 
             DecisionRecordGenerator().generate(chunks)
 
-        mock_generate_header.assert_called_once_with(chunks)
+        mock_generate_header.assert_called_once_with(chunks, extracted_notes=None)
 
     def test_empty_chunks_are_forwarded(
         self,
@@ -246,9 +246,9 @@ class TestDecisionRecordGeneratorGenerate:
 
             DecisionRecordGenerator().generate(empty)
 
-        mock_generate_header.assert_called_once_with(empty)
+        mock_generate_header.assert_called_once_with(empty, extracted_notes=None)
         mock_map_reduce_cls.return_value.map_reduce_all_steps.assert_called_once_with(
-            empty
+            empty, notes_hint=None
         )
 
     def test_empty_topics_and_next_steps(

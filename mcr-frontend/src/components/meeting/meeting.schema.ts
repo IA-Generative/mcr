@@ -145,7 +145,10 @@ function selectErrorMessage(url: string | null) {
   return notSupportedErrorMessage.value;
 }
 
-type AddOnlineMeetingFields = Omit<AddOnlineMeetingDto, 'name_platform' | 'creation_date'>;
+type AddOnlineMeetingFields = Omit<
+  AddOnlineMeetingDto,
+  'name_platform' | 'creation_date' | 'notes'
+>;
 
 export const VisioMeetingSchema: yup.ObjectSchema<AddOnlineMeetingFields> = yup
   .object({

@@ -8,8 +8,6 @@ from mcr_meeting.app.orchestrators.deliverable_orchestrator import (
     get_deliverable_file,
     list_deliverables_for_meeting,
     mark_deliverable_failure,
-    mark_deliverable_success,
-    request_deliverable,
     soft_delete_deliverable,
 )
 from mcr_meeting.app.schemas.deliverable_schema import (
@@ -19,6 +17,13 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableResponse,
     DeliverableSuccessRequest,
 )
+from mcr_meeting.app.use_cases.mark_deliverable_success import (
+    mark_deliverable_success,
+)
+from mcr_meeting.app.use_cases.request_deliverable import (
+    request_deliverable as request_deliverable_use_case,
+)
+from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -60,7 +65,7 @@ async def create_deliverable(
     custom_prompt = (
         body.custom_prompt if isinstance(body, CustomDeliverableCreateRequest) else None
     )
-    deliverable = request_deliverable(
+    deliverable = request_deliverable_use_case(
         meeting_id=body.meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         deliverable_type=body.type,
@@ -88,7 +93,9 @@ async def get_deliverable_file_route(
     result = get_deliverable_file(
         deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
-    filename = f"compte_rendu_{result.meeting_name}.docx"
+    filename = build_deliverable_filename(
+        deliverable_type=result.deliverable_type, meeting_name=result.meeting_name
+    )
     headers = create_safe_filename_header(filename)
     return StreamingResponse(result.buffer, media_type=DOCX_MIME_TYPE, headers=headers)
 

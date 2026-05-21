@@ -29,7 +29,7 @@ class NextMeetingCollector(MetadataCollector):
         formatted = format_next_meeting_for_report(result)
         if formatted is None:
             return "_Pas de prochaine réunion mentionnée._"
-        return f"## Prochaine réunion\n\n{formatted}"
+        return formatted
 
 
 register(NextMeetingCollector())

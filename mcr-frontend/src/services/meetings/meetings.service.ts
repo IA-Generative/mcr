@@ -1,16 +1,14 @@
 import HttpService, { API_PATHS } from '../http/http.service';
 import type { PaginatedResponse, PaginationQuery } from '../shared/pagination.type';
-import type { MultipartInitResponse, UploadTranscriptionParams } from './meetings.service.types';
+import type { MultipartInitResponse } from './meetings.service.types';
 import type {
   AddMeetingDto,
   MeetingDetailDto,
   MeetingDto,
   Part,
-  ReportGenerationRequest,
-  TranscriptionWaitingTimeResponse,
   UpdateMeetingDto,
 } from './meetings.types';
-import type { AxiosProgressEvent, AxiosResponse } from 'axios';
+import type { AxiosResponse } from 'axios';
 
 const DOCX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -84,62 +82,6 @@ export async function generateMeetingTranscription(id: number): Promise<AxiosRes
   );
 
   return response;
-}
-
-export async function uploadTranscription({
-  id,
-  file,
-  onProgress,
-}: UploadTranscriptionParams): Promise<void> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  await HttpService.put(`${API_PATHS.MEETINGS}/${id}/transcription`, formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-    onUploadProgress: (progressEvent: AxiosProgressEvent) => {
-      if (onProgress) {
-        onProgress(progressEvent);
-      }
-    },
-  });
-}
-
-export async function getReport(id: number): Promise<AxiosResponse> {
-  const config = {
-    responseType: 'blob' as const,
-    headers: {
-      'Content-Type': DOCX_MIME_TYPE,
-    },
-  };
-
-  const response = await HttpService.get(`${API_PATHS.MEETINGS}/${id}/report`, config);
-  return response;
-}
-
-export async function generateReport(id: number, body: ReportGenerationRequest): Promise<void> {
-  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report`, body);
-}
-
-export async function resetReport(id: number): Promise<void> {
-  await HttpService.post(`${API_PATHS.MEETINGS}/${id}/report/reset`);
-}
-
-export async function getTranscriptionWaitingTime(
-  meeting_id: number,
-): Promise<import('./meetings.types').TranscriptionWaitingTimeResponse> {
-  const { data } = await HttpService.get(
-    `${API_PATHS.MEETINGS}/${meeting_id}/transcription/wait-time`,
-  );
-  return data;
-}
-
-export async function getGlobalTranscriptionWaitingTime(): Promise<TranscriptionWaitingTimeResponse> {
-  const { data } = await HttpService.get(
-    `${API_PATHS.MEETINGS}/transcription/wait-time/estimation`,
-  );
-  return data;
 }
 
 export async function initMultipartUploadService(

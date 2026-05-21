@@ -18,10 +18,10 @@ from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mt
 from mcr_meeting.app.schemas.report_generation import (
     ReportGenerationResponse,
     ReportHeader,
-    ReportType,
 )
 from mcr_meeting.app.statemachine_actions import meeting_actions
 from tests.factories import MeetingFactory
+from tests.mocks.in_memory_email import InMemoryEmailClient
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -299,7 +299,7 @@ def test_fail_report() -> None:
     assert result.status == MeetingStatus.REPORT_FAILED
 
 
-def test_complete_transcription(mock_send_email: MagicMock) -> None:
+def test_complete_transcription(in_memory_email: InMemoryEmailClient) -> None:
     """Test completing transcription transitions to TRANSCRIPTION_DONE."""
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
@@ -309,7 +309,7 @@ def test_complete_transcription(mock_send_email: MagicMock) -> None:
     result = mts.complete_transcription(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_DONE
-    assert mock_send_email.call_count == 1
+    assert len(in_memory_email.sent) == 1
 
 
 def test_update_transcription(
@@ -373,31 +373,9 @@ def test_update_transcription_bad_status(
 # ---------------------------------------------------------------------------
 
 
-def test_start_report(
-    orchestrator_user: User,
-    mock_celery_producer_app: Mock,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test starting report transitions to REPORT_PENDING."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.TRANSCRIPTION_DONE,
-        name_platform=MeetingPlatforms.COMU,
-        transcription_filename="titre.docx",
-    )
-
-    result = mts.start_report(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-        report_type=ReportType.DECISION_RECORD,
-    )
-
-    assert result.status == MeetingStatus.REPORT_PENDING
-
-
 def test_complete_report(
     _mock_persist_report_docx: MagicMock,
-    mock_send_email: MagicMock,
+    in_memory_email: InMemoryEmailClient,
 ) -> None:
     """Test completing report transitions to REPORT_DONE."""
     meeting = MeetingFactory.create(
@@ -418,26 +396,7 @@ def test_complete_report(
     result = mts.complete_report(meeting_id=meeting.id, report_response=report_response)
 
     assert result.status == MeetingStatus.REPORT_DONE
-    assert mock_send_email.call_count == 1
-
-
-def test_reset_report(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test resetting report transitions to TRANSCRIPTION_DONE."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.REPORT_DONE,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.reset_report(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
+    assert len(in_memory_email.sent) == 1
 
 
 def test_reset_report_bad_status(

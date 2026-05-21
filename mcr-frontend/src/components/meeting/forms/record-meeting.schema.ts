@@ -2,7 +2,10 @@ import yup from '@/config/yup';
 import type { AddRecordMeetingDto } from '@/services/meetings/meetings.types';
 import { t } from '@/plugins/i18n';
 
-type AddRecordMeetingFields = Omit<AddRecordMeetingDto, 'name_platform' | 'creation_date'> & {
+type AddRecordMeetingFields = Omit<
+  AddRecordMeetingDto,
+  'name_platform' | 'creation_date' | 'notes'
+> & {
   micId: string;
 };
 

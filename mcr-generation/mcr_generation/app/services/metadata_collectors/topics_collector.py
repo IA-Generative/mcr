@@ -25,7 +25,7 @@ class TopicsCollector(MetadataCollector):
     @observe(name="metadata_collector.topics")
     def _extract(self, chunks: list[Chunk]) -> TopicsContent:
         meeting_subject = RefineIntent().init_then_refine(chunks)
-        participants = RefineParticipants().init_then_refine(chunks)
+        participants = RefineParticipants().init_then_refine(chunks).to_public()
         return MapReduceTopics(
             meeting_subject.title, participants.participants
         ).map_reduce_all_steps(chunks)
@@ -33,10 +33,10 @@ class TopicsCollector(MetadataCollector):
     def _to_markdown(self, result: TopicsContent) -> str:
         out: list[str] = []
         if result.topics:
-            out.append("## Sujets et décisions")
+            out.append("### Sujets et décisions")
             out.append("")
             for t in result.topics:
-                out.append(f"### {t.title}")
+                out.append(f"#### {t.title}")
                 if t.introduction_text:
                     out.append("")
                     out.append(t.introduction_text)
@@ -47,7 +47,7 @@ class TopicsCollector(MetadataCollector):
                     out.append(f"**Décision** : {t.main_decision}")
                 out.append("")
         if result.next_steps:
-            out.append("## Prochaines étapes")
+            out.append("### Prochaines étapes")
             out.append("")
             for s in result.next_steps:
                 out.append(f"- {s}")

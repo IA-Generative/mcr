@@ -65,8 +65,8 @@
           {{ $t('meeting-v2.custom-report-modal.cancel-button') }}
         </DsfrButton>
         <DsfrButton
+          icon="ri-refresh-line"
           :disabled="isGenerateDisabled"
-          icon="fr-icon-square-fill"
           @click="handleGenerate"
         >
           {{ $t('meeting-v2.custom-report-modal.generate-button') }}
@@ -91,6 +91,7 @@ const MODAL_ID = 'custom-report-modal';
 
 const props = defineProps<{
   initialPrompt: string;
+  modalGenerateDisabled: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -102,7 +103,9 @@ const { t } = useI18n();
 
 const prompt = ref(props.initialPrompt);
 
-const isGenerateDisabled = computed(() => prompt.value.trim().length === 0);
+const isGenerateDisabled = computed(
+  () => prompt.value.trim().length === 0 || props.modalGenerateDisabled,
+);
 
 type SuggestionKey = keyof MessageSchema['meeting-v2']['custom-report-modal']['suggestions'];
 
@@ -115,17 +118,13 @@ type Suggestion = {
 };
 
 const SUGGESTION_IMG_MAP: Record<SuggestionKey, string> = {
-  'classic-3-parts': documentSvg,
+  'quick-report': documentSvg,
   'action-plan': conclusionSvg,
+  'structured-roundtable': communitySvg,
   'executive-summary': dataVisualizationSvg,
-  'themed-verbatim': communitySvg,
 };
 
 const SUGGESTION_KEYS = Object.keys(SUGGESTION_IMG_MAP) as SuggestionKey[];
-
-function truncate(text: string, maxLength = 40): string {
-  return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
-}
 
 const suggestions = computed<Suggestion[]>(() =>
   SUGGESTION_KEYS.map((key) => {
@@ -133,7 +132,7 @@ const suggestions = computed<Suggestion[]>(() =>
     return {
       key,
       title: t(`meeting-v2.custom-report-modal.suggestions.${key}.title`),
-      description: truncate(promptText),
+      description: promptText,
       prompt: promptText,
       imgSrc: SUGGESTION_IMG_MAP[key],
     };
@@ -169,7 +168,8 @@ function handleGenerate() {
 
 :deep(.fr-tile) {
   padding: 0.75rem;
-  min-height: auto;
+  min-height: 0;
+  height: 8rem;
 }
 
 :deep(.fr-tile__link::after) {
@@ -178,10 +178,18 @@ function handleGenerate() {
 
 :deep(.fr-tile__body) {
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 :deep(.fr-tile__content) {
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 :deep(.fr-tile__img) {
@@ -198,10 +206,14 @@ function handleGenerate() {
 :deep(.fr-tile__title) {
   font-size: 0.875rem;
   margin: 0;
+  flex: 0 0 auto;
 }
 
 :deep(.fr-tile__desc) {
   font-size: 0.75rem;
   margin: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 </style>

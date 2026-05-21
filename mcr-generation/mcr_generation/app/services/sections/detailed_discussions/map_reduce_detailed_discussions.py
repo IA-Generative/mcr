@@ -12,6 +12,9 @@ from openai import OpenAI
 from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.schemas.base import Participant
+from mcr_generation.app.services.sections.base.prompts import (
+    NOTES_SECTION_TEMPLATE,
+)
 from mcr_generation.app.services.sections.detailed_discussions.prompts import (
     MAP_PROMPT_TEMPLATE,
     REDUCE_PROMPT_TEMPLATE,
@@ -58,8 +61,12 @@ class MapReduceDetailedDiscussions:
         self.speaker_mapping = str(participants) if participants else None
 
     @log_execution_time
-    @observe(name="section_content_generation")
-    def map_reduce_all_steps(self, chunks: list[Chunk]) -> DiscussionsContent:
+    @observe(name="section_discussions_generation")
+    def map_reduce_all_steps(
+        self,
+        chunks: list[Chunk],
+        notes_hint: DiscussionsContent | None = None,
+    ) -> DiscussionsContent:
         self._last_chunk_count = len(chunks)
         successful, failed_chunk_ids = self._map_chunks_in_parallel(chunks)
 
@@ -72,7 +79,9 @@ class MapReduceDetailedDiscussions:
         all_discussions = [
             discussion for sublist in successful for discussion in sublist
         ]
-        return self.reduce_discussions_into_content(all_discussions)
+        return self.reduce_discussions_into_content(
+            all_discussions, notes_hint=notes_hint
+        )
 
     def _map_chunks_in_parallel(
         self, chunks: list[Chunk]
@@ -107,9 +116,11 @@ class MapReduceDetailedDiscussions:
 
         return successful, failed_chunk_ids
 
-    @observe(name="section_content_reduce")
+    @observe(name="section_discussions_reduce")
     def reduce_discussions_into_content(
-        self, all_discussions: list[MappedDetailedDiscussion]
+        self,
+        all_discussions: list[MappedDetailedDiscussion],
+        notes_hint: DiscussionsContent | None = None,
     ) -> DiscussionsContent:
         """
         Deduplicate and merge related detailed discussions using the LLM.
@@ -117,11 +128,19 @@ class MapReduceDetailedDiscussions:
         Args:
             all_discussions (list[MappedDetailedDiscussion]): List of MappedDetailedDiscussion
                 objects extracted from chunks.
+            notes_hint (DiscussionsContent | None): Optional discussions extracted from
+                the meeting notes, used as a human-priority signal during consolidation.
 
         Returns:
             DiscussionsContent: Deduplicated and consolidated list of detailed discussions.
         """
         if not all_discussions:
+            if notes_hint is not None:
+                logger.warning(
+                    "Section detailed_discussions: notes hint provided but 0 item produced "
+                    "by the map phase. Short-circuiting to empty DiscussionsContent "
+                    "(notes do not substitute for the transcript)."
+                )
             record_empty_map_phase_event(
                 section="detailed_discussions",
                 chunk_count=self._last_chunk_count,
@@ -134,6 +153,7 @@ class MapReduceDetailedDiscussions:
             detailed_discussions=discussions_input,
             meeting_subject=self.meeting_subject or "Inconnu",
             speaker_mapping=self.speaker_mapping or "Non fourni",
+            notes_section=self._build_notes_section(notes_hint),
         )
 
         resp = call_llm_with_structured_output(
@@ -144,7 +164,14 @@ class MapReduceDetailedDiscussions:
 
         return resp
 
-    @observe(name="section_content_map")
+    def _build_notes_section(self, notes_hint: DiscussionsContent | None) -> str:
+        if notes_hint is None:
+            return ""
+        return NOTES_SECTION_TEMPLATE.format(
+            notes_hint_json=notes_hint.model_dump_json(),
+        )
+
+    @observe(name="section_discussions_map")
     def map_extract_detailed_discussions(
         self, chunk: Chunk
     ) -> list[MappedDetailedDiscussion]:

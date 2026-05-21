@@ -1,6 +1,6 @@
 from io import BytesIO
 from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,6 +19,8 @@ from mcr_meeting.main import app
 from tests.api.conftest import PrefixedTestClient
 from tests.factories import MeetingFactory, UserFactory
 from tests.factories.deliverable_factory import DeliverableFactory
+from tests.mocks.in_memory_email import InMemoryEmailClient
+from tests.mocks.in_memory_s3 import InMemoryS3
 
 api_settings = ApiSettings()
 
@@ -334,8 +336,8 @@ class TestSuccessCallbackRoute:
         self,
         deliverables_client: PrefixedTestClient,
         user_fixture: User,
-        mock_send_email: MagicMock,
-        mock_persist_report_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
         db_session: Any,
     ) -> None:
         meeting = MeetingFactory.create(
@@ -363,7 +365,8 @@ class TestSuccessCallbackRoute:
         assert pending.status == DeliverableStatus.AVAILABLE
         assert pending.external_url == "https://drive.example.com/abc"
         assert meeting.status == MeetingStatus.REPORT_DONE
-        mock_persist_report_docx.assert_called_once()
+        assert len(in_memory_s3.objects) == 1
+        assert len(in_memory_email.sent) == 1
 
 
 class TestFailureCallbackRoute:
@@ -420,12 +423,58 @@ class TestDeleteRoute:
         assert response.status_code == 204
         db_session.refresh(deliverable)
         assert deliverable.status == DeliverableStatus.DELETED
-        db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
 
 class TestGetFileRoute:
+    @pytest.mark.parametrize(
+        ("deliverable_type", "expected_prefix"),
+        [
+            (DeliverableType.DECISION_RECORD, "Releve_Decision"),
+            (DeliverableType.DETAILED_SYNTHESIS, "Synthese_Detaillee"),
+            (DeliverableType.CUSTOM_REPORT, "Compte_Rendu_Personnalise"),
+        ],
+    )
     def test_streams_typed_docx_from_s3(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mocker: Any,
+        deliverable_type: DeliverableType,
+        expected_prefix: str,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.REPORT_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            name="My Meeting",
+            report_filename="decision_record.docx",
+        )
+        deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=deliverable_type,
+            status=DeliverableStatus.AVAILABLE,
+        )
+        mocker.patch(
+            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            return_value=BytesIO(b"typed docx content"),
+        )
+
+        response = deliverables_client.get(
+            f"/{deliverable.id}/file",
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+        disposition = response.headers["content-disposition"]
+        assert disposition.startswith("attachment; filename*=UTF-8''")
+        assert f"{expected_prefix}_My%20Meeting.docx" in disposition
+        assert response.content == b"typed docx content"
+
+    def test_url_encodes_accented_meeting_name_in_header(
         self,
         deliverables_client: PrefixedTestClient,
         user_fixture: User,
@@ -434,8 +483,7 @@ class TestGetFileRoute:
         meeting = MeetingFactory.create(
             owner=user_fixture,
             status=MeetingStatus.REPORT_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            report_filename="decision_record.docx",
+            name="Réunion équipe",
         )
         deliverable = DeliverableFactory.create(
             meeting=meeting,
@@ -454,11 +502,9 @@ class TestGetFileRoute:
 
         assert response.status_code == 200
         assert (
-            response.headers["content-type"]
-            == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            "Releve_Decision_R%C3%A9union%20%C3%A9quipe.docx"
+            in response.headers["content-disposition"]
         )
-        assert "attachment" in response.headers["content-disposition"]
-        assert response.content == b"typed docx content"
 
     def test_falls_back_to_legacy_filename_when_typed_missing(
         self,

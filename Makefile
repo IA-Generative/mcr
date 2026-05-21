@@ -1,4 +1,4 @@
-.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage
+.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage eval-participants
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
 
@@ -15,6 +15,7 @@ help:
 	@echo "pre-commit                : Run the all 3 previous command in all python packages."
 	@echo "coverage                  : Run test coverage in all python packages."
 	@echo "start-playwright-with-gui : Stop playwright docker service and run the bot locally with a browser gui."
+	@echo "eval-participants         : Run the participants identification evaluation pipeline in the transcription_worker container."
 
 define CALL_TARGET_CMD_ON_ALL_PKGS
 	for pkg in $(PACKAGES); do \
@@ -56,6 +57,9 @@ start-playwright-with-gui:
 	cd mcr-capture-worker && \
 	uv run playwright install && \
 	uv run -m mcr_capture_worker.worker
+
+eval-participants:
+	docker compose --env-file .env.local.docker --env-file .env exec transcription_worker python -m mcr_meeting.evaluation.participant_naming
 
 coverage:
 	@sh -c '\

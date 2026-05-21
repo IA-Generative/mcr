@@ -39,6 +39,11 @@ class TaskCreationException(MCRException):
     """Raised when a transcription task couldn't be created."""
 
 
+class DeliverableConcurrentlyCreatedException(MCRException):
+    """Raised when a concurrent INSERT trips the partial unique index that
+    forbids more than one active deliverable per (meeting, type)."""
+
+
 class ForbiddenAccessException(MCRException):
     """Raised when a user try to access a ressource they don't have rights to
     (e.g Admin resources or Resources possessed by others)"""
@@ -54,3 +59,8 @@ class DiarizationError(MCRException):
 
 class TranscriptionError(MCRException):
     """Raised when the transcription fails"""
+
+
+class DeliverableStateConflictException(MCRException):
+    """Raised when a state-machine transition is rejected because the deliverable
+    is not in an allowed source state (mapped to HTTP 409)."""

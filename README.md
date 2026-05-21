@@ -56,6 +56,11 @@ Avant de démarrer, assurez-vous d’avoir installé les éléments suivants :
 - [Docker](https://docs.docker.com/get-docker/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
+- Les librairies ffmpeg, pnpm et uv
+```bash
+brew install ffmpeg node pnpm uv
+```
+
 De manière optionnelle, vous pouvez utiliser un outil de gestion de bases de données tel que :
 
 - [pgAdmin](https://www.pgadmin.org/download/)
@@ -82,11 +87,16 @@ Ces variables ne sont **pas** des variables de runtime des services MCR : elles 
 
 ### **5. Lancement de MCR en local**
 
-Clonez le repository et lancez le projet à l’aide de la commande `make` :
+1) Clonez le repository :
 
 ```bash
 git clone git@github.com:IA-Generative/mcr.git
 cd mcr
+```
+2) Demander un .env à l'équipe
+
+3) Lancer le projet à l’aide de la commande `make`
+```bash
 make start
 ```
 
