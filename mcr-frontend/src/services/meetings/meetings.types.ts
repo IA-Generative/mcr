@@ -171,13 +171,5 @@ export function isPostCaptureStatus(status: MeetingStatus): boolean {
   return PostCaptureStatuses.includes(status);
 }
 
-export interface TranscriptionWaitingTimeResponse {
-  estimation_duration_minutes: number;
-}
-
 export const ReportType = ['DECISION_RECORD', 'DETAILED_SYNTHESIS'] as const;
 export type ReportType = (typeof ReportType)[number];
-
-export interface ReportGenerationRequest {
-  report_types: ReportType[];
-}
