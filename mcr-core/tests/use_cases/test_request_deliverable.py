@@ -66,10 +66,10 @@ class TestRequestDeliverableHappyPath:
         call = mock_use_case_celery.send_task.call_args
         assert call.kwargs["args"][0] == meeting.id
         assert call.kwargs["args"][2] == "DECISION_RECORD"
-        assert {
+        assert call.kwargs["kwargs"] == {
             "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
             "deliverable_id": deliverable.id,
-        }.items() <= call.kwargs["kwargs"].items()
+        }
 
     def test_passes_custom_prompt_through(
         self,
