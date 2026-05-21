@@ -101,10 +101,11 @@ def _persist_and_dispatch(
                 _build_transition_record(meeting.id, meeting.status)
             )
 
+            transcription_object_name = _resolve_transcription_object_name(meeting)
             kwargs = _build_report_task_kwargs(meeting, deliverable, custom_prompt)
             celery_producer_app.send_task(
                 MCRReportGenerationTasks.REPORT,
-                args=[meeting.id, kwargs["transcription_object_name"], report_type],
+                args=[meeting.id, transcription_object_name, report_type],
                 kwargs=kwargs,
             )
             return deliverable
@@ -124,24 +125,24 @@ def _build_transition_record(
     )
 
 
+def _resolve_transcription_object_name(meeting: Meeting) -> str:
+    if meeting.transcription_filename is None:
+        raise NotFoundException(
+            f"Could not find meeting transcription: id={meeting.id}"
+        )
+    return get_transcription_object_name(
+        meeting_id=meeting.id, filename=meeting.transcription_filename
+    )
+
+
 def _build_report_task_kwargs(
     meeting: Meeting,
     deliverable: Deliverable,
     custom_prompt: str | None,
 ) -> dict[str, str | int]:
-    if meeting.transcription_filename is None:
-        raise NotFoundException(
-            f"Could not find meeting transcription: id={meeting.id}"
-        )
-
-    transcription_object_name = get_transcription_object_name(
-        meeting_id=meeting.id, filename=meeting.transcription_filename
-    )
-
     kwargs: dict[str, str | int] = {
         "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
         "deliverable_id": deliverable.id,
-        "transcription_object_name": transcription_object_name,
     }
     if custom_prompt is not None:
         kwargs["custom_prompt"] = custom_prompt

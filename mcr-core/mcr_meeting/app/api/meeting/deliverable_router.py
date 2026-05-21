@@ -8,7 +8,6 @@ from mcr_meeting.app.orchestrators.deliverable_orchestrator import (
     get_deliverable_file,
     list_deliverables_for_meeting,
     mark_deliverable_failure,
-    mark_deliverable_success,
     soft_delete_deliverable,
 )
 from mcr_meeting.app.schemas.deliverable_schema import (
@@ -17,6 +16,9 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableListResponse,
     DeliverableResponse,
     DeliverableSuccessRequest,
+)
+from mcr_meeting.app.use_cases.mark_deliverable_success import (
+    mark_deliverable_success,
 )
 from mcr_meeting.app.use_cases.request_deliverable import (
     request_deliverable as request_deliverable_use_case,

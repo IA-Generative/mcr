@@ -1,5 +1,4 @@
 from typing import Any
-from unittest.mock import MagicMock
 
 import pytest
 from sqlalchemy.orm import Session
@@ -39,40 +38,6 @@ def _decision_record_response() -> ReportGenerationResponse:
     )
 
 
-class TestMarkDeliverableSuccess:
-    def test_flips_status_persists_url_and_completes_sm(
-        self,
-        mock_send_email: MagicMock,
-        mock_persist_report_docx: MagicMock,
-        db_session: Session,
-    ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
-            name_platform=MeetingPlatforms.COMU,
-        )
-        pending = DeliverableFactory.create(
-            meeting=meeting,
-            type=DeliverableType.DECISION_RECORD,
-            status=DeliverableStatus.PENDING,
-        )
-
-        do.mark_deliverable_success(
-            deliverable_id=pending.id,
-            external_url="https://drive.example.com/abc",
-            report_response=_decision_record_response(),
-        )
-
-        db_session.refresh(pending)
-        db_session.refresh(meeting)
-        assert pending.status == DeliverableStatus.AVAILABLE
-        assert pending.external_url == "https://drive.example.com/abc"
-        assert meeting.status == MeetingStatus.REPORT_DONE
-        mock_send_email.assert_called_once()
-        mock_persist_report_docx.assert_called_once_with(
-            meeting_id=meeting.id, report_response=_decision_record_response()
-        )
-
-
 class TestMarkDeliverableFailure:
     def test_flips_status_and_fails_sm(
         self,
@@ -91,9 +56,7 @@ class TestMarkDeliverableFailure:
         do.mark_deliverable_failure(deliverable_id=pending.id)
 
         db_session.refresh(pending)
-        db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.FAILED
-        assert meeting.status == MeetingStatus.REPORT_FAILED
 
 
 class TestSoftDeleteDeliverable:

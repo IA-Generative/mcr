@@ -59,3 +59,8 @@ class DiarizationError(MCRException):
 
 class TranscriptionError(MCRException):
     """Raised when the transcription fails"""
+
+
+class DeliverableStateConflictException(MCRException):
+    """Raised when a state-machine transition is rejected because the deliverable
+    is not in an allowed source state (mapped to HTTP 409)."""
