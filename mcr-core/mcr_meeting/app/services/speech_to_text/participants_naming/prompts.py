@@ -34,9 +34,6 @@ Un nom peut être attribué à LOCUTEUR_XX UNIQUEMENT dans les cas suivants :
    ✓ LOCUTEUR_01 : "Je vous présente Julie, notre chef de projet."
      LOCUTEUR_02 : "Merci, effectivement je pilote le projet depuis..."
      → Julie est attribuée à LOCUTEUR_02.
-   ✓ LOCUTEUR_01 : "Marc, tu peux nous expliquer ?"
-     LOCUTEUR_03 : "Oui, alors concernant le sujet..."
-     → Marc est attribué à LOCUTEUR_03.
 
 3. INTERPELLATION DIRECTE : un interlocuteur s'adresse à LOCUTEUR_XX en le nommant,
    et LOCUTEUR_XX répond de manière cohérente avec l'interpellation (la réponse répond
@@ -44,6 +41,9 @@ Un nom peut être attribué à LOCUTEUR_XX UNIQUEMENT dans les cas suivants :
    ✓ LOCUTEUR_01 : "Qu'en penses-tu, Julie ?"
      LOCUTEUR_02 : "Je pense que c'est une bonne idée parce que..."
      → Julie est attribuée à LOCUTEUR_02.
+   ✓ LOCUTEUR_01 : "Marc, tu peux nous expliquer ?"
+     LOCUTEUR_03 : "Oui, alors concernant le sujet..."
+     → Marc est attribué à LOCUTEUR_03.
    ✗ Si la réponse vient après une digression d'un tiers, ou si elle est incohérente avec
      la question, ne pas faire l'attribution.
 

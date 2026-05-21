@@ -9,6 +9,7 @@ import sentry_sdk
 from celery import Celery, Task
 from celery.signals import task_failure, task_prerun, task_success, worker_process_init
 from faster_whisper import WhisperModel
+from langfuse import Langfuse
 from loguru import logger
 from pyannote.audio import Pipeline
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -17,6 +18,7 @@ from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
     CelerySettings,
     EvaluationSettings,
+    LangfuseSettings,
     SentrySettings,
     ServiceSettings,
     Settings,
@@ -66,6 +68,15 @@ sentry_sdk.init(
     environment=settings.ENV_MODE,
     ignore_errors=[],
     integrations=[CeleryIntegration()],
+)
+
+langfuse_settings = LangfuseSettings()
+
+Langfuse(
+    secret_key=langfuse_settings.LANGFUSE_SECRET_KEY,
+    public_key=langfuse_settings.LANGFUSE_PUBLIC_KEY,
+    host=langfuse_settings.LANGFUSE_HOST,
+    environment=settings.ENV_MODE.lower(),
 )
 
 celery_worker = Celery(

@@ -1,5 +1,6 @@
 import json
 
+from langfuse import observe
 from loguru import logger
 from pydantic import BaseModel, Field
 
@@ -8,6 +9,9 @@ from mcr_meeting.app.services.llm_post_processing import Chunk, LLMPostProcessin
 from mcr_meeting.app.services.speech_to_text.participants_naming.prompts import (
     INITIAL_PROMPT_TEMPLATE,
     REFINE_PROMPT_TEMPLATE,
+)
+from mcr_meeting.app.utils.langfuse_observability import (
+    record_participant_name_lost_event,
 )
 
 
@@ -39,6 +43,7 @@ class ParticipantExtraction(LLMPostProcessing):
     def __init__(self) -> None:
         super().__init__()
 
+    @observe(name="participant_extraction")
     def extract(
         self, segments: list[DiarizedTranscriptionSegment]
     ) -> list[Participant]:
@@ -82,12 +87,24 @@ class ParticipantExtraction(LLMPostProcessing):
                     prev.name,
                     step_index,
                 )
+                record_participant_name_lost_event(
+                    speaker_id=speaker_id,
+                    step_index=step_index,
+                    previous_name=prev.name,
+                    reason="disappeared",
+                )
             elif current_participant.name is None:
                 logger.warning(
                     "Participant {} lost their name at step {} (was {!r})",
                     speaker_id,
                     step_index,
                     prev.name,
+                )
+                record_participant_name_lost_event(
+                    speaker_id=speaker_id,
+                    step_index=step_index,
+                    previous_name=prev.name,
+                    reason="name_set_to_null",
                 )
 
     def _format_segments_for_llm(
