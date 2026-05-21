@@ -118,10 +118,10 @@ type Suggestion = {
 };
 
 const SUGGESTION_IMG_MAP: Record<SuggestionKey, string> = {
-  'classic-3-parts': documentSvg,
+  'quick-report': documentSvg,
   'action-plan': conclusionSvg,
+  'structured-roundtable': communitySvg,
   'executive-summary': dataVisualizationSvg,
-  'themed-verbatim': communitySvg,
 };
 
 const SUGGESTION_KEYS = Object.keys(SUGGESTION_IMG_MAP) as SuggestionKey[];

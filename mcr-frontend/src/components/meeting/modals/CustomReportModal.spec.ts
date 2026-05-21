@@ -43,7 +43,7 @@ describe('CustomReportModal', () => {
 
   it('fills textarea when clicking a suggestion', async () => {
     renderModal();
-    await userEvent.click(screen.getByText('3 parties classiques'));
+    await userEvent.click(screen.getByText("Plan d'actions"));
     const textarea = screen.getByPlaceholderText(/génère un compte-rendu/i) as HTMLTextAreaElement;
     expect(textarea.value).not.toBe('');
   });
