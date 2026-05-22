@@ -114,6 +114,21 @@ export function useRecordingSession(meetingId: number) {
               silenceRatio: stats.silenceRatio,
               sampleCount: stats.sampleCount,
             },
+            recordingDevice: {
+              requestedDeviceId: stats.requestedDeviceId,
+              receivedDeviceLabel: stats.deviceLabel,
+              receivedDeviceId: stats.deviceSettings?.deviceId ?? null,
+              receivedDeviceSettings: stats.deviceSettings,
+              availableDevices: stats.availableDevices.map(
+                (d) => `${d.label} [deviceId=${d.deviceId}, groupId=${d.groupId}]`,
+              ),
+              deviceMismatch:
+                stats.requestedDeviceId != null &&
+                stats.deviceSettings?.deviceId != null &&
+                stats.requestedDeviceId !== stats.deviceSettings.deviceId,
+              trackMuteEvents: stats.trackMuteEvents,
+              emptyChunkCount: stats.emptyChunkCount,
+            },
           },
         });
       }

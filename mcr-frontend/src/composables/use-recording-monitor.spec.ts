@@ -57,6 +57,8 @@ function createMockContext(
     stream,
     recorder,
     meetingId: 42,
+    requestedDeviceId: null,
+    availableDevices: [],
     ...overrides,
   };
 }

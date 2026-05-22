@@ -506,7 +506,8 @@
           "cancel": "Annuler",
           "end": "Terminer l'enregistrement"
         }
-      }
+      },
+      "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez."
     },
     "visio-recording": {
       "title": "Enregistrement",
