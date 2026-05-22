@@ -14,7 +14,20 @@
       @update:model-value="onSelectType"
     />
 
+    <HoverTooltip
+      v-if="generateBlockedByPending"
+      :content="$t('meeting-v2.deliverable-card.tooltip.pending-generation')"
+      class="generate-button-host"
+    >
+      <DsfrButton
+        icon="ri-refresh-line"
+        :disabled="true"
+      >
+        {{ $t('meeting-v2.deliverable-card.generate-button') }}
+      </DsfrButton>
+    </HoverTooltip>
     <DsfrButton
+      v-else
       icon="ri-refresh-line"
       :disabled="generateDisabled"
       @click="generate"
@@ -36,6 +49,7 @@
 <script setup lang="ts">
 import MeetingDeliverableList from './MeetingDeliverableList.vue';
 import CustomReportModal from './modals/CustomReportModal.vue';
+import HoverTooltip from '@/components/core/HoverTooltip.vue';
 import { useDeliverables } from '@/services/deliverables/use-deliverables';
 import {
   mapDeliverableStatus,
@@ -121,6 +135,8 @@ const generateDisabled = computed(
     hasPendingDeliverable.value ||
     isTranscriptionInProgress.value,
 );
+
+const generateBlockedByPending = computed(() => hasPendingDeliverable.value);
 
 const modalGenerateDisabled = computed(
   () => isCreating.value || hasPendingDeliverable.value || isTranscriptionInProgress.value,
@@ -225,5 +241,11 @@ function onDownloadTranscription(): void {
 <style scoped>
 :deep(.fr-fieldset) {
   margin-bottom: 0;
+}
+
+.generate-button-host {
+  position: relative;
+  display: inline-flex;
+  align-self: flex-start;
 }
 </style>
