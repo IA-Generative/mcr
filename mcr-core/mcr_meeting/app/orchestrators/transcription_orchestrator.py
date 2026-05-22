@@ -6,9 +6,6 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_transcription,
     update_transcription,
 )
-from mcr_meeting.app.schemas.transcription_queue_schema import (
-    TranscriptionQueueStatusResponse,
-)
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
     TranscriptionDocxResult,
@@ -21,9 +18,6 @@ from mcr_meeting.app.services.transcription_task_service import (
     create_formatted_docx_transcription,
     retrieve_or_create_formatted_docx_transcription,
     save_formatted_transcription_and_update_meeting_status,
-)
-from mcr_meeting.app.services.transcription_waiting_time_service import (
-    TranscriptionQueueEstimationService,
 )
 from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 
@@ -76,23 +70,3 @@ def upload_transcription_docx(
     )
 
     update_transcription(meeting_id=meeting_id, user_keycloak_uuid=user_keycloak_uuid)
-
-
-def get_transcription_waiting_time(
-    meeting_id: int,
-    user_keycloak_uuid: UUID4 | None = None,
-) -> TranscriptionQueueStatusResponse:
-    get_meeting_service(
-        meeting_id=meeting_id,
-        current_user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    waiting_time_minutes = (
-        TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
-            meeting_id
-        )
-    )
-
-    return TranscriptionQueueStatusResponse(
-        estimation_duration_minutes=waiting_time_minutes
-    )

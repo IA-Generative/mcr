@@ -1,5 +1,5 @@
 from datetime import datetime
-from enum import Enum, StrEnum
+from enum import Enum
 
 from pydantic import BaseModel, field_serializer
 from pydantic_settings import SettingsConfigDict
@@ -114,12 +114,3 @@ class DeliverableResponse(BaseModel):
 
 class MeetingWithDetails(Meeting):
     deliverables: list[DeliverableResponse] = []
-
-
-class ReportType(StrEnum):
-    DECISION_RECORD = "DECISION_RECORD"
-    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
-
-
-class ReportGenerationRequest(BaseModel):
-    report_types: list[ReportType]

@@ -16,7 +16,6 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingUpdate,
     MeetingWithDetails,
     PaginatedMeetingsResponse,
-    ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
 from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
@@ -350,95 +349,6 @@ async def update_meeting_transcription_service(
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while updating the transcription.",
-        )
-
-
-async def get_report(
-    meeting_id: int,
-    user_keycloak_uuid: UUID4,
-) -> StreamingResponse:
-    """
-    Get the transcription DOCX file of a given meeting
-
-    Args:
-        meeting_id (int): The ID of the meeting.
-
-    Returns:
-        DOCX file of the transcription meeting
-
-    """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.get(url=f"{meeting_id}/report")
-            response.raise_for_status()
-
-            # Return the DOCX file as a StreamingResponse with appropriate headers
-            return StreamingResponse(
-                response.aiter_bytes(),
-                media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                headers={
-                    "Content-Disposition": f"attachment; filename=meeting_{meeting_id}_report.docx"
-                },
-            )
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred while getting the report.",
-        )
-
-
-async def generate_report(
-    meeting_id: int,
-    user_keycloak_uuid: UUID4,
-    body: ReportGenerationRequest,
-) -> Response:
-    """
-    Get the transcription DOCX file of a given meeting
-
-    Args:
-        meeting_id (int): The ID of the meeting.
-        body (ReportGenerationRequest): The report generation request containing report types.
-
-    Returns:
-        DOCX file of the transcription meeting
-
-    """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(
-                url=f"{meeting_id}/report",
-                json=body.model_dump(),
-            )
-            response.raise_for_status()
-
-            return Response(status_code=response.status_code)
-
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred while getting the report.",
-        )
-
-
-async def reset_report_service(
-    meeting_id: int,
-    user_keycloak_uuid: UUID4,
-) -> None:
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(url=f"{meeting_id}/report/reset")
-            response.raise_for_status()
-
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred while resetting the report.",
         )
 
 

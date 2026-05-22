@@ -38,9 +38,9 @@ langfuse_settings = LangfuseSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
+    deliverable_id: int,
     report_type: str = ReportTypes.DECISION_RECORD.value,
     owner_keycloak_uuid: str | None = None,
-    deliverable_id: int | None = None,
     notes_content: str | None = None,
     custom_prompt: str | None = None,
 ) -> BaseReport | CustomMarkdownReport:
@@ -88,11 +88,7 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 def generate_report_from_docx_success(
     sender: Any, result: BaseReport | CustomMarkdownReport, **kwargs: Any
 ) -> None:
-    """Handle successful report generation by sending results to mcr-core API.
-
-    Routes to the deliverable-centric callback when `deliverable_id` is in the
-    task kwargs, falling back to the legacy report callback otherwise.
-    """
+    """Handle successful report generation by sending results to mcr-core API."""
     logger.info("Report generation success signal received.")
 
     try:
@@ -102,12 +98,9 @@ def generate_report_from_docx_success(
         return
 
     client = CoreApiClient()
-    if task_args.deliverable_id is not None:
-        client.mark_deliverable_success(
-            deliverable_id=task_args.deliverable_id, report=result
-        )
-    else:
-        client.mark_report_success(meeting_id=task_args.meeting_id, report=result)
+    client.mark_deliverable_success(
+        deliverable_id=task_args.deliverable_id, report=result
+    )
 
 
 @task_failure.connect
@@ -123,7 +116,4 @@ def set_meeting_failed_status_on_error(
     logger.error("Meeting {} updated to REPORT_FAILED", task_args.meeting_id)
 
     client = CoreApiClient()
-    if task_args.deliverable_id is not None:
-        client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)
-    else:
-        client.mark_report_failure(meeting_id=task_args.meeting_id)
+    client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)

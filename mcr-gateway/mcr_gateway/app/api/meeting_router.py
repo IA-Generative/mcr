@@ -1,12 +1,9 @@
-from typing import Any
-
 import httpx
 from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
     Query,
-    Response,
     UploadFile,
     status,
 )
@@ -19,7 +16,6 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingUpdate,
     MeetingWithDetails,
     PaginatedMeetingsResponse,
-    ReportGenerationRequest,
 )
 from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
@@ -32,20 +28,14 @@ from mcr_gateway.app.services.meeting_service import (
     delete_meeting_service,
     generate_meeting_transcription_document,
     generate_presigned_url_service,
-    generate_report,
     get_meeting_audio_service,
     get_meeting_service,
     get_meetings_service,
-    get_report,
     init_meeting_capture_service,
-    reset_report_service,
     start_meeting_transcription_service,
     stop_meeting_capture_service,
     update_meeting_service,
     update_meeting_transcription_service,
-)
-from mcr_gateway.app.services.transcription_service import (
-    get_queue_estimated_waiting_time_service,
 )
 
 router = APIRouter()
@@ -332,103 +322,6 @@ async def update_meeting_transcription(
     await update_meeting_transcription_service(
         meeting_id=meeting_id, file=file, user_keycloak_uuid=current_user.keycloak_uuid
     )
-
-
-@router.get(
-    "/meetings/{meeting_id}/report",
-    tags=["Meetings"],
-)
-async def get_meeting_report(
-    meeting_id: int,
-    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> StreamingResponse:
-    """
-    Get the transcription DOCX file of a given meeting
-
-    Args:
-        meeting_id (int): The ID of the meeting.
-
-    Returns:
-        DOCX file of the transcription meeting
-
-    """
-    return await get_report(
-        meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
-    )
-
-
-@router.post(
-    "/meetings/{meeting_id}/report",
-    tags=["Meetings"],
-)
-async def generate_meeting_report(
-    meeting_id: int,
-    body: ReportGenerationRequest,
-    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> Response:
-    """
-    Get the transcription DOCX file of a given meeting
-
-    Args:
-        meeting_id (int): The ID of the meeting.
-        body (ReportGenerationRequest): The report generation request containing report types.
-
-    Returns:
-        DOCX file of the transcription meeting
-
-    """
-    return await generate_report(
-        meeting_id=meeting_id,
-        user_keycloak_uuid=current_user.keycloak_uuid,
-        body=body,
-    )
-
-
-@router.post(
-    "/meetings/{meeting_id}/report/reset",
-    status_code=status.HTTP_204_NO_CONTENT,
-    tags=["Meetings"],
-)
-async def reset_meeting_report(
-    meeting_id: int,
-    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> None:
-    await reset_report_service(
-        meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
-    )
-
-
-@router.get("/meetings/transcription/wait-time/estimation")
-async def get_queue_estimated_waiting_time(
-    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> dict[str, Any]:
-    """
-    Get the current global waiting time for the transcription queue.
-
-    Args:
-        current_user: The authenticated user
-
-    Returns:
-        Dict[str, Any]: Contains the current global waiting time in minutes
-
-    Raises:
-        HTTPException: If the API call fails
-    """
-    try:
-        result = await get_queue_estimated_waiting_time_service(
-            user_keycloak_uuid=current_user.keycloak_uuid
-        )
-        return result
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error getting queue estimated waiting time: {} - {}",
-            e.response.status_code,
-            e.response.text,
-        )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Error getting queue estimated waiting time: {}", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get(
