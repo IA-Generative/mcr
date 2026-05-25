@@ -88,7 +88,7 @@ def test_integration_full_process(
 
     # Setup : mock AcronymCorrector.correct
     mock_acronym_corrector_cls.return_value.correct.side_effect = (
-        lambda segments: segments 
+        lambda segments: segments
     )
 
     # Setup: Mock feature flag for noise filtering (disabled for simplicity)
