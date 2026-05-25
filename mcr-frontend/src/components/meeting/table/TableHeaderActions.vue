@@ -17,7 +17,7 @@
         {
           label: $t('meetings.table.actions.add-visio'),
           icon: 'ri-link',
-          onClick: () => (isVisioModalV2Enabled ? openVisioMeetingModal() : openAddMeetingModal()),
+          onClick: () => openVisioMeetingModal(),
         },
         {
           label: $t('meetings.table.actions.add-import'),
@@ -38,7 +38,6 @@
 import { useMeetings } from '@/services/meetings/use-meeting';
 import ImportMeetingModal from '@/components/meeting/modals/ImportMeetingModal.vue';
 import RecordMeetingModal from '@/components/meeting/modals/RecordMeetingModal.vue';
-import CreateMeetingModal from '@/components/meeting/modals/CreateMeetingModal.vue';
 import type {
   AddImportMeetingDto,
   AddImportMeetingDtoAndFile,
@@ -53,7 +52,6 @@ import { getFileExtension } from '@/utils/file';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useMultipart } from '@/composables/use-multipart';
-import { useFeatureFlag } from '@/composables/use-feature-flag';
 import CreateVisioMeetingModal from '../modals/CreateVisioMeetingModal.vue';
 
 const props = defineProps<{
@@ -74,7 +72,6 @@ const { mutate: createMeeting, mutateAsync: createMeetingAsync } = addMeetingMut
 const { mutate: startTranscription } = startTranscriptionMutation();
 const { mutateAsync: startCaptureAsync } = startCaptureMutation();
 
-const isVisioModalV2Enabled = useFeatureFlag('ux-modal-v2');
 const isMultipartUploadPending = ref(false);
 
 // Sync the `search` ref with `modelValue` prop and emit changes
@@ -98,13 +95,6 @@ const { open: openRecordModal } = useModal({
   component: RecordMeetingModal,
   attrs: {
     onRecordMeeting: (values: AddRecordMeetingDto) => createMeetingAndRedirect(values),
-  },
-});
-
-const { open: openAddMeetingModal } = useModal({
-  component: CreateMeetingModal,
-  attrs: {
-    onCreateMeeting: (values: AddOnlineMeetingDto) => createMeetingAndRedirect(values),
   },
 });
 
