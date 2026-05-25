@@ -4,12 +4,13 @@ Unit tests for BaseReportGenerator.
 
 import importlib
 import sys
+from typing import ClassVar
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from mcr_generation.app.schemas.base import BaseReport, Header, Participant
-from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
+from mcr_generation.app.schemas.celery_types import ReportTypes
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 # Mock the sibling so __init__.py can import it without executing its body.
@@ -29,11 +30,14 @@ BaseReportGenerator = _base_rg_module.BaseReportGenerator
 class ConcreteReportGenerator(BaseReportGenerator):
     """Minimal concrete subclass used to exercise the abstract base class."""
 
+    report_type: ClassVar[ReportTypes] = ReportTypes.DECISION_RECORD
+
     def generate(
         self,
         chunks: list[Chunk],
-        extracted_notes: ExtractedNotes | None = None,
+        notes_content: str | None = None,
     ) -> BaseReport:
+        extracted_notes = self._extract_notes(notes_content)
         return BaseReport(
             header=self.generate_header(chunks, extracted_notes=extracted_notes)
         )

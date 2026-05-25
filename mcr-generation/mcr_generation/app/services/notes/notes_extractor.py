@@ -9,11 +9,7 @@ from pydantic import BaseModel
 
 from mcr_generation.app.configs.settings import ChunkingConfig, LLMConfig
 from mcr_generation.app.schemas.base import Intent, NextMeeting
-from mcr_generation.app.schemas.celery_types import ReportTypes
-from mcr_generation.app.services.notes.facets import (
-    NotesFacet,
-    facets_for_report_type,
-)
+from mcr_generation.app.services.notes.facets import NotesFacet
 from mcr_generation.app.services.notes.prompts import (
     EXTRACT_DISCUSSIONS_HINT_PROMPT_TEMPLATE,
     EXTRACT_INTENT_PROMPT_TEMPLATE,
@@ -160,19 +156,3 @@ class NotesExtractor:
             truncated_length=max_len,
         )
         return notes_content[:max_len]
-
-
-def extract_notes(
-    notes_content: str | None,
-    report_type: ReportTypes,
-) -> ExtractedNotes | None:
-    if not notes_content or not notes_content.strip():
-        logger.debug("Notes extraction skipped: no notes content")
-        return None
-
-    facets = facets_for_report_type(report_type)
-    extracted_notes = asyncio.run(
-        NotesExtractor().extract_all(notes_content, facets=facets)
-    )
-    logger.debug("Notes extraction done")
-    return extracted_notes

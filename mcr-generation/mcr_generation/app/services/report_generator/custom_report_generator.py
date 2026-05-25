@@ -29,7 +29,11 @@ class CustomReportGenerator:
         self.rewriter = Rewriter()
         self.pipeline = GenericMapReducePipeline()
 
-    async def generate_async(self, chunks: list[Chunk]) -> CustomMarkdownReport:
+    async def generate_async(
+        self,
+        chunks: list[Chunk],
+        notes_content: str | None = None,  # noqa: ARG002
+    ) -> CustomMarkdownReport:
         plan = await self.rewriter.rewrite(self.raw_prompt)
 
         bodies = await asyncio.gather(
@@ -39,8 +43,12 @@ class CustomReportGenerator:
         markdown = self._assemble_markdown(plan.title, list(plan.sections), bodies)
         return CustomMarkdownReport(markdown_content=markdown)
 
-    def generate(self, chunks: list[Chunk]) -> CustomMarkdownReport:
-        return asyncio.run(self.generate_async(chunks))
+    def generate(
+        self,
+        chunks: list[Chunk],
+        notes_content: str | None = None,
+    ) -> CustomMarkdownReport:
+        return asyncio.run(self.generate_async(chunks, notes_content))
 
     async def _render_section(self, spec: SectionSpec, chunks: list[Chunk]) -> str:
         match spec:

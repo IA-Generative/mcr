@@ -146,13 +146,13 @@ class TestGenerateReportFromDocx:
             decision_record
         )
 
-        generate_report_from_docx(1, "transcription.docx")
+        generate_report_from_docx(1, "transcription.docx", notes_content="raw notes")
 
         mock_get_file_from_s3.assert_called_once_with("transcription.docx")
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
         mock_create_report_generator.assert_called_once()
         mock_create_report_generator.return_value.generate.assert_called_once_with(
-            [chunk1, chunk2]
+            [chunk1, chunk2], notes_content="raw notes"
         )
 
     def test_propagates_s3_error(self, mock_get_file_from_s3: MagicMock) -> None:
@@ -179,7 +179,8 @@ class TestGenerateReportFromDocx:
         result = generate_report_from_docx(
             1,
             "transcription.docx",
-            "CUSTOM_REPORT",
+            report_type="CUSTOM_REPORT",
+            notes_content="raw notes",
             custom_prompt="Liste les risques",
         )
 
@@ -187,6 +188,9 @@ class TestGenerateReportFromDocx:
         mock_create_report_generator.assert_called_once()
         _, factory_kwargs = mock_create_report_generator.call_args
         assert factory_kwargs == {"custom_prompt": "Liste les risques"}
+        mock_create_report_generator.return_value.generate.assert_called_once_with(
+            [SimpleNamespace(id=0, text="x")], notes_content="raw notes"
+        )
 
 
 class TestExtractReportTaskArgs:
