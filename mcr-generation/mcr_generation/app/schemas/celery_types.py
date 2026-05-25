@@ -10,7 +10,7 @@ Task.__class_getitem__ = classmethod(lambda cls, *args, **kwargs: cls)  # type: 
 class ReportTaskArgs(NamedTuple):
     meeting_id: int
     owner_keycloak_uuid: str | None
-    deliverable_id: int | None
+    deliverable_id: int
 
 
 def extract_report_task_args(
@@ -49,6 +49,9 @@ def extract_report_task_args(
     if task_kwargs is not None:
         owner_keycloak_uuid = task_kwargs.get("owner_keycloak_uuid")
         deliverable_id = task_kwargs.get("deliverable_id")
+
+    if deliverable_id is None:
+        raise ValueError("Unable to extract deliverable_id from signal kwargs")
 
     return ReportTaskArgs(
         meeting_id=args[0],

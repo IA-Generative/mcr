@@ -14,17 +14,6 @@ class CoreApiClient:
         self.api_settings = ApiSettings()
         self.client = HttpClient(base_url=self.api_settings.MCR_CORE_API_URL)
 
-    def mark_report_success(
-        self, meeting_id: int, report: BaseReport | CustomMarkdownReport
-    ) -> None:
-        self._post(
-            f"/meetings/{meeting_id}/report/success",
-            json=report.model_dump(),
-        )
-
-    def mark_report_failure(self, meeting_id: int) -> None:
-        self._post(f"/meetings/{meeting_id}/report/failure")
-
     def mark_deliverable_success(
         self,
         deliverable_id: int,

@@ -8,7 +8,6 @@ from mcr_gateway.app.api import (
     lookup_router,
     meeting_multipart_router,
     meeting_router,
-    transcription_router,
 )
 from mcr_gateway.setup.logger import setup_logging
 from mcr_gateway.setup.request_id_middleware import AddRequestIdMiddleware
@@ -34,7 +33,6 @@ app.add_middleware(
 app.include_router(authentification_router.router, prefix="/api/auth")
 app.include_router(meeting_router.router, prefix="/api")
 app.include_router(lookup_router.router, prefix="/api")
-app.include_router(transcription_router.router, prefix="/api")
 app.include_router(meeting_multipart_router.router, prefix="/api")
 app.include_router(feedback_router.router, prefix="/api")
 app.include_router(deliverable_router.router, prefix="/api")

@@ -82,7 +82,7 @@ class TestGenerateReportFromDocx:
             decision_record
         )
 
-        generate_report_from_docx(1, "transcription.docx")
+        generate_report_from_docx(1, "transcription.docx", 1)
 
         mock_get_file_from_s3.assert_called_once_with("transcription.docx")
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
@@ -96,7 +96,7 @@ class TestGenerateReportFromDocx:
         mock_get_file_from_s3.side_effect = RuntimeError("S3 unavailable")
 
         with pytest.raises(RuntimeError, match="S3 unavailable"):
-            generate_report_from_docx(1, "transcription.docx")
+            generate_report_from_docx(1, "transcription.docx", 1)
 
     def test_returns_custom_markdown_report_built_from_generator(
         self,
@@ -115,6 +115,7 @@ class TestGenerateReportFromDocx:
         result = generate_report_from_docx(
             1,
             "transcription.docx",
+            1,
             report_type="CUSTOM_REPORT",
             custom_prompt="Liste les risques",
         )
@@ -138,22 +139,20 @@ class TestExtractReportTaskArgs:
         assert args.owner_keycloak_uuid == "abc"
         assert args.deliverable_id == 7
 
-    def test_deliverable_id_absent_returns_none(self) -> None:
-        args = extract_report_task_args(
-            {"args": [42], "kwargs": {"owner_keycloak_uuid": "abc"}}
-        )
+    def test_deliverable_id_absent_raise_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            extract_report_task_args(
+                {"args": [42], "kwargs": {"owner_keycloak_uuid": "abc"}}
+            )
 
-        assert args.deliverable_id is None
-
-    def test_deliverable_id_explicit_none_returns_none(self) -> None:
-        args = extract_report_task_args(
-            {
-                "args": [42],
-                "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
-            }
-        )
-
-        assert args.deliverable_id is None
+    def test_deliverable_id_explicit_none_raise_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            extract_report_task_args(
+                {
+                    "args": [42],
+                    "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
+                }
+            )
 
 
 class TestGenerateReportFromDocxSuccess:
@@ -169,110 +168,6 @@ class TestGenerateReportFromDocxSuccess:
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
         mock_core_api_client.cls.assert_not_called()
-
-    def test_calls_mark_report_success_when_no_deliverable_id(
-        self,
-        decision_record: DecisionRecord,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc"}
-
-        generate_report_from_docx_success(sender=sender, result=decision_record)
-
-        mock_core_api_client.mark_report_success.assert_called_once_with(
-            meeting_id=42, report=decision_record
-        )
-        mock_core_api_client.mark_deliverable_success.assert_not_called()
-
-    def test_calls_mark_deliverable_success_when_deliverable_id_set(
-        self,
-        decision_record: DecisionRecord,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": 7}
-
-        generate_report_from_docx_success(sender=sender, result=decision_record)
-
-        mock_core_api_client.mark_deliverable_success.assert_called_once_with(
-            deliverable_id=7, report=decision_record
-        )
-        mock_core_api_client.mark_report_success.assert_not_called()
-
-    def test_explicit_deliverable_id_none_falls_back_to_legacy(
-        self,
-        decision_record: DecisionRecord,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": None}
-
-        generate_report_from_docx_success(sender=sender, result=decision_record)
-
-        mock_core_api_client.mark_report_success.assert_called_once()
-        mock_core_api_client.mark_deliverable_success.assert_not_called()
-
-
-class TestSetMeetingFailedStatusOnError:
-    def test_calls_mark_report_failure_when_no_deliverable_id(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        set_meeting_failed_status_on_error(
-            sender=MagicMock(),
-            args=[42, "transcription.docx", "DECISION_RECORD"],
-            kwargs={"owner_keycloak_uuid": "abc"},
-            exception=Exception("LLM timeout"),
-        )
-
-        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=42)
-        mock_core_api_client.mark_deliverable_failure.assert_not_called()
-
-    def test_calls_mark_deliverable_failure_when_deliverable_id_set(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        set_meeting_failed_status_on_error(
-            sender=MagicMock(),
-            args=[42, "transcription.docx", "DECISION_RECORD"],
-            kwargs={"owner_keycloak_uuid": "abc", "deliverable_id": 7},
-            exception=Exception("LLM timeout"),
-        )
-
-        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
-            deliverable_id=7
-        )
-        mock_core_api_client.mark_report_failure.assert_not_called()
-
-    def test_falls_back_to_sender_request_args(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [7]
-        sender.request.kwargs = {"deliverable_id": 9}
-
-        set_meeting_failed_status_on_error(sender=sender)
-
-        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
-            deliverable_id=9
-        )
-
-    def test_falls_back_to_sender_with_no_deliverable_id(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [7]
-        sender.request.kwargs = {}
-
-        set_meeting_failed_status_on_error(sender=sender)
-
-        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=7)
 
     def test_returns_early_when_no_meeting_id(
         self,
