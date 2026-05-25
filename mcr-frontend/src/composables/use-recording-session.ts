@@ -1,7 +1,6 @@
 import { useRecorder } from '@/composables/use-recorder';
 import { useRecordingMonitor } from '@/composables/use-recording-monitor';
 import { useNetworkStatus } from '@/composables/use-network-status';
-import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
 import { useChunkUpload } from '@/composables/use-chunk-upload';
 import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
@@ -26,8 +25,7 @@ export function useRecordingSession(meetingId: number) {
   const audioInputLevel = recordingMonitor.audioInputLevel;
 
   const { isOnline } = useNetworkStatus();
-  const isOfflineRecordingEnabled = useFeatureFlag('offline-recording');
-  const effectiveOffline = computed(() => isOfflineRecordingEnabled.value && !isOnline.value);
+  const effectiveOffline = computed(() => !isOnline.value);
 
   const { startTranscriptionMutation, getMeetingQuery } = useMeetings();
   const { mutate: startTranscription } = startTranscriptionMutation();
