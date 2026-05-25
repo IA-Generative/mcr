@@ -5,6 +5,6 @@
 tmp/
 .coverage
 .DS_Store
- bin
+bin
 __pycache__/
 docker-compose.override.yml
