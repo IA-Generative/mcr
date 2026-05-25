@@ -45,10 +45,14 @@
 
     <audio
       v-else-if="audioSrc"
+      ref="audioEl"
       controls
       controlslist="nodownload"
       :src="audioSrc"
+      :aria-label="$t('meeting-v2.audio-card.player-label')"
       class="w-full"
+      @loadedmetadata="recoverAudioDuration"
+      @timeupdate="onDurationRecovered"
     ></audio>
   </div>
 </template>
@@ -97,9 +101,29 @@ const audioSrc = ref<string>();
 const isLoadingAudio = ref(true);
 const audioError = ref(false);
 
+const audioEl = useTemplateRef<HTMLAudioElement>('audioEl');
+const isRecoveringDuration = ref(false);
+const DURATION_RECOVERY_TIMEOUT_MS = 1000;
+
 function requestAudio(): void {
   isMeetingAudioRequested.value = true;
   localStorage.setItem(audioStorageKey, 'true');
+}
+
+function recoverAudioDuration(): void {
+  const el = audioEl.value;
+  if (!el || el.duration !== Infinity) return;
+  isRecoveringDuration.value = true;
+  el.currentTime = Number.MAX_SAFE_INTEGER;
+  setTimeout(onDurationRecovered, DURATION_RECOVERY_TIMEOUT_MS);
+}
+
+function onDurationRecovered(): void {
+  if (!isRecoveringDuration.value) return;
+  const el = audioEl.value;
+  if (!el) return;
+  isRecoveringDuration.value = false;
+  el.currentTime = 0;
 }
 
 watch(

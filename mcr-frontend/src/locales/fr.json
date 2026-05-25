@@ -340,7 +340,8 @@
       "title": "Audio",
       "availability": "L'audio de la réunion est disponible pendant {nbDays}",
       "button": "Écouter l'audio",
-      "error": "L'audio de votre réunion n'a pas pu être obtenu."
+      "error": "L'audio de votre réunion n'a pas pu être obtenu.",
+      "player-label": "Lecteur audio de la réunion"
     },
     "deliverable-card": {
       "title": "Livrables",
