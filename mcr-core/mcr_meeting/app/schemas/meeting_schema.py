@@ -56,6 +56,18 @@ class MeetingBase(BaseModel):
     meeting_platform_id: str | None = None
     notes: str | None = None
 
+    @field_serializer("creation_date", when_used="json")
+    def serialize_creation_date(self, ts: datetime) -> str:
+        return ts.strftime("%Y-%m-%dT%H:%M:%S.%f")[:23] + "Z"
+
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
+
+
+class MeetingWriteBase(MeetingBase):
+    """Base for write schemas (Create, Update): enforces platform/url consistency."""
+
     @model_validator(mode="after")
     def validate_url_based_on_platform(self) -> Self:
         """Validate the URL based on the specified platform.
@@ -64,13 +76,6 @@ class MeetingBase(BaseModel):
         provided for a meeting matches the expected format based on the `name_platform`.
         Different platforms may have different URL formats, and this validator ensures that
         the connexion information conforms to the platform-specific format.
-
-        Args:
-            values (MeetingBase): The MeetingBase object containing the fields to validate.
-
-        Returns:
-            MeetingBase: The validated MeetingBase object.
-
         """
 
         PlatformConnectionInfoValidator(
@@ -83,20 +88,12 @@ class MeetingBase(BaseModel):
             rewrite_comu_url_to_use_public_url(self)
         return self
 
-    @field_serializer("creation_date", when_used="json")
-    def serialize_creation_date(self, ts: datetime) -> str:
-        return ts.strftime("%Y-%m-%dT%H:%M:%S.%f")[:23] + "Z"
 
-    model_config = ConfigDict(
-        from_attributes=True,
-    )
-
-
-class MeetingCreate(MeetingBase):
+class MeetingCreate(MeetingWriteBase):
     status: MeetingStatus = MeetingStatus.NONE
 
 
-class MeetingUpdate(MeetingBase):
+class MeetingUpdate(MeetingWriteBase):
     """
     Schema for a meeting update.
 
