@@ -9,6 +9,7 @@ from mcr_meeting.app.schemas.meeting_schema import (
 )
 from mcr_meeting.app.schemas.platform_connection_validator_schema import (
     ComuUrlValidator,
+    PlatformConnectionInfoValidator,
     VisioUrlValidator,
     WebConfUrlValidator,
     WebexUrlValidator,
@@ -268,6 +269,14 @@ visio_test_cases = [
 def test_visio_url_validator(name: str, url: str, should_match: bool) -> None:
     validator = VisioUrlValidator()
     assert validator.validate_url(url) == should_match, f"{name} failed"
+
+
+def test_visio_connection_accepts_meeting_platform_id() -> None:
+    PlatformConnectionInfoValidator(
+        name_platform=MeetingPlatforms.VISIO,
+        url="https://visio.numerique.gouv.fr/aaa-bbbb-ccc",
+        meeting_platform_id="aaa-bbbb-ccc",
+    )
 
 
 webex_test_cases = [
