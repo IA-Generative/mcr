@@ -59,7 +59,6 @@
 
 <script setup lang="ts">
 import HttpService, { API_PATHS } from '@/services/http/http.service';
-import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { MAX_DELAY_TO_FETCH_AUDIO } from '@/config/meeting';
 import { differenceInDays, parseISO } from 'date-fns';
 import type { MeetingStatus } from '@/services/meetings/meetings.types';
@@ -81,17 +80,12 @@ const props = defineProps<{
   status: MeetingStatus;
 }>();
 
-const isGetAudioMeetingEnabled = useFeatureFlag('get_meeting_audio');
-
 const isMeetingRecent = computed(
   () => differenceInDays(new Date(), parseISO(props.creationDate)) <= MAX_DELAY_TO_FETCH_AUDIO,
 );
 
 const isAudioAvailable = computed(
-  () =>
-    isGetAudioMeetingEnabled.value &&
-    isMeetingRecent.value &&
-    AUDIO_ELIGIBLE_STATUSES.includes(props.status),
+  () => isMeetingRecent.value && AUDIO_ELIGIBLE_STATUSES.includes(props.status),
 );
 
 const audioStorageKey = `mcr-audio-required-${props.meetingId}`;

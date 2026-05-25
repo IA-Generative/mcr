@@ -22,7 +22,6 @@ from mcr_gateway.app.schemas.S3_types import (
 )
 from mcr_gateway.app.schemas.user_schema import Role, TokenUser
 from mcr_gateway.app.services.authentification_service import authorize_user, security
-from mcr_gateway.app.services.feature_flag_service import is_get_meeting_audio_enabled
 from mcr_gateway.app.services.meeting_service import (
     create_meeting_service,
     delete_meeting_service,
@@ -326,7 +325,6 @@ async def update_meeting_transcription(
 
 @router.get(
     "/meetings/{meeting_id}/audio",
-    dependencies=[Depends(is_get_meeting_audio_enabled)],
     tags=["Audio"],
 )
 async def get_meeting_audio(
