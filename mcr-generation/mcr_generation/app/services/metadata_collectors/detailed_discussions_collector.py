@@ -4,6 +4,8 @@ from mcr_generation.app.services.metadata_collectors.base import (
     MetadataCollector,
     register,
 )
+from mcr_generation.app.services.notes.facets import NotesFacet
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.sections.detailed_discussions.map_reduce_detailed_discussions import (
     MapReduceDetailedDiscussions,
 )
@@ -23,14 +25,23 @@ class DetailedDiscussionsCollector(MetadataCollector):
         "Restitue de façon détaillée chaque discussion de la réunion : sujet, "
         "idées clés, décisions, actions à entreprendre et points de vigilance."
     )
+    notes_facets = frozenset({NotesFacet.INTENT, NotesFacet.DISCUSSIONS})
 
     @observe(name="metadata_collector.detailed_discussions")
-    def _extract(self, chunks: list[Chunk]) -> DiscussionsContent:
-        meeting_subject = RefineIntent().init_then_refine(chunks)
+    def _extract(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> DiscussionsContent:
+        intent_hint = extracted_notes.intent if extracted_notes is not None else None
+        discussions_hint = (
+            extracted_notes.discussions if extracted_notes is not None else None
+        )
+        meeting_subject = RefineIntent().init_then_refine(chunks, init_hint=intent_hint)
         participants = RefineParticipants().init_then_refine(chunks).to_public()
         return MapReduceDetailedDiscussions(
             meeting_subject.title, participants.participants
-        ).map_reduce_all_steps(chunks)
+        ).map_reduce_all_steps(chunks, notes_hint=discussions_hint)
 
     def _to_markdown(self, result: DiscussionsContent) -> str:
         if not result.detailed_discussions:

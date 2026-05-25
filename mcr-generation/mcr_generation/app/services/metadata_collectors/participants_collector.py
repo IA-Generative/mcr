@@ -5,6 +5,7 @@ from mcr_generation.app.services.metadata_collectors.base import (
     MetadataCollector,
     register,
 )
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.sections.participants.refine_participants import (
     RefineParticipants,
 )
@@ -19,7 +20,12 @@ class ParticipantsCollector(MetadataCollector):
     )
 
     @observe(name="metadata_collector.participants")
-    def _extract(self, chunks: list[Chunk]) -> Participants:
+    def _extract(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> Participants:
+        """`extracted_notes` is part of the abstract signature; ignored here because notes_facets = frozenset()."""
         return RefineParticipants().init_then_refine(chunks).to_public()
 
     def _to_markdown(self, result: Participants) -> str:
