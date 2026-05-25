@@ -34,6 +34,7 @@ from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextP
         ),
     ],
 )
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.AcronymCorrector")
 @patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client")
 @patch(
     "mcr_meeting.app.services.speech_to_text.diarization_processor.get_feature_flag_client"
@@ -53,6 +54,7 @@ def test_integration_full_process(
     mock_get_feature_flag_client_transcription,
     mock_get_feature_flag_client_diarization,
     mock_get_feature_flag_client_audio_filter,
+    mock_acronym_corrector_cls,
     create_audio_buffer,
     create_mock_feature_flag_client,
     audio_format: str,
@@ -83,6 +85,11 @@ def test_integration_full_process(
 
     # Setup: Create audio buffer in specified format
     audio_bytes = create_audio_buffer(audio_format)
+
+    # Setup : mock AcronymCorrector.correct
+    mock_acronym_corrector_cls.return_value.correct.side_effect = (
+        lambda segments: segments 
+    )
 
     # Setup: Mock feature flag for noise filtering (disabled for simplicity)
     mock_feature_flag_client_audio_filter = create_mock_feature_flag_client(
@@ -156,11 +163,10 @@ def test_integration_full_process(
     # Verify: Feature flag was checked during pre-processing and post-processing
     # Pre-processing: audio_noise_filtering flag
     # Post-processing: spelling_correction flag
-    assert mock_feature_flag_client_audio_filter.is_enabled.call_count == 3
+    assert mock_feature_flag_client_audio_filter.is_enabled.call_count == 2
     calls = mock_feature_flag_client_audio_filter.is_enabled.call_args_list
     assert calls[0][0][0] == "audio_noise_filtering"
-    assert calls[1][0][0] == "acronym_correction"
-    assert calls[2][0][0] == "spelling_correction"
+    assert calls[1][0][0] == "spelling_correction"
 
     # verify content - after post_process merging
     if expected_segments_count == 4:  # multiple speakers scenario
