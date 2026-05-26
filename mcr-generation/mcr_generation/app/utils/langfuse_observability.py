@@ -132,6 +132,7 @@ def record_chunk_map_failed_event(
 def record_empty_map_phase_event(
     section: str,
     chunk_count: int | None,
+    notes_hint_present: bool = False,
 ) -> None:
     try:
         get_client().create_event(
@@ -140,6 +141,7 @@ def record_empty_map_phase_event(
             metadata={
                 "section": section,
                 "chunk_count": chunk_count,
+                "notes_hint_present": notes_hint_present,
             },
         )
     except Exception as e:

@@ -212,6 +212,7 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
             record_empty_map_phase_event(
                 section=self.section_name,
                 chunk_count=self._last_chunk_count,
+                notes_hint_present=notes_hint is not None,
             )
             return cast(ContentT, self.content_model())
 
