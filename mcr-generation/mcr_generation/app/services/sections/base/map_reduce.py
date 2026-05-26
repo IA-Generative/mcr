@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.schemas.base import Participant
-from mcr_generation.app.services.sections.base.prompts import (
+from mcr_generation.app.services.notes.prompts import (
     NOTES_SECTION_TEMPLATE,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
@@ -236,7 +236,7 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         if notes_hint is None:
             return ""
         return NOTES_SECTION_TEMPLATE.format(
-            notes_hint_json=notes_hint.model_dump_json(),
+            notes_block=notes_hint.model_dump_json(),
         )
 
     def _record_low_confidence_items(self, items: list[MappedT], chunk_id: int) -> None:
