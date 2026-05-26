@@ -102,6 +102,12 @@ class NotesExtractor:
         facet_values: dict[NotesFacet, BaseModel | None] = {}
         for key, value in zip(facet_keys, facet_results, strict=True):
             if isinstance(value, BaseException):
+                logger.warning(
+                    "Notes extraction failed for facet '{}': {}: {}",
+                    key,
+                    type(value).__name__,
+                    value,
+                )
                 record_notes_extraction_failed_event(
                     theme=key,
                     exception_type=type(value).__name__,
@@ -186,6 +192,12 @@ class NotesExtractor:
                     user_message_content=prompt,
                 )
         except Exception as e:
+            logger.warning(
+                "Notes custom facts extraction failed for instruction '{}': {}: {}",
+                instruction,
+                type(e).__name__,
+                e,
+            )
             record_notes_extraction_failed_event(
                 theme="custom_facts",
                 exception_type=type(e).__name__,

@@ -202,13 +202,13 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         get_client().update_current_span(name=f"section_{self.section_name}_reduce")
 
         if not all_items:
-            if notes_hint is not None:
-                logger.warning(
-                    "Section {}: notes hint provided but 0 item produced by the map "
-                    "phase. Short-circuiting to empty content (notes do not "
-                    "substitute for the transcript).",
-                    self.section_name,
-                )
+            logger.warning(
+                "Section {}: 0 item produced by the map phase, short-circuiting "
+                "to empty content (chunks={}, notes_hint_present={}).",
+                self.section_name,
+                self._last_chunk_count,
+                notes_hint is not None,
+            )
             record_empty_map_phase_event(
                 section=self.section_name,
                 chunk_count=self._last_chunk_count,
@@ -249,6 +249,13 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
             if item.topic_confidence < threshold
         ]
         if low:
+            logger.warning(
+                "Section {}: {} item(s) below confidence threshold {} for chunk {}",
+                self.section_name,
+                len(low),
+                threshold,
+                chunk_id,
+            )
             record_low_confidence_items_event(
                 section=self.section_name,
                 chunk_id=chunk_id,
