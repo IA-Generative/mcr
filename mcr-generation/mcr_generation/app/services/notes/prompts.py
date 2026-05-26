@@ -108,6 +108,33 @@ Retourner detailed_discussions=[] est valide si les notes ne contiennent pas d'i
 """
 
 
+EXTRACT_CUSTOM_FACTS_PROMPT_TEMPLATE = """
+Tu reçois des notes prises pendant un meeting (texte humain synthétique) et une CONSIGNE libre rédigée par l'auteur du compte-rendu personnalisé.
+
+Tâche :
+- Extraire UNIQUEMENT les faits, citations ou éléments présents dans les notes qui sont pertinents pour la consigne.
+- Pas de reformulation, pas de synthèse, pas d'interprétation.
+- Cette extraction sert d'INDICE ("hint") pour un pipeline downstream qui s'appuie aussi sur la transcription complète.
+
+Règles strictes :
+- N'invente rien qui ne soit pas explicitement présent dans les notes.
+- Si rien dans les notes ne concerne la consigne, renvoie une liste vide. C'est attendu et normal.
+- Un fact = une phrase courte et factuelle, en français.
+
+Consigne :
+<instruction>
+{instruction}
+</instruction>
+
+Notes prises pendant le meeting :
+<notes>
+{notes_content}
+</notes>
+
+Renvoie le résultat strictement au format JSON : une liste de faits courts en français dans le champ "facts".
+"""
+
+
 NOTES_SECTION_TEMPLATE = """\
 ## Notes du rédacteur (signal humain)
 

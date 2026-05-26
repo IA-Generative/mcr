@@ -1,16 +1,18 @@
 import asyncio
 from collections.abc import Awaitable, Iterable
+from typing import Any
 
 import instructor
 from langfuse import observe
 from loguru import logger
 from openai import AsyncOpenAI
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from mcr_generation.app.configs.settings import ChunkingConfig, LLMConfig
 from mcr_generation.app.schemas.base import Intent, NextMeeting
 from mcr_generation.app.services.notes.facets import NotesFacet
 from mcr_generation.app.services.notes.prompts import (
+    EXTRACT_CUSTOM_FACTS_PROMPT_TEMPLATE,
     EXTRACT_DISCUSSIONS_HINT_PROMPT_TEMPLATE,
     EXTRACT_INTENT_PROMPT_TEMPLATE,
     EXTRACT_NEXT_MEETING_PROMPT_TEMPLATE,
@@ -30,11 +32,16 @@ from mcr_generation.app.utils.langfuse_observability import (
 )
 
 
+class _NotesFacts(BaseModel):
+    facts: list[str] = Field(default_factory=list)
+
+
 class ExtractedNotes(BaseModel):
     intent: Intent | None = None
     next_meeting: NextMeeting | None = None
     topics: TopicsContent | None = None
     discussions: DiscussionsContent | None = None
+    custom_section_facts: dict[str, list[str]] | None = None
 
 
 class NotesExtractor:
@@ -57,45 +64,66 @@ class NotesExtractor:
     async def extract_all(
         self,
         notes_content: str,
-        facets: Iterable[NotesFacet],
+        facets: Iterable[NotesFacet] = (),
+        custom_instructions: Iterable[str] | None = None,
     ) -> ExtractedNotes:
         facets_set = frozenset(facets)
-        if not facets_set:
+        instructions_list: list[str] = (
+            list(custom_instructions) if custom_instructions else []
+        )
+
+        if not facets_set and not instructions_list:
             return ExtractedNotes()
 
         notes_content = self._truncate_if_too_long(notes_content)
 
-        tasks: dict[NotesFacet, Awaitable[BaseModel]] = {}
+        facet_tasks: dict[NotesFacet, Awaitable[BaseModel]] = {}
         for facet in facets_set:
             match facet:
                 case NotesFacet.INTENT:
-                    tasks[facet] = self.extract_intent(notes_content)
+                    facet_tasks[facet] = self.extract_intent(notes_content)
                 case NotesFacet.NEXT_MEETING:
-                    tasks[facet] = self.extract_next_meeting(notes_content)
+                    facet_tasks[facet] = self.extract_next_meeting(notes_content)
                 case NotesFacet.TOPICS:
-                    tasks[facet] = self.extract_topics_hint(notes_content)
+                    facet_tasks[facet] = self.extract_topics_hint(notes_content)
                 case NotesFacet.DISCUSSIONS:
-                    tasks[facet] = self.extract_discussions_hint(notes_content)
+                    facet_tasks[facet] = self.extract_discussions_hint(notes_content)
 
-        keys = list(tasks.keys())
-        raw_results = await asyncio.gather(*tasks.values(), return_exceptions=True)
-        results: dict[NotesFacet, BaseModel | None] = {}
-        for key, value in zip(keys, raw_results, strict=True):
+        facet_keys = list(facet_tasks.keys())
+        coros: list[Awaitable[Any]] = list(facet_tasks.values())
+        for instruction in instructions_list:
+            coros.append(self._extract_custom_facts(notes_content, instruction))
+
+        raw_results = await asyncio.gather(*coros, return_exceptions=True)
+
+        facet_results = raw_results[: len(facet_keys)]
+        custom_results = raw_results[len(facet_keys) :]
+
+        facet_values: dict[NotesFacet, BaseModel | None] = {}
+        for key, value in zip(facet_keys, facet_results, strict=True):
             if isinstance(value, BaseException):
                 record_notes_extraction_failed_event(
                     theme=key,
                     exception_type=type(value).__name__,
                     exception_msg=str(value)[:500],
                 )
-                results[key] = None
+                facet_values[key] = None
             else:
-                results[key] = value
+                facet_values[key] = value
+
+        custom_facts: dict[str, list[str]] = {}
+        for instruction, value in zip(instructions_list, custom_results, strict=True):
+            if isinstance(value, BaseException):
+                custom_facts[instruction] = []
+            else:
+                custom_facts[instruction] = value
 
         return ExtractedNotes(
-            intent=results.get(NotesFacet.INTENT),
-            next_meeting=results.get(NotesFacet.NEXT_MEETING),
-            topics=results.get(NotesFacet.TOPICS),
-            discussions=results.get(NotesFacet.DISCUSSIONS),
+            intent=facet_values.get(NotesFacet.INTENT),
+            next_meeting=facet_values.get(NotesFacet.NEXT_MEETING),
+            topics=facet_values.get(NotesFacet.TOPICS),
+            discussions=facet_values.get(NotesFacet.DISCUSSIONS),
+            custom_section_facts=custom_facts if instructions_list else None,
         )
 
     @observe(name="notes_extract_intent")
@@ -141,6 +169,30 @@ class NotesExtractor:
                 response_model=DiscussionsContent,
                 user_message_content=prompt,
             )
+
+    @observe(name="notes_extract_custom_facts")
+    async def _extract_custom_facts(
+        self, notes_content: str, instruction: str
+    ) -> list[str]:
+        prompt = EXTRACT_CUSTOM_FACTS_PROMPT_TEMPLATE.format(
+            instruction=instruction,
+            notes_content=notes_content,
+        )
+        try:
+            async with self._semaphore:
+                response = await async_call_llm_with_structured_output(
+                    client=self.client_instructor,
+                    response_model=_NotesFacts,
+                    user_message_content=prompt,
+                )
+        except Exception as e:
+            record_notes_extraction_failed_event(
+                theme="custom_facts",
+                exception_type=type(e).__name__,
+                exception_msg=str(e)[:500],
+            )
+            return []
+        return response.facts
 
     def _truncate_if_too_long(self, notes_content: str) -> str:
         max_len = self.chunking_config.CHUNK_SIZE
