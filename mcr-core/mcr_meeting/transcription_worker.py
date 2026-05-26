@@ -5,6 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, TypedDict
 
+import celery.app.trace  # type: ignore[import-untyped]
 import sentry_sdk
 from celery import Celery, Task
 from celery.signals import (
@@ -68,6 +69,11 @@ def _configure_celery_logging(**_: Any) -> None:  # type: ignore[explicit-any]
     # (which would install [LEVEL/Worker-N] handlers). setup_logging() already
     # ran at module import — nothing to do here.
     pass
+
+
+# Drop %(return_value)s from Celery's success log: the transcribe task returns
+# the full transcription, which would dump thousands of chars per task.
+celery.app.trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
 
 
 s2t_settings = Speech2TextSettings()
