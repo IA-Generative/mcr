@@ -41,6 +41,7 @@ from mcr_generation.app.services.metadata_collectors.title_collector import (
 from mcr_generation.app.services.metadata_collectors.topics_collector import (
     TopicsCollector,
 )
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.sections.detailed_discussions.types import (
     DiscussionsContent,
 )
@@ -72,7 +73,11 @@ def test_register_rejects_id_not_in_literal() -> None:
         id = "nope"  # type: ignore[assignment]
         description = "bogus"
 
-        def _extract(self, chunks: list[Chunk]) -> Any:
+        def _extract(
+            self,
+            chunks: list[Chunk],
+            extracted_notes: ExtractedNotes | None = None,
+        ) -> Any:
             return None
 
         def _to_markdown(self, result: Any) -> str:
@@ -103,7 +108,9 @@ async def test_collect_runs_extract_in_thread_and_formats() -> None:
         md = await collector.collect([Chunk(text="x", id=0)])
 
     assert md == "## md"
-    mock_to_thread.assert_awaited_once_with(collector._extract, [Chunk(text="x", id=0)])
+    mock_to_thread.assert_awaited_once_with(
+        collector._extract, [Chunk(text="x", id=0)], None
+    )
     collector._to_markdown.assert_called_once_with(sentinel)
 
 
@@ -133,6 +140,20 @@ def test_title_to_markdown_renders_title_and_objective() -> None:
 def test_title_to_markdown_handles_missing_title() -> None:
     md = TitleCollector()._to_markdown(_intent(title=None, objective=None))
     assert "_Titre non identifié_" in md
+
+
+@patch("mcr_generation.app.services.metadata_collectors.title_collector.RefineIntent")
+def test_title_collector_propagates_intent_hint(mock_cls: MagicMock) -> None:
+    intent = _intent(title="From notes")
+    mock_cls.return_value.init_then_refine.return_value = intent
+
+    TitleCollector()._extract(
+        [Chunk(text="x", id=0)], extracted_notes=ExtractedNotes(intent=intent)
+    )
+
+    mock_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)], init_hint=intent
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -218,6 +239,30 @@ def test_next_meeting_to_markdown_falls_back_on_low_confidence(
     assert md == "_Pas de prochaine réunion mentionnée._"
 
 
+@patch(
+    "mcr_generation.app.services.metadata_collectors.next_meeting_collector.RefineNextMeeting"
+)
+def test_next_meeting_collector_propagates_next_meeting_hint(
+    mock_cls: MagicMock,
+) -> None:
+    nm = NextMeeting(
+        date="15/03/2026",
+        time="10:00",
+        purpose="Suivi",
+        confidence=0.9,
+        justification="ok",
+    )
+    mock_cls.return_value.init_then_refine.return_value = nm
+
+    NextMeetingCollector()._extract(
+        [Chunk(text="x", id=0)], extracted_notes=ExtractedNotes(next_meeting=nm)
+    )
+
+    mock_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)], init_hint=nm
+    )
+
+
 # ---------------------------------------------------------------------------
 # TopicsCollector
 # ---------------------------------------------------------------------------
@@ -257,6 +302,38 @@ def test_topics_to_markdown_handles_empty_content() -> None:
     assert md == "_Aucun sujet ni étape identifiés._"
 
 
+@patch(
+    "mcr_generation.app.services.metadata_collectors.topics_collector.MapReduceTopics"
+)
+@patch(
+    "mcr_generation.app.services.metadata_collectors.topics_collector.RefineParticipants"
+)
+@patch("mcr_generation.app.services.metadata_collectors.topics_collector.RefineIntent")
+def test_topics_collector_propagates_intent_and_topics_hints(
+    mock_intent_cls: MagicMock,
+    mock_participants_cls: MagicMock,
+    mock_topics_cls: MagicMock,
+) -> None:
+    intent = _intent(title="From notes")
+    topics = TopicsContent(topics=[_topic()], next_steps=[])
+    mock_intent_cls.return_value.init_then_refine.return_value = intent
+    mock_participants_cls.return_value.init_then_refine.return_value.to_public.return_value = MagicMock(
+        participants=[]
+    )
+
+    TopicsCollector()._extract(
+        [Chunk(text="x", id=0)],
+        extracted_notes=ExtractedNotes(intent=intent, topics=topics),
+    )
+
+    mock_intent_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)], init_hint=intent
+    )
+    mock_topics_cls.return_value.map_reduce_all_steps.assert_called_once_with(
+        [Chunk(text="x", id=0)], notes_hint=topics
+    )
+
+
 # ---------------------------------------------------------------------------
 # DetailedDiscussionsCollector
 # ---------------------------------------------------------------------------
@@ -291,6 +368,40 @@ def test_detailed_discussions_to_markdown_handles_empty_list() -> None:
         DiscussionsContent(detailed_discussions=[])
     )
     assert md == "_Aucune discussion détaillée identifiée._"
+
+
+@patch(
+    "mcr_generation.app.services.metadata_collectors.detailed_discussions_collector.MapReduceDetailedDiscussions"
+)
+@patch(
+    "mcr_generation.app.services.metadata_collectors.detailed_discussions_collector.RefineParticipants"
+)
+@patch(
+    "mcr_generation.app.services.metadata_collectors.detailed_discussions_collector.RefineIntent"
+)
+def test_detailed_discussions_collector_propagates_intent_and_discussions_hints(
+    mock_intent_cls: MagicMock,
+    mock_participants_cls: MagicMock,
+    mock_dd_cls: MagicMock,
+) -> None:
+    intent = _intent(title="From notes")
+    discussions = DiscussionsContent(detailed_discussions=[_discussion()])
+    mock_intent_cls.return_value.init_then_refine.return_value = intent
+    mock_participants_cls.return_value.init_then_refine.return_value.to_public.return_value = MagicMock(
+        participants=[]
+    )
+
+    DetailedDiscussionsCollector()._extract(
+        [Chunk(text="x", id=0)],
+        extracted_notes=ExtractedNotes(intent=intent, discussions=discussions),
+    )
+
+    mock_intent_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)], init_hint=intent
+    )
+    mock_dd_cls.return_value.map_reduce_all_steps.assert_called_once_with(
+        [Chunk(text="x", id=0)], notes_hint=discussions
+    )
 
 
 # ---------------------------------------------------------------------------

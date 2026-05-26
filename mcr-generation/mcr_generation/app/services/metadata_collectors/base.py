@@ -1,7 +1,9 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Any, Literal, get_args
+from typing import Any, ClassVar, Literal, get_args
 
+from mcr_generation.app.services.notes.facets import NotesFacet
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.utils.input_chunker import Chunk
 
 CollectorId = Literal[
@@ -20,17 +22,26 @@ class MetadataCollector(ABC):
 
     id: CollectorId
     description: str
+    notes_facets: ClassVar[frozenset[NotesFacet]] = frozenset()
 
     @abstractmethod
-    def _extract(self, chunks: list[Chunk]) -> Any:
+    def _extract(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> Any:
         """Run the underlying sync extractor and return its Pydantic output."""
 
     @abstractmethod
     def _to_markdown(self, result: Any) -> str:
         """Render the extractor's Pydantic output as markdown."""
 
-    async def collect(self, chunks: list[Chunk]) -> str:
-        result = await asyncio.to_thread(self._extract, chunks)
+    async def collect(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> str:
+        result = await asyncio.to_thread(self._extract, chunks, extracted_notes)
         return self._to_markdown(result)
 
 
