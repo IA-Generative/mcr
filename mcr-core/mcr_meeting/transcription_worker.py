@@ -7,7 +7,15 @@ from typing import Any, TypedDict
 
 import sentry_sdk
 from celery import Celery, Task
-from celery.signals import task_failure, task_prerun, task_success, worker_process_init
+from celery.signals import (
+    setup_logging as celery_setup_logging,
+)
+from celery.signals import (
+    task_failure,
+    task_prerun,
+    task_success,
+    worker_process_init,
+)
 from faster_whisper import WhisperModel
 from langfuse import Langfuse
 from loguru import logger
@@ -52,6 +60,15 @@ from mcr_meeting.evaluation.asr.types import EvaluationInput, TranscriptionOutpu
 from mcr_meeting.setup.logger import setup_logging
 
 setup_logging()
+
+
+@celery_setup_logging.connect
+def _configure_celery_logging(**_: Any) -> None:  # type: ignore[explicit-any]
+    # Connecting any receiver tells Celery to skip its own logging setup
+    # (which would install [LEVEL/Worker-N] handlers). setup_logging() already
+    # ran at module import — nothing to do here.
+    pass
+
 
 s2t_settings = Speech2TextSettings()
 celerySettings = CelerySettings()
