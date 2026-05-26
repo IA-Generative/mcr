@@ -62,7 +62,10 @@ describe('use-recorder', () => {
     mockGetUserMedia.mockResolvedValue(mockStream);
 
     Object.defineProperty(navigator, 'mediaDevices', {
-      value: { getUserMedia: mockGetUserMedia, enumerateDevices: vi.fn() },
+      value: {
+        getUserMedia: mockGetUserMedia,
+        enumerateDevices: vi.fn().mockResolvedValue([]),
+      },
       writable: true,
       configurable: true,
     });

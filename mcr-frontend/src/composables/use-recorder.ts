@@ -61,9 +61,17 @@ function _initMediaRecorderEvents(options: RecordingOptions) {
     options.onDataAvailableHandler != undefined ? options.onDataAvailableHandler : null;
 }
 
+export type AudioDeviceInfo = {
+  deviceId: string;
+  label: string;
+  groupId: string;
+};
+
 export type RecordingStartContext = {
   stream: MediaStream;
   recorder: MediaRecorder;
+  requestedDeviceId: string | null;
+  availableDevices: AudioDeviceInfo[];
 };
 
 type RecordingOptions = {
@@ -95,6 +103,16 @@ async function startRecording(options: RecordingOptions = {}) {
     audio: { deviceId: { ideal: currentAudioId.value } },
   });
 
+  const availableDevices: AudioDeviceInfo[] = await navigator.mediaDevices
+    .enumerateDevices()
+    .then((devices) =>
+      (devices ?? [])
+        .filter((d) => d.kind === 'audioinput')
+        .map((d) => ({ deviceId: d.deviceId, label: d.label, groupId: d.groupId })),
+    )
+    .catch(() => []);
+  const requestedDeviceId = currentAudioId.value ?? null;
+
   mediaRecorder.value = new MediaRecorder(mediaStream, {
     mimeType: 'audio/webm',
   });
@@ -103,7 +121,12 @@ async function startRecording(options: RecordingOptions = {}) {
   initializeStopwatchWithOffset(options.numberOfChunkAlreadyRecorded);
   stopwatch.start();
 
-  options.onRecordingStart?.({ stream: mediaStream, recorder: mediaRecorder.value });
+  options.onRecordingStart?.({
+    stream: mediaStream,
+    recorder: mediaRecorder.value,
+    requestedDeviceId,
+    availableDevices,
+  });
 }
 
 async function getAudioInputDevices() {
