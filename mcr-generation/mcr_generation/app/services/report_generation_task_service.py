@@ -38,8 +38,8 @@ langfuse_settings = LangfuseSettings()
 def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
-    deliverable_id: int,
     report_type: str = ReportTypes.DECISION_RECORD.value,
+    deliverable_id: int | None = None,
     owner_keycloak_uuid: str | None = None,
     notes_content: str | None = None,
     custom_prompt: str | None = None,

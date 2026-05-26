@@ -82,7 +82,7 @@ class TestGenerateReportFromDocx:
             decision_record
         )
 
-        generate_report_from_docx(1, "transcription.docx", 1)
+        generate_report_from_docx(1, "transcription.docx", deliverable_id=1)
 
         mock_get_file_from_s3.assert_called_once_with("transcription.docx")
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
@@ -96,7 +96,7 @@ class TestGenerateReportFromDocx:
         mock_get_file_from_s3.side_effect = RuntimeError("S3 unavailable")
 
         with pytest.raises(RuntimeError, match="S3 unavailable"):
-            generate_report_from_docx(1, "transcription.docx", 1)
+            generate_report_from_docx(1, "transcription.docx", deliverable_id=1)
 
     def test_returns_custom_markdown_report_built_from_generator(
         self,
@@ -115,8 +115,8 @@ class TestGenerateReportFromDocx:
         result = generate_report_from_docx(
             1,
             "transcription.docx",
-            1,
-            report_type="CUSTOM_REPORT",
+            "CUSTOM_REPORT",
+            deliverable_id=1,
             custom_prompt="Liste les risques",
         )
 
