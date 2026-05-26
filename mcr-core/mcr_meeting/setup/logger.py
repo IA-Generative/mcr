@@ -97,7 +97,8 @@ def create_loguru_handler() -> None:
 
 
 def redirect_python_logging_to_loguru() -> None:
-    logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG)
+    # force=True drops handlers already installed on root (Celery, Sentry, ...) so ours wins.
+    logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG, force=True)
 
 
 def get_log_format() -> str:
