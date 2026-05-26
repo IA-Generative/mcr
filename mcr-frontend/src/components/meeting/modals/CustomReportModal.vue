@@ -91,7 +91,7 @@ const MODAL_ID = 'custom-report-modal';
 
 const props = defineProps<{
   initialPrompt: string;
-  modalGenerateDisabled: boolean;
+  generateBlockedByPending: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -104,7 +104,7 @@ const { t } = useI18n();
 const prompt = ref(props.initialPrompt);
 
 const isGenerateDisabled = computed(
-  () => prompt.value.trim().length === 0 || props.modalGenerateDisabled,
+  () => prompt.value.trim().length === 0 || props.generateBlockedByPending,
 );
 
 type SuggestionKey = keyof MessageSchema['meeting-v2']['custom-report-modal']['suggestions'];

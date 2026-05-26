@@ -73,8 +73,14 @@ const activeDeliverables = computed(() =>
   ),
 );
 
-const generatedTypes = computed(() => new Set(activeDeliverables.value.map((d) => d.type)));
-
+const sucessfullyGeneratedTypes = computed(
+  () =>
+    new Set(
+      activeDeliverables.value
+        .filter((d) => d.status === 'PENDING' || d.status === 'AVAILABLE')
+        .map((d) => d.type),
+    ),
+);
 const hasPendingDeliverable = computed(() =>
   activeDeliverables.value.some((d) => d.status === 'PENDING'),
 );
@@ -85,13 +91,13 @@ const radioOptions = computed(() =>
       label: t('meeting-v2.deliverable-card.type.decision-record.label'),
       hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
       value: 'DECISION_RECORD' as DeliverableType,
-      disabled: generatedTypes.value.has('DECISION_RECORD'),
+      disabled: sucessfullyGeneratedTypes.value.has('DECISION_RECORD'),
     },
     {
       label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
       hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
       value: 'DETAILED_SYNTHESIS' as DeliverableType,
-      disabled: generatedTypes.value.has('DETAILED_SYNTHESIS'),
+      disabled: sucessfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
     },
     {
       label: t('meeting-v2.deliverable-card.type.custom-report.label'),
@@ -132,7 +138,7 @@ const { open: openCustomReportModal } = useModal({
     get initialPrompt() {
       return customPrompt.value;
     },
-    get modalGenerateDisabled() {
+    get generateBlockedByPending() {
       return modalGenerateDisabled.value;
     },
     onGenerate: (prompt: string) => {
