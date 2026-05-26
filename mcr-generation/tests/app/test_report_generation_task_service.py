@@ -2,6 +2,7 @@
 Unit tests for report_generation_task_service signal handlers.
 """
 
+import inspect
 import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -64,6 +65,69 @@ def decision_record() -> DecisionRecord:
     )
 
 
+class TestGenerateReportFromDocxSignature:
+    """Lock the task signature against the contract used by mcr-core.
+
+    mcr-core dispatches the task with
+    ``args=[meeting_id, transcription_object_name, report_type]`` and passes
+    ``deliverable_id`` / ``owner_keycloak_uuid`` / ``notes_content`` /
+    ``custom_prompt`` via ``kwargs``. Swapping the positional order silently
+    binds the wrong values (the original bug #739).
+    """
+
+    def test_positional_parameters_order_matches_celery_dispatch(self) -> None:
+        signature = inspect.signature(generate_report_from_docx)
+        parameter_names = list(signature.parameters)
+
+        assert parameter_names[:3] == [
+            "meeting_id",
+            "transcription_object_filename",
+            "report_type",
+        ]
+
+    def test_kwargs_only_parameters_have_defaults(self) -> None:
+        signature = inspect.signature(generate_report_from_docx)
+
+        for name in (
+            "report_type",
+            "deliverable_id",
+            "owner_keycloak_uuid",
+            "notes_content",
+            "custom_prompt",
+        ):
+            assert signature.parameters[name].default is not inspect.Parameter.empty, (
+                f"{name} must have a default so mcr-core can pass it via kwargs"
+            )
+
+    def test_accepts_celery_dispatch_shape(
+        self,
+        decision_record: DecisionRecord,
+        mock_get_file_from_s3: MagicMock,
+        mock_chunk_docx_to_document_list: MagicMock,
+        mock_create_report_generator: MagicMock,
+    ) -> None:
+        """Replicates exactly what request_deliverable.py sends via send_task."""
+        mock_get_file_from_s3.return_value = b"docx content"
+        mock_chunk_docx_to_document_list.return_value = [
+            SimpleNamespace(id=0, text="chunk")
+        ]
+        mock_create_report_generator.return_value.generate.return_value = (
+            decision_record
+        )
+
+        args = [42, "transcription.docx", "DECISION_RECORD"]
+        kwargs = {
+            "owner_keycloak_uuid": "owner-uuid",
+            "custom_prompt": "résume",
+        }
+
+        generate_report_from_docx(*args, **kwargs)
+
+        mock_get_file_from_s3.assert_called_once_with("transcription.docx")
+        _, factory_kwargs = mock_create_report_generator.call_args
+        assert factory_kwargs == {"custom_prompt": "résume"}
+
+
 class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
         self,
@@ -82,7 +146,7 @@ class TestGenerateReportFromDocx:
             decision_record
         )
 
-        generate_report_from_docx(1, "transcription.docx", 1)
+        generate_report_from_docx(1, "transcription.docx")
 
         mock_get_file_from_s3.assert_called_once_with("transcription.docx")
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
@@ -96,7 +160,7 @@ class TestGenerateReportFromDocx:
         mock_get_file_from_s3.side_effect = RuntimeError("S3 unavailable")
 
         with pytest.raises(RuntimeError, match="S3 unavailable"):
-            generate_report_from_docx(1, "transcription.docx", 1)
+            generate_report_from_docx(1, "transcription.docx")
 
     def test_returns_custom_markdown_report_built_from_generator(
         self,
@@ -115,8 +179,7 @@ class TestGenerateReportFromDocx:
         result = generate_report_from_docx(
             1,
             "transcription.docx",
-            1,
-            report_type="CUSTOM_REPORT",
+            "CUSTOM_REPORT",
             custom_prompt="Liste les risques",
         )
 
