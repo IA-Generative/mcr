@@ -1,5 +1,5 @@
 import asyncio
-from collections.abc import Awaitable
+from collections.abc import Awaitable, Iterable
 
 import instructor
 from langfuse import observe
@@ -10,6 +10,10 @@ from pydantic import BaseModel
 from mcr_generation.app.configs.settings import ChunkingConfig, LLMConfig
 from mcr_generation.app.schemas.base import Intent, NextMeeting
 from mcr_generation.app.schemas.celery_types import ReportTypes
+from mcr_generation.app.services.notes.facets import (
+    NotesFacet,
+    facets_for_report_type,
+)
 from mcr_generation.app.services.notes.prompts import (
     EXTRACT_DISCUSSIONS_HINT_PROMPT_TEMPLATE,
     EXTRACT_INTENT_PROMPT_TEMPLATE,
@@ -57,23 +61,29 @@ class NotesExtractor:
     async def extract_all(
         self,
         notes_content: str,
-        report_type: ReportTypes,
+        facets: Iterable[NotesFacet],
     ) -> ExtractedNotes:
+        facets_set = frozenset(facets)
+        if not facets_set:
+            return ExtractedNotes()
+
         notes_content = self._truncate_if_too_long(notes_content)
 
-        tasks: dict[str, Awaitable[BaseModel]] = {
-            "intent": self.extract_intent(notes_content),
-            "next_meeting": self.extract_next_meeting(notes_content),
-        }
-        match report_type:
-            case ReportTypes.DECISION_RECORD:
-                tasks["topics"] = self.extract_topics_hint(notes_content)
-            case ReportTypes.DETAILED_SYNTHESIS:
-                tasks["discussions"] = self.extract_discussions_hint(notes_content)
+        tasks: dict[NotesFacet, Awaitable[BaseModel]] = {}
+        for facet in facets_set:
+            match facet:
+                case NotesFacet.INTENT:
+                    tasks[facet] = self.extract_intent(notes_content)
+                case NotesFacet.NEXT_MEETING:
+                    tasks[facet] = self.extract_next_meeting(notes_content)
+                case NotesFacet.TOPICS:
+                    tasks[facet] = self.extract_topics_hint(notes_content)
+                case NotesFacet.DISCUSSIONS:
+                    tasks[facet] = self.extract_discussions_hint(notes_content)
 
         keys = list(tasks.keys())
         raw_results = await asyncio.gather(*tasks.values(), return_exceptions=True)
-        results: dict[str, BaseModel | None] = {}
+        results: dict[NotesFacet, BaseModel | None] = {}
         for key, value in zip(keys, raw_results, strict=True):
             if isinstance(value, BaseException):
                 record_notes_extraction_failed_event(
@@ -86,10 +96,10 @@ class NotesExtractor:
                 results[key] = value
 
         return ExtractedNotes(
-            intent=results.get("intent"),
-            next_meeting=results.get("next_meeting"),
-            topics=results.get("topics"),
-            discussions=results.get("discussions"),
+            intent=results.get(NotesFacet.INTENT),
+            next_meeting=results.get(NotesFacet.NEXT_MEETING),
+            topics=results.get(NotesFacet.TOPICS),
+            discussions=results.get(NotesFacet.DISCUSSIONS),
         )
 
     @observe(name="notes_extract_intent")
@@ -160,8 +170,9 @@ def extract_notes(
         logger.debug("Notes extraction skipped: no notes content")
         return None
 
+    facets = facets_for_report_type(report_type)
     extracted_notes = asyncio.run(
-        NotesExtractor().extract_all(notes_content, report_type=report_type)
+        NotesExtractor().extract_all(notes_content, facets=facets)
     )
     logger.debug("Notes extraction done")
     return extracted_notes
