@@ -118,8 +118,6 @@ class TestGenerateReportFromDocxSignature:
         args = [42, "transcription.docx", "DECISION_RECORD"]
         kwargs = {
             "owner_keycloak_uuid": "owner-uuid",
-            "deliverable_id": 7,
-            "notes_content": "some notes",
             "custom_prompt": "résume",
         }
 
@@ -182,7 +180,6 @@ class TestGenerateReportFromDocx:
             1,
             "transcription.docx",
             "CUSTOM_REPORT",
-            deliverable_id=1,
             custom_prompt="Liste les risques",
         )
 
