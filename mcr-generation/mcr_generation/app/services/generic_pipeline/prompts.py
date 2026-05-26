@@ -34,6 +34,7 @@ Consigne :
 Faits :
 - {facts}
 
+{notes_section}
 Règles strictes :
 - N'invente rien qui ne soit pas dans les faits.
 - Tu peux ignorer / omettre les faits redondants ou hors-sujet.
