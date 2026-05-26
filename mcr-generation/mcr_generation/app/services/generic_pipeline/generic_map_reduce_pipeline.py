@@ -140,4 +140,4 @@ class GenericMapReducePipeline:
         if not notes_facts:
             return ""
         bulleted = "- " + "\n- ".join(notes_facts)
-        return NOTES_SECTION_TEMPLATE.format(notes_block=bulleted)
+        return NOTES_SECTION_TEMPLATE.format(notes_block=bulleted) + "\n"

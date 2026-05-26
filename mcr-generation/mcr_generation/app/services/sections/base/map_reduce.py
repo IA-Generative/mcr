@@ -236,8 +236,9 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
     def _build_notes_section(self, notes_hint: ContentT | None) -> str:
         if notes_hint is None:
             return ""
-        return NOTES_SECTION_TEMPLATE.format(
-            notes_block=notes_hint.model_dump_json(),
+        return (
+            NOTES_SECTION_TEMPLATE.format(notes_block=notes_hint.model_dump_json())
+            + "\n"
         )
 
     def _record_low_confidence_items(self, items: list[MappedT], chunk_id: int) -> None:
