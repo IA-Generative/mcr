@@ -65,7 +65,7 @@ async def test_generate_async_dispatches_collector_and_generic(
     gen.rewriter.rewrite.assert_awaited_once_with("prompt brut")
     mock_collector.collect.assert_awaited_once_with(chunks, extracted_notes=None)
     gen.pipeline.map_reduce_all_steps.assert_awaited_once_with(
-        chunks, "Liste les risques évoqués"
+        chunks, "Liste les risques évoqués", notes_facts=None
     )
 
 
@@ -132,6 +132,7 @@ async def test_notes_extracted_with_facets_union_and_dispatched_to_collectors(
     mock_notes_extractor_cls.return_value.extract_all.assert_awaited_once_with(
         "some notes",
         facets=frozenset({NotesFacet.INTENT, NotesFacet.TOPICS}),
+        custom_instructions=[],
     )
     title_collector.collect.assert_awaited_once_with(
         [Chunk(text="x", id=0)], extracted_notes=extracted
@@ -143,16 +144,47 @@ async def test_notes_extracted_with_facets_union_and_dispatched_to_collectors(
 
 @pytest.mark.asyncio
 @patch(f"{_MODULE}.NotesExtractor")
-async def test_no_notes_extraction_when_plan_has_no_notes_aware_collectors(
+async def test_no_notes_extraction_when_no_facets_and_no_custom_sections(
     mock_notes_extractor_cls: MagicMock,
 ) -> None:
-    """Plan with only CustomSection / Participants → facets union is empty,
-    no LLM call to NotesExtractor even when notes_content is provided."""
+    """Plan with only a CollectorSection without notes_facets and no
+    CustomSection → both facets and custom_instructions are empty; the
+    short-circuit prevents any LLM call even when notes_content is provided."""
     plan = RewriterOutput(
         title=None,
         sections=[
             CollectorSection(heading="Participants", collector_id="participants"),
-            CustomSection(heading="Risques", instruction="Liste"),
+        ],
+    )
+    gen = CustomReportGenerator(raw_prompt="prompt")
+    gen.rewriter = MagicMock()
+    gen.rewriter.rewrite = AsyncMock(return_value=plan)
+
+    with patch(f"{_MODULE}.METADATA_COLLECTORS") as mock_registry:
+        mock_registry.__getitem__.return_value = _stub_collector(frozenset())
+        await gen.generate_async([Chunk(text="x", id=0)], notes_content="some notes")
+
+    mock_notes_extractor_cls.assert_not_called()
+
+
+@pytest.mark.asyncio
+@patch(f"{_MODULE}.NotesExtractor")
+async def test_notes_extracted_with_collector_facets_and_custom_instructions(
+    mock_notes_extractor_cls: MagicMock,
+) -> None:
+    """Plan with a notes-aware CollectorSection AND a CustomSection → facets
+    contains the collector's notes_facets and custom_instructions contains the
+    CustomSection's instruction; both are passed to NotesExtractor."""
+    extracted = ExtractedNotes(custom_section_facts={"Liste les risques": ["r1"]})
+    mock_notes_extractor_cls.return_value.extract_all = AsyncMock(
+        return_value=extracted
+    )
+
+    plan = RewriterOutput(
+        title=None,
+        sections=[
+            CollectorSection(heading="Sujets", collector_id="topics"),
+            CustomSection(heading="Risques", instruction="Liste les risques"),
         ],
     )
     gen = CustomReportGenerator(raw_prompt="prompt")
@@ -161,8 +193,22 @@ async def test_no_notes_extraction_when_plan_has_no_notes_aware_collectors(
     gen.pipeline = MagicMock()
     gen.pipeline.map_reduce_all_steps = AsyncMock(return_value="- R")
 
+    topics_collector = _stub_collector(
+        frozenset({NotesFacet.INTENT, NotesFacet.TOPICS})
+    )
+
     with patch(f"{_MODULE}.METADATA_COLLECTORS") as mock_registry:
-        mock_registry.__getitem__.return_value = _stub_collector(frozenset())
+        mock_registry.__getitem__.return_value = topics_collector
         await gen.generate_async([Chunk(text="x", id=0)], notes_content="some notes")
 
-    mock_notes_extractor_cls.assert_not_called()
+    mock_notes_extractor_cls.return_value.extract_all.assert_awaited_once_with(
+        "some notes",
+        facets=frozenset({NotesFacet.INTENT, NotesFacet.TOPICS}),
+        custom_instructions=["Liste les risques"],
+    )
+    topics_collector.collect.assert_awaited_once_with(
+        [Chunk(text="x", id=0)], extracted_notes=extracted
+    )
+    gen.pipeline.map_reduce_all_steps.assert_awaited_once_with(
+        [Chunk(text="x", id=0)], "Liste les risques", notes_facts=["r1"]
+    )
