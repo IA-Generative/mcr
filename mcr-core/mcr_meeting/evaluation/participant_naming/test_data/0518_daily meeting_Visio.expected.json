@@ -1,0 +1,8 @@
+[
+  {"speaker_id": "LOCUTEUR_00", "name": "Titouan"},
+  {"speaker_id": "LOCUTEUR_01", "name": "Thomas"},
+  {"speaker_id": "LOCUTEUR_02", "name": "Léo"},
+  {"speaker_id": "LOCUTEUR_03", "name": "Thibaut"},
+  {"speaker_id": "LOCUTEUR_04", "name": null},
+  {"speaker_id": "LOCUTEUR_05", "name": "Théodore"}
+]
