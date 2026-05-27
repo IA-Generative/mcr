@@ -33,11 +33,12 @@ Tu es un assistant chargé de générer un compte-rendu de réunion consolidé e
 Objectif principal de la réunion : {meeting_subject}
 Liste des participants mappés : {speaker_mapping}
 
-Voici la liste initiale des topics extraits (au format JSON) :  
+Voici la liste initiale des topics extraits (au format JSON) :
 <topics>
 {topics}
 </topics>
-{notes_section}
+
+{notes_section}\
 ## Ta tâche de consolidation
 
 1. **Regrouper et fusionner** les sujets similaires ou redondants:

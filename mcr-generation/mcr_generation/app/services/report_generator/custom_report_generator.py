@@ -83,10 +83,19 @@ class CustomReportGenerator:
                 if isinstance(spec, CollectorSection)
             )
         )
-        if not facets:
+        custom_instructions: list[str] = [
+            spec.instruction
+            for spec in plan.sections
+            if isinstance(spec, CustomSection)
+        ]
+        if not facets and not custom_instructions:
             return None
 
-        return await NotesExtractor().extract_all(notes_content, facets=facets)
+        return await NotesExtractor().extract_all(
+            notes_content,
+            facets=facets,
+            custom_instructions=custom_instructions,
+        )
 
     async def _render_section(
         self,
@@ -100,8 +109,16 @@ class CustomReportGenerator:
                     chunks, extracted_notes=extracted_notes
                 )
             case CustomSection():
+                notes_facts: list[str] | None = None
+                if (
+                    extracted_notes is not None
+                    and extracted_notes.custom_section_facts is not None
+                ):
+                    notes_facts = extracted_notes.custom_section_facts.get(
+                        spec.instruction
+                    )
                 return await self.pipeline.map_reduce_all_steps(
-                    chunks, spec.instruction
+                    chunks, spec.instruction, notes_facts=notes_facts
                 )
 
     def _assemble_markdown(

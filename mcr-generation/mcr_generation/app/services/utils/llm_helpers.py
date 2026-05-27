@@ -2,6 +2,7 @@ from typing import TypeVar
 
 from instructor import AsyncInstructor, Instructor
 from langfuse import observe
+from loguru import logger
 from pydantic import BaseModel
 from tenacity import (
     AsyncRetrying,
@@ -28,6 +29,13 @@ def _emit_retry_event(retry_state: RetryCallState) -> None:
     exc = retry_state.outcome.exception() if retry_state.outcome else None
     next_sleep = (
         retry_state.next_action.sleep if retry_state.next_action is not None else None
+    )
+    logger.warning(
+        "LLM call retry attempt={}, next_sleep={}s, exception={}: {}",
+        retry_state.attempt_number,
+        next_sleep,
+        type(exc).__name__ if exc else None,
+        exc,
     )
     record_llm_retry_event(
         attempt=retry_state.attempt_number,

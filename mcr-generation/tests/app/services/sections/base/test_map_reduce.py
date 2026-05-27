@@ -116,14 +116,10 @@ class TestNotesHintInjection:
 
 
 class TestReduceEmptyShortCircuit:
-    @pytest.mark.parametrize(
-        ("hint", "expect_warning"),
-        [(None, False), (_build_hint(), True)],
-    )
+    @pytest.mark.parametrize("hint", [None, _build_hint()])
     def test_short_circuits_without_llm_call(
         self,
         hint: _StubContent | None,
-        expect_warning: bool,
     ) -> None:
         with (
             patch(f"{_MODULE_PATH}.call_llm_with_structured_output") as mock_call,
@@ -134,8 +130,12 @@ class TestReduceEmptyShortCircuit:
 
         assert result == _StubContent()
         mock_call.assert_not_called()
-        mock_event.assert_called_once_with(section="stub", chunk_count=None)
-        assert mock_logger.warning.called is expect_warning
+        mock_event.assert_called_once_with(
+            section="stub",
+            chunk_count=None,
+            notes_hint_present=hint is not None,
+        )
+        mock_logger.warning.assert_called_once()
 
 
 class TestMapPhaseFailures:

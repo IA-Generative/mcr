@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
 from mcr_generation.app.schemas.base import Participant
-from mcr_generation.app.services.sections.base.prompts import (
+from mcr_generation.app.services.notes.prompts import (
     NOTES_SECTION_TEMPLATE,
 )
 from mcr_generation.app.services.utils.input_chunker import Chunk
@@ -202,16 +202,17 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         get_client().update_current_span(name=f"section_{self.section_name}_reduce")
 
         if not all_items:
-            if notes_hint is not None:
-                logger.warning(
-                    "Section {}: notes hint provided but 0 item produced by the map "
-                    "phase. Short-circuiting to empty content (notes do not "
-                    "substitute for the transcript).",
-                    self.section_name,
-                )
+            logger.warning(
+                "Section {}: 0 item produced by the map phase, short-circuiting "
+                "to empty content (chunks={}, notes_hint_present={}).",
+                self.section_name,
+                self._last_chunk_count,
+                notes_hint is not None,
+            )
             record_empty_map_phase_event(
                 section=self.section_name,
                 chunk_count=self._last_chunk_count,
+                notes_hint_present=notes_hint is not None,
             )
             return cast(ContentT, self.content_model())
 
@@ -235,8 +236,9 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
     def _build_notes_section(self, notes_hint: ContentT | None) -> str:
         if notes_hint is None:
             return ""
-        return NOTES_SECTION_TEMPLATE.format(
-            notes_hint_json=notes_hint.model_dump_json(),
+        return (
+            NOTES_SECTION_TEMPLATE.format(notes_block=notes_hint.model_dump_json())
+            + "\n"
         )
 
     def _record_low_confidence_items(self, items: list[MappedT], chunk_id: int) -> None:
@@ -247,6 +249,13 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
             if item.topic_confidence < threshold
         ]
         if low:
+            logger.warning(
+                "Section {}: {} item(s) below confidence threshold {} for chunk {}",
+                self.section_name,
+                len(low),
+                threshold,
+                chunk_id,
+            )
             record_low_confidence_items_event(
                 section=self.section_name,
                 chunk_id=chunk_id,
