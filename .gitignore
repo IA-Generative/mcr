@@ -7,3 +7,4 @@ tmp/
 .DS_Store
 bin
 __pycache__/
+docker-compose.override.yml

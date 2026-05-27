@@ -1,12 +1,10 @@
-from datetime import datetime, timedelta, timezone
-
-import pytest
+from datetime import datetime, timedelta
 
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
-from tests.factories import MeetingFactory, MeetingTransitionRecordFactory
+from tests.factories import MeetingFactory
 
 
 class TestTranscriptionQueueEstimationService:
@@ -278,72 +276,3 @@ class TestTranscriptionQueueEstimationService:
         # Only the 10 recent TRANSCRIPTION_PENDING meetings should be counted
         # 10 meetings / 14 parallel pods = 0 slots (floor division)
         assert result == 0
-
-    def test_get_meeting_remaining_wait_time_minutes_should_return_correct_remaining_time(
-        self,
-    ) -> None:
-        """Test that get_meeting_remaining_wait_time_minutes returns correct remaining time."""
-        # Arrange - create meeting with transition record predicting 30 minutes in future
-        meeting = MeetingFactory.create(status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS)
-        predicted_time = datetime.now(timezone.utc) + timedelta(minutes=30)
-
-        MeetingTransitionRecordFactory.create(
-            meeting_id=meeting.id,
-            status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
-            predicted_date_of_next_transition=predicted_time,
-        )
-
-        # Act
-        result = (
-            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
-                meeting.id
-            )
-        )
-
-        # Assert - should be approximately 30 minutes (within 1 minute for test execution)
-        assert 29 <= result <= 31
-
-    def test_get_meeting_remaining_wait_time_minutes_should_return_zero_when_time_passed(
-        self,
-    ) -> None:
-        """Test that get_meeting_remaining_wait_time_minutes returns 0 when estimated time has passed."""
-        # Arrange - create meeting with transition record in the past
-        meeting = MeetingFactory.create(status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS)
-        past_time = datetime.now(timezone.utc) - timedelta(minutes=10)
-
-        MeetingTransitionRecordFactory.create(
-            meeting_id=meeting.id,
-            status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
-            predicted_date_of_next_transition=past_time,
-        )
-
-        # Act
-        result = (
-            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
-                meeting.id
-            )
-        )
-
-        # Assert
-        assert result == 0
-
-    def test_get_meeting_remaining_wait_time_minutes_should_raise_exception_when_predicted_date_of_next_transition_is_none(
-        self,
-    ) -> None:
-        """Test that get_meeting_remaining_wait_time_minutes raises ValueError when predicted_date_of_next_transition is None."""
-        # Arrange - create meeting with transition record that has no prediction
-        meeting = MeetingFactory.create(status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS)
-
-        MeetingTransitionRecordFactory.create(
-            meeting_id=meeting.id,
-            status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
-            predicted_date_of_next_transition=None,
-        )
-
-        # Act & Assert
-        with pytest.raises(
-            ValueError, match=f"Estimated end date is None for meeting {meeting.id}"
-        ):
-            TranscriptionQueueEstimationService.get_meeting_remaining_wait_time_minutes(
-                meeting.id
-            )

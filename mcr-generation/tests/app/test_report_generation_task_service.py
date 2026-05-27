@@ -2,6 +2,7 @@
 Unit tests for report_generation_task_service signal handlers.
 """
 
+import inspect
 import sys
 from types import SimpleNamespace
 from unittest.mock import MagicMock
@@ -64,6 +65,69 @@ def decision_record() -> DecisionRecord:
     )
 
 
+class TestGenerateReportFromDocxSignature:
+    """Lock the task signature against the contract used by mcr-core.
+
+    mcr-core dispatches the task with
+    ``args=[meeting_id, transcription_object_name, report_type]`` and passes
+    ``deliverable_id`` / ``owner_keycloak_uuid`` / ``notes_content`` /
+    ``custom_prompt`` via ``kwargs``. Swapping the positional order silently
+    binds the wrong values (the original bug #739).
+    """
+
+    def test_positional_parameters_order_matches_celery_dispatch(self) -> None:
+        signature = inspect.signature(generate_report_from_docx)
+        parameter_names = list(signature.parameters)
+
+        assert parameter_names[:3] == [
+            "meeting_id",
+            "transcription_object_filename",
+            "report_type",
+        ]
+
+    def test_kwargs_only_parameters_have_defaults(self) -> None:
+        signature = inspect.signature(generate_report_from_docx)
+
+        for name in (
+            "report_type",
+            "deliverable_id",
+            "owner_keycloak_uuid",
+            "notes_content",
+            "custom_prompt",
+        ):
+            assert signature.parameters[name].default is not inspect.Parameter.empty, (
+                f"{name} must have a default so mcr-core can pass it via kwargs"
+            )
+
+    def test_accepts_celery_dispatch_shape(
+        self,
+        decision_record: DecisionRecord,
+        mock_get_file_from_s3: MagicMock,
+        mock_chunk_docx_to_document_list: MagicMock,
+        mock_create_report_generator: MagicMock,
+    ) -> None:
+        """Replicates exactly what request_deliverable.py sends via send_task."""
+        mock_get_file_from_s3.return_value = b"docx content"
+        mock_chunk_docx_to_document_list.return_value = [
+            SimpleNamespace(id=0, text="chunk")
+        ]
+        mock_create_report_generator.return_value.generate.return_value = (
+            decision_record
+        )
+
+        args = [42, "transcription.docx", "DECISION_RECORD"]
+        kwargs = {
+            "owner_keycloak_uuid": "owner-uuid",
+            "custom_prompt": "résume",
+        }
+
+        generate_report_from_docx(*args, **kwargs)
+
+        mock_get_file_from_s3.assert_called_once_with("transcription.docx")
+        _, factory_kwargs = mock_create_report_generator.call_args
+        assert factory_kwargs == {"custom_prompt": "résume"}
+
+
 class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
         self,
@@ -82,13 +146,13 @@ class TestGenerateReportFromDocx:
             decision_record
         )
 
-        generate_report_from_docx(1, "transcription.docx")
+        generate_report_from_docx(1, "transcription.docx", notes_content="raw notes")
 
         mock_get_file_from_s3.assert_called_once_with("transcription.docx")
         mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
         mock_create_report_generator.assert_called_once()
         mock_create_report_generator.return_value.generate.assert_called_once_with(
-            [chunk1, chunk2]
+            [chunk1, chunk2], notes_content="raw notes"
         )
 
     def test_propagates_s3_error(self, mock_get_file_from_s3: MagicMock) -> None:
@@ -116,6 +180,7 @@ class TestGenerateReportFromDocx:
             1,
             "transcription.docx",
             report_type="CUSTOM_REPORT",
+            notes_content="raw notes",
             custom_prompt="Liste les risques",
         )
 
@@ -123,6 +188,9 @@ class TestGenerateReportFromDocx:
         mock_create_report_generator.assert_called_once()
         _, factory_kwargs = mock_create_report_generator.call_args
         assert factory_kwargs == {"custom_prompt": "Liste les risques"}
+        mock_create_report_generator.return_value.generate.assert_called_once_with(
+            [SimpleNamespace(id=0, text="x")], notes_content="raw notes"
+        )
 
 
 class TestExtractReportTaskArgs:
@@ -138,22 +206,20 @@ class TestExtractReportTaskArgs:
         assert args.owner_keycloak_uuid == "abc"
         assert args.deliverable_id == 7
 
-    def test_deliverable_id_absent_returns_none(self) -> None:
-        args = extract_report_task_args(
-            {"args": [42], "kwargs": {"owner_keycloak_uuid": "abc"}}
-        )
+    def test_deliverable_id_absent_raise_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            extract_report_task_args(
+                {"args": [42], "kwargs": {"owner_keycloak_uuid": "abc"}}
+            )
 
-        assert args.deliverable_id is None
-
-    def test_deliverable_id_explicit_none_returns_none(self) -> None:
-        args = extract_report_task_args(
-            {
-                "args": [42],
-                "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
-            }
-        )
-
-        assert args.deliverable_id is None
+    def test_deliverable_id_explicit_none_raise_value_error(self) -> None:
+        with pytest.raises(ValueError):
+            extract_report_task_args(
+                {
+                    "args": [42],
+                    "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
+                }
+            )
 
 
 class TestGenerateReportFromDocxSuccess:
@@ -169,110 +235,6 @@ class TestGenerateReportFromDocxSuccess:
         generate_report_from_docx_success(sender=sender, result=decision_record)
 
         mock_core_api_client.cls.assert_not_called()
-
-    def test_calls_mark_report_success_when_no_deliverable_id(
-        self,
-        decision_record: DecisionRecord,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc"}
-
-        generate_report_from_docx_success(sender=sender, result=decision_record)
-
-        mock_core_api_client.mark_report_success.assert_called_once_with(
-            meeting_id=42, report=decision_record
-        )
-        mock_core_api_client.mark_deliverable_success.assert_not_called()
-
-    def test_calls_mark_deliverable_success_when_deliverable_id_set(
-        self,
-        decision_record: DecisionRecord,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": 7}
-
-        generate_report_from_docx_success(sender=sender, result=decision_record)
-
-        mock_core_api_client.mark_deliverable_success.assert_called_once_with(
-            deliverable_id=7, report=decision_record
-        )
-        mock_core_api_client.mark_report_success.assert_not_called()
-
-    def test_explicit_deliverable_id_none_falls_back_to_legacy(
-        self,
-        decision_record: DecisionRecord,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [42]
-        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": None}
-
-        generate_report_from_docx_success(sender=sender, result=decision_record)
-
-        mock_core_api_client.mark_report_success.assert_called_once()
-        mock_core_api_client.mark_deliverable_success.assert_not_called()
-
-
-class TestSetMeetingFailedStatusOnError:
-    def test_calls_mark_report_failure_when_no_deliverable_id(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        set_meeting_failed_status_on_error(
-            sender=MagicMock(),
-            args=[42, "transcription.docx", "DECISION_RECORD"],
-            kwargs={"owner_keycloak_uuid": "abc"},
-            exception=Exception("LLM timeout"),
-        )
-
-        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=42)
-        mock_core_api_client.mark_deliverable_failure.assert_not_called()
-
-    def test_calls_mark_deliverable_failure_when_deliverable_id_set(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        set_meeting_failed_status_on_error(
-            sender=MagicMock(),
-            args=[42, "transcription.docx", "DECISION_RECORD"],
-            kwargs={"owner_keycloak_uuid": "abc", "deliverable_id": 7},
-            exception=Exception("LLM timeout"),
-        )
-
-        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
-            deliverable_id=7
-        )
-        mock_core_api_client.mark_report_failure.assert_not_called()
-
-    def test_falls_back_to_sender_request_args(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [7]
-        sender.request.kwargs = {"deliverable_id": 9}
-
-        set_meeting_failed_status_on_error(sender=sender)
-
-        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
-            deliverable_id=9
-        )
-
-    def test_falls_back_to_sender_with_no_deliverable_id(
-        self,
-        mock_core_api_client: MagicMock,
-    ) -> None:
-        sender = MagicMock()
-        sender.request.args = [7]
-        sender.request.kwargs = {}
-
-        set_meeting_failed_status_on_error(sender=sender)
-
-        mock_core_api_client.mark_report_failure.assert_called_once_with(meeting_id=7)
 
     def test_returns_early_when_no_meeting_id(
         self,

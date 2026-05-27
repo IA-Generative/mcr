@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { AudioLevelMonitor } from '@/utils/audio-level-monitor';
+import type { AudioDeviceInfo } from '@/composables/use-recorder';
 import * as Sentry from '@sentry/vue';
 
 export const SILENCE_LEVEL_THRESHOLD = 0.05;
@@ -15,6 +16,8 @@ export type RecordingSessionStats = {
   recorderErrorEvents: number;
   deviceLabel: string;
   deviceSettings: MediaTrackSettings | null;
+  requestedDeviceId: string | null;
+  availableDevices: AudioDeviceInfo[];
 };
 
 export type RecordingMonitorOptions = {
@@ -26,6 +29,8 @@ export type RecordingMonitorContext = {
   stream: MediaStream;
   recorder: MediaRecorder;
   meetingId: number;
+  requestedDeviceId: string | null;
+  availableDevices: AudioDeviceInfo[];
 };
 
 function createEmptyStats(): RecordingSessionStats {
@@ -39,6 +44,8 @@ function createEmptyStats(): RecordingSessionStats {
     recorderErrorEvents: 0,
     deviceLabel: '',
     deviceSettings: null,
+    requestedDeviceId: null,
+    availableDevices: [],
   };
 }
 
@@ -73,6 +80,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
       stats.deviceLabel = track.label;
       stats.deviceSettings = track.getSettings();
     }
+    stats.requestedDeviceId = ctx.requestedDeviceId;
+    stats.availableDevices = ctx.availableDevices;
 
     // Attach event listeners
     attachedTrack = track;

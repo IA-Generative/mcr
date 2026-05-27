@@ -18,9 +18,6 @@ from mcr_meeting.app.api.meeting.meeting_multipart_router import (
     router as meeting_multipart_router,
 )
 from mcr_meeting.app.api.meeting.meeting_router import router as meeting_router
-from mcr_meeting.app.api.meeting.report_generation_router import (
-    router as report_generation_router,
-)
 from mcr_meeting.app.api.meeting.transcription_router import (
     router as transcription_router,
 )
@@ -63,13 +60,12 @@ app.include_router(capture_bot_router)
 app.include_router(capture_router)
 app.include_router(user_router)
 app.include_router(evaluation_router)
-app.include_router(transcription_router)
-app.include_router(report_generation_router)
 app.include_router(feature_flag_router)
 app.include_router(meeting_multipart_router)
 app.include_router(feedback_router)
 app.include_router(deliverable_meeting_router)
 app.include_router(deliverables_router)
+app.include_router(transcription_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app")

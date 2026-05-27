@@ -45,17 +45,20 @@
 
     <audio
       v-else-if="audioSrc"
+      ref="audioEl"
       controls
       controlslist="nodownload"
       :src="audioSrc"
+      :aria-label="$t('meeting-v2.audio-card.player-label')"
       class="w-full"
+      @loadedmetadata="recoverAudioDuration"
+      @timeupdate="onDurationRecovered"
     ></audio>
   </div>
 </template>
 
 <script setup lang="ts">
 import HttpService, { API_PATHS } from '@/services/http/http.service';
-import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { MAX_DELAY_TO_FETCH_AUDIO } from '@/config/meeting';
 import { differenceInDays, parseISO } from 'date-fns';
 import type { MeetingStatus } from '@/services/meetings/meetings.types';
@@ -77,17 +80,12 @@ const props = defineProps<{
   status: MeetingStatus;
 }>();
 
-const isGetAudioMeetingEnabled = useFeatureFlag('get_meeting_audio');
-
 const isMeetingRecent = computed(
   () => differenceInDays(new Date(), parseISO(props.creationDate)) <= MAX_DELAY_TO_FETCH_AUDIO,
 );
 
 const isAudioAvailable = computed(
-  () =>
-    isGetAudioMeetingEnabled.value &&
-    isMeetingRecent.value &&
-    AUDIO_ELIGIBLE_STATUSES.includes(props.status),
+  () => isMeetingRecent.value && AUDIO_ELIGIBLE_STATUSES.includes(props.status),
 );
 
 const audioStorageKey = `mcr-audio-required-${props.meetingId}`;
@@ -97,9 +95,29 @@ const audioSrc = ref<string>();
 const isLoadingAudio = ref(true);
 const audioError = ref(false);
 
+const audioEl = useTemplateRef<HTMLAudioElement>('audioEl');
+const isRecoveringDuration = ref(false);
+const DURATION_RECOVERY_TIMEOUT_MS = 1000;
+
 function requestAudio(): void {
   isMeetingAudioRequested.value = true;
   localStorage.setItem(audioStorageKey, 'true');
+}
+
+function recoverAudioDuration(): void {
+  const el = audioEl.value;
+  if (!el || el.duration !== Infinity) return;
+  isRecoveringDuration.value = true;
+  el.currentTime = Number.MAX_SAFE_INTEGER;
+  setTimeout(onDurationRecovered, DURATION_RECOVERY_TIMEOUT_MS);
+}
+
+function onDurationRecovered(): void {
+  if (!isRecoveringDuration.value) return;
+  const el = audioEl.value;
+  if (!el) return;
+  isRecoveringDuration.value = false;
+  el.currentTime = 0;
 }
 
 watch(

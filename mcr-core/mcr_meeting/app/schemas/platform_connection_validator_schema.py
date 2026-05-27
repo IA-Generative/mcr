@@ -85,9 +85,9 @@ def validate_webconf_connection(values: PlatformConnectionInfoValidator) -> None
 
 
 def validate_visio_connection(values: PlatformConnectionInfoValidator) -> None:
-    if values.meeting_password is not None or values.meeting_platform_id is not None:
+    if values.meeting_password is not None:
         raise ValueError(
-            f"meeting_password and meeting_platform_id are not supported for platform {values.name_platform}"
+            f"meeting_password is not supported for platform {values.name_platform}"
         )
     if not values.url:
         raise ValueError("No connection information provided")

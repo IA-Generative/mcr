@@ -4,6 +4,8 @@ from mcr_generation.app.services.metadata_collectors.base import (
     MetadataCollector,
     register,
 )
+from mcr_generation.app.services.notes.facets import NotesFacet
+from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.sections.intent.refine_intent import RefineIntent
 from mcr_generation.app.services.sections.participants.refine_participants import (
     RefineParticipants,
@@ -21,14 +23,21 @@ class TopicsCollector(MetadataCollector):
         "Extrait les sujets de discussion principaux et leurs décisions associées, "
         "ainsi que la liste des prochaines étapes (next steps) identifiées."
     )
+    notes_facets = frozenset({NotesFacet.INTENT, NotesFacet.TOPICS})
 
     @observe(name="metadata_collector.topics")
-    def _extract(self, chunks: list[Chunk]) -> TopicsContent:
-        meeting_subject = RefineIntent().init_then_refine(chunks)
+    def _extract(
+        self,
+        chunks: list[Chunk],
+        extracted_notes: ExtractedNotes | None = None,
+    ) -> TopicsContent:
+        intent_hint = extracted_notes.intent if extracted_notes is not None else None
+        topics_hint = extracted_notes.topics if extracted_notes is not None else None
+        meeting_subject = RefineIntent().init_then_refine(chunks, init_hint=intent_hint)
         participants = RefineParticipants().init_then_refine(chunks).to_public()
         return MapReduceTopics(
             meeting_subject.title, participants.participants
-        ).map_reduce_all_steps(chunks)
+        ).map_reduce_all_steps(chunks, notes_hint=topics_hint)
 
     def _to_markdown(self, result: TopicsContent) -> str:
         out: list[str] = []

@@ -1,14 +1,16 @@
 """Unit tests for services.notes.notes_extractor."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from mcr_generation.app.schemas.base import Intent, NextMeeting
-from mcr_generation.app.schemas.celery_types import ReportTypes
+from mcr_generation.app.services.notes.facets import NotesFacet
 from mcr_generation.app.services.notes.notes_extractor import (
+    ExtractedNotes,
     NotesExtractor,
-    extract_notes,
+    _NotesFacts,
 )
 from mcr_generation.app.services.sections.detailed_discussions.types import (
     DiscussionsContent,
@@ -45,60 +47,113 @@ def _discussions_fixture() -> DiscussionsContent:
     return DiscussionsContent(detailed_discussions=[])
 
 
+_FIXTURES_BY_MODEL: dict[type, Any] = {
+    Intent: _intent_fixture,
+    NextMeeting: _next_meeting_fixture,
+    TopicsContent: _topics_fixture,
+    DiscussionsContent: _discussions_fixture,
+}
+
+
+_DECISION_RECORD_FACETS = frozenset(
+    {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.TOPICS}
+)
+_DETAILED_SYNTHESIS_FACETS = frozenset(
+    {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.DISCUSSIONS}
+)
+
+
 class TestExtractAll:
     @pytest.mark.asyncio
-    async def test_decision_record_integration(
-        self, fake_async_call_llm_with_structured_output
+    @pytest.mark.parametrize(
+        ("facets", "expected_models"),
+        [
+            pytest.param(
+                _DECISION_RECORD_FACETS,
+                {Intent, NextMeeting, TopicsContent},
+                id="decision_record_facets",
+            ),
+            pytest.param(
+                _DETAILED_SYNTHESIS_FACETS,
+                {Intent, NextMeeting, DiscussionsContent},
+                id="detailed_synthesis_facets",
+            ),
+            pytest.param(
+                frozenset({NotesFacet.INTENT}),
+                {Intent},
+                id="single_facet",
+            ),
+        ],
+    )
+    async def test_runs_only_requested_facets_and_populates_result(
+        self,
+        facets: frozenset[NotesFacet],
+        expected_models: set[type],
     ) -> None:
-        """Integration: extract_all in DECISION_RECORD mode triggers 3 LLM
-        calls (Intent + NextMeeting + TopicsContent) with the notes content
-        in the prompt and produces the expected ExtractedNotes."""
-        with fake_async_call_llm_with_structured_output(
-            _MODULE,
-            [_intent_fixture(), _next_meeting_fixture(), _topics_fixture()],
+        """For each requested facet, the corresponding extract_* method is
+        called once with notes_content and its result populates ExtractedNotes;
+        non-requested facets stay None."""
+
+        async def _llm_mock(**kwargs: Any) -> Any:
+            return _FIXTURES_BY_MODEL[kwargs["response_model"]]()
+
+        with patch(
+            f"{_MODULE}.async_call_llm_with_structured_output",
+            new=AsyncMock(side_effect=_llm_mock),
         ) as mock_call:
-            result = await NotesExtractor().extract_all(
-                "notes here", report_type=ReportTypes.DECISION_RECORD
-            )
+            result = await NotesExtractor().extract_all("notes here", facets=facets)
 
-            assert result.intent == _intent_fixture()
-            assert result.next_meeting == _next_meeting_fixture()
-            assert result.topics == _topics_fixture()
-            assert result.discussions is None
+        assert mock_call.await_count == len(facets)
+        models_called = {c.kwargs["response_model"] for c in mock_call.call_args_list}
+        assert models_called == expected_models
+        for call in mock_call.call_args_list:
+            assert "notes here" in call.kwargs["user_message_content"]
 
-            assert mock_call.await_count == 3
-            models_called = {
-                c.kwargs["response_model"] for c in mock_call.call_args_list
-            }
-            assert models_called == {Intent, NextMeeting, TopicsContent}
-            for call in mock_call.call_args_list:
-                assert "notes here" in call.kwargs["user_message_content"]
+        assert (result.intent == _intent_fixture()) == (NotesFacet.INTENT in facets)
+        assert (result.next_meeting == _next_meeting_fixture()) == (
+            NotesFacet.NEXT_MEETING in facets
+        )
+        assert (result.topics == _topics_fixture()) == (NotesFacet.TOPICS in facets)
+        assert (result.discussions == _discussions_fixture()) == (
+            NotesFacet.DISCUSSIONS in facets
+        )
+        assert result.custom_section_facts is None
 
     @pytest.mark.asyncio
-    async def test_detailed_synthesis_integration(
-        self, fake_async_call_llm_with_structured_output
-    ) -> None:
-        """Integration: extract_all in DETAILED_SYNTHESIS mode triggers 3 LLM
-        calls (Intent + NextMeeting + DiscussionsContent) and leaves topics
-        unset."""
-        with fake_async_call_llm_with_structured_output(
-            _MODULE,
-            [_intent_fixture(), _next_meeting_fixture(), _discussions_fixture()],
-        ) as mock_call:
-            result = await NotesExtractor().extract_all(
-                "notes here", report_type=ReportTypes.DETAILED_SYNTHESIS
+    async def test_short_circuits_when_no_facets_and_no_instructions(self) -> None:
+        """Empty facets AND empty custom_instructions short-circuits: no
+        extract_* call, no truncation, returns ExtractedNotes() with all
+        fields None."""
+        extractor = NotesExtractor()
+        with (
+            patch.object(
+                extractor, "extract_intent", new_callable=AsyncMock
+            ) as m_intent,
+            patch.object(
+                extractor, "extract_next_meeting", new_callable=AsyncMock
+            ) as m_nm,
+            patch.object(
+                extractor, "extract_topics_hint", new_callable=AsyncMock
+            ) as m_topics,
+            patch.object(
+                extractor, "extract_discussions_hint", new_callable=AsyncMock
+            ) as m_discussions,
+            patch.object(
+                extractor, "_extract_custom_facts", new_callable=AsyncMock
+            ) as m_custom,
+            patch.object(extractor, "_truncate_if_too_long") as m_trunc,
+        ):
+            result = await extractor.extract_all(
+                "any content", facets=frozenset(), custom_instructions=[]
             )
 
-            assert result.intent == _intent_fixture()
-            assert result.next_meeting == _next_meeting_fixture()
-            assert result.discussions == _discussions_fixture()
-            assert result.topics is None
-
-            assert mock_call.await_count == 3
-            models_called = {
-                c.kwargs["response_model"] for c in mock_call.call_args_list
-            }
-            assert models_called == {Intent, NextMeeting, DiscussionsContent}
+        assert result == ExtractedNotes()
+        m_intent.assert_not_called()
+        m_nm.assert_not_called()
+        m_topics.assert_not_called()
+        m_discussions.assert_not_called()
+        m_custom.assert_not_called()
+        m_trunc.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_returns_partial_result_on_partial_failure(self) -> None:
@@ -126,7 +181,7 @@ class TestExtractAll:
             ) as mock_record_failure,
         ):
             result = await NotesExtractor().extract_all(
-                "notes", report_type=ReportTypes.DECISION_RECORD
+                "notes", facets=_DECISION_RECORD_FACETS
             )
 
             assert result.intent is None
@@ -166,9 +221,7 @@ class TestExtractAll:
         ):
             extractor = NotesExtractor()
             max_len = extractor.chunking_config.CHUNK_SIZE
-            await extractor.extract_all(
-                long_notes, report_type=ReportTypes.DECISION_RECORD
-            )
+            await extractor.extract_all(long_notes, facets=_DECISION_RECORD_FACETS)
 
             passed_notes = mock_intent.call_args.args[0]
             assert len(passed_notes) == max_len
@@ -202,40 +255,95 @@ class TestExtractAll:
         ):
             short_notes = "hello"
             await NotesExtractor().extract_all(
-                short_notes, report_type=ReportTypes.DECISION_RECORD
+                short_notes, facets=_DECISION_RECORD_FACETS
             )
 
             mock_intent.assert_awaited_once_with(short_notes)
             mock_record_trunc.assert_not_called()
 
 
-class TestExtractNotes:
-    def test_returns_none_when_content_is_none(self) -> None:
-        with patch(f"{_MODULE}.NotesExtractor") as mock_cls:
-            assert extract_notes(None, ReportTypes.DECISION_RECORD) is None
-            mock_cls.assert_not_called()
+class TestExtractCustomFacts:
+    @pytest.mark.asyncio
+    async def test_returns_llm_facts_and_passes_instruction_and_notes_in_prompt(
+        self,
+    ) -> None:
+        expected = ["fact 1", "fact 2"]
+        with patch(
+            f"{_MODULE}.async_call_llm_with_structured_output",
+            new=AsyncMock(return_value=_NotesFacts(facts=expected)),
+        ) as mock_call:
+            result = await NotesExtractor()._extract_custom_facts(
+                "raw notes here", "liste les engagements"
+            )
 
-    def test_returns_none_when_content_is_blank(self) -> None:
-        with patch(f"{_MODULE}.NotesExtractor") as mock_cls:
-            assert extract_notes("   ", ReportTypes.DECISION_RECORD) is None
-            mock_cls.assert_not_called()
+        assert result == expected
+        prompt = mock_call.call_args.kwargs["user_message_content"]
+        assert "raw notes here" in prompt
+        assert "liste les engagements" in prompt
 
-    def test_runs_extractor_via_asyncio_run_when_content_present(self) -> None:
-        mock_instance = MagicMock()
-        mock_coro = MagicMock()
-        mock_instance.extract_all.return_value = mock_coro
-        mock_cls = MagicMock(return_value=mock_instance)
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_llm_error(self) -> None:
+        with (
+            patch(
+                f"{_MODULE}.async_call_llm_with_structured_output",
+                new=AsyncMock(side_effect=RuntimeError("boom")),
+            ),
+            patch(
+                f"{_MODULE}.record_notes_extraction_failed_event"
+            ) as mock_record_failure,
+        ):
+            result = await NotesExtractor()._extract_custom_facts("notes", "consigne")
+
+        assert result == []
+        mock_record_failure.assert_called_once()
+        assert mock_record_failure.call_args.kwargs["theme"] == "custom_facts"
+        assert mock_record_failure.call_args.kwargs["exception_type"] == "RuntimeError"
+
+
+class TestExtractAllWithCustomInstructions:
+    @pytest.mark.asyncio
+    async def test_only_custom_instructions_populates_dict_and_leaves_facets_none(
+        self,
+    ) -> None:
+        async def _fake(self: NotesExtractor, notes: str, instr: str) -> list[str]:
+            return [f"fact for {instr}"]
+
+        with patch.object(NotesExtractor, "_extract_custom_facts", new=_fake):
+            result = await NotesExtractor().extract_all(
+                "notes", custom_instructions=["A", "B"]
+            )
+
+        assert result.intent is None
+        assert result.next_meeting is None
+        assert result.topics is None
+        assert result.discussions is None
+        assert result.custom_section_facts == {
+            "A": ["fact for A"],
+            "B": ["fact for B"],
+        }
+
+    @pytest.mark.asyncio
+    async def test_combined_facets_and_custom_runs_in_single_gather(self) -> None:
+        async def _fake_custom(
+            self: NotesExtractor, notes: str, instr: str
+        ) -> list[str]:
+            return [f"f-{instr}"]
 
         with (
-            patch(f"{_MODULE}.NotesExtractor", mock_cls),
-            patch(f"{_MODULE}.asyncio.run") as mock_run,
+            patch.object(
+                NotesExtractor,
+                "extract_intent",
+                new_callable=AsyncMock,
+                return_value=_intent_fixture(),
+            ) as m_intent,
+            patch.object(NotesExtractor, "_extract_custom_facts", new=_fake_custom),
         ):
-            mock_run.return_value = "extracted"
-            result = extract_notes("some notes", ReportTypes.DECISION_RECORD)
-
-            mock_cls.assert_called_once_with()
-            mock_instance.extract_all.assert_called_once_with(
-                "some notes", report_type=ReportTypes.DECISION_RECORD
+            result = await NotesExtractor().extract_all(
+                "notes",
+                facets=frozenset({NotesFacet.INTENT}),
+                custom_instructions=["X"],
             )
-            mock_run.assert_called_once_with(mock_coro)
-            assert result == "extracted"
+
+        m_intent.assert_awaited_once_with("notes")
+        assert result.intent == _intent_fixture()
+        assert result.custom_section_facts == {"X": ["f-X"]}

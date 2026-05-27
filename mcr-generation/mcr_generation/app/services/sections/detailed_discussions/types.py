@@ -165,9 +165,10 @@ class MappedTakeaway(BaseModel):
     )
 
 
-class MappedDetailedDiscussion(BaseModel):
+class MappedDetailedDiscussionLLM(BaseModel):
     """
-    Modèle de sortie pour une discussion de reunion avec ses détails et decisions extrait d'une transcription de réunion.
+    LLM-facing model: what the LLM is asked to produce for each detailed
+    discussion detected in a chunk.
     """
 
     topic: str = Field(
@@ -203,29 +204,31 @@ class MappedDetailedDiscussion(BaseModel):
             "Si aucune décision n'est prise sur ce sujet, renvoyer une liste vide."
         ),
     )
-    chunk_id: int = Field(
-        default=0,
-        description=(
-            "Identifiant du segment de transcript d'où provient cette décision. "
-            "Permet de relier chaque décision à son extrait source. "
-            "Ce champ est renseigné automatiquement, ne pas le remplir."
-        ),
-    )
 
 
-class MappedDetailedDiscussions(BaseModel):
+class MappedDetailedDiscussion(MappedDetailedDiscussionLLM):
     """
-    Modèle regroupant l'ensemble des discussions détaillées extraites d'un même extrait
-    de transcription.
+    Internal model: enriches the LLM output with the chunk identifier
+    where the discussion was extracted. Never sent back to the LLM as a
+    response schema.
     """
 
-    detailed_discussions: list[MappedDetailedDiscussion] = Field(
+    chunk_id: int
+
+
+class MappedDetailedDiscussionsLLM(BaseModel):
+    """
+    LLM-facing wrapper grouping every detailed discussion extracted from
+    a single chunk.
+    """
+
+    detailed_discussions: list[MappedDetailedDiscussionLLM] = Field(
         default_factory=list,
         description=(
             "Liste de toutes les discussions détaillées détectées dans l'extrait de "
             "transcription analysé, dans l'ordre chronologique d'apparition. "
             "Chaque entrée correspond à une discussion détaillée avec ses faits et "
-            "métadonnées (chunk_id, score de confiance etc). "
+            "métadonnées (score de confiance etc). "
         ),
     )
 

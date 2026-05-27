@@ -103,12 +103,9 @@ class SpeechToTextPipeline:
         )
         cleaned_segments = remove_hallucinations(merged_segments)
 
-        if feature_flag_client.is_enabled("acronym_correction"):
-            logger.debug("Acronym correction enabled, correcting segments")
-            acronym_corrector = AcronymCorrector()
-            cleaned_segments = acronym_corrector.correct(cleaned_segments)
-        else:
-            logger.debug("Acronym correction disabled, skipping correction")
+        logger.debug("Acronym correction: correcting segments")
+        acronym_corrector = AcronymCorrector()
+        cleaned_segments = acronym_corrector.correct(cleaned_segments)
 
         if feature_flag_client.is_enabled("spelling_correction"):
             logger.debug("Spelling correction enabled, correcting segments")

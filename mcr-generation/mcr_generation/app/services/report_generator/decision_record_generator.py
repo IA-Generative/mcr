@@ -1,4 +1,7 @@
+from typing import ClassVar
+
 from mcr_generation.app.schemas.base import DecisionRecord
+from mcr_generation.app.schemas.celery_types import ReportTypes
 from mcr_generation.app.services.notes.notes_extractor import ExtractedNotes
 from mcr_generation.app.services.report_generator.base_report_generator import (
     BaseReportGenerator,
@@ -18,11 +21,14 @@ class DecisionRecordGenerator(BaseReportGenerator):
     step over the transcript chunks to identify topics and next steps.
     """
 
+    report_type: ClassVar[ReportTypes] = ReportTypes.DECISION_RECORD
+
     def generate(
         self,
         chunks: list[Chunk],
-        extracted_notes: ExtractedNotes | None = None,
+        notes_content: str | None = None,
     ) -> DecisionRecord:
+        extracted_notes = self._extract_notes(notes_content)
         notes = extracted_notes or ExtractedNotes()
         header = self.generate_header(chunks, extracted_notes=extracted_notes)
 

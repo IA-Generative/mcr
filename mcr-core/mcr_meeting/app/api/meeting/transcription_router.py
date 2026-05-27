@@ -22,19 +22,12 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
 from mcr_meeting.app.orchestrators.transcription_orchestrator import (
     finalize_transcription,
     get_or_create_transcription_docx,
-    get_transcription_waiting_time,
     upload_transcription_docx,
-)
-from mcr_meeting.app.schemas.transcription_queue_schema import (
-    TranscriptionQueueStatusResponse,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
 from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
-from mcr_meeting.app.services.transcription_waiting_time_service import (
-    TranscriptionQueueEstimationService,
-)
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, validate_docx_upload
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -136,41 +129,3 @@ async def success_transcription_task(
     meeting_id: int, payload: list[SpeakerTranscription]
 ) -> None:
     finalize_transcription(meeting_id=meeting_id, transcriptions=payload)
-
-
-@router.get("/{meeting_id}/transcription/wait-time")
-async def get_meeting_remaining_waiting_time(
-    meeting_id: int,
-    x_user_keycloak_uuid: UUID4 = Header(),
-) -> TranscriptionQueueStatusResponse:
-    """
-    Get the remaining waiting time for the transcription of a specific meeting.
-
-    Calculate the remaining time based on the meeting's estimated end date minus current time.
-
-    Args:
-        meeting_id: The ID of the meeting for which to calculate the remaining waiting time
-        x_user_keycloak_uuid: UUID de l'utilisateur authentifié
-
-    Returns:
-        TranscriptionQueueStatusResponse: Contains the remaining waiting time in minutes
-
-    Raises:
-        HTTPException: 404 if the meeting does not exist
-        HTTPException: 403 if the user is not authorized to access this meeting
-    """
-    return get_transcription_waiting_time(
-        meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
-    )
-
-
-@router.get("/transcription/wait-time/estimation")
-async def get_queue_estimated_waiting_time() -> TranscriptionQueueStatusResponse:
-    """
-    Get the estimated waiting time for new meetings joining the transcription queue.
-
-    Calculate the estimated time based on the total number of pending meetings and average processing time.
-    """
-    return TranscriptionQueueStatusResponse(
-        estimation_duration_minutes=TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-    )

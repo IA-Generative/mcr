@@ -10,6 +10,7 @@ import re
 import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import observe
+from loguru import logger
 from openai import AsyncOpenAI
 from pydantic import BaseModel, Field, field_validator
 
@@ -19,6 +20,7 @@ from mcr_generation.app.services.generic_pipeline.prompts import (
     MAP_PROMPT_TEMPLATE,
     REDUCE_PROMPT_TEMPLATE,
 )
+from mcr_generation.app.services.notes.prompts import NOTES_SECTION_TEMPLATE
 from mcr_generation.app.services.utils.input_chunker import Chunk
 from mcr_generation.app.services.utils.llm_helpers import (
     async_call_llm_with_structured_output,
@@ -67,19 +69,32 @@ class GenericMapReducePipeline:
 
     @log_execution_time
     @observe(name="generic_pipeline.map_reduce_all_steps")
-    async def map_reduce_all_steps(self, chunks: list[Chunk], instruction: str) -> str:
+    async def map_reduce_all_steps(
+        self,
+        chunks: list[Chunk],
+        instruction: str,
+        notes_facts: list[str] | None = None,
+    ) -> str:
         if not chunks:
             raise EmptyChunksError(
                 "GenericMapReducePipeline.map_reduce_all_steps called with no chunks"
             )
         all_facts = await self._map(chunks, instruction)
         if not all_facts:
+            logger.warning(
+                "GenericMapReducePipeline: 0 fact produced by the map phase, "
+                "short-circuiting to empty markdown (chunks={}, "
+                "notes_hint_present={}).",
+                len(chunks),
+                bool(notes_facts),
+            )
             record_empty_map_phase_event(
                 section="generic_pipeline",
                 chunk_count=len(chunks),
+                notes_hint_present=bool(notes_facts),
             )
             return ""
-        return await self._reduce(all_facts, instruction)
+        return await self._reduce(all_facts, instruction, notes_facts=notes_facts)
 
     async def map_one(self, chunk: Chunk, instruction: str) -> list[str]:
         async with self.semaphore:
@@ -104,10 +119,16 @@ class GenericMapReducePipeline:
         return [fact for sub in results for fact in sub]
 
     @observe(name="generic_pipeline.reduce")
-    async def _reduce(self, facts: list[str], instruction: str) -> str:
+    async def _reduce(
+        self,
+        facts: list[str],
+        instruction: str,
+        notes_facts: list[str] | None = None,
+    ) -> str:
         msg = REDUCE_PROMPT_TEMPLATE.format(
             facts="\n- ".join(facts),
             instruction=instruction,
+            notes_section=self._build_notes_facts_section(notes_facts),
         )
         resp = await async_call_llm_with_structured_output(
             client=self.client,
@@ -115,3 +136,9 @@ class GenericMapReducePipeline:
             user_message_content=msg,
         )
         return resp.markdown
+
+    def _build_notes_facts_section(self, notes_facts: list[str] | None) -> str:
+        if not notes_facts:
+            return ""
+        bulleted = "- " + "\n- ".join(notes_facts)
+        return NOTES_SECTION_TEMPLATE.format(notes_block=bulleted) + "\n"

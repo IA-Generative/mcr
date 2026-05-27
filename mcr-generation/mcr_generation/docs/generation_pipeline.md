@@ -8,9 +8,10 @@ The `mcr-generation` service is a Celery worker that turns a meeting transcript 
 |---|---|---|
 | **In** `meeting_id` | `int` | Meeting identifier on the `mcr-core` side |
 | **In** `transcription_object_filename` | `str` | S3 key of the transcription DOCX |
-| **In** `report_type` | `ReportTypes` | `DECISION_RECORD` or `DETAILED_SYNTHESIS` |
-| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — `intent` and `next_meeting` seed the corresponding refiners ; `topics` and `discussions` are injected as a human-priority hint into the reduce step. |
-| **Out** | `BaseReport` | `DecisionRecord` or `DetailedSynthesis` (Pydantic) |
+| **In** `report_type` | `ReportTypes` | `DECISION_RECORD`, `DETAILED_SYNTHESIS` or `CUSTOM_REPORT` |
+| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — `intent` and `next_meeting` seed the corresponding refiners; `topics` and `discussions` are injected as a human-priority hint into the reduce step. For `CUSTOM_REPORT`, a single `extract_all` call covers both inputs in one `asyncio.gather`: the union of `notes_facets` advertised by `CollectorSection`s, plus one LLM call per `CustomSection.instruction` (populating `ExtractedNotes.custom_section_facts`). |
+| **In** `custom_prompt` | `str \| None` | End-user instruction. Required for `CUSTOM_REPORT`, ignored for the structured types. |
+| **Out** | `BaseReport \| CustomMarkdownReport` | `DecisionRecord`, `DetailedSynthesis` (Pydantic) or `CustomMarkdownReport` (raw markdown). |
 
 ## Pipeline diagram
 
@@ -123,6 +124,55 @@ flowchart TB
 | **Sequential refine** (no map) | Header (Intent, Participants, NextMeeting) | First chunk seeds the object; each subsequent chunk iteratively refines the same object via one LLM call. When notes are provided, `extracted_notes.intent` and `extracted_notes.next_meeting` replace the initial LLM extract as the seed: the refine loop then runs over **every** chunk against that notes-derived seed, saving one LLM call and grounding subsequent refines on what the notes author explicitly wrote. | The header is a single coherent object (one title, one participant list): we enrich it progressively rather than aggregating fragments. |
 | **Parallel map-reduce** | Content (Topics, DetailedDiscussions) | Map: one LLM call per chunk in parallel (ThreadPoolExecutor, 4 workers) extracts candidate items. Reduce: one final LLM call dedupes and merges. When notes are provided, the corresponding `extracted_notes.topics` / `extracted_notes.discussions` is injected into the reduce prompt as a **human-priority signal**: the transcription remains the primary source but the notes take precedence on direct contradictions, and a topic absent from notes is not invalidated (notes are not exhaustive). The map phase is untouched. The reduce span is `section_topics_reduce` / `section_discussions_reduce` in Langfuse (rebranded from the previous shared `section_content_*` to disambiguate). | Content is inherently multi-item (multiple topics, multiple discussions): we parallelise extraction and let the LLM handle final coherence. |
 | **Single-shot synthesis** | DETAILED_SYNTHESIS only (`DetailedDiscussionsSynthesizer`) | One LLM call over the consolidated `Content` to produce `discussions_summary`, `to_do_list`, `to_monitor_list`. | These outputs are derivatives of already-reduced content — no need to revisit raw chunks. |
+
+## Custom report flow
+
+The `CUSTOM_REPORT` branch follows a different shape: the report structure itself is decided at runtime by a `Rewriter` LLM call that turns the raw user prompt into a `RewriterOutput` plan (an ordered list of `SectionSpec`s, each either a `CollectorSection` or a `CustomSection`).
+
+```mermaid
+flowchart TB
+    classDef io fill:#e1f5ff,stroke:#0277bd,color:#01579b
+    classDef proc fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef llm fill:#fff3e0,stroke:#e65100,color:#bf360c
+    classDef out fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+
+    P[/"custom_prompt + notes_content"/]:::io
+    RW["Rewriter.rewrite()"]:::llm
+    PLAN[/"RewriterOutput<br/>(title, sections)"/]:::out
+    FACETS["_extract_notes_for_plan<br/>(∪ collector.notes_facets,<br/>+ CustomSection.instruction list)"]:::proc
+    NX["NotesExtractor.extract_all<br/>(facets + custom_instructions<br/>in one asyncio.gather)"]:::llm
+    EN[/"ExtractedNotes<br/>(facets... + custom_section_facts)"/]:::out
+
+    P --> RW --> PLAN --> FACETS
+    FACETS -.->|"facets ∪ instructions non-empty<br/>+ notes_content set"| NX --> EN
+
+    subgraph DISPATCH["Per-section dispatch (asyncio.gather)"]
+      direction TB
+      CS["CollectorSection<br/>→ METADATA_COLLECTORS[id].collect(chunks, extracted_notes=...)"]:::proc
+      US["CustomSection<br/>→ GenericMapReducePipeline.map_reduce_all_steps<br/>(chunks, instruction, notes_facts=...)"]:::llm
+    end
+    PLAN --> CS & US
+    EN -.->|"intent, next_meeting,<br/>topics, discussions"| CS
+    EN -.->|"custom_section_facts[instruction]"| US
+
+    BODIES[/"list&lt;str&gt; section bodies"/]:::out
+    CS --> BODIES
+    US --> BODIES
+    MD[/"CustomMarkdownReport"/]:::out
+    BODIES --> MD
+```
+
+The orchestrator (`CustomReportGenerator`) serialises `rewriter → notes extraction` because the set of facets and the list of custom instructions are both unknown until the plan exists. A single `extract_all` call then parallelises N facet extractions and M custom-instruction extractions in one `asyncio.gather` (the shared `NotesExtractor._semaphore` caps concurrency at 4). The short-circuit kicks in only when **both** facets and custom_instructions are empty (e.g. a plan with only a `participants` `CollectorSection` and no `CustomSection`). When the LLM extract for a custom instruction returns no fact (notes silent on that topic), the corresponding `notes_facts` is `[]` and the generic pipeline runs without the "Notes du rédacteur" block.
+
+Each `MetadataCollector` advertises a `notes_facets: ClassVar[frozenset[NotesFacet]]` so the orchestrator can compute the union without inspecting collector internals:
+
+| Collector | `notes_facets` | Wired-in hints |
+|---|---|---|
+| `title` | `{INTENT}` | `RefineIntent.init_hint = notes.intent` |
+| `next_meeting` | `{NEXT_MEETING}` | `RefineNextMeeting.init_hint = notes.next_meeting` |
+| `topics` | `{INTENT, TOPICS}` | inner `RefineIntent.init_hint = notes.intent`, `MapReduceTopics.notes_hint = notes.topics` |
+| `detailed_discussions` | `{INTENT, DISCUSSIONS}` | inner `RefineIntent.init_hint = notes.intent`, `MapReduceDetailedDiscussions.notes_hint = notes.discussions` |
+| `participants` | `∅` | none — notes are not used here |
 
 ## Going further
 

@@ -13,11 +13,7 @@ from mcr_generation.app.schemas.celery_types import (
     ReportTypes,
     extract_report_task_args,
 )
-from mcr_generation.app.services.notes.notes_extractor import extract_notes
 from mcr_generation.app.services.report_generator import create_report_generator
-from mcr_generation.app.services.report_generator.base_report_generator import (
-    BaseReportGenerator,
-)
 from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
 from mcr_generation.app.services.utils.s3_service import get_file_from_s3
 from mcr_generation.app.utils.celery_worker import celery_app
@@ -39,8 +35,8 @@ def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
     report_type: str = ReportTypes.DECISION_RECORD.value,
-    owner_keycloak_uuid: str | None = None,
     deliverable_id: int | None = None,
+    owner_keycloak_uuid: str | None = None,
     notes_content: str | None = None,
     custom_prompt: str | None = None,
 ) -> BaseReport | CustomMarkdownReport:
@@ -61,14 +57,8 @@ def generate_report_from_docx(
 
     report_type_enum = ReportTypes(report_type)
 
-    extracted_notes = extract_notes(notes_content, report_type_enum)
-
     generator = create_report_generator(report_type_enum, custom_prompt=custom_prompt)
-    report: BaseReport | CustomMarkdownReport
-    if isinstance(generator, BaseReportGenerator):
-        report = generator.generate(chunks, extracted_notes=extracted_notes)
-    else:
-        report = generator.generate(chunks)
+    report = generator.generate(chunks, notes_content=notes_content)
 
     return report
 
@@ -88,11 +78,7 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 def generate_report_from_docx_success(
     sender: Any, result: BaseReport | CustomMarkdownReport, **kwargs: Any
 ) -> None:
-    """Handle successful report generation by sending results to mcr-core API.
-
-    Routes to the deliverable-centric callback when `deliverable_id` is in the
-    task kwargs, falling back to the legacy report callback otherwise.
-    """
+    """Handle successful report generation by sending results to mcr-core API."""
     logger.info("Report generation success signal received.")
 
     try:
@@ -102,12 +88,9 @@ def generate_report_from_docx_success(
         return
 
     client = CoreApiClient()
-    if task_args.deliverable_id is not None:
-        client.mark_deliverable_success(
-            deliverable_id=task_args.deliverable_id, report=result
-        )
-    else:
-        client.mark_report_success(meeting_id=task_args.meeting_id, report=result)
+    client.mark_deliverable_success(
+        deliverable_id=task_args.deliverable_id, report=result
+    )
 
 
 @task_failure.connect
@@ -123,7 +106,4 @@ def set_meeting_failed_status_on_error(
     logger.error("Meeting {} updated to REPORT_FAILED", task_args.meeting_id)
 
     client = CoreApiClient()
-    if task_args.deliverable_id is not None:
-        client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)
-    else:
-        client.mark_report_failure(meeting_id=task_args.meeting_id)
+    client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)
