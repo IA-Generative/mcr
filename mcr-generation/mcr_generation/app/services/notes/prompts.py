@@ -145,4 +145,5 @@ NOTES_SECTION_TEMPLATE = """\
 - Si une information apparaît dans la transcription mais **pas** dans les notes : tu la **gardes** ; les notes ne sont pas exhaustives et leur silence sur un point n'invalide pas la transcription.
 - Si une information apparaît dans **les notes** et **pas dans la transcription** : tu peux légitimement l'inclure dans le résultat final si elle a du sens dans le contexte du meeting.
 - Si une information de la transcription **contredit** une information des notes : **les notes priment**, c'est leur version que tu retiens.
+- Si la liste des éléments extraits de la transcription est **vide**, ne conclus pas à l'absence de contenu : rédige le résultat **à partir de ces notes uniquement**, sans rien inventer au-delà de leur contenu.
 """

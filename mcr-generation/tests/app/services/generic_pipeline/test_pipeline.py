@@ -44,21 +44,17 @@ async def test_run_calls_map_then_reduce(
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("notes_facts", "notes_hint_present"),
-    [(None, False), (["note fact"], True)],
-)
+@pytest.mark.parametrize("notes_facts", [None, []])
 @patch(
     "mcr_generation.app.services.generic_pipeline.generic_map_reduce_pipeline.record_empty_map_phase_event"
 )
 @patch.object(GenericMapReducePipeline, "_reduce", new_callable=AsyncMock)
 @patch.object(GenericMapReducePipeline, "_map", new_callable=AsyncMock)
-async def test_run_skips_reduce_when_no_facts(
+async def test_run_skips_reduce_when_no_facts_and_no_notes(
     mock_map: AsyncMock,
     mock_reduce: AsyncMock,
     mock_record_event: AsyncMock,
     notes_facts: list[str] | None,
-    notes_hint_present: bool,
 ) -> None:
     mock_map.return_value = []
     out = await GenericMapReducePipeline().map_reduce_all_steps(
@@ -69,7 +65,32 @@ async def test_run_skips_reduce_when_no_facts(
     mock_record_event.assert_called_once_with(
         section="generic_pipeline",
         chunk_count=1,
-        notes_hint_present=notes_hint_present,
+        notes_hint_present=False,
+    )
+
+
+@pytest.mark.asyncio
+@patch(
+    "mcr_generation.app.services.generic_pipeline.generic_map_reduce_pipeline.record_empty_map_phase_event"
+)
+@patch.object(GenericMapReducePipeline, "_reduce", new_callable=AsyncMock)
+@patch.object(GenericMapReducePipeline, "_map", new_callable=AsyncMock)
+async def test_run_reduces_from_notes_only_when_no_facts(
+    mock_map: AsyncMock,
+    mock_reduce: AsyncMock,
+    mock_record_event: AsyncMock,
+) -> None:
+    mock_map.return_value = []
+    mock_reduce.return_value = "### Depuis les notes\n- point"
+    out = await GenericMapReducePipeline().map_reduce_all_steps(
+        [Chunk(text="x", id=0)], "résume", notes_facts=["note fact"]
+    )
+    assert out == "### Depuis les notes\n- point"
+    mock_reduce.assert_awaited_once_with([], "résume", notes_facts=["note fact"])
+    mock_record_event.assert_called_once_with(
+        section="generic_pipeline",
+        chunk_count=1,
+        notes_hint_present=True,
     )
 
 

@@ -202,19 +202,28 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         get_client().update_current_span(name=f"section_{self.section_name}_reduce")
 
         if not all_items:
-            logger.warning(
-                "Section {}: 0 item produced by the map phase, short-circuiting "
-                "to empty content (chunks={}, notes_hint_present={}).",
-                self.section_name,
-                self._last_chunk_count,
-                notes_hint is not None,
+            notes_present = (
+                notes_hint is not None and notes_hint != self.content_model()
             )
             record_empty_map_phase_event(
                 section=self.section_name,
                 chunk_count=self._last_chunk_count,
-                notes_hint_present=notes_hint is not None,
+                notes_hint_present=notes_present,
             )
-            return cast(ContentT, self.content_model())
+            if not notes_present:
+                logger.warning(
+                    "Section {}: 0 item from the map phase and no usable notes, "
+                    "short-circuiting to empty content (chunks={}).",
+                    self.section_name,
+                    self._last_chunk_count,
+                )
+                return cast(ContentT, self.content_model())
+            logger.warning(
+                "Section {}: 0 item from the map phase, building content from "
+                "notes only (chunks={}).",
+                self.section_name,
+                self._last_chunk_count,
+            )
 
         items_input = [item.model_dump() for item in all_items]
         reduce_message = self.reduce_prompt_template.format(
