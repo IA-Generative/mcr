@@ -81,19 +81,24 @@ class GenericMapReducePipeline:
             )
         all_facts = await self._map(chunks, instruction)
         if not all_facts:
-            logger.warning(
-                "GenericMapReducePipeline: 0 fact produced by the map phase, "
-                "short-circuiting to empty markdown (chunks={}, "
-                "notes_hint_present={}).",
-                len(chunks),
-                bool(notes_facts),
-            )
+            notes_present = bool(notes_facts)
             record_empty_map_phase_event(
                 section="generic_pipeline",
                 chunk_count=len(chunks),
-                notes_hint_present=bool(notes_facts),
+                notes_hint_present=notes_present,
             )
-            return ""
+            if not notes_present:
+                logger.warning(
+                    "GenericMapReducePipeline: 0 fact from the map phase and no "
+                    "notes, short-circuiting to empty markdown (chunks={}).",
+                    len(chunks),
+                )
+                return ""
+            logger.warning(
+                "GenericMapReducePipeline: 0 fact from the map phase, building "
+                "markdown from notes only (chunks={}).",
+                len(chunks),
+            )
         return await self._reduce(all_facts, instruction, notes_facts=notes_facts)
 
     async def map_one(self, chunk: Chunk, instruction: str) -> list[str]:

@@ -115,12 +115,14 @@ class TestNotesHintInjection:
             assert "Notes du rédacteur" not in prompt
 
 
-class TestReduceEmptyShortCircuit:
-    @pytest.mark.parametrize("hint", [None, _build_hint()])
-    def test_short_circuits_without_llm_call(
+class TestReduceEmptyMapPhase:
+    @pytest.mark.parametrize("hint", [None, _StubContent()])
+    def test_short_circuits_when_no_items_and_no_usable_notes(
         self,
         hint: _StubContent | None,
     ) -> None:
+        """No items and either no notes or present-but-empty notes:
+        short-circuit to empty content without calling the LLM."""
         with (
             patch(f"{_MODULE_PATH}.call_llm_with_structured_output") as mock_call,
             patch(f"{_MODULE_PATH}.record_empty_map_phase_event") as mock_event,
@@ -133,9 +135,36 @@ class TestReduceEmptyShortCircuit:
         mock_event.assert_called_once_with(
             section="stub",
             chunk_count=None,
-            notes_hint_present=hint is not None,
+            notes_hint_present=False,
         )
         mock_logger.warning.assert_called_once()
+
+    def test_runs_reduce_from_notes_only_when_no_items_but_notes_present(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+    ) -> None:
+        """No items but non-empty notes: run the reduce LLM call with an
+        empty items list and the notes block injected."""
+        hint = _build_hint()
+
+        with (
+            fake_call_llm_with_structured_output(
+                _MODULE_PATH, _StubContent()
+            ) as mock_call,
+            patch(f"{_MODULE_PATH}.record_empty_map_phase_event") as mock_event,
+        ):
+            result = _StubMapReduce()._reduce([], notes_hint=hint)
+
+        assert result == _StubContent()
+        mock_call.assert_called_once()
+        prompt = mock_call.call_args.kwargs["user_message_content"]
+        assert "## Notes du rédacteur" in prompt
+        assert hint.model_dump_json() in prompt
+        mock_event.assert_called_once_with(
+            section="stub",
+            chunk_count=None,
+            notes_hint_present=True,
+        )
 
 
 class TestMapPhaseFailures:
