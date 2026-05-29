@@ -1,3 +1,5 @@
+from mcr_generation.app.schemas.base import ParticipantsHint
+
 INITIAL_PROMPT_TEMPLATE = """
 Tu es un assistant chargé d’identifier les participants d’une réunion (nom/prénom éventuel et rôle)
 à partir d’un extrait de transcription diarizée.
@@ -87,6 +89,18 @@ CONTRAINTES DE SORTIE
 - "justification" est une chaîne de caractères ou null si aucune justification pertinente n’existe.
 
 ==================================================
+INDICES ISSUS DES NOTES UTILISATEUR (facultatif)
+==================================================
+
+Les personnes ci-dessous ont été mentionnées dans les notes prises pendant la réunion.
+Utilise ces noms/rôles UNIQUEMENT pour mieux nommer ou qualifier un speaker_id réellement
+présent dans la transcription, quand les indices concordent.
+- N'invente JAMAIS de participant : n'ajoute pas une personne des notes si aucun speaker_id ne lui correspond.
+- Ne crée pas de speaker_id à partir de ces noms ; ils ne servent que d'aide à l'attribution.
+
+{notes_hint}
+
+==================================================
 EXTRAIT À TRAITER
 ==================================================
 
@@ -162,6 +176,18 @@ MISES À JOUR AUTORISÉES
   phrases manifestement incohérentes ou bruitées.
 
 ==================================================
+INDICES ISSUS DES NOTES UTILISATEUR (facultatif)
+==================================================
+
+Les personnes ci-dessous ont été mentionnées dans les notes prises pendant la réunion.
+Utilise ces noms/rôles UNIQUEMENT pour mieux nommer ou qualifier un speaker_id réellement
+présent dans la transcription, quand les indices concordent.
+- N'invente JAMAIS de participant : n'ajoute pas une personne des notes si aucun speaker_id ne lui correspond.
+- Ne crée pas de speaker_id à partir de ces noms ; ils ne servent que d'aide à l'attribution.
+
+{notes_hint}
+
+==================================================
 ENTRÉES A TRAITER
 ==================================================
 
@@ -177,3 +203,17 @@ Nouvel extrait de transcription :
 
 Renvoie UNIQUEMENT un JSON valide du même schéma "Participants"
 """
+
+
+_NO_PARTICIPANTS_HINT = "Aucune note utilisateur faisant référence à des participants n'a été fournie pour cette réunion."
+
+
+def render_participants_hint(hint: ParticipantsHint | None) -> str:
+    """Render a notes-derived participants hint as the read-only reference block
+    fed into the `{notes_hint}` placeholder of the prompts above. Falls back to a
+    neutral sentence when absent/empty so the placeholder is never blank."""
+    if hint is None or not hint.participants:
+        return _NO_PARTICIPANTS_HINT
+    return "\n".join(
+        f"- {p.name} ({p.role})" if p.role else f"- {p.name}" for p in hint.participants
+    )
