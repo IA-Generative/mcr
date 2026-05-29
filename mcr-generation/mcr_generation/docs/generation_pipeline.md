@@ -9,7 +9,7 @@ The `mcr-generation` service is a Celery worker that turns a meeting transcript 
 | **In** `meeting_id` | `int` | Meeting identifier on the `mcr-core` side |
 | **In** `transcription_object_filename` | `str` | S3 key of the transcription DOCX |
 | **In** `report_type` | `ReportTypes` | `DECISION_RECORD`, `DETAILED_SYNTHESIS` or `CUSTOM_REPORT` |
-| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — `intent` and `next_meeting` seed the corresponding refiners; `topics` and `discussions` are injected as a human-priority hint into the reduce step. For `CUSTOM_REPORT`, a single `extract_all` call covers both inputs in one `asyncio.gather`: the union of `notes_facets` advertised by `CollectorSection`s, plus one LLM call per `CustomSection.instruction` (populating `ExtractedNotes.custom_section_facts`). |
+| **In** `notes_content` | `str \| None` | Human-written notes taken during the meeting (optional). Extracted by `NotesExtractor` into structured hints — `intent` and `next_meeting` seed the corresponding refiners; `topics` and `discussions` are injected as a human-priority hint into the reduce step; `participants` is injected as a read-only reference block into the participant refine prompts (helps name/qualify detected speakers, never a seed). For `CUSTOM_REPORT`, a single `extract_all` call covers both inputs in one `asyncio.gather`: the union of `notes_facets` advertised by `CollectorSection`s, plus one LLM call per `CustomSection.instruction` (populating `ExtractedNotes.custom_section_facts`). |
 | **In** `custom_prompt` | `str \| None` | End-user instruction. Required for `CUSTOM_REPORT`, ignored for the structured types. |
 | **Out** | `BaseReport \| CustomMarkdownReport` | `DecisionRecord`, `DetailedSynthesis` (Pydantic) or `CustomMarkdownReport` (raw markdown). |
 
@@ -48,13 +48,14 @@ flowchart TB
     %% Notes extraction — intent/next_meeting seed the header refiners (US3, US4)
     subgraph NOTES["Notes extraction"]
       direction TB
-      NX["NotesExtractor.extract_all<br/>async, 3 parallel LLM calls"]:::llm
-      EN[/"ExtractedNotes<br/>(intent, next_meeting,<br/>topics OR discussions)"/]:::out
+      NX["NotesExtractor.extract_all<br/>async, parallel LLM calls"]:::llm
+      EN[/"ExtractedNotes<br/>(intent, next_meeting, participants,<br/>topics OR discussions)"/]:::out
       NX --> EN
     end
     TASK -.->|"if notes_content"| NX
     EN -.->|"intent (init_hint)"| RI
     EN -.->|"next_meeting (init_hint)"| RN
+    EN -.->|"participants (refine hint)"| RP
     EN -.->|"topics (reduce hint)"| R1
     EN -.->|"discussions (reduce hint)"| R2
 
@@ -121,7 +122,7 @@ flowchart TB
 
 | Strategy | Where | How it works | Why this choice |
 |---|---|---|---|
-| **Sequential refine** (no map) | Header (Intent, Participants, NextMeeting) | First chunk seeds the object; each subsequent chunk iteratively refines the same object via one LLM call. When notes are provided, `extracted_notes.intent` and `extracted_notes.next_meeting` replace the initial LLM extract as the seed: the refine loop then runs over **every** chunk against that notes-derived seed, saving one LLM call and grounding subsequent refines on what the notes author explicitly wrote. | The header is a single coherent object (one title, one participant list): we enrich it progressively rather than aggregating fragments. |
+| **Sequential refine** (no map) | Header (Intent, Participants, NextMeeting) | First chunk seeds the object; each subsequent chunk iteratively refines the same object via one LLM call. When notes are provided, `extracted_notes.intent` and `extracted_notes.next_meeting` replace the initial LLM extract as the seed: the refine loop then runs over **every** chunk against that notes-derived seed, saving one LLM call and grounding subsequent refines on what the notes author explicitly wrote. `Participants` differs: notes have no `speaker_id` to seed from, so `extracted_notes.participants` is rendered and passed as a read-only `notes_hint` injected into the participant prompts — the LLM uses the names/roles only to better qualify speakers it detects, never to create a participant. | The header is a single coherent object (one title, one participant list): we enrich it progressively rather than aggregating fragments. |
 | **Parallel map-reduce** | Content (Topics, DetailedDiscussions) | Map: one LLM call per chunk in parallel (ThreadPoolExecutor, 4 workers) extracts candidate items. Reduce: one final LLM call dedupes and merges. When notes are provided, the corresponding `extracted_notes.topics` / `extracted_notes.discussions` is injected into the reduce prompt as a **human-priority signal**: the transcription remains the primary source but the notes take precedence on direct contradictions, and a topic absent from notes is not invalidated (notes are not exhaustive). The map phase is untouched. The reduce span is `section_topics_reduce` / `section_discussions_reduce` in Langfuse (rebranded from the previous shared `section_content_*` to disambiguate). | Content is inherently multi-item (multiple topics, multiple discussions): we parallelise extraction and let the LLM handle final coherence. |
 | **Single-shot synthesis** | DETAILED_SYNTHESIS only (`DetailedDiscussionsSynthesizer`) | One LLM call over the consolidated `Content` to produce `discussions_summary`, `to_do_list`, `to_monitor_list`. | These outputs are derivatives of already-reduced content — no need to revisit raw chunks. |
 
@@ -152,7 +153,7 @@ flowchart TB
       US["CustomSection<br/>→ GenericMapReducePipeline.map_reduce_all_steps<br/>(chunks, instruction, notes_facts=...)"]:::llm
     end
     PLAN --> CS & US
-    EN -.->|"intent, next_meeting,<br/>topics, discussions"| CS
+    EN -.->|"intent, next_meeting, participants,<br/>topics, discussions"| CS
     EN -.->|"custom_section_facts[instruction]"| US
 
     BODIES[/"list&lt;str&gt; section bodies"/]:::out
@@ -170,9 +171,9 @@ Each `MetadataCollector` advertises a `notes_facets: ClassVar[frozenset[NotesFac
 |---|---|---|
 | `title` | `{INTENT}` | `RefineIntent.init_hint = notes.intent` |
 | `next_meeting` | `{NEXT_MEETING}` | `RefineNextMeeting.init_hint = notes.next_meeting` |
-| `topics` | `{INTENT, TOPICS}` | inner `RefineIntent.init_hint = notes.intent`, `MapReduceTopics.notes_hint = notes.topics` |
-| `detailed_discussions` | `{INTENT, DISCUSSIONS}` | inner `RefineIntent.init_hint = notes.intent`, `MapReduceDetailedDiscussions.notes_hint = notes.discussions` |
-| `participants` | `∅` | none — notes are not used here |
+| `topics` | `{INTENT, TOPICS, PARTICIPANTS}` | inner `RefineIntent.init_hint = notes.intent`, inner `RefineParticipants(notes.participants)`, `MapReduceTopics.notes_hint = notes.topics` |
+| `detailed_discussions` | `{INTENT, DISCUSSIONS, PARTICIPANTS}` | inner `RefineIntent.init_hint = notes.intent`, inner `RefineParticipants(notes.participants)`, `MapReduceDetailedDiscussions.notes_hint = notes.discussions` |
+| `participants` | `{PARTICIPANTS}` | `RefineParticipants(notes.participants)` — renders a read-only reference block, not a seed |
 
 ## Going further
 
@@ -182,6 +183,6 @@ Pointers to key files if you want to dive into the code:
 - **Generator factory**: `app/services/report_generator/__init__.py` — dispatch via `match` on `ReportTypes`.
 - **Base class + shared header**: `app/services/report_generator/base_report_generator.py`.
 - **Map-reduce**: `app/services/sections/topics/map_reduce_topics.py`, `app/services/sections/detailed_discussions/map_reduce_detailed_discussions.py`.
-- **Refine**: `app/services/sections/base/init_then_refine.py` defines the generic `BaseInitThenRefine[T]` that owns the loop, prompt rendering and Langfuse span. `init_then_refine(chunks, init_hint=None)` accepts an optional `init_hint`: when set, the initial LLM extract on `chunks[0]` is skipped and the seed is `init_hint` itself, then every chunk is refined against it. The three concrete refiners (`app/services/sections/{intent,participants,next_meeting}/refine_*.py`) only declare four class attributes (`response_model`, two prompt templates, `section_name`). `RefineParticipants` returns an internal chain-of-thought wrapper; `BaseReportGenerator.generate_header` finalises it via `.to_public()`.
+- **Refine**: `app/services/sections/base/init_then_refine.py` defines the generic `BaseInitThenRefine[T]` that owns the loop, prompt rendering and Langfuse span. `init_then_refine(chunks, init_hint=None)` accepts an optional `init_hint`: when set, the initial LLM extract on `chunks[0]` is skipped and the seed is `init_hint` itself, then every chunk is refined against it. Separately, a subclass can feed extra reference text into every prompt by overriding `_extra_prompt_vars()` (empty by default); the returned mapping is substituted into matching `{placeholders}` of both templates. `RefineParticipants(participants_hint=...)` uses this hook: its constructor takes the `ParticipantsHint | None` extracted from the notes, renders it via `render_participants_hint` (in `sections/participants/prompts.py`) and injects the result into a read-only `{notes_hint}` block in its prompts — distinct from `init_hint` (a typed seed): the notes participants have no `speaker_id`, so they guide naming rather than seed the output. The other refiners (`app/services/sections/{intent,next_meeting}/refine_*.py`) only declare four class attributes (`response_model`, two prompt templates, `section_name`). `RefineParticipants` returns an internal chain-of-thought wrapper; `BaseReportGenerator.generate_header` finalises it via `.to_public()`.
 - **Shared LLM client**: `app/services/utils/llm_helpers.py` — `call_llm_with_structured_output()` (Instructor + exponential retry + Langfuse observability).
 - **Output schemas**: `app/schemas/base.py` (`BaseReport`, `DecisionRecord`, `DetailedSynthesis`, `Header`).
