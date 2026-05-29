@@ -13,10 +13,24 @@ from mcr_meeting.app.configs.base import LoggingSettings
 log_setting = LoggingSettings()
 
 
+_LIBRARY_LOG_LEVELS: dict[str, int] = {
+    "UnleashClient": logging.WARNING,
+    "unleash_client": logging.WARNING,
+    "apscheduler": logging.WARNING,
+}
+
+
 def setup_logging() -> None:
     remove_all_default_handlers()
     create_loguru_handler()
     redirect_python_logging_to_loguru()
+    apply_library_log_levels()
+
+
+def apply_library_log_levels() -> None:
+    # Child loggers (e.g. apscheduler.executors.default) inherit from the parent.
+    for prefix, min_level in _LIBRARY_LOG_LEVELS.items():
+        logging.getLogger(prefix).setLevel(min_level)
 
 
 class InterceptHandler(logging.Handler):
@@ -97,7 +111,8 @@ def create_loguru_handler() -> None:
 
 
 def redirect_python_logging_to_loguru() -> None:
-    logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG)
+    # force=True drops handlers already installed on root (Celery, Sentry, ...) so ours wins.
+    logging.basicConfig(handlers=[InterceptHandler()], level=logging.DEBUG, force=True)
 
 
 def get_log_format() -> str:
