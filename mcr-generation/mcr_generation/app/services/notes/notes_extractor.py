@@ -9,13 +9,14 @@ from openai import AsyncOpenAI
 from pydantic import BaseModel, Field
 
 from mcr_generation.app.configs.settings import ChunkingConfig, LLMConfig
-from mcr_generation.app.schemas.base import Intent, NextMeeting
+from mcr_generation.app.schemas.base import Intent, NextMeeting, ParticipantsHint
 from mcr_generation.app.services.notes.facets import NotesFacet
 from mcr_generation.app.services.notes.prompts import (
     EXTRACT_CUSTOM_FACTS_PROMPT_TEMPLATE,
     EXTRACT_DISCUSSIONS_HINT_PROMPT_TEMPLATE,
     EXTRACT_INTENT_PROMPT_TEMPLATE,
     EXTRACT_NEXT_MEETING_PROMPT_TEMPLATE,
+    EXTRACT_PARTICIPANTS_HINT_PROMPT_TEMPLATE,
     EXTRACT_TOPICS_HINT_PROMPT_TEMPLATE,
 )
 from mcr_generation.app.services.sections.detailed_discussions.types import (
@@ -41,6 +42,7 @@ class ExtractedNotes(BaseModel):
     next_meeting: NextMeeting | None = None
     topics: TopicsContent | None = None
     discussions: DiscussionsContent | None = None
+    participants: ParticipantsHint | None = None
     custom_section_facts: dict[str, list[str]] | None = None
 
 
@@ -88,6 +90,8 @@ class NotesExtractor:
                     facet_tasks[facet] = self.extract_topics_hint(notes_content)
                 case NotesFacet.DISCUSSIONS:
                     facet_tasks[facet] = self.extract_discussions_hint(notes_content)
+                case NotesFacet.PARTICIPANTS:
+                    facet_tasks[facet] = self.extract_participants_hint(notes_content)
 
         facet_keys = list(facet_tasks.keys())
         coros: list[Awaitable[Any]] = list(facet_tasks.values())
@@ -129,6 +133,7 @@ class NotesExtractor:
             next_meeting=facet_values.get(NotesFacet.NEXT_MEETING),
             topics=facet_values.get(NotesFacet.TOPICS),
             discussions=facet_values.get(NotesFacet.DISCUSSIONS),
+            participants=facet_values.get(NotesFacet.PARTICIPANTS),
             custom_section_facts=custom_facts if instructions_list else None,
         )
 
@@ -173,6 +178,18 @@ class NotesExtractor:
             return await async_call_llm_with_structured_output(
                 client=self.client_instructor,
                 response_model=DiscussionsContent,
+                user_message_content=prompt,
+            )
+
+    @observe(name="notes_extract_participants_hint")
+    async def extract_participants_hint(self, notes_content: str) -> ParticipantsHint:
+        prompt = EXTRACT_PARTICIPANTS_HINT_PROMPT_TEMPLATE.format(
+            notes_content=notes_content
+        )
+        async with self._semaphore:
+            return await async_call_llm_with_structured_output(
+                client=self.client_instructor,
+                response_model=ParticipantsHint,
                 user_message_content=prompt,
             )
 

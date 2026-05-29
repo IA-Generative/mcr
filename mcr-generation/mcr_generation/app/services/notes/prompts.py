@@ -135,6 +135,33 @@ Renvoie le résultat strictement au format JSON : une liste de faits courts en f
 """
 
 
+EXTRACT_PARTICIPANTS_HINT_PROMPT_TEMPLATE = """
+Tu reçois les notes prises pendant un meeting (texte humain synthétique).
+Identifie les PERSONNES qui y sont mentionnées (participants, intervenants).
+
+Cette extraction sert d'INDICE ("hint") pour un pipeline downstream qui s'appuie aussi sur la transcription complète.
+Les notes étant courtes et incomplètes, retourner une liste vide est attendu et normal si aucune personne n'y figure.
+Ne devine pas, n'invente pas : ne retourne une personne QUE si les notes la mentionnent explicitement.
+
+Pour chaque personne identifiée dans les notes, fournis :
+- name : le nom/prénom tel que mentionné (ex: "Marie", "Pierre Martin")
+- role : la fonction/le rôle UNIQUEMENT si les notes le mentionnent (ex: PO, Directrice financière), null sinon
+
+RÈGLES :
+- N'inclure que des personnes réellement nommées dans les notes.
+- Ne pas inférer de rôle : si le rôle n'est pas écrit, mettre null.
+- Ne pas attribuer d'identifiant de locuteur : les notes n'en contiennent pas.
+
+Notes prises pendant le meeting :
+<notes>
+{notes_content}
+</notes>
+
+Renvoie le résultat strictement au format JSON validant le schéma attendu : ParticipantsHint.
+Retourner participants=[] est valide si les notes ne citent aucune personne.
+"""
+
+
 NOTES_SECTION_TEMPLATE = """\
 ## Notes du rédacteur (signal humain)
 

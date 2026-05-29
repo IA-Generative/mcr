@@ -8,14 +8,25 @@ class NotesFacet(StrEnum):
     NEXT_MEETING = "next_meeting"
     TOPICS = "topics"
     DISCUSSIONS = "discussions"
+    PARTICIPANTS = "participants"
 
 
 _FACETS_BY_REPORT_TYPE: dict[ReportTypes, frozenset[NotesFacet]] = {
     ReportTypes.DECISION_RECORD: frozenset(
-        {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.TOPICS}
+        {
+            NotesFacet.INTENT,
+            NotesFacet.NEXT_MEETING,
+            NotesFacet.TOPICS,
+            NotesFacet.PARTICIPANTS,
+        }
     ),
     ReportTypes.DETAILED_SYNTHESIS: frozenset(
-        {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.DISCUSSIONS}
+        {
+            NotesFacet.INTENT,
+            NotesFacet.NEXT_MEETING,
+            NotesFacet.DISCUSSIONS,
+            NotesFacet.PARTICIPANTS,
+        }
     ),
 }
 

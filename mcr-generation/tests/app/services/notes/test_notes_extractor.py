@@ -5,7 +5,12 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from mcr_generation.app.schemas.base import Intent, NextMeeting
+from mcr_generation.app.schemas.base import (
+    Intent,
+    NextMeeting,
+    ParticipantHint,
+    ParticipantsHint,
+)
 from mcr_generation.app.services.notes.facets import NotesFacet
 from mcr_generation.app.services.notes.notes_extractor import (
     ExtractedNotes,
@@ -47,19 +52,36 @@ def _discussions_fixture() -> DiscussionsContent:
     return DiscussionsContent(detailed_discussions=[])
 
 
+def _participants_hint_fixture() -> ParticipantsHint:
+    return ParticipantsHint(
+        participants=[ParticipantHint(name="Marie", role="Directrice financière")]
+    )
+
+
 _FIXTURES_BY_MODEL: dict[type, Any] = {
     Intent: _intent_fixture,
     NextMeeting: _next_meeting_fixture,
     TopicsContent: _topics_fixture,
     DiscussionsContent: _discussions_fixture,
+    ParticipantsHint: _participants_hint_fixture,
 }
 
 
 _DECISION_RECORD_FACETS = frozenset(
-    {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.TOPICS}
+    {
+        NotesFacet.INTENT,
+        NotesFacet.NEXT_MEETING,
+        NotesFacet.TOPICS,
+        NotesFacet.PARTICIPANTS,
+    }
 )
 _DETAILED_SYNTHESIS_FACETS = frozenset(
-    {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.DISCUSSIONS}
+    {
+        NotesFacet.INTENT,
+        NotesFacet.NEXT_MEETING,
+        NotesFacet.DISCUSSIONS,
+        NotesFacet.PARTICIPANTS,
+    }
 )
 
 
@@ -70,12 +92,12 @@ class TestExtractAll:
         [
             pytest.param(
                 _DECISION_RECORD_FACETS,
-                {Intent, NextMeeting, TopicsContent},
+                {Intent, NextMeeting, TopicsContent, ParticipantsHint},
                 id="decision_record_facets",
             ),
             pytest.param(
                 _DETAILED_SYNTHESIS_FACETS,
-                {Intent, NextMeeting, DiscussionsContent},
+                {Intent, NextMeeting, DiscussionsContent, ParticipantsHint},
                 id="detailed_synthesis_facets",
             ),
             pytest.param(
@@ -116,6 +138,9 @@ class TestExtractAll:
         assert (result.topics == _topics_fixture()) == (NotesFacet.TOPICS in facets)
         assert (result.discussions == _discussions_fixture()) == (
             NotesFacet.DISCUSSIONS in facets
+        )
+        assert (result.participants == _participants_hint_fixture()) == (
+            NotesFacet.PARTICIPANTS in facets
         )
         assert result.custom_section_facts is None
 
@@ -176,6 +201,12 @@ class TestExtractAll:
                 new_callable=AsyncMock,
                 return_value=_topics_fixture(),
             ),
+            patch.object(
+                NotesExtractor,
+                "extract_participants_hint",
+                new_callable=AsyncMock,
+                return_value=_participants_hint_fixture(),
+            ),
             patch(
                 f"{_MODULE}.record_notes_extraction_failed_event"
             ) as mock_record_failure,
@@ -216,6 +247,12 @@ class TestExtractAll:
                 new_callable=AsyncMock,
                 return_value=_topics_fixture(),
             ),
+            patch.object(
+                NotesExtractor,
+                "extract_participants_hint",
+                new_callable=AsyncMock,
+                return_value=_participants_hint_fixture(),
+            ),
             patch(f"{_MODULE}.record_notes_truncated_event") as mock_record_trunc,
             patch(f"{_MODULE}.logger") as mock_logger,
         ):
@@ -250,6 +287,12 @@ class TestExtractAll:
                 "extract_topics_hint",
                 new_callable=AsyncMock,
                 return_value=_topics_fixture(),
+            ),
+            patch.object(
+                NotesExtractor,
+                "extract_participants_hint",
+                new_callable=AsyncMock,
+                return_value=_participants_hint_fixture(),
             ),
             patch(f"{_MODULE}.record_notes_truncated_event") as mock_record_trunc,
         ):

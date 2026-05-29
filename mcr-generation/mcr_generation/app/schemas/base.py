@@ -155,6 +155,29 @@ class ParticipantsWithThinkingListWrapper(BaseModel):
         )
 
 
+class ParticipantHint(BaseModel):
+    """Person mentioned in the user's meeting notes.
+
+    Notes carry no speaker_id; this is a read-only hint used to help name/qualify
+    speakers detected in the transcript, never to create participants on its own.
+    """
+
+    name: str = Field(
+        description="Nom/prénom de la personne mentionnée dans les notes (ex: 'Marie', 'Pierre Martin').",
+    )
+    role: str | None = Field(
+        None,
+        description="Rôle/fonction de la personne si les notes le mentionnent (ex. PO, Directrice financière). null sinon.",
+    )
+
+
+class ParticipantsHint(BaseModel):
+    participants: list[ParticipantHint] = Field(
+        default_factory=list,
+        description="Personnes mentionnées dans les notes. Liste vide si les notes ne citent personne.",
+    )
+
+
 class Decision(BaseModel):
     text: str = Field(
         ...,
