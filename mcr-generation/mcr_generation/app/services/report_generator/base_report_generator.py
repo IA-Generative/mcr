@@ -74,15 +74,18 @@ class BaseReportGenerator(ABC):
         Runs three LLM-based extractors (intent, participants, next meeting) over
         all chunks using an init-then-refine strategy, then assembles the results
         into a `Header` object. When `extracted_notes` is provided, the `intent`
-        and `next_meeting` fields are used as seeds for their respective refiners,
-        skipping the initial LLM extract and refining every chunk against the seed.
+        and `next_meeting` fields are used as seeds for their respective refiners
+        (skipping the initial LLM extract), while the `participants` field is
+        injected as a read-only reference hint into the participant prompts to
+        help name/qualify detected speakers (never as a seed).
 
         Args:
             chunks (list[Chunk]): Ordered list of transcript segments to analyse.
             extracted_notes (ExtractedNotes | None): Structured hints extracted by
                 `NotesExtractor` from user-written meeting notes. When provided,
                 its `intent` and `next_meeting` fields seed the corresponding
-                refiners.
+                refiners and its `participants` field is passed as a notes hint to
+                the participant refiner.
 
         Returns:
             Header: Report header containing the title, objective, participant list,
@@ -90,7 +93,7 @@ class BaseReportGenerator(ABC):
         """
         notes = extracted_notes or ExtractedNotes()
         refine_intent = RefineIntent()
-        refine_participants = RefineParticipants()
+        refine_participants = RefineParticipants(notes.participants)
         refine_next_meeting = RefineNextMeeting()
         intent = refine_intent.init_then_refine(chunks, init_hint=notes.intent)
         participants = refine_participants.init_then_refine(chunks).to_public()

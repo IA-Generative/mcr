@@ -16,7 +16,9 @@ from mcr_generation.app.schemas.base import (
     Intent,
     NextMeeting,
     Participant,
+    ParticipantHint,
     Participants,
+    ParticipantsHint,
     ParticipantsWithThinkingListWrapper,
     ParticipantWithThinking,
     Topic,
@@ -316,6 +318,9 @@ def test_topics_collector_propagates_intent_and_topics_hints(
 ) -> None:
     intent = _intent(title="From notes")
     topics = TopicsContent(topics=[_topic()], next_steps=[])
+    participants_hint = ParticipantsHint(
+        participants=[ParticipantHint(name="Marie", role="PO")]
+    )
     mock_intent_cls.return_value.init_then_refine.return_value = intent
     mock_participants_cls.return_value.init_then_refine.return_value.to_public.return_value = MagicMock(
         participants=[]
@@ -323,11 +328,17 @@ def test_topics_collector_propagates_intent_and_topics_hints(
 
     TopicsCollector()._extract(
         [Chunk(text="x", id=0)],
-        extracted_notes=ExtractedNotes(intent=intent, topics=topics),
+        extracted_notes=ExtractedNotes(
+            intent=intent, topics=topics, participants=participants_hint
+        ),
     )
 
     mock_intent_cls.return_value.init_then_refine.assert_called_once_with(
         [Chunk(text="x", id=0)], init_hint=intent
+    )
+    mock_participants_cls.assert_called_once_with(participants_hint)
+    mock_participants_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)]
     )
     mock_topics_cls.return_value.map_reduce_all_steps.assert_called_once_with(
         [Chunk(text="x", id=0)], notes_hint=topics
@@ -386,6 +397,9 @@ def test_detailed_discussions_collector_propagates_intent_and_discussions_hints(
 ) -> None:
     intent = _intent(title="From notes")
     discussions = DiscussionsContent(detailed_discussions=[_discussion()])
+    participants_hint = ParticipantsHint(
+        participants=[ParticipantHint(name="Marie", role="PO")]
+    )
     mock_intent_cls.return_value.init_then_refine.return_value = intent
     mock_participants_cls.return_value.init_then_refine.return_value.to_public.return_value = MagicMock(
         participants=[]
@@ -393,11 +407,17 @@ def test_detailed_discussions_collector_propagates_intent_and_discussions_hints(
 
     DetailedDiscussionsCollector()._extract(
         [Chunk(text="x", id=0)],
-        extracted_notes=ExtractedNotes(intent=intent, discussions=discussions),
+        extracted_notes=ExtractedNotes(
+            intent=intent, discussions=discussions, participants=participants_hint
+        ),
     )
 
     mock_intent_cls.return_value.init_then_refine.assert_called_once_with(
         [Chunk(text="x", id=0)], init_hint=intent
+    )
+    mock_participants_cls.assert_called_once_with(participants_hint)
+    mock_participants_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)]
     )
     mock_dd_cls.return_value.map_reduce_all_steps.assert_called_once_with(
         [Chunk(text="x", id=0)], notes_hint=discussions
@@ -427,9 +447,17 @@ async def test_participants_collect_end_to_end(mock_cls: MagicMock) -> None:
             ]
         )
     )
+    hint = ParticipantsHint(
+        participants=[ParticipantHint(name="Marie", role="Directrice financière")]
+    )
 
-    md = await METADATA_COLLECTORS["participants"].collect([Chunk(text="x", id=0)])
+    md = await METADATA_COLLECTORS["participants"].collect(
+        [Chunk(text="x", id=0)], extracted_notes=ExtractedNotes(participants=hint)
+    )
 
     assert "**Alice**" in md
     assert not md.lstrip().startswith("#")
-    mock_cls.return_value.init_then_refine.assert_called_once()
+    mock_cls.assert_called_once_with(hint)
+    mock_cls.return_value.init_then_refine.assert_called_once_with(
+        [Chunk(text="x", id=0)]
+    )
