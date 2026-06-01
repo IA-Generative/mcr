@@ -1,5 +1,3 @@
-import math
-
 from fastapi import (
     APIRouter,
     Depends,
@@ -13,27 +11,6 @@ from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    create_meeting as create_meeting_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    generate_presigned_audio_upload_url as generate_presigned_audio_upload_url_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    get_meeting as get_meeting_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    get_meeting_audio as get_meeting_audio_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    get_meetings as get_meetings_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_orchestrator import (
-    update_meeting as update_meeting_orchestrator,
-)
-from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    delete as delete_meeting_orchestrator,
-)
 from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingDetailResponse,
@@ -43,6 +20,25 @@ from mcr_meeting.app.schemas.meeting_schema import (
 )
 from mcr_meeting.app.schemas.S3_types import (
     PresignedAudioFileRequest,
+)
+from mcr_meeting.app.use_cases.create_meeting import (
+    create_meeting as create_meeting_use_case,
+)
+from mcr_meeting.app.use_cases.delete_meeting import (
+    delete_meeting as delete_meeting_use_case,
+)
+from mcr_meeting.app.use_cases.generate_presigned_audio_upload_url import (
+    generate_presigned_audio_upload_url as generate_presigned_audio_upload_url_use_case,
+)
+from mcr_meeting.app.use_cases.get_meeting import get_meeting as get_meeting_use_case
+from mcr_meeting.app.use_cases.get_meeting_audio import (
+    get_meeting_audio as get_meeting_audio_use_case,
+)
+from mcr_meeting.app.use_cases.list_meetings import (
+    list_meetings as list_meetings_use_case,
+)
+from mcr_meeting.app.use_cases.update_meeting import (
+    update_meeting as update_meeting_use_case,
 )
 
 api_settings = ApiSettings()
@@ -67,7 +63,7 @@ def create_meeting(
     Returns:
         Meeting: The created meeting object.
     """
-    meeting = create_meeting_orchestrator(
+    meeting = create_meeting_use_case(
         meeting_data=meeting_data,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
@@ -92,19 +88,17 @@ def get_meetings(
     Returns:
         PaginatedMeetingsResponse: Réunions paginées avec métadonnées.
     """
-    page = max(1, page)
-    page_size = page_size if page_size > 0 else 1
-    paginated = get_meetings_orchestrator(
+    result = list_meetings_use_case(
+        user_keycloak_uuid=x_user_keycloak_uuid,
         search=search,
         page=page,
         page_size=page_size,
-        user_keycloak_uuid=x_user_keycloak_uuid,
     )
     return PaginatedMeetingsResponse(
-        total_items=paginated.total,
-        total_pages=max(1, math.ceil(paginated.total / page_size)),
-        page=page,
-        data=[MeetingResponse.model_validate(m) for m in paginated.items],
+        total_items=result.total,
+        total_pages=result.total_pages,
+        page=result.page,
+        data=[MeetingResponse.model_validate(m) for m in result.items],
     )
 
 
@@ -117,7 +111,7 @@ def get_meeting(
     Returns:
         Meeting: The meeting with the specified ID.
     """
-    meeting = get_meeting_orchestrator(
+    meeting = get_meeting_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
@@ -140,7 +134,7 @@ def update_meeting(
     Returns:
         Meeting: The updated meeting object.
     """
-    meeting = update_meeting_orchestrator(
+    meeting = update_meeting_use_case(
         meeting_id=meeting_id,
         meeting_update=meeting_update,
         user_keycloak_uuid=x_user_keycloak_uuid,
@@ -163,7 +157,7 @@ def delete_meeting(
         HTTP 204 status code if successful
     """
 
-    delete_meeting_orchestrator(
+    delete_meeting_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
@@ -180,7 +174,7 @@ async def generate_presigned_url(
     presigned_request: PresignedAudioFileRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> str:
-    return await generate_presigned_audio_upload_url_orchestrator(
+    return generate_presigned_audio_upload_url_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         presigned_request=presigned_request,
@@ -192,7 +186,8 @@ async def get_meeting_audio(
     meeting_id: int,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> StreamingResponse:
-    return await get_meeting_audio_orchestrator(
+    audio_stream = get_meeting_audio_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
+    return StreamingResponse(audio_stream.iterator, media_type=audio_stream.media_type)
