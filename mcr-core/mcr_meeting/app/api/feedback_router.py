@@ -3,12 +3,12 @@ from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-from mcr_meeting.app.orchestrators.feedback_orchestrator import (
-    create_feedback as create_feedback_orchestrator,
-)
 from mcr_meeting.app.schemas.feedback_schema import (
     FeedbackRequest,
     FeedbackResponse,
+)
+from mcr_meeting.app.use_cases.create_feedback import (
+    create_feedback as create_feedback_use_case,
 )
 
 api_settings = ApiSettings()
@@ -33,7 +33,7 @@ def create_feedback(
     Returns:
         Meeting: The created meeting object.
     """
-    feedback = create_feedback_orchestrator(
+    feedback = create_feedback_use_case(
         feedback_request_data=feedback_request_data,
         user_keycloak_uuid=x_user_keycloak_uuid,
     )

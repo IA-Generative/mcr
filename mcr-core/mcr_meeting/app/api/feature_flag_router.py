@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from mcr_meeting.app.configs.base import ApiSettings
-from mcr_meeting.app.services.feature_flag_service import (
-    FeatureFlagClient,
-    get_feature_flag_client,
+from mcr_meeting.app.use_cases.get_feature_flag_status import (
+    get_feature_flag_status as get_feature_flag_status_use_case,
 )
 
 api_settings = ApiSettings()
@@ -14,10 +13,7 @@ router = APIRouter(
 
 
 @router.get("/{feature_flag_name}")
-def get_feature_flag_status(
-    feature_flag_name: str,
-    feature_flag_client: FeatureFlagClient = Depends(get_feature_flag_client),
-) -> bool:
+def get_feature_flag_status(feature_flag_name: str) -> bool:
     """
     Get the status of a feature flag.
 
@@ -28,4 +24,4 @@ def get_feature_flag_status(
         bool: The status of the feature flag.
 
     """
-    return feature_flag_client.is_enabled(feature_flag_name)
+    return get_feature_flag_status_use_case(feature_flag_name)

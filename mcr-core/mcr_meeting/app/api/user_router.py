@@ -7,8 +7,8 @@ from ..schemas.user_schema import (
     UserCreate,
     UserResponse,
 )
-from ..services.user_service import (
-    get_or_create_user_by_keycloak_uuid_service,
+from ..use_cases.get_or_create_user_by_keycloak import (
+    get_or_create_user_by_keycloak,
 )
 
 api_settings = ApiSettings()
@@ -32,5 +32,5 @@ def get_or_create_user_by_keycloak_uuid(
     Returns:
         User: The user object, either existing or newly created.
     """
-    user = get_or_create_user_by_keycloak_uuid_service(user_data)
+    user = get_or_create_user_by_keycloak(user_data)
     return UserResponse.model_validate(user)

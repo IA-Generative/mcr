@@ -7,7 +7,7 @@ import pytest
 import soundfile as sf
 
 from mcr_meeting.app.configs.base import AudioSettings
-from mcr_meeting.app.services.feature_flag_service import FeatureFlag
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
 
 

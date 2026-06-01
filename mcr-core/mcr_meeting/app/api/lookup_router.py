@@ -2,11 +2,11 @@ import httpx
 from fastapi import APIRouter, HTTPException
 
 from mcr_meeting.app.configs.base import ApiSettings
-from mcr_meeting.app.orchestrators.lookup_orchestrator import lookup_comu_meeting
 from mcr_meeting.app.schemas.lookup_schema import (
     ComuMeetingLookup,
     ComuMeetingLookupResponse,
 )
+from mcr_meeting.app.use_cases.lookup_comu_meeting import lookup_comu_meeting
 
 api_settings = ApiSettings()
 

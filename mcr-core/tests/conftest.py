@@ -20,11 +20,8 @@ from mcr_meeting.app.db.db import (
     db_session_ctx,
     router_db_session_context_manager,
 )
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.feature_flag_service import (
-    FeatureFlag,
-    get_feature_flag_client,
-)
 from mcr_meeting.main import app
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_keycloak import InMemoryKeycloak
@@ -212,10 +209,10 @@ def create_mock_feature_flag_client(mocker: MockerFixture):
             return enabled if name == flag_name else False
 
         mock_client.is_enabled.side_effect = is_enabled_side_effect
-        app.dependency_overrides[get_feature_flag_client] = lambda: mock_client
+        mocker.patch(
+            "mcr_meeting.app.infrastructure.unleash.get_feature_flag_client",
+            return_value=mock_client,
+        )
         return mock_client
 
-    yield _create_mock
-
-    # Clean up dependency override
-    app.dependency_overrides.clear()
+    return _create_mock
