@@ -19,8 +19,7 @@ def save_user(user: User) -> User:
     """
     db = get_db_session_ctx()
     db.add(user)
-    db.commit()
-    db.refresh(user)
+    db.flush()
     return user
 
 

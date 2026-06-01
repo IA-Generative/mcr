@@ -1,8 +1,9 @@
 """
-Unleash feature flag service module.
+Unleash feature flag infrastructure module.
 
 This module provides a centralized way to manage Unleash feature flags
-throughout the application using dependency injection.
+throughout the application. The underlying client is a process-wide
+singleton initialized at first use.
 """
 
 from abc import ABC, abstractmethod
@@ -98,3 +99,8 @@ class FeatureFlagSingleton:
 def get_feature_flag_client() -> FeatureFlagClient:
     """Get the feature flag client instance."""
     return FeatureFlagSingleton().get_feature_flag_client()
+
+
+def is_enabled(feature_flag_name: str) -> bool:
+    """Check whether a feature flag is enabled."""
+    return get_feature_flag_client().is_enabled(feature_flag_name)
