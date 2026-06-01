@@ -1,3 +1,4 @@
+from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.db.user_repository import (
     get_user_by_keycloak_uuid,
     save_user,
@@ -12,4 +13,5 @@ def get_or_create_user_by_keycloak(user_data: UserCreate) -> User:
     try:
         return get_user_by_keycloak_uuid(user_data.keycloak_uuid)
     except NotFoundException:
-        return save_user(User(**user_data.model_dump(exclude_unset=True)))
+        with UnitOfWork():
+            return save_user(User(**user_data.model_dump(exclude_unset=True)))
