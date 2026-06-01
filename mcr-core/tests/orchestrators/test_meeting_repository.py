@@ -2,7 +2,8 @@ import pytest
 
 from mcr_meeting.app.exceptions.exceptions import NotFoundException
 from mcr_meeting.app.models import MeetingStatus
-from mcr_meeting.app.orchestrators.meeting_orchestrator import get_meeting, get_meetings
+from mcr_meeting.app.use_cases.get_meeting import get_meeting
+from mcr_meeting.app.use_cases.list_meetings import list_meetings as get_meetings
 from tests.factories import MeetingFactory, UserFactory
 
 

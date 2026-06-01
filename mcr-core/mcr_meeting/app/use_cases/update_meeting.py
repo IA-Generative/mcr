@@ -14,8 +14,9 @@ def update_meeting(
     meeting_update: MeetingUpdate,
     user_keycloak_uuid: UUID4,
 ) -> Meeting:
+    meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
+    authorize_meeting_access(meeting, user_keycloak_uuid)
+
     with UnitOfWork():
-        meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
-        authorize_meeting_access(meeting, user_keycloak_uuid)
         patch_model(meeting, meeting_update)
         return update_meeting_in_db(meeting)
