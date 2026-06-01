@@ -71,6 +71,7 @@ class MeetingAudioRecorder:
 
             context = await self.browser.new_context(
                 permissions=["microphone", "camera"],
+                locale="en-US",
             )
             page = await context.new_page()
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
