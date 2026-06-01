@@ -69,8 +69,16 @@ class MeetingAudioRecorder:
                 ],
             )
 
+            # Pin a valid BCP-47 locale + timezone. Without this, the headless
+            # container's default locale resolves to the glibc/ICU "en-US@posix"
+            # tag, which the Visio (La Suite) app feeds straight into Intl.* →
+            # "RangeError: Invalid language tag: en-US@posix" → the app calls
+            # room.disconnect() and the bot silently drops out of the meeting
+            # (verified systematic in prod logs, fix/565).
             context = await self.browser.new_context(
                 permissions=["microphone", "camera"],
+                locale="fr-FR",
+                timezone_id="Europe/Paris",
             )
             page = await context.new_page()
             page.set_default_timeout(capture_settings.TIMEOUT_INDIVIDUAL_BOT_ACTION_MS)
