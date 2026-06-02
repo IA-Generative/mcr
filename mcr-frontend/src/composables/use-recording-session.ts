@@ -115,6 +115,10 @@ export function useRecordingSession(meetingId: number) {
               maxAudioLevel: stats.maxAudioLevel,
               silenceRatio: stats.silenceRatio,
               sampleCount: stats.sampleCount,
+              durationMs: stats.durationMs,
+              effectiveSampleRate: stats.effectiveSampleRate,
+              backgroundedMs: stats.backgroundedMs,
+              visibilityHiddenCount: stats.visibilityHiddenCount,
             },
             recordingDevice: {
               requestedDeviceId: stats.requestedDeviceId,

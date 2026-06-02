@@ -1,14 +1,20 @@
 import { ref } from 'vue';
 import { AudioLevelMonitor } from '@/utils/audio-level-monitor';
 import type { AudioDeviceInfo } from '@/composables/use-recorder';
+import {
+  MIN_DURATION_FOR_RATE_CHECK_MS,
+  MIN_EFFECTIVE_SAMPLE_RATE,
+  BACKGROUND_RATIO_THRESHOLD,
+} from '@/config/audioMonitor';
 import * as Sentry from '@sentry/vue';
 
 export const SILENCE_LEVEL_THRESHOLD = 0.05;
 export const SILENCE_RATIO_THRESHOLD = 0.98;
 
-export type SilenceCause = 'true-silence';
+export type SilenceCause = 'sampler-throttled' | 'true-silence';
 
 export const SILENCE_MESSAGES: Record<SilenceCause, string> = {
+  'sampler-throttled': 'Silent recording: sampler throttled (background tab)',
   'true-silence': 'Silent recording: true silence (no mic signal)',
 };
 
@@ -24,6 +30,11 @@ export type RecordingSessionStats = {
   deviceSettings: MediaTrackSettings | null;
   requestedDeviceId: string | null;
   availableDevices: AudioDeviceInfo[];
+  // Sampling rate instrumentation (detects a rAF sampler throttled in a background tab).
+  durationMs: number;
+  effectiveSampleRate: number;
+  backgroundedMs: number;
+  visibilityHiddenCount: number;
 };
 
 export type RecordingMonitorOptions = {
@@ -52,11 +63,25 @@ function createEmptyStats(): RecordingSessionStats {
     deviceSettings: null,
     requestedDeviceId: null,
     availableDevices: [],
+    durationMs: 0,
+    effectiveSampleRate: 0,
+    backgroundedMs: 0,
+    visibilityHiddenCount: 0,
   };
 }
 
-export function classifySilence(_stats: RecordingSessionStats): SilenceCause {
+export function classifySilence(stats: RecordingSessionStats): SilenceCause {
+  if (isSamplerThrottled(stats)) return 'sampler-throttled'; // sampler throttled in a background tab:
   return 'true-silence';
+}
+
+function isSamplerThrottled(stats: RecordingSessionStats): boolean {
+  const rateThrottled =
+    stats.durationMs > MIN_DURATION_FOR_RATE_CHECK_MS &&
+    stats.effectiveSampleRate < MIN_EFFECTIVE_SAMPLE_RATE;
+  const mostlyBackgrounded =
+    stats.durationMs > 0 && stats.backgroundedMs > BACKGROUND_RATIO_THRESHOLD * stats.durationMs;
+  return rateThrottled || mostlyBackgrounded;
 }
 
 export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
@@ -75,6 +100,11 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   let recorderErrorHandler: ((e: Event) => void) | undefined;
   let recorderDataHandler: ((e: BlobEvent) => void) | undefined;
   let recorderStopHandler: (() => void) | undefined;
+  let visibilityHandler: (() => void) | undefined;
+
+  let startedAt: number | undefined;
+  let stoppedAt: number | undefined;
+  let hiddenSince: number | undefined;
 
   function attach(ctx: RecordingMonitorContext): void {
     // Reset
@@ -83,6 +113,9 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     silentSampleCount = 0;
     chunkIndex = 0;
     audioInputLevel.value = 0;
+    startedAt = Date.now();
+    stoppedAt = undefined;
+    hiddenSince = undefined;
 
     // Capture device info
     const track = ctx.stream.getAudioTracks()[0];
@@ -144,6 +177,23 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     recorderStopHandler = () => detach();
     ctx.recorder.addEventListener('stop', recorderStopHandler, { once: true });
 
+    if (typeof document !== 'undefined') {
+      if (document.visibilityState === 'hidden') {
+        hiddenSince = Date.now();
+        stats.visibilityHiddenCount += 1;
+      }
+      visibilityHandler = () => {
+        if (document.visibilityState === 'hidden') {
+          hiddenSince = Date.now();
+          stats.visibilityHiddenCount += 1;
+        } else if (hiddenSince !== undefined) {
+          stats.backgroundedMs += Date.now() - hiddenSince;
+          hiddenSince = undefined;
+        }
+      };
+      document.addEventListener('visibilitychange', visibilityHandler);
+    }
+
     // Start audio level monitoring
     audioLevelMonitor = new AudioLevelMonitor({
       fftSize: 256,
@@ -166,6 +216,17 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   }
 
   function detach(): void {
+    // Freeze the recording duration at stop time (getStats may run later, after
+    // the final chunk uploads, so we must not keep counting until then).
+    if (stoppedAt === undefined) {
+      stoppedAt = Date.now();
+    }
+    // Close out an open backgrounded interval (tab still hidden at stop).
+    if (hiddenSince !== undefined) {
+      stats.backgroundedMs += stoppedAt - hiddenSince;
+      hiddenSince = undefined;
+    }
+
     // Stop audio level monitor
     if (audioLevelMonitor) {
       audioLevelMonitor.stop();
@@ -187,6 +248,9 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
         attachedRecorder.removeEventListener('stop', recorderStopHandler);
       }
     }
+    if (visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+    }
 
     attachedTrack = undefined;
     attachedRecorder = undefined;
@@ -194,6 +258,7 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     recorderErrorHandler = undefined;
     recorderDataHandler = undefined;
     recorderStopHandler = undefined;
+    visibilityHandler = undefined;
 
     // Clear Sentry scope
     Sentry.setTag('meeting.id', undefined);
@@ -201,10 +266,15 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   }
 
   function getStats(): RecordingSessionStats {
+    const endTime = stoppedAt ?? Date.now();
+    const durationMs = startedAt !== undefined ? endTime - startedAt : 0;
+    const effectiveSampleRate = durationMs > 0 ? stats.sampleCount / (durationMs / 1000) : 0;
     return {
       ...stats,
       meanAudioLevel: stats.sampleCount > 0 ? sumAudioLevel / stats.sampleCount : 0,
       silenceRatio: stats.sampleCount > 0 ? silentSampleCount / stats.sampleCount : 1,
+      durationMs,
+      effectiveSampleRate,
     };
   }
 

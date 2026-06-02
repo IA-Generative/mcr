@@ -19,6 +19,10 @@ function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSes
     deviceSettings: null,
     requestedDeviceId: null,
     availableDevices: [],
+    durationMs: 0,
+    effectiveSampleRate: 0,
+    backgroundedMs: 0,
+    visibilityHiddenCount: 0,
     ...overrides,
   };
 }
@@ -182,6 +186,34 @@ describe('useRecordingMonitor', () => {
     it('should classify a long silent session with a healthy sampler as true-silence', () => {
       // Real Sentry event: maxAudioLevel=0, large sampleCount → mic produced no signal.
       const cause = classifySilence(makeStats({ maxAudioLevel: 0, sampleCount: 326842 }));
+      expect(cause).toBe('true-silence');
+    });
+
+    it('should classify a long session with a starved sample rate as sampler-throttled', () => {
+      // Real Sentry event: 241 samples over ~80 min → ~0.05 samples/s (rAF throttled).
+      const cause = classifySilence(
+        makeStats({ sampleCount: 241, durationMs: 4_800_000, effectiveSampleRate: 241 / 4800 }),
+      );
+      expect(cause).toBe('sampler-throttled');
+    });
+
+    it('should classify a mostly-backgrounded session as sampler-throttled', () => {
+      const cause = classifySilence(
+        makeStats({
+          durationMs: 600_000,
+          // Healthy rate, but the tab was hidden for most of the session.
+          effectiveSampleRate: 60,
+          backgroundedMs: 400_000,
+        }),
+      );
+      expect(cause).toBe('sampler-throttled');
+    });
+
+    it('should not flag a short session as sampler-throttled', () => {
+      // Few samples but under the duration floor → not enough data to judge the rate.
+      const cause = classifySilence(
+        makeStats({ sampleCount: 2, durationMs: 5_000, effectiveSampleRate: 0.4 }),
+      );
       expect(cause).toBe('true-silence');
     });
   });
