@@ -23,6 +23,11 @@ function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSes
     effectiveSampleRate: 0,
     backgroundedMs: 0,
     visibilityHiddenCount: 0,
+    deviceChangeEvents: 0,
+    trackEndedEvents: 0,
+    deviceLabelAtStop: null,
+    deviceIdAtStop: null,
+    deviceSwitchedMidSession: false,
     ...overrides,
   };
 }
@@ -215,6 +220,76 @@ describe('useRecordingMonitor', () => {
         makeStats({ sampleCount: 2, durationMs: 5_000, effectiveSampleRate: 0.4 }),
       );
       expect(cause).toBe('true-silence');
+    });
+
+    it('should classify a PulseAudio loopback source as wrong-device', () => {
+      const cause = classifySilence(
+        makeStats({ deviceLabel: 'Monitor of Built-in Audio Analog Stereo' }),
+      );
+      expect(cause).toBe('wrong-device');
+    });
+
+    it('should classify a device that switched mid-session as wrong-device', () => {
+      expect(classifySilence(makeStats({ deviceSwitchedMidSession: true }))).toBe('wrong-device');
+    });
+
+    it('should classify a device that ended mid-session as wrong-device', () => {
+      expect(classifySilence(makeStats({ trackEndedEvents: 1 }))).toBe('wrong-device');
+    });
+
+    it('should classify a macOS Continuity default with a built-in alternative as wrong-device', () => {
+      const cause = classifySilence(
+        makeStats({
+          requestedDeviceId: 'default',
+          deviceLabel: "Thibault’s iPhone Microphone",
+          availableDevices: [
+            { deviceId: 'builtin', label: 'MacBook Pro Microphone (Built-in)', groupId: 'g1' },
+          ],
+        }),
+      );
+      expect(cause).toBe('wrong-device');
+    });
+
+    it('should take wrong-device precedence over sampler-throttled', () => {
+      // Both a loopback device and a throttled sampler → most-specific wins.
+      const cause = classifySilence(
+        makeStats({
+          deviceLabel: 'Monitor of HDMI',
+          durationMs: 4_800_000,
+          effectiveSampleRate: 0.05,
+        }),
+      );
+      expect(cause).toBe('wrong-device');
+    });
+  });
+
+  describe('device drift instrumentation', () => {
+    it('should flag deviceSwitchedMidSession when the deviceId differs at stop', () => {
+      let currentDeviceId = 'device-1';
+      const track = {
+        label: 'Mock Microphone',
+        getSettings: () => ({ deviceId: currentDeviceId }),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      const ctx = {
+        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        recorder: new EventTarget() as unknown as MediaRecorder,
+        meetingId: 42,
+        requestedDeviceId: 'device-1',
+        availableDevices: [],
+      };
+
+      const { attach, detach, getStats } = useRecordingMonitor();
+      attach(ctx);
+
+      // The capture device is swapped before the session stops.
+      currentDeviceId = 'device-2';
+      detach();
+
+      const stats = getStats();
+      expect(stats.deviceIdAtStop).toBe('device-2');
+      expect(stats.deviceSwitchedMidSession).toBe(true);
     });
   });
 

@@ -134,6 +134,11 @@ export function useRecordingSession(meetingId: number) {
                 stats.requestedDeviceId !== stats.deviceSettings.deviceId,
               trackMuteEvents: stats.trackMuteEvents,
               emptyChunkCount: stats.emptyChunkCount,
+              deviceChangeEvents: stats.deviceChangeEvents,
+              trackEndedEvents: stats.trackEndedEvents,
+              deviceLabelAtStop: stats.deviceLabelAtStop,
+              deviceIdAtStop: stats.deviceIdAtStop,
+              deviceSwitchedMidSession: stats.deviceSwitchedMidSession,
             },
           },
         });
