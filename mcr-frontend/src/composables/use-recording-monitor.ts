@@ -6,6 +6,12 @@ import * as Sentry from '@sentry/vue';
 export const SILENCE_LEVEL_THRESHOLD = 0.05;
 export const SILENCE_RATIO_THRESHOLD = 0.98;
 
+export type SilenceCause = 'true-silence';
+
+export const SILENCE_MESSAGES: Record<SilenceCause, string> = {
+  'true-silence': 'Silent recording: true silence (no mic signal)',
+};
+
 export type RecordingSessionStats = {
   maxAudioLevel: number;
   meanAudioLevel: number;
@@ -47,6 +53,10 @@ function createEmptyStats(): RecordingSessionStats {
     requestedDeviceId: null,
     availableDevices: [],
   };
+}
+
+export function classifySilence(_stats: RecordingSessionStats): SilenceCause {
+  return 'true-silence';
 }
 
 export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
@@ -198,18 +208,17 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     };
   }
 
-  function silenceVerdict(): { isSilent: boolean; stats: RecordingSessionStats } {
+  function silenceVerdict(): {
+    isSilent: boolean;
+    cause: SilenceCause;
+    stats: RecordingSessionStats;
+  } {
     const currentStats = getStats();
     const isSilent =
       currentStats.maxAudioLevel < SILENCE_LEVEL_THRESHOLD ||
       currentStats.silenceRatio > SILENCE_RATIO_THRESHOLD;
-    console.log('silenceVerdict', {
-      isSilent,
-      maxAudioLevel: currentStats.maxAudioLevel,
-      silenceRatio: currentStats.silenceRatio,
-      sampleCount: currentStats.sampleCount,
-    });
-    return { isSilent, stats: currentStats };
+    const cause = classifySilence(currentStats);
+    return { isSilent, cause, stats: currentStats };
   }
 
   return { audioInputLevel, attach, detach, getStats, silenceVerdict };

@@ -1,5 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useRecordingMonitor, type RecordingMonitorContext } from './use-recording-monitor';
+import {
+  useRecordingMonitor,
+  classifySilence,
+  type RecordingMonitorContext,
+  type RecordingSessionStats,
+} from './use-recording-monitor';
+
+function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSessionStats {
+  return {
+    maxAudioLevel: 0,
+    meanAudioLevel: 0,
+    silenceRatio: 1,
+    sampleCount: 0,
+    emptyChunkCount: 0,
+    trackMuteEvents: 0,
+    recorderErrorEvents: 0,
+    deviceLabel: '',
+    deviceSettings: null,
+    requestedDeviceId: null,
+    availableDevices: [],
+    ...overrides,
+  };
+}
 
 const {
   mockAudioLevelMonitorInstance,
@@ -63,7 +85,6 @@ function createMockContext(
   };
 }
 
-/** Simulate audio level callback calls on the AudioLevelMonitor */
 function simulateAudioLevels(levels: number[]) {
   const onLevelUpdate = mockAudioLevelMonitorInstance.start.mock.calls[0]?.[1] as
     | ((level: number) => void)
@@ -154,6 +175,14 @@ describe('useRecordingMonitor', () => {
 
       const { isSilent } = silenceVerdict();
       expect(isSilent).toBe(false);
+    });
+  });
+
+  describe('classifySilence', () => {
+    it('should classify a long silent session with a healthy sampler as true-silence', () => {
+      // Real Sentry event: maxAudioLevel=0, large sampleCount → mic produced no signal.
+      const cause = classifySilence(makeStats({ maxAudioLevel: 0, sampleCount: 326842 }));
+      expect(cause).toBe('true-silence');
     });
   });
 

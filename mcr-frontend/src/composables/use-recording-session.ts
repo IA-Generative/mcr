@@ -1,5 +1,5 @@
 import { useRecorder } from '@/composables/use-recorder';
-import { useRecordingMonitor } from '@/composables/use-recording-monitor';
+import { useRecordingMonitor, SILENCE_MESSAGES } from '@/composables/use-recording-monitor';
 import { useNetworkStatus } from '@/composables/use-network-status';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
 import { useChunkUpload } from '@/composables/use-chunk-upload';
@@ -98,15 +98,17 @@ export function useRecordingSession(meetingId: number) {
         return;
       }
 
-      const { isSilent, stats } = recordingMonitor.silenceVerdict();
+      const { isSilent, cause, stats } = recordingMonitor.silenceVerdict();
       if (isSilent) {
         toaster.addErrorMessage(t('meeting-v2.recording.silent-detected'));
-        Sentry.captureMessage('Silent recording detected', {
+        Sentry.captureMessage(SILENCE_MESSAGES[cause], {
           level: 'error',
+          fingerprint: ['silent-recording', cause],
           tags: {
             feature: 'recording',
             'error.phase': 'start',
             'meeting.id': meetingId,
+            'silence.cause': cause,
           },
           contexts: {
             silenceVerdict: {
