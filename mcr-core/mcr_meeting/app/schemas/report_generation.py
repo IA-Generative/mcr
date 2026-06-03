@@ -8,6 +8,7 @@ class ReportType(StrEnum):
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
     CUSTOM_REPORT = "CUSTOM_REPORT"
+    NARRATIVE_SYNTHESIS = "NARRATIVE_SYNTHESIS"
 
 
 class ReportParticipant(BaseModel):
@@ -84,9 +85,16 @@ class CustomReportResponse(BaseModel):
     markdown_content: str
 
 
+class NarrativeSynthesisResponse(BaseModel):
+    """Synthèse narrative en discours indirect (texte libre)."""
+
+    narrative: str
+
+
 ReportResponse = (
     DetailedSynthesisGenerationResponse
     | ReportGenerationResponse
+    | NarrativeSynthesisResponse
     | CustomReportResponse
 )
 
@@ -107,3 +115,9 @@ def is_custom_report(
     response: ReportResponse,
 ) -> TypeGuard[CustomReportResponse]:
     return isinstance(response, CustomReportResponse)
+
+
+def is_narrative_synthesis(
+    response: ReportResponse,
+) -> TypeGuard[NarrativeSynthesisResponse]:
+    return isinstance(response, NarrativeSynthesisResponse)

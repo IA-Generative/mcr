@@ -13,11 +13,13 @@ from mcr_meeting.app.schemas.report_generation import (
     is_custom_report,
     is_decision_report_synthesis,
     is_detailed_synthesis,
+    is_narrative_synthesis,
 )
 from mcr_meeting.app.services.docx_report_generation_service import (
     generate_custom_report_docx,
     generate_detailed_synthesis_docx,
     generate_docx_decisions_reports_from_template,
+    generate_narrative_synthesis_docx,
 )
 from mcr_meeting.app.services.meeting_service import set_meeting_report_filename
 from mcr_meeting.app.services.s3_service import (
@@ -84,6 +86,9 @@ def persist_report_docx(meeting_id: int, report_response: ReportResponse) -> Non
             report_response, meeting.name
         )
         deliverable_type = DeliverableType.DECISION_RECORD
+    elif is_narrative_synthesis(report_response):
+        docx_buffer = generate_narrative_synthesis_docx(report_response)
+        deliverable_type = DeliverableType.NARRATIVE_SYNTHESIS
     elif is_custom_report(report_response):
         docx_buffer = generate_custom_report_docx(report_response)
         deliverable_type = DeliverableType.CUSTOM_REPORT
