@@ -139,6 +139,9 @@ export function useRecordingSession(meetingId: number) {
               deviceLabelAtStop: stats.deviceLabelAtStop,
               deviceIdAtStop: stats.deviceIdAtStop,
               deviceSwitchedMidSession: stats.deviceSwitchedMidSession,
+              trackMutedAtStop: stats.trackMutedAtStop,
+              trackEndedAtStop: stats.trackEndedAtStop,
+              permissionRevokedEvents: stats.permissionRevokedEvents,
             },
           },
         });

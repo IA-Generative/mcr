@@ -45,6 +45,10 @@ export type RecordingSessionStats = {
   deviceLabelAtStop: string | null;
   deviceIdAtStop: string | null;
   deviceSwitchedMidSession: boolean;
+  // Permission / track-liveness instrumentation (detects a device no longer authorized).
+  trackMutedAtStop: boolean;
+  trackEndedAtStop: boolean;
+  permissionRevokedEvents: number;
 };
 
 export type RecordingMonitorOptions = {
@@ -82,6 +86,9 @@ function createEmptyStats(): RecordingSessionStats {
     deviceLabelAtStop: null,
     deviceIdAtStop: null,
     deviceSwitchedMidSession: false,
+    trackMutedAtStop: false,
+    trackEndedAtStop: false,
+    permissionRevokedEvents: 0,
   };
 }
 
@@ -98,6 +105,12 @@ function isWrongDevice(stats: RecordingSessionStats): boolean {
   // The capture device changed or disappeared mid-session (dock unplugged, or
   // Chrome's "default" following the system default onto a new, muted mic).
   if (stats.deviceSwitchedMidSession || stats.trackEndedEvents > 0) return true;
+
+  // The device is no longer authorized / live: permission revoked mid-session,
+  // or the track ended/stayed muted by stop time.
+  if (stats.permissionRevokedEvents > 0 || stats.trackEndedAtStop || stats.trackMutedAtStop) {
+    return true;
+  }
 
   // Best-effort macOS Continuity heuristic: the system "default" mic resolved to
   // an iPhone/iPad while a real built-in mic was available.
@@ -137,6 +150,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   let visibilityHandler: (() => void) | undefined;
   let trackEndedHandler: (() => void) | undefined;
   let deviceChangeHandler: (() => void) | undefined;
+  let permissionStatus: PermissionStatus | undefined;
+  let permissionChangeHandler: (() => void) | undefined;
 
   let startedAt: number | undefined;
   let stoppedAt: number | undefined;
@@ -185,6 +200,26 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
         stats.deviceChangeEvents += 1;
       };
       navigator.mediaDevices.addEventListener('devicechange', deviceChangeHandler);
+    }
+
+    // Detect microphone permission being revoked mid-session.
+    if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'microphone' as PermissionName })
+        .then((status) => {
+          // Session already stopped before the async query resolved.
+          if (stoppedAt !== undefined) return;
+          permissionStatus = status;
+          permissionChangeHandler = () => {
+            if (status.state !== 'granted') {
+              stats.permissionRevokedEvents += 1;
+            }
+          };
+          status.addEventListener('change', permissionChangeHandler);
+        })
+        .catch(() => {
+          // 'microphone' not queryable on this browser — ignore.
+        });
     }
 
     recorderErrorHandler = (event: Event) => {
@@ -287,6 +322,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
         startDeviceId != null &&
         stats.deviceIdAtStop != null &&
         startDeviceId !== stats.deviceIdAtStop;
+      stats.trackEndedAtStop = attachedTrack.readyState === 'ended';
+      stats.trackMutedAtStop = attachedTrack.muted === true;
     }
 
     // Stop audio level monitor
@@ -304,6 +341,9 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     }
     if (deviceChangeHandler && typeof navigator !== 'undefined' && navigator.mediaDevices) {
       navigator.mediaDevices.removeEventListener('devicechange', deviceChangeHandler);
+    }
+    if (permissionStatus && permissionChangeHandler) {
+      permissionStatus.removeEventListener('change', permissionChangeHandler);
     }
     if (attachedRecorder) {
       if (recorderErrorHandler) {
@@ -329,6 +369,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     visibilityHandler = undefined;
     trackEndedHandler = undefined;
     deviceChangeHandler = undefined;
+    permissionStatus = undefined;
+    permissionChangeHandler = undefined;
 
     // Clear Sentry scope
     Sentry.setTag('meeting.id', undefined);

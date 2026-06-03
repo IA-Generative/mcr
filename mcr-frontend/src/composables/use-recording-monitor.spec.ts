@@ -28,6 +28,9 @@ function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSes
     deviceLabelAtStop: null,
     deviceIdAtStop: null,
     deviceSwitchedMidSession: false,
+    trackMutedAtStop: false,
+    trackEndedAtStop: false,
+    permissionRevokedEvents: 0,
     ...overrides,
   };
 }
@@ -237,11 +240,20 @@ describe('useRecordingMonitor', () => {
       expect(classifySilence(makeStats({ trackEndedEvents: 1 }))).toBe('wrong-device');
     });
 
+    it('should classify a revoked microphone permission as wrong-device', () => {
+      expect(classifySilence(makeStats({ permissionRevokedEvents: 1 }))).toBe('wrong-device');
+    });
+
+    it('should classify a track ended/muted by stop time as wrong-device', () => {
+      expect(classifySilence(makeStats({ trackEndedAtStop: true }))).toBe('wrong-device');
+      expect(classifySilence(makeStats({ trackMutedAtStop: true }))).toBe('wrong-device');
+    });
+
     it('should classify a macOS Continuity default with a built-in alternative as wrong-device', () => {
       const cause = classifySilence(
         makeStats({
           requestedDeviceId: 'default',
-          deviceLabel: "Thibault’s iPhone Microphone",
+          deviceLabel: 'Thibault’s iPhone Microphone',
           availableDevices: [
             { deviceId: 'builtin', label: 'MacBook Pro Microphone (Built-in)', groupId: 'g1' },
           ],
@@ -290,6 +302,32 @@ describe('useRecordingMonitor', () => {
       const stats = getStats();
       expect(stats.deviceIdAtStop).toBe('device-2');
       expect(stats.deviceSwitchedMidSession).toBe(true);
+    });
+
+    it('should capture an ended/muted track liveness at stop', () => {
+      const track = {
+        label: 'Mock Microphone',
+        muted: true,
+        readyState: 'ended' as MediaStreamTrackState,
+        getSettings: () => ({ deviceId: 'device-1' }),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      const ctx = {
+        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        recorder: new EventTarget() as unknown as MediaRecorder,
+        meetingId: 42,
+        requestedDeviceId: 'device-1',
+        availableDevices: [],
+      };
+
+      const { attach, detach, getStats } = useRecordingMonitor();
+      attach(ctx);
+      detach();
+
+      const stats = getStats();
+      expect(stats.trackEndedAtStop).toBe(true);
+      expect(stats.trackMutedAtStop).toBe(true);
     });
   });
 
