@@ -35,6 +35,7 @@ const TYPE_KEY_MAP: Record<string, string> = {
   TRANSCRIPTION: 'transcription',
   DECISION_RECORD: 'decision-record',
   DETAILED_SYNTHESIS: 'detailed-synthesis',
+  STRUCTURED_MINUTES: 'structured-minutes',
   CUSTOM_REPORT: 'custom-report',
 };
 

@@ -300,7 +300,7 @@
       "type": {
         "cr1": "Relevé de décisions",
         "cr2": "Synthèse détaillée",
-        "cr3": "Format à venir"
+        "cr3": "Compte-rendu structuré"
       },
       "report-pending": {
         "title": "L'écriture du compte-rendu est en cours...",
@@ -359,6 +359,11 @@
           "label": "Synthèse détaillée",
           "hint": "Synthèse complète et détaillée de l'ensemble des échanges de la réunion.",
           "title": "Synthèse détaillée"
+        },
+        "structured-minutes": {
+          "label": "Compte-rendu structuré",
+          "hint": "Compte-rendu par thèmes avec décisions (responsable, échéance), points en suspens et recommandations.",
+          "title": "Compte-rendu structuré"
         },
         "transcription": {
           "title": "Transcription"
