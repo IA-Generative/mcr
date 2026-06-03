@@ -24,8 +24,9 @@
         </DsfrButton>
         <DsfrButton
           secondary
-          disabled
+          :class="{ active: choice === 'NARRATIVE_SYNTHESIS' }"
           class="fr-tile shadow-none"
+          @click="handleSelect('NARRATIVE_SYNTHESIS')"
         >
           {{ $t('meeting.report.type.cr3') }}
         </DsfrButton>

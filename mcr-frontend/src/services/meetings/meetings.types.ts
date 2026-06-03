@@ -171,5 +171,5 @@ export function isPostCaptureStatus(status: MeetingStatus): boolean {
   return PostCaptureStatuses.includes(status);
 }
 
-export const ReportType = ['DECISION_RECORD', 'DETAILED_SYNTHESIS'] as const;
+export const ReportType = ['DECISION_RECORD', 'DETAILED_SYNTHESIS', 'NARRATIVE_SYNTHESIS'] as const;
 export type ReportType = (typeof ReportType)[number];
