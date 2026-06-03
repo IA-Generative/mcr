@@ -7,7 +7,11 @@ from loguru import logger
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
 from mcr_generation.app.configs.settings import LangfuseSettings
-from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
+from mcr_generation.app.schemas.base import (
+    BaseReport,
+    CustomMarkdownReport,
+    NarrativeSynthesis,
+)
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     ReportTypes,
@@ -39,7 +43,7 @@ def generate_report_from_docx(
     owner_keycloak_uuid: str | None = None,
     notes_content: str | None = None,
     custom_prompt: str | None = None,
-) -> BaseReport | CustomMarkdownReport:
+) -> BaseReport | CustomMarkdownReport | NarrativeSynthesis:
     record_report_trace_context(
         meeting_id=meeting_id,
         transcription_object_filename=transcription_object_filename,
@@ -76,7 +80,9 @@ def set_sentry_context_before_report_generation(**kwargs: Any) -> None:
 
 @task_success.connect
 def generate_report_from_docx_success(
-    sender: Any, result: BaseReport | CustomMarkdownReport, **kwargs: Any
+    sender: Any,
+    result: BaseReport | CustomMarkdownReport | NarrativeSynthesis,
+    **kwargs: Any,
 ) -> None:
     """Handle successful report generation by sending results to mcr-core API."""
     logger.info("Report generation success signal received.")

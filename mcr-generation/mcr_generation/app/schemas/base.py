@@ -243,3 +243,14 @@ class DetailedSynthesis(BaseReport):
 class CustomMarkdownReport(BaseModel):
     model_config = ConfigDict(frozen=True)
     markdown_content: str
+
+
+class NarrativeSynthesis(BaseModel):
+    """Synthèse narrative en discours indirect (« X a dit que Y »).
+
+    Champ `narrative` distinct de `markdown_content` (CustomMarkdownReport) pour
+    rester discriminable dans l'union pydantic côté mcr-core.
+    """
+
+    model_config = ConfigDict(frozen=True)
+    narrative: str

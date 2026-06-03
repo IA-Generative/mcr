@@ -6,7 +6,11 @@ from loguru import logger
 from mcr_generation.app.client.http_client import HttpClient
 from mcr_generation.app.configs.settings import ApiSettings
 from mcr_generation.app.exceptions.exceptions import ReportCallbackError
-from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
+from mcr_generation.app.schemas.base import (
+    BaseReport,
+    CustomMarkdownReport,
+    NarrativeSynthesis,
+)
 
 
 class CoreApiClient:
@@ -17,7 +21,7 @@ class CoreApiClient:
     def mark_deliverable_success(
         self,
         deliverable_id: int,
-        report: BaseReport | CustomMarkdownReport,
+        report: BaseReport | CustomMarkdownReport | NarrativeSynthesis,
         external_url: str | None = None,
     ) -> None:
         self._post(

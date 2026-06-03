@@ -4,7 +4,7 @@ from typing import ClassVar
 
 from loguru import logger
 
-from mcr_generation.app.schemas.base import BaseReport, Header
+from mcr_generation.app.schemas.base import BaseReport, Header, NarrativeSynthesis
 from mcr_generation.app.schemas.celery_types import ReportTypes
 from mcr_generation.app.services.notes.facets import facets_for_report_type
 from mcr_generation.app.services.notes.notes_extractor import (
@@ -110,7 +110,7 @@ class BaseReportGenerator(ABC):
         self,
         chunks: list[Chunk],
         notes_content: str | None = None,
-    ) -> BaseReport:
+    ) -> BaseReport | NarrativeSynthesis:
         """
         Generate a complete report from transcript chunks.
 
