@@ -9,7 +9,9 @@ from mcr_meeting.app.schemas.report_generation import (
     DetailedSynthesisGenerationResponse,
     ReportGenerationResponse,
     ReportHeader,
+    ReportMinuteDecision,
     ReportParticipant,
+    StructuredMinutesResponse,
 )
 from mcr_meeting.app.services.docx_generation.templated_docx_generator import (
     TemplatedDocxGenerator,
@@ -187,6 +189,81 @@ def _get_style_template_path() -> str:
 
 def generate_custom_report_docx(response: CustomReportResponse) -> BytesIO:
     return markdown_to_docx(response.markdown_content, _get_style_template_path())
+
+
+def generate_structured_minutes_docx(
+    response: StructuredMinutesResponse,
+    meeting_name: str | None = None,
+) -> BytesIO:
+    """Construit le Markdown du compte-rendu structuré puis le convertit en DOCX."""
+    markdown = _build_structured_minutes_markdown(response, meeting_name)
+    return markdown_to_docx(markdown, _get_style_template_path())
+
+
+def _build_structured_minutes_markdown(
+    response: StructuredMinutesResponse,
+    meeting_name: str | None,
+) -> str:
+    header = response.header
+    title = _format_title_detailed_synthesis(header, meeting_name)
+    lines: list[str] = [f"# {title}"]
+
+    if header.objective:
+        lines += ["", "## Objectif", header.objective]
+
+    participants_text = _format_participants_markdown(header.participants)
+    if participants_text:
+        lines += ["", "## Participants", participants_text]
+
+    lines += ["", "## Thèmes"]
+    if response.themes:
+        for theme in response.themes:
+            lines += ["", f"### {theme.title}"]
+            if theme.summary:
+                lines.append(theme.summary)
+            if theme.decisions:
+                lines += ["", "**Décisions :**"]
+                for decision in theme.decisions:
+                    lines.append(f"- {_format_decision(decision)}")
+    else:
+        lines.append("- Aucun thème identifié.")
+
+    lines += ["", "## Points en suspens"]
+    if response.open_points:
+        lines += [f"- {point}" for point in response.open_points]
+    else:
+        lines.append("- Aucun point en suspens identifié.")
+
+    lines += ["", "## Recommandations"]
+    if response.recommendations:
+        lines += [f"- {reco}" for reco in response.recommendations]
+    else:
+        lines.append("- Aucune recommandation.")
+
+    if header.next_meeting:
+        lines += ["", "## Prochaine réunion", header.next_meeting]
+
+    return "\n".join(lines)
+
+
+def _format_decision(decision: ReportMinuteDecision) -> str:
+    parts = [decision.item]
+    if decision.owner:
+        parts.append(f"resp. {decision.owner}")
+    if decision.due:
+        parts.append(f"échéance {decision.due}")
+    return " — ".join(parts)
+
+
+def _format_participants_markdown(participants: list[ReportParticipant]) -> str:
+    sorted_participants = sorted(
+        participants or [], key=lambda p: p.confidence or 0, reverse=True
+    )
+    lines: list[str] = []
+    for p in sorted_participants:
+        naming = p.name if p.name else p.speaker_id
+        lines.append(f"- {naming} ({p.role})" if p.role else f"- {naming}")
+    return "\n".join(lines)
 
 
 def _format_title_detailed_synthesis(

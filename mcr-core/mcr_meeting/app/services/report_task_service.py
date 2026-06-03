@@ -13,11 +13,13 @@ from mcr_meeting.app.schemas.report_generation import (
     is_custom_report,
     is_decision_report_synthesis,
     is_detailed_synthesis,
+    is_structured_minutes,
 )
 from mcr_meeting.app.services.docx_report_generation_service import (
     generate_custom_report_docx,
     generate_detailed_synthesis_docx,
     generate_docx_decisions_reports_from_template,
+    generate_structured_minutes_docx,
 )
 from mcr_meeting.app.services.meeting_service import set_meeting_report_filename
 from mcr_meeting.app.services.s3_service import (
@@ -76,7 +78,10 @@ def save_formatted_report(
 
 def persist_report_docx(meeting_id: int, report_response: ReportResponse) -> None:
     meeting = get_meeting_by_id(meeting_id=meeting_id)
-    if is_detailed_synthesis(report_response):
+    if is_structured_minutes(report_response):
+        docx_buffer = generate_structured_minutes_docx(report_response, meeting.name)
+        deliverable_type = DeliverableType.STRUCTURED_MINUTES
+    elif is_detailed_synthesis(report_response):
         docx_buffer = generate_detailed_synthesis_docx(report_response, meeting.name)
         deliverable_type = DeliverableType.DETAILED_SYNTHESIS
     elif is_decision_report_synthesis(report_response):

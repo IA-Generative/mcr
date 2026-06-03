@@ -8,6 +8,7 @@ class ReportType(StrEnum):
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
     CUSTOM_REPORT = "CUSTOM_REPORT"
+    STRUCTURED_MINUTES = "STRUCTURED_MINUTES"
 
 
 class ReportParticipant(BaseModel):
@@ -84,8 +85,28 @@ class CustomReportResponse(BaseModel):
     markdown_content: str
 
 
+class ReportMinuteDecision(BaseModel):
+    item: str
+    owner: str | None
+    due: str | None
+
+
+class ReportMinuteTheme(BaseModel):
+    title: str
+    summary: str | None
+    decisions: list[ReportMinuteDecision]
+
+
+class StructuredMinutesResponse(BaseModel):
+    header: ReportHeader
+    themes: list[ReportMinuteTheme]
+    open_points: list[str]
+    recommendations: list[str]
+
+
 ReportResponse = (
-    DetailedSynthesisGenerationResponse
+    StructuredMinutesResponse
+    | DetailedSynthesisGenerationResponse
     | ReportGenerationResponse
     | CustomReportResponse
 )
@@ -107,3 +128,9 @@ def is_custom_report(
     response: ReportResponse,
 ) -> TypeGuard[CustomReportResponse]:
     return isinstance(response, CustomReportResponse)
+
+
+def is_structured_minutes(
+    response: ReportResponse,
+) -> TypeGuard[StructuredMinutesResponse]:
+    return isinstance(response, StructuredMinutesResponse)
