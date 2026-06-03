@@ -24,7 +24,7 @@ def create_report_generator(
     report_type: ReportTypes,
     *,
     custom_prompt: str | None = None,
-) -> BaseReportGenerator | CustomReportGenerator:
+) -> BaseReportGenerator | CustomReportGenerator | NarrativeSynthesisGenerator:
     """
     Factory function that returns the appropriate report generator for the given report type.
 
@@ -34,7 +34,7 @@ def create_report_generator(
             CUSTOM_REPORT, ignored for the structured report types.
 
     Returns:
-        BaseReportGenerator | CustomReportGenerator: A concrete report generator instance.
+        A concrete report generator instance (structured, custom, or narrative).
 
     Raises:
         UnsupportedReportTypeError: If the report type is not supported.

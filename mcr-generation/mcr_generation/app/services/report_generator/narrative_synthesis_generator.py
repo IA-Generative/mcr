@@ -7,9 +7,6 @@ from openai import OpenAI
 from mcr_generation.app.configs.settings import LLMConfig
 from mcr_generation.app.schemas.base import NarrativeSynthesis
 from mcr_generation.app.schemas.celery_types import ReportTypes
-from mcr_generation.app.services.report_generator.base_report_generator import (
-    BaseReportGenerator,
-)
 from mcr_generation.app.services.sections.narrative.prompts import (
     NARRATIVE_PROMPT_TEMPLATE,
 )
@@ -20,8 +17,12 @@ from mcr_generation.app.services.utils.llm_helpers import (
 )
 
 
-class NarrativeSynthesisGenerator(BaseReportGenerator):
+class NarrativeSynthesisGenerator:
     """Générateur de la synthèse narrative (NARRATIVE_SYNTHESIS).
+
+    Générateur autonome (comme ``CustomReportGenerator``) : il ne dérive pas de
+    ``BaseReportGenerator`` car sa sortie est un texte narratif libre
+    (``NarrativeSynthesis``), pas un rapport structuré (``BaseReport``).
 
     Reformule chaque chunk de transcription en discours indirect
     (« X a dit que Y »), dans l'ordre chronologique, puis concatène les
