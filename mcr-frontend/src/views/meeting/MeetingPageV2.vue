@@ -43,11 +43,7 @@
 
           <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6 items-start">
             <div class="grid gap-6 items-start">
-              <MeetingAudioCard
-                :meeting-id="meeting.id"
-                :creation-date="meeting.creation_date"
-                :status="meeting.status"
-              />
+              <MeetingAudioCard :meeting="meeting" />
               <MeetingNotesEditor
                 v-if="isMeetingNotesEnabled && !showRecordingCard"
                 :meeting-id="meeting.id"
