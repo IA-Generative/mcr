@@ -93,8 +93,8 @@ function createEmptyStats(): RecordingSessionStats {
 }
 
 export function classifySilence(stats: RecordingSessionStats): SilenceCause {
-  if (isWrongDevice(stats)) return 'wrong-device';   // wrong capture device:
-  if (isSamplerThrottled(stats)) return 'sampler-throttled'; // sampler throttled in a background tab:
+  if (isWrongDevice(stats)) return 'wrong-device';
+  if (isSamplerThrottled(stats)) return 'sampler-throttled';
   return 'true-silence';
 }
 
@@ -131,6 +131,21 @@ function isSamplerThrottled(stats: RecordingSessionStats): boolean {
   return rateThrottled || mostlyBackgrounded;
 }
 
+export function readTrackStateAtStopToDetectDeviceProblems(
+  track: MediaStreamTrack,
+  stats: RecordingSessionStats,
+): void {
+  const startDeviceId = stats.deviceSettings?.deviceId ?? null;
+  const deviceIdAtStop = track.getSettings().deviceId ?? null;
+
+  stats.deviceLabelAtStop = track.label;
+  stats.deviceIdAtStop = deviceIdAtStop;
+  stats.deviceSwitchedMidSession =
+    startDeviceId != null && deviceIdAtStop != null && startDeviceId !== deviceIdAtStop;
+  stats.trackEndedAtStop = track.readyState === 'ended';
+  stats.trackMutedAtStop = track.muted === true;
+}
+
 export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   const audioInputLevel = ref<number>(0);
 
@@ -156,6 +171,28 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   let startedAt: number | undefined;
   let stoppedAt: number | undefined;
   let hiddenSince: number | undefined;
+
+  function trackBackgroundedTabTime(): void {
+    if (typeof document === 'undefined') return;
+
+    const enterHiddenTab = () => {
+      hiddenSince = Date.now();
+      stats.visibilityHiddenCount += 1;
+    };
+    const leaveHiddenTab = () => {
+      if (hiddenSince === undefined) return;
+      stats.backgroundedMs += Date.now() - hiddenSince;
+      hiddenSince = undefined;
+    };
+
+    if (document.visibilityState === 'hidden') enterHiddenTab();
+
+    visibilityHandler = () => {
+      if (document.visibilityState === 'hidden') enterHiddenTab();
+      else leaveHiddenTab();
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
+  }
 
   function attach(ctx: RecordingMonitorContext): void {
     // Reset
@@ -262,22 +299,7 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     recorderStopHandler = () => detach();
     ctx.recorder.addEventListener('stop', recorderStopHandler, { once: true });
 
-    if (typeof document !== 'undefined') {
-      if (document.visibilityState === 'hidden') {
-        hiddenSince = Date.now();
-        stats.visibilityHiddenCount += 1;
-      }
-      visibilityHandler = () => {
-        if (document.visibilityState === 'hidden') {
-          hiddenSince = Date.now();
-          stats.visibilityHiddenCount += 1;
-        } else if (hiddenSince !== undefined) {
-          stats.backgroundedMs += Date.now() - hiddenSince;
-          hiddenSince = undefined;
-        }
-      };
-      document.addEventListener('visibilitychange', visibilityHandler);
-    }
+    trackBackgroundedTabTime();
 
     // Start audio level monitoring
     audioLevelMonitor = new AudioLevelMonitor({
@@ -312,18 +334,10 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
       hiddenSince = undefined;
     }
 
-    // Re-read the capture device at stop and compare to the one captured at
-    // start — this is how we detect a device that switched mid-session.
+    // Re-read the capture device at stop to detect a device that switched,
+    // ended or got muted mid-session.
     if (attachedTrack) {
-      stats.deviceLabelAtStop = attachedTrack.label;
-      stats.deviceIdAtStop = attachedTrack.getSettings().deviceId ?? null;
-      const startDeviceId = stats.deviceSettings?.deviceId ?? null;
-      stats.deviceSwitchedMidSession =
-        startDeviceId != null &&
-        stats.deviceIdAtStop != null &&
-        startDeviceId !== stats.deviceIdAtStop;
-      stats.trackEndedAtStop = attachedTrack.readyState === 'ended';
-      stats.trackMutedAtStop = attachedTrack.muted === true;
+      readTrackStateAtStopToDetectDeviceProblems(attachedTrack, stats);
     }
 
     // Stop audio level monitor
