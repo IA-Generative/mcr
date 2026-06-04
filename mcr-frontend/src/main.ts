@@ -19,6 +19,7 @@ import { keycloakOptions } from '@/services/auth/keycloak';
 import VueKeycloak from '@dsb-norge/vue-keycloak-js';
 import { createVfm } from 'vue-final-modal';
 import * as Sentry from '@sentry/vue';
+import VueMatomo from 'vue-matomo';
 import { useUnleash } from '@/composables/use-unleash.ts';
 import { config } from '@/config/env';
 
@@ -49,10 +50,29 @@ app
   .use(vfm)
   .use(VueKeycloak, {
     ...keycloakOptions,
-    onReady: () => {
+    onReady: (keycloak) => {
       // Init the router after the keycloak is ready, to remove keycloak query params from the url
       const routerPlugin = router();
       app.use(routerPlugin);
+
+      if (config.matomo.host && config.matomo.siteId) {
+        app.use(VueMatomo, {
+          host: config.matomo.host,
+          siteId: Number(config.matomo.siteId),
+          router: routerPlugin,
+          // Load tracker + endpoint same-origin so they pass the app's COEP
+          // (require-corp) isolation; a reverse proxy forwards /matomo.* to the
+          // Matomo host (vite server.proxy in dev, nginx in prod). Decided 2026-06-04.
+          trackerScriptUrl: '/matomo.js',
+          trackerUrl: '/matomo.php',
+          // Cookieless tracking keeps Matomo within the CNIL consent exemption for
+          // public-sector sites, so no cookie banner is required. Decided 2026-06-04.
+          disableCookies: true,
+          enableLinkTracking: true,
+          userId: keycloak.subject, // pseudonymous Keycloak `sub`, never PII
+        });
+      }
+
       app.mount('#app');
     },
   });

@@ -13,6 +13,8 @@ declare global {
     VITE_KEYCLOAK_CLIENT_ID?: string;
     VITE_UNLEASH_URL?: string;
     VITE_UNLEASH_CLIENT_KEY?: string;
+    VITE_MATOMO_HOST?: string;
+    VITE_MATOMO_SITE_ID?: string;
   }
 }
 
@@ -50,5 +52,9 @@ export const config = {
   },
   sentry: {
     dsn: read('VITE_SENTRY_FRONTEND_DSN'),
+  },
+  matomo: {
+    host: read('VITE_MATOMO_HOST'),
+    siteId: read('VITE_MATOMO_SITE_ID'),
   },
 } as const;
