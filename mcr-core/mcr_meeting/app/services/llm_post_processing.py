@@ -23,6 +23,8 @@ class LLMPostProcessing(ABC):
             OpenAI(
                 base_url=self.settings.LLM_HUB_API_URL,
                 api_key=self.settings.LLM_HUB_API_KEY,
+                timeout=self.settings.LLM_API_TIMEOUT,
+                max_retries=self.settings.LLM_MAX_RETRIES,
             ),
             mode=instructor.Mode.JSON,
         )
