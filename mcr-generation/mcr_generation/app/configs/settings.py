@@ -42,7 +42,7 @@ class LLMConfig(BaseSettings):
     LLM_HUB_API_KEY: str = Field(..., description="llm hub api key")
 
     LLM_MODEL_NAME: str = Field(
-        default="mistral-small-24b", description="large language model"
+        default="gptoss-120b", description="large language model"
     )
     TEMPERATURE: float = Field(
         default=0,
