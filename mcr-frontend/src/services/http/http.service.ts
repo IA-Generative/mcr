@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { refreshTokenOnRequest } from './http.interceptors';
+import { config } from '@/config/env';
 
-export const API_URL = import.meta.env.VITE_API_BASE_URL || '/api';
+export const API_URL = config.apiBaseUrl;
 
 export enum API_PATHS {
   MEETINGS = 'meetings',

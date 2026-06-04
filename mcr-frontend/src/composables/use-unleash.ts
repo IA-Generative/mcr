@@ -1,20 +1,13 @@
 import { UnleashClient } from 'unleash-proxy-client';
+import { config } from '@/config/env';
 
 let client: UnleashClient | null = null;
 let started = false;
 
 function initUnleash() {
-  const url = (window as any).VITE_UNLEASH_URL || import.meta.env.VITE_UNLEASH_URL;
-  const clientKey =
-    (window as any).VITE_UNLEASH_CLIENT_KEY || import.meta.env.VITE_UNLEASH_CLIENT_KEY;
-
-  if (!url || !clientKey) {
-    throw new Error('Missing VITE_UNLEASH_URL or VITE_UNLEASH_CLIENT_KEY');
-  }
-
   return new UnleashClient({
-    url,
-    clientKey,
+    url: config.unleash.url,
+    clientKey: config.unleash.clientKey,
     appName: 'mcr-frontend',
     refreshInterval: 15,
   });
