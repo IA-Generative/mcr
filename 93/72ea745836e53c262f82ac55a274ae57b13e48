@@ -1,0 +1,21 @@
+mcr-frontend/src/components/meeting/table/TableHeaderActions.vue
+  s_cbddc3eacae73f::t_b8fe98d7c0fab5 161-166,169-171,173-175
+mcr-frontend/src/views/meeting/MeetingTiles.vue
+  s_cbddc3eacae73f::t_f950fcbb86e96c 149-154,157-159,161-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "9372ea745836e53c262f82ac55a274ae57b13e48",
+  "prompts": {},
+  "sessions": {
+    "s_cbddc3eacae73f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "03a995bb-c6e4-4b8d-9327-62dc84734ddb",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
