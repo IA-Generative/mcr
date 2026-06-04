@@ -1,0 +1,24 @@
+mcr-frontend/src/config/env.ts
+  s_63487ab7d5d0e4::t_47aeb247810d6a 1-54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "4612dc9f451a58f066be59f34517c112fade905c",
+  "prompts": {},
+  "humans": {
+    "h_fbb4d0b2de0c1b": {
+      "author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  },
+  "sessions": {
+    "s_63487ab7d5d0e4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3feee379-6657-46f6-a657-a6e32cffc2d3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
