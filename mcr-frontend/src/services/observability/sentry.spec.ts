@@ -78,10 +78,10 @@ describe('reportError', () => {
     reportError(new Error('x'), {
       feature: 'meeting.upload',
       level: 'warning',
-      tags: { 'meeting.id': 7, 'upload.phase': 'sign-put' },
+      tags: { 'meeting.id': 7, 'upload.phase': 'put' },
       contexts: {
         upload: {
-          phase: 'sign-put',
+          phase: 'put',
           totalParts: 2,
           fileSize: 10,
           bytesSent: 0,
@@ -98,10 +98,10 @@ describe('reportError', () => {
     expect(scope.setLevel).toHaveBeenCalledWith('warning');
     expect(scope.setTag).toHaveBeenCalledWith('feature', 'meeting.upload');
     expect(scope.setTag).toHaveBeenCalledWith('meeting.id', 7);
-    expect(scope.setTag).toHaveBeenCalledWith('upload.phase', 'sign-put');
+    expect(scope.setTag).toHaveBeenCalledWith('upload.phase', 'put');
     expect(scope.setContext).toHaveBeenCalledWith(
       'upload',
-      expect.objectContaining({ phase: 'sign-put' }),
+      expect.objectContaining({ phase: 'put' }),
     );
   });
 });

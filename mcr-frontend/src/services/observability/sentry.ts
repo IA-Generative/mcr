@@ -14,7 +14,7 @@ export type Feature =
   | 'query';
 
 export interface UploadContext {
-  phase: 'init' | 'sign-put' | 'complete';
+  phase: 'init' | 'sign' | 'put' | 'complete';
   partNumber?: number;
   totalParts: number;
   fileSize: number;

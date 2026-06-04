@@ -1,5 +1,6 @@
 import { getRetryDelay, MAX_RETRIES, PART_SIZE } from '@/config/meeting';
 import HttpService from '@/services/http/http.service';
+import { getAxiosCode, getStatusCode } from '@/services/http/http.utils';
 import {
   abortMultipartUploadService,
   completeMultipartUploadService,
@@ -8,50 +9,135 @@ import {
   signMultipartPartService,
 } from '@/services/meetings/meetings.service';
 import type { Part } from '@/services/meetings/meetings.types';
+import { reportError, type ReportOptions } from '@/services/observability/sentry';
 import { useMutation } from '@tanstack/vue-query';
-import useToaster from './use-toaster';
-import { t } from '@/plugins/i18n';
 
-const toaster = useToaster();
+export type UploadPhase = 'init' | 'sign' | 'put' | 'complete';
+
+export class UploadStepError extends Error {
+  constructor(
+    readonly phase: UploadPhase,
+    readonly cause: unknown,
+    readonly partNumber?: number,
+  ) {
+    super(`Multipart upload failed during ${phase}`);
+    this.name = 'UploadStepError';
+  }
+}
+
+const uploadMutationConfig = {
+  retry: MAX_RETRIES,
+  retryDelay: getRetryDelay,
+  meta: { skipReport: true },
+} as const;
 
 export function useMultipart() {
+  // Wrap each step so a failure self-describes its phase — no mutable phase var.
+  async function step<T>(
+    phase: UploadPhase,
+    fn: () => Promise<T>,
+    partNumber?: number,
+  ): Promise<T> {
+    try {
+      return await fn();
+    } catch (cause) {
+      throw new UploadStepError(phase, cause, partNumber);
+    }
+  }
+
   async function uploadFile(params: { meetingId: number; file: File }): Promise<void> {
     const { meetingId, file } = params;
-
-    const { upload_id: uploadId, object_key: objectKey } = await initMultipartUpload({
-      meetingId: meetingId,
-      fileName: file.name,
-      fileType: file.type,
-    });
-
+    const startedAt = performance.now();
     const totalSize = file.size;
     const totalParts = Math.ceil(totalSize / PART_SIZE);
     const completedParts: Part[] = [];
+    let bytesSent = 0;
+    let uploadId: string | undefined;
+    let objectKey: string | undefined;
 
-    for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
-      const blob = getFilePartBlob(partNumber, totalSize, file);
-      try {
-        const etagHeader = await uploadMultipartPart({
-          meetingId: meetingId,
-          uploadId,
-          objectKey,
+    try {
+      const init = await step('init', () =>
+        initMultipartUpload({ meetingId, fileName: file.name, fileType: file.type }),
+      );
+      uploadId = init.upload_id;
+      objectKey = init.object_key;
+
+      for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
+        const blob = getFilePartBlob(partNumber, totalSize, file);
+        const url = await step(
+          'sign',
+          () =>
+            signMultipartPart({
+              meetingId,
+              uploadId: init.upload_id,
+              objectKey: init.object_key,
+              partNumber,
+            }),
           partNumber,
-          blob,
-        });
-        completedParts.push({ partNumber, etag: etagHeader });
-      } catch {
-        await abortMultipartUpload({ meetingId: meetingId, uploadId, objectKey });
-        toaster.addErrorMessage(t('error.file-upload')!);
-        throw new Error('Failed to upload file');
+        );
+        const etag = await step('put', () => putMultipartPart({ url, blob }), partNumber);
+        completedParts.push({ partNumber, etag });
+        bytesSent += blob.size;
       }
-    }
 
-    await completeMultipartUpload({
-      meetingId: meetingId,
-      uploadId,
-      objectKey,
-      parts: completedParts,
-    });
+      await step('complete', () =>
+        completeMultipartUpload({
+          meetingId,
+          uploadId: init.upload_id,
+          objectKey: init.object_key,
+          parts: completedParts,
+        }),
+      );
+    } catch (error) {
+      if (uploadId && objectKey) {
+        // best-effort cleanup; its own failure must stay silent
+        await abortMultipartUpload({ meetingId, uploadId, objectKey }).catch(() => {});
+      }
+      const stepError =
+        error instanceof UploadStepError ? error : new UploadStepError('init', error);
+      reportError(
+        stepError.cause,
+        buildUploadReport(stepError, {
+          meetingId,
+          totalParts,
+          fileSize: totalSize,
+          bytesSent,
+          durationMs: Math.round(performance.now() - startedAt),
+        }),
+      );
+      throw stepError.cause instanceof Error ? stepError.cause : stepError;
+    }
+  }
+
+  function buildUploadReport(
+    error: UploadStepError,
+    meta: {
+      meetingId: number;
+      totalParts: number;
+      fileSize: number;
+      bytesSent: number;
+      durationMs: number;
+    },
+  ): ReportOptions {
+    const connection = (navigator as { connection?: { effectiveType?: string } }).connection;
+    return {
+      feature: 'meeting.upload',
+      tags: { 'meeting.id': meta.meetingId, 'upload.phase': error.phase },
+      contexts: {
+        upload: {
+          phase: error.phase,
+          partNumber: error.partNumber,
+          totalParts: meta.totalParts,
+          fileSize: meta.fileSize,
+          bytesSent: meta.bytesSent,
+          durationMs: meta.durationMs,
+          httpStatus: getStatusCode(error.cause),
+          axiosCode: getAxiosCode(error.cause),
+          online: navigator.onLine,
+          effectiveType: connection?.effectiveType ?? null,
+        },
+      },
+    };
   }
 
   function getFilePartBlob(partNumber: number, totalSize: number, file: File) {
@@ -63,32 +149,26 @@ export function useMultipart() {
   const { mutateAsync: initMultipartUpload } = useMutation({
     mutationFn: async (params: { meetingId: number; fileName: string; fileType: string }) => {
       const { meetingId, fileName, fileType } = params;
-
       return await initMultipartUploadService(meetingId, fileName, fileType);
     },
-    onError: () => {
-      throw new Error('Failed to upload file');
-    },
-    retry: MAX_RETRIES,
-    retryDelay: (attemptIndex) => getRetryDelay(attemptIndex),
+    ...uploadMutationConfig,
   });
 
-  const { mutateAsync: uploadMultipartPart } = useMutation({
+  const { mutateAsync: signMultipartPart } = useMutation({
     mutationFn: async (params: {
       meetingId: number;
       uploadId: string;
       objectKey: string;
       partNumber: number;
-      blob: Blob;
     }) => {
-      const { meetingId, uploadId, objectKey, partNumber, blob } = params;
+      return await signMultipartPartService(params);
+    },
+    ...uploadMutationConfig,
+  });
 
-      const url = await signMultipartPartService({
-        meetingId,
-        uploadId,
-        objectKey,
-        partNumber,
-      });
+  const { mutateAsync: putMultipartPart } = useMutation({
+    mutationFn: async (params: { url: string; blob: Blob }) => {
+      const { url, blob } = params;
 
       const response = await HttpService.put(url, blob, {
         transformRequest: (data, headers) => {
@@ -102,8 +182,7 @@ export function useMultipart() {
       }
       return etagHeader;
     },
-    retry: MAX_RETRIES,
-    retryDelay: (attemptIndex) => getRetryDelay(attemptIndex),
+    ...uploadMutationConfig,
   });
 
   const { mutateAsync: completeMultipartUpload } = useMutation({
@@ -115,22 +194,14 @@ export function useMultipart() {
     }) => {
       return await completeMultipartUploadService(params);
     },
-    onError: () => {
-      throw new Error('Failed to upload file');
-    },
-    retry: MAX_RETRIES,
-    retryDelay: (attemptIndex) => getRetryDelay(attemptIndex),
+    ...uploadMutationConfig,
   });
 
   const { mutateAsync: abortMultipartUpload } = useMutation({
     mutationFn: async (params: { meetingId: number; uploadId: string; objectKey: string }) => {
       return await abortMultipartUploadService(params);
     },
-    onError: () => {
-      throw new Error('Failed to upload file');
-    },
-    retry: MAX_RETRIES,
-    retryDelay: (attemptIndex) => getRetryDelay(attemptIndex),
+    ...uploadMutationConfig,
   });
 
   return { uploadFile };
