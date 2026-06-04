@@ -1,0 +1,41 @@
+mcr-frontend/src/vue-matomo.d.ts
+  s_63487ab7d5d0e4::t_47226c59d2260f 1-6
+mcr-frontend/vite.config.ts
+  s_63487ab7d5d0e4::t_5930ecf31926b1 95-109
+mcr-frontend/src/config/env.ts
+  s_7af236d4eacde0::t_00fb6d23bdf518 16-17,56-58
+mcr-frontend/docker/nginx.conf
+  s_63487ab7d5d0e4::t_3894937b5641b3 45-49,51-52
+  s_63487ab7d5d0e4::t_440401cbeb79fa 44,50,53-56
+mcr-frontend/src/main.ts
+  s_7af236d4eacde0::t_00fb6d23bdf518 22,53,57-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.3",
+  "base_commit_sha": "bbf5ddd073eed23b497a28ce17c8505d6a49efc6",
+  "prompts": {},
+  "humans": {
+    "h_fbb4d0b2de0c1b": {
+      "author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  },
+  "sessions": {
+    "s_63487ab7d5d0e4": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3feee379-6657-46f6-a657-a6e32cffc2d3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    },
+    "s_7af236d4eacde0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9dc29f54-f7f2-471c-b434-c6e1ffbf5f93",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
