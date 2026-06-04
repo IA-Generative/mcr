@@ -324,6 +324,7 @@ class CelerySettings(BaseSettings):
     REDIS_VHOST_RESULT_DB: int = 1
     REDIS_TOKEN_STORE_DB: int = 2
     REDIS_TOKEN_TTL_SECONDS: int = 2_592_000  # 30 days
+    REDIS_VISIBILITY_TIMEOUT: int = 7200  # 120 min
 
     @property
     def CELERY_BROKER_URL(self) -> str:
