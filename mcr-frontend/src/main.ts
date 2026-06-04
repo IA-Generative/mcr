@@ -18,7 +18,7 @@ import { vueQueryPluginOptions } from '@/plugins/vue-query';
 import { keycloakOptions } from '@/services/auth/keycloak';
 import VueKeycloak from '@dsb-norge/vue-keycloak-js';
 import { createVfm } from 'vue-final-modal';
-import * as Sentry from '@sentry/vue';
+import { initSentry } from '@/services/observability/sentry';
 import { useUnleash } from '@/composables/use-unleash.ts';
 
 const app = createApp(App);
