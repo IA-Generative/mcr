@@ -1,5 +1,39 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { useRecordingMonitor, type RecordingMonitorContext } from './use-recording-monitor';
+import {
+  useRecordingMonitor,
+  classifySilence,
+  type RecordingMonitorContext,
+  type RecordingSessionStats,
+} from './use-recording-monitor';
+
+function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSessionStats {
+  return {
+    maxAudioLevel: 0,
+    meanAudioLevel: 0,
+    silenceRatio: 1,
+    sampleCount: 0,
+    emptyChunkCount: 0,
+    trackMuteEvents: 0,
+    recorderErrorEvents: 0,
+    deviceLabel: '',
+    deviceSettings: null,
+    requestedDeviceId: null,
+    availableDevices: [],
+    durationMs: 0,
+    effectiveSampleRate: 0,
+    backgroundedMs: 0,
+    visibilityHiddenCount: 0,
+    deviceChangeEvents: 0,
+    trackEndedEvents: 0,
+    deviceLabelAtStop: null,
+    deviceIdAtStop: null,
+    deviceSwitchedMidSession: false,
+    trackMutedAtStop: false,
+    trackEndedAtStop: false,
+    permissionRevokedEvents: 0,
+    ...overrides,
+  };
+}
 
 const {
   mockAudioLevelMonitorInstance,
@@ -63,7 +97,6 @@ function createMockContext(
   };
 }
 
-/** Simulate audio level callback calls on the AudioLevelMonitor */
 function simulateAudioLevels(levels: number[]) {
   const onLevelUpdate = mockAudioLevelMonitorInstance.start.mock.calls[0]?.[1] as
     | ((level: number) => void)
@@ -154,6 +187,147 @@ describe('useRecordingMonitor', () => {
 
       const { isSilent } = silenceVerdict();
       expect(isSilent).toBe(false);
+    });
+  });
+
+  describe('classifySilence', () => {
+    it('should classify a long silent session with a healthy sampler as true-silence', () => {
+      // Real Sentry event: maxAudioLevel=0, large sampleCount → mic produced no signal.
+      const cause = classifySilence(makeStats({ maxAudioLevel: 0, sampleCount: 326842 }));
+      expect(cause).toBe('true-silence');
+    });
+
+    it('should classify a long session with a starved sample rate as sampler-throttled', () => {
+      // Real Sentry event: 241 samples over ~80 min → ~0.05 samples/s (rAF throttled).
+      const cause = classifySilence(
+        makeStats({ sampleCount: 241, durationMs: 4_800_000, effectiveSampleRate: 241 / 4800 }),
+      );
+      expect(cause).toBe('sampler-throttled');
+    });
+
+    it('should classify a mostly-backgrounded session as sampler-throttled', () => {
+      const cause = classifySilence(
+        makeStats({
+          durationMs: 600_000,
+          // Healthy rate, but the tab was hidden for most of the session.
+          effectiveSampleRate: 60,
+          backgroundedMs: 400_000,
+        }),
+      );
+      expect(cause).toBe('sampler-throttled');
+    });
+
+    it('should not flag a short session as sampler-throttled', () => {
+      // Few samples but under the duration floor → not enough data to judge the rate.
+      const cause = classifySilence(
+        makeStats({ sampleCount: 2, durationMs: 5_000, effectiveSampleRate: 0.4 }),
+      );
+      expect(cause).toBe('true-silence');
+    });
+
+    it('should classify a PulseAudio loopback source as wrong-device', () => {
+      const cause = classifySilence(
+        makeStats({ deviceLabel: 'Monitor of Built-in Audio Analog Stereo' }),
+      );
+      expect(cause).toBe('wrong-device');
+    });
+
+    it('should classify a device that switched mid-session as wrong-device', () => {
+      expect(classifySilence(makeStats({ deviceSwitchedMidSession: true }))).toBe('wrong-device');
+    });
+
+    it('should classify a device that ended mid-session as wrong-device', () => {
+      expect(classifySilence(makeStats({ trackEndedEvents: 1 }))).toBe('wrong-device');
+    });
+
+    it('should classify a revoked microphone permission as wrong-device', () => {
+      expect(classifySilence(makeStats({ permissionRevokedEvents: 1 }))).toBe('wrong-device');
+    });
+
+    it('should classify a track ended/muted by stop time as wrong-device', () => {
+      expect(classifySilence(makeStats({ trackEndedAtStop: true }))).toBe('wrong-device');
+      expect(classifySilence(makeStats({ trackMutedAtStop: true }))).toBe('wrong-device');
+    });
+
+    it('should classify a macOS Continuity default with a built-in alternative as wrong-device', () => {
+      const cause = classifySilence(
+        makeStats({
+          requestedDeviceId: 'default',
+          deviceLabel: 'Thibault’s iPhone Microphone',
+          availableDevices: [
+            { deviceId: 'builtin', label: 'MacBook Pro Microphone (Built-in)', groupId: 'g1' },
+          ],
+        }),
+      );
+      expect(cause).toBe('wrong-device');
+    });
+
+    it('should take wrong-device precedence over sampler-throttled', () => {
+      // Both a loopback device and a throttled sampler → most-specific wins.
+      const cause = classifySilence(
+        makeStats({
+          deviceLabel: 'Monitor of HDMI',
+          durationMs: 4_800_000,
+          effectiveSampleRate: 0.05,
+        }),
+      );
+      expect(cause).toBe('wrong-device');
+    });
+  });
+
+  describe('device drift instrumentation', () => {
+    it('should flag deviceSwitchedMidSession when the deviceId differs at stop', () => {
+      let currentDeviceId = 'device-1';
+      const track = {
+        label: 'Mock Microphone',
+        getSettings: () => ({ deviceId: currentDeviceId }),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      const ctx = {
+        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        recorder: new EventTarget() as unknown as MediaRecorder,
+        meetingId: 42,
+        requestedDeviceId: 'device-1',
+        availableDevices: [],
+      };
+
+      const { attach, detach, getStats } = useRecordingMonitor();
+      attach(ctx);
+
+      // The capture device is swapped before the session stops.
+      currentDeviceId = 'device-2';
+      detach();
+
+      const stats = getStats();
+      expect(stats.deviceIdAtStop).toBe('device-2');
+      expect(stats.deviceSwitchedMidSession).toBe(true);
+    });
+
+    it('should capture an ended/muted track liveness at stop', () => {
+      const track = {
+        label: 'Mock Microphone',
+        muted: true,
+        readyState: 'ended' as MediaStreamTrackState,
+        getSettings: () => ({ deviceId: 'device-1' }),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      };
+      const ctx = {
+        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        recorder: new EventTarget() as unknown as MediaRecorder,
+        meetingId: 42,
+        requestedDeviceId: 'device-1',
+        availableDevices: [],
+      };
+
+      const { attach, detach, getStats } = useRecordingMonitor();
+      attach(ctx);
+      detach();
+
+      const stats = getStats();
+      expect(stats.trackEndedAtStop).toBe(true);
+      expect(stats.trackMutedAtStop).toBe(true);
     });
   });
 

@@ -1,5 +1,5 @@
 import { useRecorder } from '@/composables/use-recorder';
-import { useRecordingMonitor } from '@/composables/use-recording-monitor';
+import { useRecordingMonitor, SILENCE_MESSAGES } from '@/composables/use-recording-monitor';
 import { useNetworkStatus } from '@/composables/use-network-status';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
 import { useChunkUpload } from '@/composables/use-chunk-upload';
@@ -98,37 +98,56 @@ export function useRecordingSession(meetingId: number) {
         return;
       }
 
-      const { isSilent, stats } = recordingMonitor.silenceVerdict();
+      const { isSilent, cause, stats } = recordingMonitor.silenceVerdict();
       if (isSilent) {
         toaster.addErrorMessage(t('meeting-v2.recording.silent-detected'));
-        Sentry.captureMessage('Silent recording detected', {
+
+        const silenceVerdictContext = {
+          maxAudioLevel: stats.maxAudioLevel,
+          silenceRatio: stats.silenceRatio,
+          sampleCount: stats.sampleCount,
+          durationMs: stats.durationMs,
+          effectiveSampleRate: stats.effectiveSampleRate,
+          backgroundedMs: stats.backgroundedMs,
+          visibilityHiddenCount: stats.visibilityHiddenCount,
+        };
+
+        const recordingDeviceContext = {
+          requestedDeviceId: stats.requestedDeviceId,
+          receivedDeviceLabel: stats.deviceLabel,
+          receivedDeviceId: stats.deviceSettings?.deviceId ?? null,
+          receivedDeviceSettings: stats.deviceSettings,
+          availableDevices: stats.availableDevices.map(
+            (d) => `${d.label} [deviceId=${d.deviceId}, groupId=${d.groupId}]`,
+          ),
+          deviceMismatch:
+            stats.requestedDeviceId != null &&
+            stats.deviceSettings?.deviceId != null &&
+            stats.requestedDeviceId !== stats.deviceSettings.deviceId,
+          trackMuteEvents: stats.trackMuteEvents,
+          emptyChunkCount: stats.emptyChunkCount,
+          deviceChangeEvents: stats.deviceChangeEvents,
+          trackEndedEvents: stats.trackEndedEvents,
+          deviceLabelAtStop: stats.deviceLabelAtStop,
+          deviceIdAtStop: stats.deviceIdAtStop,
+          deviceSwitchedMidSession: stats.deviceSwitchedMidSession,
+          trackMutedAtStop: stats.trackMutedAtStop,
+          trackEndedAtStop: stats.trackEndedAtStop,
+          permissionRevokedEvents: stats.permissionRevokedEvents,
+        };
+
+        Sentry.captureMessage(SILENCE_MESSAGES[cause], {
           level: 'error',
+          fingerprint: ['silent-recording', cause],
           tags: {
             feature: 'recording',
             'error.phase': 'start',
             'meeting.id': meetingId,
+            'silence.cause': cause,
           },
           contexts: {
-            silenceVerdict: {
-              maxAudioLevel: stats.maxAudioLevel,
-              silenceRatio: stats.silenceRatio,
-              sampleCount: stats.sampleCount,
-            },
-            recordingDevice: {
-              requestedDeviceId: stats.requestedDeviceId,
-              receivedDeviceLabel: stats.deviceLabel,
-              receivedDeviceId: stats.deviceSettings?.deviceId ?? null,
-              receivedDeviceSettings: stats.deviceSettings,
-              availableDevices: stats.availableDevices.map(
-                (d) => `${d.label} [deviceId=${d.deviceId}, groupId=${d.groupId}]`,
-              ),
-              deviceMismatch:
-                stats.requestedDeviceId != null &&
-                stats.deviceSettings?.deviceId != null &&
-                stats.requestedDeviceId !== stats.deviceSettings.deviceId,
-              trackMuteEvents: stats.trackMuteEvents,
-              emptyChunkCount: stats.emptyChunkCount,
-            },
+            silenceVerdict: silenceVerdictContext,
+            recordingDevice: recordingDeviceContext,
           },
         });
       }

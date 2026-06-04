@@ -3,3 +3,11 @@ export const SMOOTHING_TIME_CONSTANT = 0.8; // Smoothing time constant for the a
 export const DECAY_RATE = 0.02; // Decay rate for the audio analysis. A higher value gives a faster decay but may introduce abrupt variations. 0.02 is a good compromise between precision and reactivity.
 export const GAIN = 1.0; // Gain factor for the audio analysis. A higher value gives a more important gain but may introduce noise. 1.0 is a good compromise between precision and reactivity.
 export const AUDIO_SAMPLE_MIDPOINT = 128; // 8-bit audio samples range from 0-255, so 128 is the midpoint
+
+export const MIN_DURATION_FOR_RATE_CHECK_MS = 30_000; // Below this recording duration we don't trust the effective sample rate (too few samples to judge).
+export const MIN_EFFECTIVE_SAMPLE_RATE = 5; // Foreground rAF runs at ~60 samples/s; a throttled background tab drops far below this.
+export const BACKGROUND_RATIO_THRESHOLD = 0.5; // If the tab spent more than this fraction of the session backgrounded, the rAF sampler was throttled.
+
+export const LOOPBACK_DEVICE_REGEX = /^Monitor of /i; // PulseAudio loopback source ("Monitor of <sink>") — captures system output, never a voice.
+export const CONTINUITY_DEVICE_REGEX = /iPhone|iPad|Continuity/i; // macOS Continuity devices that the system "default" mic may silently resolve to.
+export const BUILTIN_DEVICE_REGEX = /built-?in/i; // A real built-in microphone, used as the "a working alternative existed" signal.

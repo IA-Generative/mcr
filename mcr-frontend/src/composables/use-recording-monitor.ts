@@ -1,10 +1,26 @@
 import { ref } from 'vue';
 import { AudioLevelMonitor } from '@/utils/audio-level-monitor';
 import type { AudioDeviceInfo } from '@/composables/use-recorder';
+import {
+  MIN_DURATION_FOR_RATE_CHECK_MS,
+  MIN_EFFECTIVE_SAMPLE_RATE,
+  BACKGROUND_RATIO_THRESHOLD,
+  LOOPBACK_DEVICE_REGEX,
+  CONTINUITY_DEVICE_REGEX,
+  BUILTIN_DEVICE_REGEX,
+} from '@/config/audioMonitor';
 import * as Sentry from '@sentry/vue';
 
 export const SILENCE_LEVEL_THRESHOLD = 0.05;
 export const SILENCE_RATIO_THRESHOLD = 0.98;
+
+export type SilenceCause = 'wrong-device' | 'sampler-throttled' | 'true-silence';
+
+export const SILENCE_MESSAGES: Record<SilenceCause, string> = {
+  'wrong-device': 'Silent recording: wrong capture device',
+  'sampler-throttled': 'Silent recording: sampler throttled (background tab)',
+  'true-silence': 'Silent recording: true silence (no mic signal)',
+};
 
 export type RecordingSessionStats = {
   maxAudioLevel: number;
@@ -18,6 +34,21 @@ export type RecordingSessionStats = {
   deviceSettings: MediaTrackSettings | null;
   requestedDeviceId: string | null;
   availableDevices: AudioDeviceInfo[];
+  // Sampling rate instrumentation (detects a rAF sampler throttled in a background tab).
+  durationMs: number;
+  effectiveSampleRate: number;
+  backgroundedMs: number;
+  visibilityHiddenCount: number;
+  // Device drift instrumentation (detects a capture device changed/lost mid-session).
+  deviceChangeEvents: number;
+  trackEndedEvents: number;
+  deviceLabelAtStop: string | null;
+  deviceIdAtStop: string | null;
+  deviceSwitchedMidSession: boolean;
+  // Permission / track-liveness instrumentation (detects a device no longer authorized).
+  trackMutedAtStop: boolean;
+  trackEndedAtStop: boolean;
+  permissionRevokedEvents: number;
 };
 
 export type RecordingMonitorOptions = {
@@ -46,7 +77,73 @@ function createEmptyStats(): RecordingSessionStats {
     deviceSettings: null,
     requestedDeviceId: null,
     availableDevices: [],
+    durationMs: 0,
+    effectiveSampleRate: 0,
+    backgroundedMs: 0,
+    visibilityHiddenCount: 0,
+    deviceChangeEvents: 0,
+    trackEndedEvents: 0,
+    deviceLabelAtStop: null,
+    deviceIdAtStop: null,
+    deviceSwitchedMidSession: false,
+    trackMutedAtStop: false,
+    trackEndedAtStop: false,
+    permissionRevokedEvents: 0,
   };
+}
+
+export function classifySilence(stats: RecordingSessionStats): SilenceCause {
+  if (isWrongDevice(stats)) return 'wrong-device';
+  if (isSamplerThrottled(stats)) return 'sampler-throttled';
+  return 'true-silence';
+}
+
+function isWrongDevice(stats: RecordingSessionStats): boolean {
+  // PulseAudio loopback ("Monitor of …") captures system output, never a voice.
+  if (LOOPBACK_DEVICE_REGEX.test(stats.deviceLabel)) return true;
+
+  // The capture device changed or disappeared mid-session (dock unplugged, or
+  // Chrome's "default" following the system default onto a new, muted mic).
+  if (stats.deviceSwitchedMidSession || stats.trackEndedEvents > 0) return true;
+
+  // The device is no longer authorized / live: permission revoked mid-session,
+  // or the track ended/stayed muted by stop time.
+  if (stats.permissionRevokedEvents > 0 || stats.trackEndedAtStop || stats.trackMutedAtStop) {
+    return true;
+  }
+
+  // Best-effort macOS Continuity heuristic: the system "default" mic resolved to
+  // an iPhone/iPad while a real built-in mic was available.
+  const resolvedToContinuity =
+    stats.requestedDeviceId === 'default' && CONTINUITY_DEVICE_REGEX.test(stats.deviceLabel);
+  const hasBuiltInAlternative = stats.availableDevices.some((d) =>
+    BUILTIN_DEVICE_REGEX.test(d.label),
+  );
+  return resolvedToContinuity && hasBuiltInAlternative;
+}
+
+function isSamplerThrottled(stats: RecordingSessionStats): boolean {
+  const rateThrottled =
+    stats.durationMs > MIN_DURATION_FOR_RATE_CHECK_MS &&
+    stats.effectiveSampleRate < MIN_EFFECTIVE_SAMPLE_RATE;
+  const mostlyBackgrounded =
+    stats.durationMs > 0 && stats.backgroundedMs > BACKGROUND_RATIO_THRESHOLD * stats.durationMs;
+  return rateThrottled || mostlyBackgrounded;
+}
+
+export function readTrackStateAtStopToDetectDeviceProblems(
+  track: MediaStreamTrack,
+  stats: RecordingSessionStats,
+): void {
+  const startDeviceId = stats.deviceSettings?.deviceId ?? null;
+  const deviceIdAtStop = track.getSettings().deviceId ?? null;
+
+  stats.deviceLabelAtStop = track.label;
+  stats.deviceIdAtStop = deviceIdAtStop;
+  stats.deviceSwitchedMidSession =
+    startDeviceId != null && deviceIdAtStop != null && startDeviceId !== deviceIdAtStop;
+  stats.trackEndedAtStop = track.readyState === 'ended';
+  stats.trackMutedAtStop = track.muted === true;
 }
 
 export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
@@ -65,6 +162,37 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   let recorderErrorHandler: ((e: Event) => void) | undefined;
   let recorderDataHandler: ((e: BlobEvent) => void) | undefined;
   let recorderStopHandler: (() => void) | undefined;
+  let visibilityHandler: (() => void) | undefined;
+  let trackEndedHandler: (() => void) | undefined;
+  let deviceChangeHandler: (() => void) | undefined;
+  let permissionStatus: PermissionStatus | undefined;
+  let permissionChangeHandler: (() => void) | undefined;
+
+  let startedAt: number | undefined;
+  let stoppedAt: number | undefined;
+  let hiddenSince: number | undefined;
+
+  function trackBackgroundedTabTime(): void {
+    if (typeof document === 'undefined') return;
+
+    const enterHiddenTab = () => {
+      hiddenSince = Date.now();
+      stats.visibilityHiddenCount += 1;
+    };
+    const leaveHiddenTab = () => {
+      if (hiddenSince === undefined) return;
+      stats.backgroundedMs += Date.now() - hiddenSince;
+      hiddenSince = undefined;
+    };
+
+    if (document.visibilityState === 'hidden') enterHiddenTab();
+
+    visibilityHandler = () => {
+      if (document.visibilityState === 'hidden') enterHiddenTab();
+      else leaveHiddenTab();
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
+  }
 
   function attach(ctx: RecordingMonitorContext): void {
     // Reset
@@ -73,6 +201,9 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     silentSampleCount = 0;
     chunkIndex = 0;
     audioInputLevel.value = 0;
+    startedAt = Date.now();
+    stoppedAt = undefined;
+    hiddenSince = undefined;
 
     // Capture device info
     const track = ctx.stream.getAudioTracks()[0];
@@ -92,6 +223,40 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
         stats.trackMuteEvents += 1;
       };
       track.addEventListener('mute', trackMuteHandler);
+
+      // A device unplugged mid-session fires `ended` (not `mute`) on the track.
+      trackEndedHandler = () => {
+        stats.trackEndedEvents += 1;
+      };
+      track.addEventListener('ended', trackEndedHandler);
+    }
+
+    // A device plugged/unplugged mid-session fires `devicechange`.
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
+      deviceChangeHandler = () => {
+        stats.deviceChangeEvents += 1;
+      };
+      navigator.mediaDevices.addEventListener('devicechange', deviceChangeHandler);
+    }
+
+    // Detect microphone permission being revoked mid-session.
+    if (typeof navigator !== 'undefined' && navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: 'microphone' as PermissionName })
+        .then((status) => {
+          // Session already stopped before the async query resolved.
+          if (stoppedAt !== undefined) return;
+          permissionStatus = status;
+          permissionChangeHandler = () => {
+            if (status.state !== 'granted') {
+              stats.permissionRevokedEvents += 1;
+            }
+          };
+          status.addEventListener('change', permissionChangeHandler);
+        })
+        .catch(() => {
+          // 'microphone' not queryable on this browser — ignore.
+        });
     }
 
     recorderErrorHandler = (event: Event) => {
@@ -134,6 +299,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     recorderStopHandler = () => detach();
     ctx.recorder.addEventListener('stop', recorderStopHandler, { once: true });
 
+    trackBackgroundedTabTime();
+
     // Start audio level monitoring
     audioLevelMonitor = new AudioLevelMonitor({
       fftSize: 256,
@@ -156,6 +323,23 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   }
 
   function detach(): void {
+    // Freeze the recording duration at stop time (getStats may run later, after
+    // the final chunk uploads, so we must not keep counting until then).
+    if (stoppedAt === undefined) {
+      stoppedAt = Date.now();
+    }
+    // Close out an open backgrounded interval (tab still hidden at stop).
+    if (hiddenSince !== undefined) {
+      stats.backgroundedMs += stoppedAt - hiddenSince;
+      hiddenSince = undefined;
+    }
+
+    // Re-read the capture device at stop to detect a device that switched,
+    // ended or got muted mid-session.
+    if (attachedTrack) {
+      readTrackStateAtStopToDetectDeviceProblems(attachedTrack, stats);
+    }
+
     // Stop audio level monitor
     if (audioLevelMonitor) {
       audioLevelMonitor.stop();
@@ -165,6 +349,15 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     // Remove listeners
     if (attachedTrack && trackMuteHandler) {
       attachedTrack.removeEventListener('mute', trackMuteHandler);
+    }
+    if (attachedTrack && trackEndedHandler) {
+      attachedTrack.removeEventListener('ended', trackEndedHandler);
+    }
+    if (deviceChangeHandler && typeof navigator !== 'undefined' && navigator.mediaDevices) {
+      navigator.mediaDevices.removeEventListener('devicechange', deviceChangeHandler);
+    }
+    if (permissionStatus && permissionChangeHandler) {
+      permissionStatus.removeEventListener('change', permissionChangeHandler);
     }
     if (attachedRecorder) {
       if (recorderErrorHandler) {
@@ -177,6 +370,9 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
         attachedRecorder.removeEventListener('stop', recorderStopHandler);
       }
     }
+    if (visibilityHandler && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+    }
 
     attachedTrack = undefined;
     attachedRecorder = undefined;
@@ -184,6 +380,11 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     recorderErrorHandler = undefined;
     recorderDataHandler = undefined;
     recorderStopHandler = undefined;
+    visibilityHandler = undefined;
+    trackEndedHandler = undefined;
+    deviceChangeHandler = undefined;
+    permissionStatus = undefined;
+    permissionChangeHandler = undefined;
 
     // Clear Sentry scope
     Sentry.setTag('meeting.id', undefined);
@@ -191,25 +392,29 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   }
 
   function getStats(): RecordingSessionStats {
+    const endTime = stoppedAt ?? Date.now();
+    const durationMs = startedAt !== undefined ? endTime - startedAt : 0;
+    const effectiveSampleRate = durationMs > 0 ? stats.sampleCount / (durationMs / 1000) : 0;
     return {
       ...stats,
       meanAudioLevel: stats.sampleCount > 0 ? sumAudioLevel / stats.sampleCount : 0,
       silenceRatio: stats.sampleCount > 0 ? silentSampleCount / stats.sampleCount : 1,
+      durationMs,
+      effectiveSampleRate,
     };
   }
 
-  function silenceVerdict(): { isSilent: boolean; stats: RecordingSessionStats } {
+  function silenceVerdict(): {
+    isSilent: boolean;
+    cause: SilenceCause;
+    stats: RecordingSessionStats;
+  } {
     const currentStats = getStats();
     const isSilent =
       currentStats.maxAudioLevel < SILENCE_LEVEL_THRESHOLD ||
       currentStats.silenceRatio > SILENCE_RATIO_THRESHOLD;
-    console.log('silenceVerdict', {
-      isSilent,
-      maxAudioLevel: currentStats.maxAudioLevel,
-      silenceRatio: currentStats.silenceRatio,
-      sampleCount: currentStats.sampleCount,
-    });
-    return { isSilent, stats: currentStats };
+    const cause = classifySilence(currentStats);
+    return { isSilent, cause, stats: currentStats };
   }
 
   return { audioInputLevel, attach, detach, getStats, silenceVerdict };
