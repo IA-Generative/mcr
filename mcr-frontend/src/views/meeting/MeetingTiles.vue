@@ -130,9 +130,6 @@ async function importMeetingStartTranscriptionAndRedirect({
   try {
     isMultipartUploadPending.value = true;
     await uploadFileWithMultipart(dtoWithDates, renamedFile);
-  } catch (error) {
-    console.error(error);
-    toaster.addErrorMessage(t('error.file-upload')!);
   } finally {
     isMultipartUploadPending.value = false;
   }
@@ -149,14 +146,21 @@ function redirectToMeetingPage(meetingId: number) {
 }
 
 async function uploadFileWithMultipart(dto: AddImportMeetingDto, file: File): Promise<void> {
-  try {
-    const meeting = await createMeetingAsync(dto);
-    await uploadFile({ meetingId: meeting.id, file });
-    closeImportModal();
-    startTranscriptionAndRedirect(meeting.id);
-  } catch (e) {
+  const meeting = await createMeetingAsync(dto).catch(() => {
     toaster.addErrorMessage(t('error.meeting-creation')!);
+    return null;
+  });
+  if (!meeting) return;
+
+  try {
+    await uploadFile({ meetingId: meeting.id, file });
+  } catch {
+    toaster.addErrorMessage(t('error.file-upload')!);
+    return;
   }
+
+  closeImportModal();
+  startTranscriptionAndRedirect(meeting.id);
 }
 
 async function updateDtoWithDates(
