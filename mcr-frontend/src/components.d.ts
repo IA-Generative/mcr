@@ -55,6 +55,7 @@ declare module 'vue' {
     FeedbackButton: typeof import('./components/feedback/FeedbackButton.vue')['default']
     FeedbackModal: typeof import('./components/feedback/FeedbackModal.vue')['default']
     GenerateReportAction: typeof import('./components/meeting/report/GenerateReportAction.vue')['default']
+    HoverTooltip: typeof import('./components/core/HoverTooltip.vue')['default']
     ImportMeetingForm: typeof import('./components/meeting/ImportMeetingForm.vue')['default']
     ImportMeetingModal: typeof import('./components/meeting/modals/ImportMeetingModal.vue')['default']
     ImportMeetingProgressBar: typeof import('./components/meeting/ImportMeetingProgressBar.vue')['default']

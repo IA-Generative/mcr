@@ -348,6 +348,10 @@
       "title": "Livrables",
       "description": "Sélectionnez un format de compte-rendu à générer :",
       "generate-button": "Générer",
+      "tooltip": {
+        "in-progress": "Livrable en cours de génération",
+        "pending-generation": "Un livrable est déjà en train d'être généré"
+      },
       "type": {
         "decision-record": {
           "label": "Relevé de décisions",
