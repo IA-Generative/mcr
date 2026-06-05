@@ -23,6 +23,25 @@ class _StubRefiner(BaseInitThenRefine[_StubModel]):
     section_name = "stub"
 
 
+class _HintStubRefiner(BaseInitThenRefine[_StubModel]):
+    """Templates that reference {notes_hint}, mirroring RefineParticipants:
+    the extra prompt variable is fed via the constructor and `_extra_prompt_vars`."""
+
+    response_model = _StubModel
+    initial_prompt_template = "INITIAL: {chunk_text} || HINT: {notes_hint}"
+    refine_prompt_template = (
+        "REFINE: {current_json} | {chunk_text} || HINT: {notes_hint}"
+    )
+    section_name = "hint-stub"
+
+    def __init__(self, notes_hint: str = "") -> None:
+        super().__init__()
+        self._notes_hint = notes_hint
+
+    def _extra_prompt_vars(self) -> dict[str, str]:
+        return {"notes_hint": self._notes_hint}
+
+
 class TestInitialExtract:
     def test_initial_extract_uses_initial_template_and_response_model(
         self,
@@ -158,6 +177,22 @@ class TestInitThenRefineWithHint:
         assert content.startswith("REFINE: ")
         assert hint.model_dump_json() in content
         assert "c0" in content
+
+
+class TestNotesHintInjection:
+    def test_notes_hint_appears_in_initial_and_refine_prompts(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+    ) -> None:
+        responses = [_StubModel(text="s0"), _StubModel(text="s1")]
+
+        with fake_call_llm_with_structured_output(_MODULE_PATH, responses) as mock_call:
+            refiner = _HintStubRefiner(notes_hint="- Marie (PO)")
+            refiner.init_then_refine([Chunk(id=0, text="c0"), Chunk(id=1, text="c1")])
+
+        assert mock_call.call_count == 2
+        for call in mock_call.call_args_list:
+            assert "HINT: - Marie (PO)" in call.kwargs["user_message_content"]
 
 
 class TestLangfuseSpanRename:

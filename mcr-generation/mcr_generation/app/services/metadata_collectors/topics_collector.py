@@ -23,7 +23,9 @@ class TopicsCollector(MetadataCollector):
         "Extrait les sujets de discussion principaux et leurs décisions associées, "
         "ainsi que la liste des prochaines étapes (next steps) identifiées."
     )
-    notes_facets = frozenset({NotesFacet.INTENT, NotesFacet.TOPICS})
+    notes_facets = frozenset(
+        {NotesFacet.INTENT, NotesFacet.TOPICS, NotesFacet.PARTICIPANTS}
+    )
 
     @observe(name="metadata_collector.topics")
     def _extract(
@@ -33,8 +35,13 @@ class TopicsCollector(MetadataCollector):
     ) -> TopicsContent:
         intent_hint = extracted_notes.intent if extracted_notes is not None else None
         topics_hint = extracted_notes.topics if extracted_notes is not None else None
+        participants_hint = (
+            extracted_notes.participants if extracted_notes is not None else None
+        )
         meeting_subject = RefineIntent().init_then_refine(chunks, init_hint=intent_hint)
-        participants = RefineParticipants().init_then_refine(chunks).to_public()
+        participants = (
+            RefineParticipants(participants_hint).init_then_refine(chunks).to_public()
+        )
         return MapReduceTopics(
             meeting_subject.title, participants.participants
         ).map_reduce_all_steps(chunks, notes_hint=topics_hint)

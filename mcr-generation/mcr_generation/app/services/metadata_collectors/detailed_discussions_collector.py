@@ -25,7 +25,9 @@ class DetailedDiscussionsCollector(MetadataCollector):
         "Restitue de façon détaillée chaque discussion de la réunion : sujet, "
         "idées clés, décisions, actions à entreprendre et points de vigilance."
     )
-    notes_facets = frozenset({NotesFacet.INTENT, NotesFacet.DISCUSSIONS})
+    notes_facets = frozenset(
+        {NotesFacet.INTENT, NotesFacet.DISCUSSIONS, NotesFacet.PARTICIPANTS}
+    )
 
     @observe(name="metadata_collector.detailed_discussions")
     def _extract(
@@ -37,8 +39,13 @@ class DetailedDiscussionsCollector(MetadataCollector):
         discussions_hint = (
             extracted_notes.discussions if extracted_notes is not None else None
         )
+        participants_hint = (
+            extracted_notes.participants if extracted_notes is not None else None
+        )
         meeting_subject = RefineIntent().init_then_refine(chunks, init_hint=intent_hint)
-        participants = RefineParticipants().init_then_refine(chunks).to_public()
+        participants = (
+            RefineParticipants(participants_hint).init_then_refine(chunks).to_public()
+        )
         return MapReduceDetailedDiscussions(
             meeting_subject.title, participants.participants
         ).map_reduce_all_steps(chunks, notes_hint=discussions_hint)

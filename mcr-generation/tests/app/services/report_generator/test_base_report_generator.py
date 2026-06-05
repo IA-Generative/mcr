@@ -213,6 +213,7 @@ class TestGenerateHeader:
         mock_refine_intent_cls.return_value.init_then_refine.assert_called_once_with(
             chunks, init_hint=None
         )
+        mock_refine_participants_cls.assert_called_once_with(None)
         mock_refine_participants_cls.return_value.init_then_refine.assert_called_once_with(
             chunks
         )

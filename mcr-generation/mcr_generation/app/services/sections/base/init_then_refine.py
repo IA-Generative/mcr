@@ -24,6 +24,11 @@ class BaseInitThenRefine(ABC, Generic[T]):
     The seed comes from ``init_hint`` when provided (all chunks are then used for
     refinement); otherwise it is extracted from the first chunk and the remaining
     chunks are used for refinement.
+
+    Subclasses may feed extra reference text to every prompt by overriding
+    ``_extra_prompt_vars``: the returned mapping is substituted into matching
+    ``{placeholders}`` of both prompt templates. Refiners that don't override it
+    keep single-variable prompts untouched.
     """
 
     response_model: ClassVar[type[BaseModel]]
@@ -40,6 +45,10 @@ class BaseInitThenRefine(ABC, Generic[T]):
             ),
             mode=instructor.Mode.JSON,
         )
+
+    def _extra_prompt_vars(self) -> dict[str, str]:
+        """Extra variables merged into both prompt templates. Empty by default."""
+        return {}
 
     @log_execution_time
     @observe(name="init_then_refine")
@@ -67,11 +76,10 @@ class BaseInitThenRefine(ABC, Generic[T]):
         return refined
 
     def _initial_extract_from_chunk(self, chunk: Chunk) -> T:
-        prompt = PromptTemplate(
-            template=self.initial_prompt_template,
-            input_variables=["chunk_text"],
-        )
-        content = prompt.invoke({"chunk_text": chunk.text}).to_string()
+        prompt = PromptTemplate.from_template(self.initial_prompt_template)
+        content = prompt.invoke(
+            {"chunk_text": chunk.text, **self._extra_prompt_vars()}
+        ).to_string()
         return cast(
             T,
             call_llm_with_structured_output(
@@ -82,12 +90,13 @@ class BaseInitThenRefine(ABC, Generic[T]):
         )
 
     def _refine_with_chunk(self, current: T, chunk_text: str) -> T:
-        prompt = PromptTemplate(
-            template=self.refine_prompt_template,
-            input_variables=["current_json", "chunk_text"],
-        )
+        prompt = PromptTemplate.from_template(self.refine_prompt_template)
         content = prompt.invoke(
-            {"current_json": current.model_dump_json(), "chunk_text": chunk_text}
+            {
+                "current_json": current.model_dump_json(),
+                "chunk_text": chunk_text,
+                **self._extra_prompt_vars(),
+            }
         ).to_string()
         return cast(
             T,
