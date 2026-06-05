@@ -4,6 +4,7 @@ import NotBetaTesterPage from '@/views/errors/NotBetaTesterPage.vue';
 import LoginErrorPage from '@/views/errors/LoginErrorPage.vue';
 import MeetingPageV2 from '@/views/meeting/MeetingPageV2.vue';
 import MeetingListPage from '@/views/meeting/MeetingListPage.vue';
+import MaintenancePage from '@/views/MaintenancePage.vue';
 
 export enum ROUTE_KEY {
   HOME = 'HOME',
@@ -11,6 +12,7 @@ export enum ROUTE_KEY {
   NOT_FOUND = 'NOT_FOUND',
   NOT_TESTER = 'NOT_TESTER',
   LOGIN_ERROR = 'LOGIN_ERROR',
+  MAINTENANCE = 'MAINTENANCE',
 }
 
 export const ROUTES: Record<ROUTE_KEY, RouteRecordRaw> = {
@@ -44,5 +46,10 @@ export const ROUTES: Record<ROUTE_KEY, RouteRecordRaw> = {
     path: '/login-error',
     name: 'LoginError',
     component: LoginErrorPage,
+  },
+  [ROUTE_KEY.MAINTENANCE]: {
+    path: '/maintenance',
+    name: 'Maintenance',
+    component: MaintenancePage,
   },
 };
