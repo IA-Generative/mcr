@@ -1,19 +1,10 @@
 import math
-from dataclasses import dataclass
 
 from pydantic import UUID4
 
 from mcr_meeting.app.db.meeting_repository import get_meetings
 from mcr_meeting.app.db.user_repository import get_user_by_keycloak_uuid
-from mcr_meeting.app.models import Meeting
-
-
-@dataclass
-class PaginatedMeetingsResult:
-    items: list[Meeting]
-    total: int
-    page: int
-    total_pages: int
+from mcr_meeting.app.schemas.meeting_schema import PaginatedMeetingsResult
 
 
 def list_meetings(

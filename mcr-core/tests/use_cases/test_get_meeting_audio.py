@@ -5,9 +5,9 @@ import pytest
 
 from mcr_meeting.app.exceptions.exceptions import ForbiddenAccessException
 from mcr_meeting.app.models.user_model import User
+from mcr_meeting.app.schemas.meeting_schema import MeetingAudioStream
 from mcr_meeting.app.use_cases.get_meeting_audio import (
     MAX_DELAY_TO_GET_AUDIO,
-    MeetingAudioStream,
     get_meeting_audio,
 )
 from tests.factories.meeting_factory import MeetingFactory

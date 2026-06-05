@@ -1,5 +1,3 @@
-from collections.abc import Iterator
-from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from pydantic import UUID4
@@ -8,14 +6,9 @@ from mcr_meeting.app.db.meeting_repository import get_meeting_by_id
 from mcr_meeting.app.domain.authorize_meeting_access import authorize_meeting_access
 from mcr_meeting.app.exceptions.exceptions import ForbiddenAccessException
 from mcr_meeting.app.infrastructure.s3 import stream_meeting_audio
+from mcr_meeting.app.schemas.meeting_schema import MeetingAudioStream
 
 MAX_DELAY_TO_GET_AUDIO = 7  # In days
-
-
-@dataclass
-class MeetingAudioStream:
-    iterator: Iterator[bytes]
-    media_type: str
 
 
 def get_meeting_audio(meeting_id: int, user_keycloak_uuid: UUID4) -> MeetingAudioStream:

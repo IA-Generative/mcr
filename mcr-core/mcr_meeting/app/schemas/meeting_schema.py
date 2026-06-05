@@ -1,4 +1,5 @@
 import re
+from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Self
 from urllib.parse import urlparse, urlunparse
@@ -29,6 +30,18 @@ class PaginatedMeetings(BaseModel):
 
     items: list[Meeting]
     total: int
+
+
+class PaginatedMeetingsResult(PaginatedMeetings):
+    page: int
+    total_pages: int
+
+
+class MeetingAudioStream(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    iterator: Iterator[bytes]
+    media_type: str
 
 
 class MeetingBase(BaseModel):
