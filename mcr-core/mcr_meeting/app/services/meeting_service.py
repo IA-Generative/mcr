@@ -1,62 +1,17 @@
 from datetime import datetime
-from uuid import UUID
 
 from pydantic import UUID4
 
-from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.exceptions.exceptions import (
     ForbiddenAccessException,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus
-from mcr_meeting.app.services.meeting_transition_record_service import (
-    create_transition_record_service,
-)
-from mcr_meeting.app.services.user_service import get_user_by_keycloak_uuid_service
-from mcr_meeting.app.utils.db_utils import patch_model
 
 from ..db.meeting_repository import (
     get_meeting_by_id,
     get_meeting_with_transcriptions,
-    get_meetings,
-    save_meeting,
     update_meeting,
 )
-from ..schemas.meeting_schema import (
-    MeetingCreate,
-    MeetingUpdate,
-    PaginatedMeetings,
-)
-
-
-def create_meeting_service(
-    meeting_data: MeetingCreate, user_keycloak_uuid: UUID
-) -> Meeting:
-    """
-    Service to create a new meeting.
-
-    Args:
-        meeting_data: The meeting object to be created.
-
-    Returns:
-        Meeting: The created meeting object with updated information (e.g., ID).
-    """
-    user = get_user_by_keycloak_uuid_service(user_keycloak_uuid)
-
-    match meeting_data.name_platform:
-        case "MCR_IMPORT":
-            meeting_data.status = MeetingStatus.IMPORT_PENDING
-        case "MCR_RECORD":
-            meeting_data.status = MeetingStatus.CAPTURE_IN_PROGRESS
-            meeting_data.start_date = meeting_data.creation_date
-        case _:
-            meeting_data.status = MeetingStatus.NONE
-
-    with UnitOfWork():
-        meeting = save_meeting(user_id=user.id, meeting_data=meeting_data)
-        get_db_session_ctx().flush()
-        create_transition_record_service(meeting.id, meeting_data.status)
-        return meeting
 
 
 def get_meeting_service(
@@ -83,56 +38,9 @@ def get_meeting_service(
     return meeting
 
 
-def update_meeting_service(
-    meeting_id: int, current_user_keycloak_uuid: UUID4, meeting_update: MeetingUpdate
-) -> Meeting:
-    """
-    Service to update an existing meeting.
-
-    Args:
-
-        meeting_id (int): The ID of the meeting to update.
-        meeting_update (MeetingUpdate): The Pydantic model containing the updated meeting data.
-
-    Returns:
-        Meeting: The updated meeting object, or None if no meeting was found.
-    """
-
-    # try:
-    with UnitOfWork():
-        meeting = get_meeting_service(
-            meeting_id=meeting_id,
-            current_user_keycloak_uuid=current_user_keycloak_uuid,
-        )
-        patch_model(meeting, meeting_update)
-        return update_meeting(meeting)
-
-
 def update_meeting_status(meeting: Meeting, meeting_status: MeetingStatus) -> Meeting:
     meeting.status = meeting_status
     return update_meeting(meeting)
-
-
-def get_meetings_service(
-    user_keycloak_uuid: UUID,
-    search: str | None,
-    page: int,
-    page_size: int,
-) -> PaginatedMeetings:
-    """
-    Service pour récupérer une liste de réunions.
-
-    Args:
-        search (str): Terme de recherche optionnel pour filtrer les réunions.
-        page (int): Numéro de page.
-        page_size (int): Nombre d'éléments par page.
-
-    Returns:
-        PaginatedMeetings: Réunions paginées avec le nombre total.
-    """
-    user = get_user_by_keycloak_uuid_service(user_keycloak_uuid)
-
-    return get_meetings(search=search, user_id=user.id, page=page, page_size=page_size)
 
 
 def get_meeting_with_transcriptions_service(
@@ -178,13 +86,3 @@ def update_meeting_start_date(meeting: Meeting, start_date: datetime) -> Meeting
 def update_meeting_end_date(meeting: Meeting, end_date: datetime) -> Meeting:
     meeting.end_date = end_date
     return update_meeting(meeting)
-
-
-def meeting_exists(meeting_id: int) -> bool:
-    db = get_db_session_ctx()
-    return (
-        db.query(Meeting)
-        .filter(Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED)
-        .first()
-        is not None
-    )
