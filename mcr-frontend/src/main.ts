@@ -19,19 +19,19 @@ import { keycloakOptions } from '@/services/auth/keycloak';
 import VueKeycloak from '@dsb-norge/vue-keycloak-js';
 import { createVfm } from 'vue-final-modal';
 import * as Sentry from '@sentry/vue';
+import VueMatomo from 'vue-matomo';
 import { useUnleash } from '@/composables/use-unleash.ts';
+import { config } from '@/config/env';
 
 const app = createApp(App);
 const vfm = createVfm();
 
-const envMode = (window as any).ENV_MODE || import.meta.env.VITE_ENV_MODE;
-if (envMode) {
-  const dsn = (window as any).VITE_SENTRY_FRONTEND_DSN || import.meta.env.VITE_SENTRY_FRONTEND_DSN;
+if (config.sentry.dsn) {
   Sentry.init({
     app,
-    dsn,
+    dsn: config.sentry.dsn,
     sendDefaultPii: true,
-    environment: envMode,
+    environment: config.envMode,
     enableLogs: true,
     integrations: [
       Sentry.consoleLoggingIntegration({
@@ -50,10 +50,29 @@ app
   .use(vfm)
   .use(VueKeycloak, {
     ...keycloakOptions,
-    onReady: () => {
+    onReady: (keycloak) => {
       // Init the router after the keycloak is ready, to remove keycloak query params from the url
       const routerPlugin = router();
       app.use(routerPlugin);
+
+      if (config.matomo.host && config.matomo.siteId) {
+        app.use(VueMatomo, {
+          host: config.matomo.host,
+          siteId: Number(config.matomo.siteId),
+          router: routerPlugin,
+          // Load tracker + endpoint same-origin so they pass the app's COEP
+          // (require-corp) isolation; a reverse proxy forwards /matomo.* to the
+          // Matomo host (vite server.proxy in dev, nginx in prod). Decided 2026-06-04.
+          trackerScriptUrl: '/matomo.js',
+          trackerUrl: '/matomo.php',
+          // Cookieless tracking keeps Matomo within the CNIL consent exemption for
+          // public-sector sites, so no cookie banner is required. Decided 2026-06-04.
+          disableCookies: true,
+          enableLinkTracking: true,
+          userId: keycloak.subject, // pseudonymous Keycloak `sub`, never PII
+        });
+      }
+
       app.mount('#app');
     },
   });

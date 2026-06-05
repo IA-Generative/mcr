@@ -92,6 +92,21 @@ export default defineConfig(() => {
           changeOrigin: true,
           secure: false,
         },
+        // Proxy the Matomo tracker same-origin so it loads under COEP require-corp.
+        ...(process.env.VITE_MATOMO_HOST
+          ? {
+              '/matomo.js': {
+                target: process.env.VITE_MATOMO_HOST,
+                changeOrigin: true,
+                secure: true,
+              },
+              '/matomo.php': {
+                target: process.env.VITE_MATOMO_HOST,
+                changeOrigin: true,
+                secure: true,
+              },
+            }
+          : {}),
       },
     },
     base: process.env.BASE_URL || '/',
