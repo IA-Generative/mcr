@@ -23,7 +23,6 @@ from mcr_meeting.app.db.db import (
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus, Role, User
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.feature_flag_service import get_feature_flag_client
 from mcr_meeting.main import app
 
 api_settings = ApiSettings()
@@ -325,16 +324,3 @@ def mock_celery_producer_app(
         mock_celery_producer_app.send_task.return_value = Mock()
 
     return mock_celery_producer_app
-
-
-@pytest.fixture
-def mock_feature_flag_client(mocker: MockerFixture) -> Generator[Mock, None, None]:
-    """Mock the feature flag client for testing."""
-    mock_feature_flag_client = Mock()
-
-    app.dependency_overrides[get_feature_flag_client] = lambda: mock_feature_flag_client
-
-    yield mock_feature_flag_client
-
-    # Clean up dependency override
-    app.dependency_overrides.clear()

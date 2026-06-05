@@ -5,6 +5,9 @@ from io import BytesIO
 from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.infrastructure.unleash import (
+    get_feature_flag_client,
+)
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
@@ -20,9 +23,6 @@ from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
 )
 from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
     SpellingCorrector,
-)
-from mcr_meeting.app.services.feature_flag_service import (
-    get_feature_flag_client,
 )
 from mcr_meeting.app.services.speech_to_text.diarization_processor import (
     DiarizationProcessor,

@@ -9,7 +9,7 @@ from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import DiarizationError
-from mcr_meeting.app.services.feature_flag_service import (
+from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
 )

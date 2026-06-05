@@ -324,6 +324,7 @@ class CelerySettings(BaseSettings):
     REDIS_VHOST_RESULT_DB: int = 1
     REDIS_TOKEN_STORE_DB: int = 2
     REDIS_TOKEN_TTL_SECONDS: int = 2_592_000  # 30 days
+    REDIS_VISIBILITY_TIMEOUT: int = 7200  # 120 min
 
     @property
     def CELERY_BROKER_URL(self) -> str:
@@ -408,7 +409,7 @@ class LLMSettings(BaseSettings):
     LLM_HUB_API_KEY: str = Field(..., description="llm hub api key")
 
     LLM_MODEL_NAME: str = Field(
-        default="mistral-small-24b", description="large language model"
+        default="gptoss-120b", description="large language model"
     )
     TEMPERATURE: float = Field(
         default=0,
@@ -416,8 +417,11 @@ class LLMSettings(BaseSettings):
         le=1.0,
         description="LLM sampling temperature (0-1). Lower values (0) produce deterministic, focused outputs. Higher values (0.7-1) increase creativity and randomness.",
     )
-    RETRY_MAX_ATTEMPTS: int = Field(
-        default=5, description="Maximum number of retry attempts for LLM API calls"
+    LLM_MAX_RETRIES: int = Field(
+        default=2, description="Maximum number of retry attempts for LLM API calls"
+    )
+    LLM_API_TIMEOUT: float = Field(
+        default=120.0, description="Maximum wait time in seconds for API timeout"
     )
     RETRY_WAIT_MULTIPLIER: int = Field(
         default=5, description="Exponential backoff multiplier for retry wait times"

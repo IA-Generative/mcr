@@ -6,6 +6,11 @@ ENV PYTHONDONTWRITEBYTECODE=1
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
 
+# Silences ctranslate2 (faster-whisper) C++ stderr warnings.
+# Maps to its LogLevel enum: -1 = Error (silences Warning, keeps Error/Critical).
+# No-op for stages that don't import ctranslate2.
+ENV CT2_VERBOSE=-1
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg build-essential curl && \
     apt-get clean && \

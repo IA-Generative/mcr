@@ -43,17 +43,30 @@
       type="alert"
     />
 
-    <audio
+    <div
       v-else-if="audioSrc"
-      ref="audioEl"
-      controls
-      controlslist="nodownload"
-      :src="audioSrc"
-      :aria-label="$t('meeting-v2.audio-card.player-label')"
-      class="w-full"
-      @loadedmetadata="recoverAudioDuration"
-      @timeupdate="onDurationRecovered"
-    ></audio>
+      class="flex gap-4 items-center justify-between"
+    >
+      <audio
+        ref="audioEl"
+        controls
+        controlslist="nodownload"
+        :src="audioSrc"
+        :aria-label="$t('meeting-v2.audio-card.player-label')"
+        class="w-full"
+        @loadedmetadata="recoverAudioDuration"
+        @timeupdate="onDurationRecovered"
+      ></audio>
+
+      <a
+        :href="audioSrc"
+        :download="`${meeting.name}.webm`"
+        class="fr-btn fr-btn--tertiary-no-outline fr-icon-download-line"
+        :title="$t('meeting-v2.audio-card.download')"
+      >
+        <span class="fr-sr-only">{{ $t('meeting-v2.audio-card.download') }}</span>
+      </a>
+    </div>
   </div>
 </template>
 
@@ -61,7 +74,7 @@
 import HttpService, { API_PATHS } from '@/services/http/http.service';
 import { MAX_DELAY_TO_FETCH_AUDIO } from '@/config/meeting';
 import { differenceInDays, parseISO } from 'date-fns';
-import type { MeetingStatus } from '@/services/meetings/meetings.types';
+import type { MeetingDto, MeetingStatus } from '@/services/meetings/meetings.types';
 
 const AUDIO_ELIGIBLE_STATUSES: MeetingStatus[] = [
   'CAPTURE_DONE',
@@ -75,20 +88,19 @@ const AUDIO_ELIGIBLE_STATUSES: MeetingStatus[] = [
 ];
 
 const props = defineProps<{
-  meetingId: number;
-  creationDate: string;
-  status: MeetingStatus;
+  meeting: MeetingDto;
 }>();
 
 const isMeetingRecent = computed(
-  () => differenceInDays(new Date(), parseISO(props.creationDate)) <= MAX_DELAY_TO_FETCH_AUDIO,
+  () =>
+    differenceInDays(new Date(), parseISO(props.meeting.creation_date)) <= MAX_DELAY_TO_FETCH_AUDIO,
 );
 
 const isAudioAvailable = computed(
-  () => isMeetingRecent.value && AUDIO_ELIGIBLE_STATUSES.includes(props.status),
+  () => isMeetingRecent.value && AUDIO_ELIGIBLE_STATUSES.includes(props.meeting.status),
 );
 
-const audioStorageKey = `mcr-audio-required-${props.meetingId}`;
+const audioStorageKey = `mcr-audio-required-${props.meeting.id}`;
 const isMeetingAudioRequested = ref(localStorage.getItem(audioStorageKey) === 'true');
 
 const audioSrc = ref<string>();
@@ -125,7 +137,7 @@ watch(
   async (isRequired) => {
     if (!isRequired) return;
     try {
-      const response = await HttpService.get(`${API_PATHS.MEETINGS}/${props.meetingId}/audio`, {
+      const response = await HttpService.get(`${API_PATHS.MEETINGS}/${props.meeting.id}/audio`, {
         responseType: 'blob',
       });
       audioSrc.value = URL.createObjectURL(response.data);
