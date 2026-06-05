@@ -3,7 +3,7 @@ name: Slack PR Notification
 on:
   pull_request:
     branches:
-      - dev
+      - main
     types: [opened, edited, ready_for_review]
 
 jobs:
