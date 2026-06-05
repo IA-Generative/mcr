@@ -1,6 +1,6 @@
-# When pushing to dev or data-dev, we need to build new images.
-# Else, we can promote already built images to the next env
-.is-build-mode: &is-build-mode '$CI_COMMIT_BRANCH == "data-dev" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
+# When pushing to main or a test-xxx branch, we need to build new images.
+# When deploying to prod (tag) we can "promote" the existing images
+.is-build-mode: &is-build-mode '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
 .is-manual-trigger: &is-manual-trigger '$CI_PIPELINE_SOURCE == "web"'
 .is-mep-tag: &is-mep-tag $CI_COMMIT_TAG =~ /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}$/
 
@@ -11,7 +11,7 @@ workflow:
       when: always
     - if: '$CI_PIPELINE_SOURCE == "web"'
       when: always
-    - if: '$CI_COMMIT_BRANCH == "data-dev" || $CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
       when: always
       changes:
         - mcr-frontend/**/*
@@ -66,12 +66,8 @@ get-image-tag:
     - |
       set -eux
 
-      if [[ "${CI_COMMIT_BRANCH:-}" == "dev" ]]; then
+      if [[ "${CI_COMMIT_BRANCH:-}" == "main" ]]; then
         TARGET_ENV="staging"
-      elif [[ "${CI_COMMIT_BRANCH:-}" == "data-dev" ]]; then
-        TARGET_ENV="data"
-      elif [[ "${CI_COMMIT_BRANCH:-}" == "main" ]]; then
-        TARGET_ENV="preprod"
       else
         # Default prefix for branches that are not dev, data-dev, or main
         # This is useful only when doing test on the ci
@@ -246,7 +242,7 @@ rollout-infra:
 
       # Use a case statement instead of arrays
       case "$TARGET_ENV" in
-        staging|data|preprod|prod)
+        staging|prod)
           deploy_images_automatically=true
           ;;
         *)
