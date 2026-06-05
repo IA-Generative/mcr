@@ -11,6 +11,14 @@ const router = () => {
   });
 
   instance.beforeEach((to) => {
+    const isMaintenanceEnabled = useUnleash().isEnabled('maintenance');
+    if (isMaintenanceEnabled && to.name !== 'Maintenance') {
+      return { name: 'Maintenance' };
+    }
+    if (!isMaintenanceEnabled && to.name === 'Maintenance') {
+      return { name: 'MeetingList' };
+    }
+
     const featureFlag = to.meta.featureFlag as string | undefined;
     if (featureFlag && !useUnleash().isEnabled(featureFlag)) {
       return { name: 'NotFound' };
