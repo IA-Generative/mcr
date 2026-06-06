@@ -300,7 +300,7 @@
       "type": {
         "cr1": "Relevé de décisions",
         "cr2": "Synthèse détaillée",
-        "cr3": "Format à venir"
+        "cr3": "Synthèse narrative"
       },
       "report-pending": {
         "title": "L'écriture du compte-rendu est en cours...",
@@ -358,6 +358,11 @@
           "label": "Synthèse détaillée",
           "hint": "Synthèse complète et détaillée de l'ensemble des échanges de la réunion.",
           "title": "Synthèse détaillée"
+        },
+        "narrative-synthesis": {
+          "label": "Synthèse narrative",
+          "hint": "Récit fluide des échanges en discours indirect (« X a dit que Y »), fidèle et chronologique.",
+          "title": "Synthèse narrative"
         },
         "transcription": {
           "title": "Transcription"

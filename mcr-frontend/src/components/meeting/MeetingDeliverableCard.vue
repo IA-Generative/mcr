@@ -100,6 +100,12 @@ const radioOptions = computed(() =>
       disabled: sucessfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
     },
     {
+      label: t('meeting-v2.deliverable-card.type.narrative-synthesis.label'),
+      hint: t('meeting-v2.deliverable-card.type.narrative-synthesis.hint'),
+      value: 'NARRATIVE_SYNTHESIS' as DeliverableType,
+      disabled: sucessfullyGeneratedTypes.value.has('NARRATIVE_SYNTHESIS'),
+    },
+    {
       label: t('meeting-v2.deliverable-card.type.custom-report.label'),
       hint: t('meeting-v2.deliverable-card.type.custom-report.hint'),
       value: 'CUSTOM_REPORT' as DeliverableType,
@@ -181,6 +187,7 @@ function generate(): void {
 const TYPE_KEY_MAP: Record<string, string> = {
   DECISION_RECORD: 'decision-record',
   DETAILED_SYNTHESIS: 'detailed-synthesis',
+  NARRATIVE_SYNTHESIS: 'narrative-synthesis',
   CUSTOM_REPORT: 'custom-report',
 };
 

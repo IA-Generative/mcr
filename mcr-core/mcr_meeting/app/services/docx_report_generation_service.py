@@ -7,6 +7,7 @@ from docxtpl import RichText
 from mcr_meeting.app.schemas.report_generation import (
     CustomReportResponse,
     DetailedSynthesisGenerationResponse,
+    NarrativeSynthesisResponse,
     ReportGenerationResponse,
     ReportHeader,
     ReportParticipant,
@@ -187,6 +188,13 @@ def _get_style_template_path() -> str:
 
 def generate_custom_report_docx(response: CustomReportResponse) -> BytesIO:
     return markdown_to_docx(response.markdown_content, _get_style_template_path())
+
+
+def generate_narrative_synthesis_docx(
+    response: NarrativeSynthesisResponse,
+) -> BytesIO:
+    """Convertit le texte narratif libre en DOCX via le template de style."""
+    return markdown_to_docx(response.narrative, _get_style_template_path())
 
 
 def _format_title_detailed_synthesis(

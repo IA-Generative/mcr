@@ -15,13 +15,16 @@ from mcr_generation.app.services.report_generator.decision_record_generator impo
 from mcr_generation.app.services.report_generator.detailed_synthesis_generator import (
     DetailedSynthesisGenerator,
 )
+from mcr_generation.app.services.report_generator.narrative_synthesis_generator import (
+    NarrativeSynthesisGenerator,
+)
 
 
 def create_report_generator(
     report_type: ReportTypes,
     *,
     custom_prompt: str | None = None,
-) -> BaseReportGenerator | CustomReportGenerator:
+) -> BaseReportGenerator | CustomReportGenerator | NarrativeSynthesisGenerator:
     """
     Factory function that returns the appropriate report generator for the given report type.
 
@@ -31,7 +34,7 @@ def create_report_generator(
             CUSTOM_REPORT, ignored for the structured report types.
 
     Returns:
-        BaseReportGenerator | CustomReportGenerator: A concrete report generator instance.
+        A concrete report generator instance (structured, custom, or narrative).
 
     Raises:
         UnsupportedReportTypeError: If the report type is not supported.
@@ -42,6 +45,8 @@ def create_report_generator(
             return DecisionRecordGenerator()
         case ReportTypes.DETAILED_SYNTHESIS:
             return DetailedSynthesisGenerator()
+        case ReportTypes.NARRATIVE_SYNTHESIS:
+            return NarrativeSynthesisGenerator()
         case ReportTypes.CUSTOM_REPORT:
             if custom_prompt is None:
                 raise MissingCustomPromptError(
