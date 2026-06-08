@@ -60,5 +60,8 @@ networks:
   lasuite:
     name: lasuite-network
     driver: bridge
+    # Base compose.yaml marks this external; merge keeps that key unless we
+    # explicitly flip it, so Docker auto-creates the network instead.
+    external: false
   shared-network:
     external: true

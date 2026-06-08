@@ -69,6 +69,10 @@ init-drive:  ## One-time: copy config, build images
 	./docker/drive/setup-drive.sh
 
 start-drive:  ## Start MCR + Drive
+	@if [ ! -f ../drive/compose.override.yml ]; then \
+		echo "Drive is not set up. Run 'make init-drive' first."; \
+		exit 1; \
+	fi
 	docker network create shared-network 2>/dev/null || true
 	docker compose --env-file .env.local.docker --env-file .env up -d --wait keycloak
 	@echo "Keycloak ready — starting Drive..."
