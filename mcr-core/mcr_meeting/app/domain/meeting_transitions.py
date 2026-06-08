@@ -7,24 +7,22 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     get_state_machine_for_meeting,
 )
 
-# Allowed meeting transitions handled outside the legacy state machine.
-# This table grows PR after PR as routes migrate to use cases; it only covers
-# the transitions already drained from the SM (see migration-plan.md).
-_ALLOWED: dict[MeetingStatus, frozenset[MeetingStatus]] = {
-    MeetingStatus.CAPTURE_BOT_IS_CONNECTING: frozenset(
-        {
-            MeetingStatus.CAPTURE_IN_PROGRESS,
-            MeetingStatus.CAPTURE_BOT_CONNECTION_FAILED,
-        }
-    ),
-}
+
+def start_capture_bot(meeting: Meeting) -> None:
+    _apply_or_conflict(meeting, MeetingEvent.START_CAPTURE_BOT)
 
 
-def assert_meeting_transition(current: MeetingStatus, target: MeetingStatus) -> None:
-    if target not in _ALLOWED.get(current, frozenset()):
-        raise MeetingStateConflictException(
-            f"Cannot transition meeting from {str(current)!r} to {str(target)!r}"
-        )
+def fail_capture_bot(meeting: Meeting) -> None:
+    _apply_or_conflict(meeting, MeetingEvent.FAIL_CAPTURE_BOT)
+
+
+def _apply_or_conflict(meeting: Meeting, event: MeetingEvent) -> None:
+    """Apply ``event`` via the state machine, mapping a rejected transition to a
+    409-level ``MeetingStateConflictException`` instead of a raw ``ValueError``."""
+    try:
+        _apply(meeting, event)
+    except ValueError as exc:
+        raise MeetingStateConflictException(str(exc)) from exc
 
 
 def reset_and_start_report(meeting: Meeting) -> Meeting:

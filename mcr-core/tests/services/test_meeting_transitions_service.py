@@ -103,44 +103,6 @@ def test_complete_capture(
     assert result.status == MeetingStatus.CAPTURE_DONE
 
 
-def test_start_capture_bot(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test bot connection success transitions to CAPTURE_IN_PROGRESS."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.CAPTURE_BOT_IS_CONNECTING,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.start_capture_bot(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.CAPTURE_IN_PROGRESS
-
-
-def test_fail_capture_bot(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test bot connection failure transitions to CAPTURE_BOT_CONNECTION_FAILED."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.CAPTURE_BOT_IS_CONNECTING,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.fail_capture_bot(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.CAPTURE_BOT_CONNECTION_FAILED
-
-
 def test_fail_capture(
     orchestrator_user: User,
     user_keycloak_uuid: UUID,
