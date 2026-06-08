@@ -1,10 +1,10 @@
 """Utility functions for processing audio and transcription segments during Speech To Text pipeline."""
 
+from collections.abc import Iterator
 from io import BytesIO
 
 import numpy as np
 import soundfile as sf
-from loguru import logger
 from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict
 
@@ -21,7 +21,7 @@ class TranscriptionInput(BaseModel):
 def split_audio_on_timestamps(
     audio_bytes: BytesIO,
     result_with_time: list[TimeSpan],
-) -> list[TranscriptionInput]:
+) -> Iterator[TranscriptionInput]:
     """
     Split mono audio bytes into chunks based on time spans.
 
@@ -30,26 +30,18 @@ def split_audio_on_timestamps(
         result_with_time (List[TimeSpan]): Spans with start/end times in seconds.
 
     Returns:
-        List[TranscriptionInput]: List of audio chunks aligned with time spans.
+        Iterator[TranscriptionInput]: List of audio chunks aligned with time spans.
     """
-    data, sample_rate = sf.read(audio_bytes)  # already mono
-    transcription_inputs: list[TranscriptionInput] = []
-
-    for span in result_with_time:
-        start_sample = int(span.start * sample_rate)
-        end_sample = int(span.end * sample_rate)
-        chunk_data = data[start_sample:end_sample]
-
-        transcription_inputs.append(
-            TranscriptionInput(
-                audio=chunk_data.astype("float32"),
-                span=span,
-            )
-        )
-
-    logger.debug(
-        "Created {} transcription inputs from diarization segments",
-        len(transcription_inputs),
-    )
-
-    return transcription_inputs
+    with sf.SoundFile(audio_bytes) as f:
+        sample_rate = f.samplerate
+        total_frames = len(f)
+        for span in result_with_time:
+            # Clamp to the file length: a diarization span can extend past the
+            # actual audio (trailing silence, rounding). Seeking beyond EOF
+            # raises in libsndfile, whereas the old array slicing clamped
+            # silently.
+            start_sample = min(int(span.start * sample_rate), total_frames)
+            end_sample = min(int(span.end * sample_rate), total_frames)
+            f.seek(start_sample)
+            chunk_data = f.read(end_sample - start_sample, dtype="float32")
+            yield TranscriptionInput(audio=chunk_data, span=span)
