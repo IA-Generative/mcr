@@ -652,8 +652,8 @@
   "maintenance": {
     "title": "MIrAI Compte-Rendu est en maintenance",
     "description": "Si vous avez une réunion en cours, l'enregistrement se poursuit. Pensez à exclure l'agent lorsque vous avez terminé.",
-    "description2": "Pour vos autres réunions, vous pouvez enregistrer l'audio et l'importer lorsque le service sera rétabli.",
-    "description3": "Veuillez nous excuser pour la gène occasionnée."
+    "description-2": "Pour vos autres réunions, vous pouvez enregistrer l'audio et l'importer lorsque le service sera rétabli.",
+    "description-3": "Veuillez nous excuser pour la gêne occasionnée."
   },
   "form": {
     "error": {
