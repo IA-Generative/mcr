@@ -157,11 +157,17 @@ class SpeechToTextPipeline:
 
         pre_processed_audio_bytes = self.pre_process(audio_bytes)
 
+        # The original (compressed) audio is no longer needed once the WAV has
+        # been produced. Release its buffer immediately to cap peak memory on
+        # long meetings, where each full-length copy scales with duration.
+        audio_bytes.close()
+
         diarization_result = self.diarize_audio(
             pre_processed_audio_bytes,
         )
 
         if not diarization_result:
+            pre_processed_audio_bytes.close()
             logger.warning("No diarization result. Returning empty transcription.")
             return []
 
@@ -172,6 +178,10 @@ class SpeechToTextPipeline:
         transcription_segments = self.transcribe_audio(
             pre_processed_audio_bytes, transcription_chunk_spans
         )
+
+        # The WAV audio is only needed for diarization and transcription, both
+        # of which are now done. Release it before the lighter post-processing.
+        pre_processed_audio_bytes.close()
 
         diarized_transcription_segments = diarize_vad_transcription_segments(
             transcription_segments, diarization_result
