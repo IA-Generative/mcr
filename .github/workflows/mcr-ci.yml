@@ -110,7 +110,6 @@ jobs:
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_HUB_API_URL: ${{ vars.LLM_HUB_API_URL }}
       LLM_HUB_API_KEY: ${{ secrets.LLM_HUB_API_KEY }}
-      LLM_MODEL_NAME: ${{ vars.LLM_MODEL_NAME }}
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}
