@@ -47,7 +47,6 @@ export type RecordingSessionStats = {
   deviceSwitchedMidSession: boolean;
   // Permission / track-liveness instrumentation (detects a device no longer authorized).
   trackMutedAtStop: boolean;
-  trackEndedAtStop: boolean;
   permissionRevokedEvents: number;
 };
 
@@ -87,7 +86,6 @@ function createEmptyStats(): RecordingSessionStats {
     deviceIdAtStop: null,
     deviceSwitchedMidSession: false,
     trackMutedAtStop: false,
-    trackEndedAtStop: false,
     permissionRevokedEvents: 0,
   };
 }
@@ -107,8 +105,8 @@ function isWrongDevice(stats: RecordingSessionStats): boolean {
   if (stats.deviceSwitchedMidSession || stats.trackEndedEvents > 0) return true;
 
   // The device is no longer authorized / live: permission revoked mid-session,
-  // or the track ended/stayed muted by stop time.
-  if (stats.permissionRevokedEvents > 0 || stats.trackEndedAtStop || stats.trackMutedAtStop) {
+  // or the track stayed muted by stop time.
+  if (stats.permissionRevokedEvents > 0 || stats.trackMutedAtStop) {
     return true;
   }
 
@@ -142,7 +140,6 @@ export function readTrackStateAtStopToDetectDeviceProblems(
   stats.deviceIdAtStop = deviceIdAtStop;
   stats.deviceSwitchedMidSession =
     startDeviceId != null && deviceIdAtStop != null && startDeviceId !== deviceIdAtStop;
-  stats.trackEndedAtStop = track.readyState === 'ended';
   stats.trackMutedAtStop = track.muted === true;
 }
 

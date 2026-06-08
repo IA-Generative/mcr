@@ -132,7 +132,6 @@ export function useRecordingSession(meetingId: number) {
           deviceIdAtStop: stats.deviceIdAtStop,
           deviceSwitchedMidSession: stats.deviceSwitchedMidSession,
           trackMutedAtStop: stats.trackMutedAtStop,
-          trackEndedAtStop: stats.trackEndedAtStop,
           permissionRevokedEvents: stats.permissionRevokedEvents,
         };
 
