@@ -10,6 +10,7 @@
       :title="transcriptionItem.title"
       :status="transcriptionItem.status as DeliverableStatus"
       :file-format="transcriptionItem.fileFormat"
+      :external-url="transcriptionItem.externalUrl"
       @download="$emit('downloadTranscription')"
     />
     <DeliverableItem
@@ -20,6 +21,7 @@
       :status="item.status as DeliverableStatus"
       :file-format="item.fileFormat"
       :file-size="item.fileSize"
+      :external-url="item.externalUrl"
       @download="$emit('downloadDeliverable', $event)"
     />
   </div>
@@ -27,19 +29,16 @@
 
 <script setup lang="ts">
 import DeliverableItem from './DeliverableItem.vue';
-import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
+import type {
+  DeliverableItemView,
+  DeliverableStatus,
+} from '@/services/deliverables/deliverables.types';
 
 const TRANSCRIPTION_ITEM_ID = -1;
 
 defineProps<{
-  transcriptionItem: { title: string; status: string; fileFormat: string } | null;
-  displayedDeliverables: {
-    id: number;
-    title: string;
-    status: string;
-    fileFormat: string;
-    fileSize?: string;
-  }[];
+  transcriptionItem: Omit<DeliverableItemView, 'id' | 'fileSize'> | null;
+  displayedDeliverables: DeliverableItemView[];
 }>();
 
 defineEmits<{

@@ -367,6 +367,10 @@
           "hint": "Faites votre compte-rendu sur mesure.",
           "title": "Compte-rendu personnalisé"
         }
+      },
+      "actions": {
+        "download": "Télécharger",
+        "open-external": "Consulter"
       }
     },
     "custom-report-modal": {

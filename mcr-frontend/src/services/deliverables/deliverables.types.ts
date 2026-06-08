@@ -28,6 +28,12 @@ export interface DeliverableListResponse {
   deliverables: DeliverableDto[];
 }
 
+export interface DeliverableItemView {
+  title: string;
+  status: DeliverableStatus;
+  externalUrl?: string | null;
+}
+
 export interface DeliverableCreateRequest {
   meeting_id: number;
   type: DeliverableType;

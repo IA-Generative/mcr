@@ -191,6 +191,7 @@ const displayedDeliverables = computed(() =>
     status: mapDeliverableStatus(d.status as Exclude<typeof d.status, 'IN_PROGRESS'>),
     fileFormat: 'DOCX',
     fileSize: undefined,
+    externalUrl: d.external_url,
   })),
 );
 
@@ -207,10 +208,14 @@ function onDownload(deliverableId: number): void {
 
 const transcriptionItem = computed(() => {
   if (!transcriptionStatus.value) return null;
+  const transcriptionDeliverable = (deliverables.value ?? []).find(
+    (d) => d.type === 'TRANSCRIPTION',
+  );
   return {
     title: t('meeting-v2.deliverable-card.type.transcription.title'),
     status: transcriptionStatus.value,
     fileFormat: 'DOCX',
+    externalUrl: transcriptionDeliverable?.external_url ?? null,
   };
 });
 
