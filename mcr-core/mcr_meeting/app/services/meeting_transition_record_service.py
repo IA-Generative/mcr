@@ -45,18 +45,23 @@ def create_transition_record_service(
     status_with_special_transition_record_handlers = [
         MeetingStatus.TRANSCRIPTION_PENDING,
         MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        MeetingStatus.TRANSCRIPTION_DONE,
         MeetingStatus.REPORT_PENDING,
     ]
 
     if next_status in status_with_special_transition_record_handlers:
         return
 
-    current_time = datetime.now(timezone.utc)
+    record_meeting_transition(meeting_id, next_status)
 
+
+def record_meeting_transition(meeting_id: int, status: MeetingStatus) -> None:
+    """Persist a transition record unconditionally. Use this from a use-case when the
+    transition is one the state machine deliberately leaves to the caller."""
     transition_record = MeetingTransitionRecord(
         meeting_id=meeting_id,
-        timestamp=current_time,
-        status=next_status,
+        timestamp=datetime.now(timezone.utc),
+        status=status,
     )
 
     with UnitOfWork():

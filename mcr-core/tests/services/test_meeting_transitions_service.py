@@ -243,8 +243,9 @@ def test_fail_report() -> None:
     assert result.status == MeetingStatus.REPORT_FAILED
 
 
-def test_complete_transcription(in_memory_email: InMemoryEmailClient) -> None:
-    """Test completing transcription transitions to TRANSCRIPTION_DONE."""
+def test_complete_transcription() -> None:
+    """The COMPLETE_TRANSCRIPTION transition only marks the status; side effects
+    (deliverable, email, transition record) live in the complete_transcription use-case."""
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         name_platform=MeetingPlatforms.COMU,
@@ -253,7 +254,6 @@ def test_complete_transcription(in_memory_email: InMemoryEmailClient) -> None:
     result = mts.complete_transcription(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_DONE
-    assert len(in_memory_email.sent) == 1
 
 
 def test_update_transcription(
