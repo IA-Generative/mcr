@@ -27,7 +27,7 @@ from mcr_meeting.app.orchestrators.transcription_orchestrator import (
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
-from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
+from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, validate_docx_upload
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 

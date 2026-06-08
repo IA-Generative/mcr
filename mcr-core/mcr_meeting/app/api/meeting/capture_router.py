@@ -13,7 +13,7 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     complete_capture,
     init_capture,
 )
-from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
+from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 
 api_settings = ApiSettings()
 router = APIRouter(

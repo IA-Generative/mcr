@@ -11,10 +11,10 @@ from pytest_mock import MockerFixture
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+import mcr_meeting.app.infrastructure.keycloak as keycloak_module
+import mcr_meeting.app.infrastructure.redis as redis_store_module
 import mcr_meeting.app.services.email.email_service as email_service_module
-import mcr_meeting.app.services.redis_token_store as redis_store_module
 import mcr_meeting.app.services.s3_service as s3_service_module
-import mcr_meeting.app.services.token_exchange_service as token_exchange_module
 from mcr_meeting.app.db.db import (
     Base,
     db_session_ctx,
@@ -92,10 +92,10 @@ def in_memory_redis() -> Generator[InMemoryRedis, None, None]:
 @pytest.fixture(autouse=True)
 def in_memory_keycloak() -> Generator[InMemoryKeycloak, None, None]:
     mock = InMemoryKeycloak()
-    original = token_exchange_module._keycloak
-    token_exchange_module._keycloak = mock  # type: ignore[assignment]
+    original = keycloak_module._keycloak
+    keycloak_module._keycloak = mock  # type: ignore[assignment]
     yield mock
-    token_exchange_module._keycloak = original
+    keycloak_module._keycloak = original
 
 
 @pytest.fixture
