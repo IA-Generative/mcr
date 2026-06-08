@@ -8,8 +8,8 @@
     <div class="flex flex-col gap-2 max-w-2xl">
       <h1 class="fr-h1">{{ $t('maintenance.title') }}</h1>
       <p class="fr-text--lead">{{ $t('maintenance.description') }}</p>
-      <p class="fr-text--lead">{{ $t('maintenance.description2') }}</p>
-      <p class="fr-text--sm">{{ $t('maintenance.description3') }}</p>
+      <p class="fr-text--lead">{{ $t('maintenance.description-2') }}</p>
+      <p class="fr-text--sm">{{ $t('maintenance.description-3') }}</p>
     </div>
   </div>
 </template>
