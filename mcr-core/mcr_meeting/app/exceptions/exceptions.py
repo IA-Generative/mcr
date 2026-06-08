@@ -64,3 +64,8 @@ class TranscriptionError(MCRException):
 class DeliverableStateConflictException(MCRException):
     """Raised when a state-machine transition is rejected because the deliverable
     is not in an allowed source state (mapped to HTTP 409)."""
+
+
+class MeetingStateConflictException(MCRException):
+    """Raised when a meeting transition is rejected because the meeting is not in
+    an allowed source state (mapped to HTTP 409)."""
