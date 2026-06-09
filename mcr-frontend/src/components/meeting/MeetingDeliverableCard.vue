@@ -24,12 +24,7 @@
 
     <hr class="w-full border-0 border-t border-t-[var(--grey-925-125)] m-0 pb-0.5" />
 
-    <MeetingDeliverableList
-      :transcription-item="transcriptionItem"
-      :displayed-deliverables="displayedDeliverables"
-      @download-transcription="onDownloadTranscription"
-      @download-deliverable="onDownload"
-    />
+    <MeetingDeliverableList :active-deliverables="activeDeliverables" />
   </div>
 </template>
 
@@ -37,14 +32,9 @@
 import MeetingDeliverableList from './MeetingDeliverableList.vue';
 import CustomReportModal from './modals/CustomReportModal.vue';
 import { useDeliverables } from '@/services/deliverables/use-deliverables';
-import {
-  mapDeliverableStatus,
-  type DeliverableType,
-} from '@/services/deliverables/deliverables.types';
+import { DeliverableType, type DeliverableDto } from '@/services/deliverables/deliverables.types';
 import { getTranscriptionStatus } from '@/services/deliverables/deliverables.service';
 import type { MeetingStatus } from '@/services/meetings/meetings.types';
-import { useMeetings } from '@/services/meetings/use-meeting';
-import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
@@ -52,13 +42,9 @@ import { useFeatureFlag } from '@/composables/use-feature-flag';
 
 const props = defineProps<{ meetingId: number; meetingStatus: MeetingStatus }>();
 
-const { getDeliverablesQuery, createDeliverableMutation, downloadDeliverableMutation } =
-  useDeliverables();
-const { downloadMutation } = useMeetings();
-
+const { getDeliverablesQuery, createDeliverableMutation } = useDeliverables();
 const { data: deliverables } = getDeliverablesQuery(props.meetingId);
 const { mutate: createMutate, isPending: isCreating } = createDeliverableMutation(props.meetingId);
-const { mutate: downloadMutate } = downloadDeliverableMutation();
 
 const toaster = useToaster();
 
@@ -66,23 +52,29 @@ const isCustomReportEnabled = useFeatureFlag('custom_cr');
 const selectedType = ref<DeliverableType | undefined>(undefined);
 const customPrompt = ref('');
 
-const activeDeliverables = computed(() =>
-  (deliverables.value ?? []).filter(
-    (d) =>
-      d.type !== 'TRANSCRIPTION' && (d.type !== 'CUSTOM_REPORT' || isCustomReportEnabled.value),
-  ),
+const activeDeliverables = computed(() => {
+  const DEFAULT_STATUS = 'PENDING';
+
+  const PENDING_TRANSCRIPTION_DELIVERABLE = {
+    type: 'TRANSCRIPTION',
+    status: getTranscriptionStatus(props.meetingStatus) ?? DEFAULT_STATUS,
+  } as DeliverableDto;
+
+  if (deliverables.value && deliverables.value.length > 0) {
+    return deliverables.value.filter(
+      (d) => d.type !== 'CUSTOM_REPORT' || isCustomReportEnabled.value,
+    );
+  } else {
+    return [PENDING_TRANSCRIPTION_DELIVERABLE];
+  }
+});
+
+const successfullyGeneratedTypes = computed(
+  () => new Set(activeDeliverables.value.map((d) => d.type)),
 );
 
-const sucessfullyGeneratedTypes = computed(
-  () =>
-    new Set(
-      activeDeliverables.value
-        .filter((d) => d.status === 'PENDING' || d.status === 'AVAILABLE')
-        .map((d) => d.type),
-    ),
-);
 const hasPendingDeliverable = computed(() =>
-  activeDeliverables.value.some((d) => d.status === 'PENDING'),
+  activeDeliverables.value.some((d) => d.status === 'PENDING' || d.status === 'IN_PROGRESS'),
 );
 
 const radioOptions = computed(() =>
@@ -91,13 +83,13 @@ const radioOptions = computed(() =>
       label: t('meeting-v2.deliverable-card.type.decision-record.label'),
       hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
       value: 'DECISION_RECORD' as DeliverableType,
-      disabled: sucessfullyGeneratedTypes.value.has('DECISION_RECORD'),
+      disabled: successfullyGeneratedTypes.value.has('DECISION_RECORD'),
     },
     {
       label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
       hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
       value: 'DETAILED_SYNTHESIS' as DeliverableType,
-      disabled: sucessfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
+      disabled: successfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
     },
     {
       label: t('meeting-v2.deliverable-card.type.custom-report.label'),
@@ -108,14 +100,8 @@ const radioOptions = computed(() =>
   ].filter((o) => o.value !== 'CUSTOM_REPORT' || isCustomReportEnabled.value),
 );
 
-const transcriptionStatus = computed(() => getTranscriptionStatus(props.meetingStatus));
-
 const allGenerated = computed(() =>
   radioOptions.value.filter((o) => o.value !== 'CUSTOM_REPORT').every((o) => o.disabled),
-);
-
-const isTranscriptionInProgress = computed(
-  () => transcriptionStatus.value !== null && transcriptionStatus.value !== 'AVAILABLE',
 );
 
 const generateDisabled = computed(
@@ -124,13 +110,10 @@ const generateDisabled = computed(
     selectedType.value === 'CUSTOM_REPORT' ||
     allGenerated.value ||
     isCreating.value ||
-    hasPendingDeliverable.value ||
-    isTranscriptionInProgress.value,
+    hasPendingDeliverable.value,
 );
 
-const modalGenerateDisabled = computed(
-  () => isCreating.value || hasPendingDeliverable.value || isTranscriptionInProgress.value,
-);
+const modalGenerateDisabled = computed(() => isCreating.value || hasPendingDeliverable.value);
 
 const { open: openCustomReportModal } = useModal({
   component: CustomReportModal,
@@ -176,60 +159,6 @@ function generate(): void {
       },
     },
   );
-}
-
-const TYPE_KEY_MAP: Record<string, string> = {
-  DECISION_RECORD: 'decision-record',
-  DETAILED_SYNTHESIS: 'detailed-synthesis',
-  CUSTOM_REPORT: 'custom-report',
-};
-
-const displayedDeliverables = computed(() =>
-  activeDeliverables.value.map((d) => ({
-    id: d.id,
-    title: t(`meeting-v2.deliverable-card.type.${TYPE_KEY_MAP[d.type]}.title`),
-    status: mapDeliverableStatus(d.status as Exclude<typeof d.status, 'IN_PROGRESS'>),
-    fileFormat: 'DOCX',
-    fileSize: undefined,
-    externalUrl: d.external_url,
-  })),
-);
-
-function onDownload(deliverableId: number): void {
-  downloadMutate(deliverableId, {
-    onSuccess: (response) => {
-      downloadFileFromAxios(response, extractFilenameFromResponse(response));
-    },
-    onError: () => {
-      toaster.addErrorMessage(t('error.default')!);
-    },
-  });
-}
-
-const transcriptionItem = computed(() => {
-  if (!transcriptionStatus.value) return null;
-  const transcriptionDeliverable = (deliverables.value ?? []).find(
-    (d) => d.type === 'TRANSCRIPTION',
-  );
-  return {
-    title: t('meeting-v2.deliverable-card.type.transcription.title'),
-    status: transcriptionStatus.value,
-    fileFormat: 'DOCX',
-    externalUrl: transcriptionDeliverable?.external_url ?? null,
-  };
-});
-
-const { mutate: downloadTranscription } = downloadMutation();
-
-function onDownloadTranscription(): void {
-  downloadTranscription(props.meetingId, {
-    onSuccess: (response) => {
-      downloadFileFromAxios(response, extractFilenameFromResponse(response));
-    },
-    onError: () => {
-      toaster.addErrorMessage(t('error.default')!);
-    },
-  });
 }
 </script>
 

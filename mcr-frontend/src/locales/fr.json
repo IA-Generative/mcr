@@ -348,6 +348,7 @@
       "title": "Livrables",
       "description": "Sélectionnez un format de compte-rendu à générer :",
       "generate-button": "Générer",
+      "format": "DOCX",
       "type": {
         "decision-record": {
           "label": "Relevé de décisions",

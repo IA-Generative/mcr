@@ -9,8 +9,7 @@
 
     <div class="flex items-center justify-between">
       <span class="text-[var(--text-default-grey)] text-xs">
-        {{ fileFormat }}
-        <template v-if="fileSize"> - {{ fileSize }}</template>
+        {{ $t('meeting-v2.deliverable-card.format') }}
       </span>
       <div class="flex items-center gap-1">
         <a
@@ -41,18 +40,10 @@
 
 <script setup lang="ts">
 import { useFeatureFlag } from '@/composables/use-feature-flag';
-import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
+import type { DeliverableItemView } from '@/services/deliverables/deliverables.types';
 
-defineProps<{
-  deliverableId: number;
-  title: string;
-  status: DeliverableStatus;
-  fileFormat: string;
-  fileSize?: string;
-  externalUrl?: string | null;
-}>();
-
-const emit = defineEmits<{ download: [id: number] }>();
+defineProps<DeliverableItemView>();
+defineEmits<{ download: [] }>();
 
 const isFichierEnabled = useFeatureFlag('fichier-integration');
 </script>
