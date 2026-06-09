@@ -98,15 +98,10 @@ const radioOptions = computed(() => [
   },
 ]);
 
-const allGenerated = computed(() =>
-  radioOptions.value.filter((o) => o.value !== 'CUSTOM_REPORT').every((o) => o.disabled),
-);
-
 const generateDisabled = computed(
   () =>
     selectedType.value === undefined ||
     selectedType.value === 'CUSTOM_REPORT' ||
-    allGenerated.value ||
     isCreating.value ||
     hasPendingDeliverable.value,
 );
