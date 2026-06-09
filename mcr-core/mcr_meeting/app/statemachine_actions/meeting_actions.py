@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
+from mcr_meeting.app.domain.email import build_report_ready_email
+from mcr_meeting.app.infrastructure import email as email_infra
 from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
@@ -9,9 +11,6 @@ from mcr_meeting.app.schemas.celery_types import (
 )
 from mcr_meeting.app.schemas.report_generation import (
     ReportResponse,
-)
-from mcr_meeting.app.services.email.email_service import (
-    send_report_generation_success_email,
 )
 from mcr_meeting.app.services.meeting_service import (
     update_meeting_end_date,
@@ -87,7 +86,12 @@ def after_complete_report_handler(
         update_meeting_status(meeting, next_status)
         persist_report_docx(meeting_id=meeting.id, report_response=report_response)
 
-    send_report_generation_success_email(meeting_id=meeting.id)
+    content = build_report_ready_email(meeting.name or "", meeting.id)
+    email_infra.send_email(
+        to_email=meeting.owner.email,
+        subject=content.subject,
+        html=content.html,
+    )
 
 
 def update_status_handler(meeting: Meeting, next_status: MeetingStatus) -> None:
