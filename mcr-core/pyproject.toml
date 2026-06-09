@@ -86,7 +86,7 @@ typing = [
     "pandas-stubs>=2.3.0.250703",
     "numpy-typing>=1.1.1",
 ]
-tools = ["mypy-clean-slate", "deptry"]
+tools = ["mypy-clean-slate", "deptry", "import-linter"]
 
 [tool.mypy]
 # disallow_any_unimported = true

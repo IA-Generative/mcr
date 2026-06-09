@@ -22,8 +22,9 @@ type-check:
 	uv run mypy -p mcr_meeting
 
 lint: 
-	uv sync --group dev --inexact
+	uv sync --group dev --group tools --inexact
 	uv run ruff check
+	uv run lint-imports
 
 format:
 	uv sync --group dev --inexact
