@@ -121,7 +121,6 @@ mcr-generation/mcr_generation/app/
 - **DB access**: SQLAlchemy 2.0 with repository pattern
 - **Architecture layers**: see [Target architecture (mcr-core)](#target-architecture-mcr-core) below
 - **Commits**: Gitmoji convention — see the `/commit` skill for details
-- **PRs**: Target the `dev` branch (not `main`)
 
 ### Target architecture (mcr-core)
 
