@@ -77,28 +77,26 @@ const hasPendingDeliverable = computed(() =>
   activeDeliverables.value.some((d) => d.status === 'PENDING' || d.status === 'IN_PROGRESS'),
 );
 
-const radioOptions = computed(() =>
-  [
-    {
-      label: t('meeting-v2.deliverable-card.type.decision-record.label'),
-      hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
-      value: 'DECISION_RECORD' as DeliverableType,
-      disabled: successfullyGeneratedTypes.value.has('DECISION_RECORD'),
-    },
-    {
-      label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
-      hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
-      value: 'DETAILED_SYNTHESIS' as DeliverableType,
-      disabled: successfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
-    },
-    {
-      label: t('meeting-v2.deliverable-card.type.custom-report.label'),
-      hint: t('meeting-v2.deliverable-card.type.custom-report.hint'),
-      value: 'CUSTOM_REPORT' as DeliverableType,
-      disabled: false,
-    },
-  ].filter((o) => o.value !== 'CUSTOM_REPORT' || isCustomReportEnabled.value),
-);
+const radioOptions = computed(() => [
+  {
+    label: t('meeting-v2.deliverable-card.type.decision-record.label'),
+    hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
+    value: 'DECISION_RECORD',
+    disabled: successfullyGeneratedTypes.value.has('DECISION_RECORD'),
+  },
+  {
+    label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
+    hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
+    value: 'DETAILED_SYNTHESIS',
+    disabled: successfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
+  },
+  {
+    label: t('meeting-v2.deliverable-card.type.custom-report.label'),
+    hint: t('meeting-v2.deliverable-card.type.custom-report.hint'),
+    value: 'CUSTOM_REPORT',
+    disabled: false,
+  },
+]);
 
 const allGenerated = computed(() =>
   radioOptions.value.filter((o) => o.value !== 'CUSTOM_REPORT').every((o) => o.disabled),
