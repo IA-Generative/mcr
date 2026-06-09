@@ -85,7 +85,7 @@ class TranscriptionDocxGenerator(TemplatedDocxGenerator):
         )  # 12 points space after this paragraph
 
 
-def generate_transcription_docx(
+def render_transcription_docx(
     meeting_name: str | None, transcriptions: Sequence[HasSpeakerTranscription]
 ) -> BytesIO:
     """
