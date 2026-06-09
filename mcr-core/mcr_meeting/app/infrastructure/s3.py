@@ -24,6 +24,22 @@ def get_transcription_object_name(meeting_id: int, filename: str) -> str:
     return f"{s3_settings.S3_TRANSCRIPTION_FOLDER}/{meeting_id}/{filename}"
 
 
+def upload_transcription_to_s3(
+    meeting_id: int,
+    filename: str,
+    content: BytesIO,
+) -> str:
+    object_name = get_transcription_object_name(
+        meeting_id=meeting_id, filename=filename
+    )
+    put_file_to_s3(
+        content=content,
+        object_name=object_name,
+        content_type=DOCX_MIME_TYPE,
+    )
+    return object_name
+
+
 def upload_report_to_s3(
     meeting_id: int,
     deliverable_type: DeliverableType,
