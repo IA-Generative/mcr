@@ -11,9 +11,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+import mcr_meeting.app.infrastructure.email as email_infra_module
 import mcr_meeting.app.infrastructure.keycloak as keycloak_module
 import mcr_meeting.app.infrastructure.redis as redis_store_module
-import mcr_meeting.app.services.email.email_service as email_service_module
 import mcr_meeting.app.services.s3_service as s3_service_module
 import mcr_meeting.app.use_cases.complete_transcription as complete_transcription_module
 from mcr_meeting.app.db.db import (
@@ -121,10 +121,10 @@ def in_memory_s3() -> Generator[InMemoryS3, None, None]:
 @pytest.fixture
 def in_memory_email() -> Generator[InMemoryEmailClient, None, None]:
     fake = InMemoryEmailClient()
-    original = email_service_module.send_email
-    email_service_module.send_email = fake  # type: ignore[assignment]
+    original = email_infra_module.send_email
+    email_infra_module.send_email = fake  # type: ignore[assignment]
     yield fake
-    email_service_module.send_email = original
+    email_infra_module.send_email = original
 
 
 @pytest.fixture

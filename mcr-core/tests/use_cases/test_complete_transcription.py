@@ -28,7 +28,7 @@ from tests.mocks.in_memory_s3 import InMemoryS3
 def mock_generate_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
     generate_mock = MagicMock(return_value=BytesIO(b"fake docx content"))
     monkeypatch.setattr(
-        "mcr_meeting.app.services.transcription_task_service.generate_transcription_docx",
+        "mcr_meeting.app.use_cases.complete_transcription.render_transcription_docx",
         generate_mock,
     )
     return generate_mock
