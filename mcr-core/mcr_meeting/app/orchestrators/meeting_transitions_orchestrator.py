@@ -34,20 +34,6 @@ def start_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.START_CAPTURE)
 
 
-def start_capture_bot(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.START_CAPTURE_BOT)
-
-
-def fail_capture_bot(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.FAIL_CAPTURE_BOT)
-
-
 def fail_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid

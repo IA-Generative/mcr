@@ -20,7 +20,6 @@ from mcr_meeting.app.services.email.email_service import (
 )
 from mcr_meeting.app.services.meeting_service import (
     update_meeting_end_date,
-    update_meeting_start_date,
     update_meeting_status,
 )
 from mcr_meeting.app.services.meeting_transition_record_service import (
@@ -34,14 +33,6 @@ from mcr_meeting.app.services.transcription_task_service import (
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
-
-
-def after_start_capture_bot_handler(
-    meeting: Meeting, next_status: MeetingStatus
-) -> None:
-    with UnitOfWork():
-        update_meeting_status(meeting, next_status)
-        update_meeting_start_date(meeting, datetime.now(timezone.utc))
 
 
 def after_complete_capture_handler(

@@ -7,7 +7,6 @@ from mcr_meeting.app.statemachine_actions.meeting_actions import (
     after_complete_report_handler,
     after_complete_transcription_handler,
     after_init_transcription_handler,
-    after_start_capture_bot_handler,
     after_start_transcription_handler,
     after_transition_handler,
     update_status_handler,
@@ -99,16 +98,6 @@ class VisioMeetingStateMachine(StateMachine):
         after_complete_capture_handler(self.meeting, self.current_state_value)
 
     def after_FAIL_CAPTURE(self) -> None:
-        if self.meeting is None:
-            return
-        update_status_handler(self.meeting, self.current_state_value)
-
-    def after_START_CAPTURE_BOT(self) -> None:
-        if self.meeting is None:
-            return
-        after_start_capture_bot_handler(self.meeting, self.current_state_value)
-
-    def after_FAIL_CAPTURE_BOT(self) -> None:
         if self.meeting is None:
             return
         update_status_handler(self.meeting, self.current_state_value)

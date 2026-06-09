@@ -10,6 +10,7 @@ from mcr_meeting.app.db.deliverable_repository import (
 from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
     ForbiddenAccessException,
+    MeetingStateConflictException,
     TaskCreationException,
 )
 from mcr_meeting.app.models.deliverable_model import (
@@ -298,7 +299,7 @@ class TestRequestDeliverableIllegalTransition:
             transcription_filename="transcription.docx",
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(MeetingStateConflictException):
             request_deliverable_use_case(
                 meeting_id=meeting.id,
                 user_keycloak_uuid=meeting.owner.keycloak_uuid,

@@ -12,6 +12,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     MCRException,
     MeetingMultipartException,
+    MeetingStateConflictException,
     NotFoundException,
     NotSavedException,
     SilentAudioError,
@@ -29,6 +30,7 @@ EXCEPTION_STATUS_MAP = {
     MeetingMultipartException: status.HTTP_400_BAD_REQUEST,
     BadRequestException: status.HTTP_400_BAD_REQUEST,
     DeliverableStateConflictException: status.HTTP_409_CONFLICT,
+    MeetingStateConflictException: status.HTTP_409_CONFLICT,
 }
 
 

@@ -9,9 +9,11 @@ from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    fail_capture_bot,
-    start_capture_bot,
+from mcr_meeting.app.use_cases.fail_capture_bot import (
+    fail_capture_bot as fail_capture_bot_use_case,
+)
+from mcr_meeting.app.use_cases.start_capture_bot import (
+    start_capture_bot as start_capture_bot_use_case,
 )
 
 api_settings = ApiSettings()
@@ -36,7 +38,9 @@ async def start_meeting_capture_bot(
     Returns:
         HTTP 204 status code if successful
     """
-    start_capture_bot(meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid)
+    start_capture_bot_use_case(
+        meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
+    )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -55,6 +59,8 @@ async def fail_meeting_capture_bot(
     Returns:
         HTTP 204 status code if successful
     """
-    fail_capture_bot(meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid)
+    fail_capture_bot_use_case(
+        meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
+    )
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)

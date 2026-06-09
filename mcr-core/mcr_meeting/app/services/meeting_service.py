@@ -78,11 +78,6 @@ def set_meeting_report_filename(meeting_id: int, filename: str) -> None:
     update_meeting(meeting)
 
 
-def update_meeting_start_date(meeting: Meeting, start_date: datetime) -> Meeting:
-    meeting.start_date = start_date
-    return update_meeting(meeting)
-
-
 def update_meeting_end_date(meeting: Meeting, end_date: datetime) -> Meeting:
     meeting.end_date = end_date
     return update_meeting(meeting)
