@@ -78,13 +78,6 @@ def after_start_transcription_handler(
     )
 
 
-def after_complete_transcription_handler(
-    meeting: Meeting, next_status: MeetingStatus
-) -> None:
-    with UnitOfWork():
-        update_meeting_status(meeting, next_status)
-
-
 def after_complete_report_handler(
     meeting: Meeting,
     next_status: MeetingStatus,

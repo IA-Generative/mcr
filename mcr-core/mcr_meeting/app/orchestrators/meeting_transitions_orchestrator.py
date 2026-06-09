@@ -69,11 +69,6 @@ def fail_transcription(meeting_id: int) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.FAIL_TRANSCRIPTION)
 
 
-def complete_transcription(meeting_id: int) -> Meeting:
-    meeting = get_meeting_service(meeting_id=meeting_id)
-    return _apply_transition(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
-
-
 def update_transcription(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid

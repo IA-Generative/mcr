@@ -243,19 +243,6 @@ def test_fail_report() -> None:
     assert result.status == MeetingStatus.REPORT_FAILED
 
 
-def test_complete_transcription() -> None:
-    """The COMPLETE_TRANSCRIPTION transition only marks the status; side effects
-    (deliverable, email, transition record) live in the complete_transcription use-case."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.complete_transcription(meeting_id=meeting.id)
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
-
-
 def test_update_transcription(
     orchestrator_user: User,
     user_keycloak_uuid: UUID,
