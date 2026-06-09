@@ -12,14 +12,16 @@ services:
       - mcr-network
 
   flower:
-    image: mher/flower:latest
+    build:
+      context: ./mcr-core
+      target: flower
     container_name: mcr-flower
     restart: always
     ports:
       - "5555:5555"
     environment:
-      - CELERY_BROKER_URL=redis://${REDIS_HOST}:${REDIS_PORT}/0
-      - CELERY_RESULT_BACKEND=redis://${REDIS_HOST}:${REDIS_PORT}/1
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
       - FLOWER_UNAUTHENTICATED_API=true
     depends_on:
       - redis

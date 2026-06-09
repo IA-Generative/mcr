@@ -81,3 +81,14 @@ ENV LD_LIBRARY_PATH="${VENV_LOCATION}/lib/python${PYTHON_MINOR}/site-packages/nv
 
 
 CMD ["python", "-m", "celery", "-A", "mcr_meeting.transcription_worker", "worker", "-l", "info"]
+
+# Flower monitoring UI — built on the same venv so its celery/kombu versions
+# match the workers (mher/flower:latest is stale and breaks worker inspection).
+# Runs standalone against the broker (no app import) to avoid pulling in the
+# worker's heavy ML deps and its required settings.
+FROM build AS flower
+
+RUN uv pip install flower
+
+EXPOSE 5555
+CMD ["sh", "-c", "celery --broker=\"redis://${REDIS_HOST}:${REDIS_PORT}/0\" --result-backend=\"redis://${REDIS_HOST}:${REDIS_PORT}/1\" flower --address=0.0.0.0 --port=5555"]
