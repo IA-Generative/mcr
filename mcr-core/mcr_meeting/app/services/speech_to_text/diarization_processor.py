@@ -1,4 +1,3 @@
-import shutil
 import tempfile
 from io import BytesIO
 
@@ -73,15 +72,7 @@ class DiarizationProcessor:
         diarization_pipeline = get_diarization_pipeline()
 
         with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
-            # Stream-copy into the temp file instead of audio_bytes.getvalue(),
-            # which would materialize a full extra copy of the (duration-scaled)
-            # WAV in memory.
-            audio_bytes.seek(0)
-            shutil.copyfileobj(audio_bytes, tmp_audio)
-            tmp_audio.flush()
-            # Rewind so downstream consumers (transcription) can re-read the
-            # same buffer; copyfileobj left the position at EOF.
-            audio_bytes.seek(0)
+            tmp_audio.write(audio_bytes.getvalue())
             tmp_audio_path = tmp_audio.name
 
             pyannote_diarization = diarization_pipeline(tmp_audio_path)

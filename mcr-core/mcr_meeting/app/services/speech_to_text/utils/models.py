@@ -34,10 +34,6 @@ def get_transcription_model() -> WhisperModel:
 
     transcription_model = context.get("model")
     if transcription_model is None:
-        # Lazy load + cache: a worker running in API-transcription mode never
-        # loads the unused local Whisper model, saving resident memory. The
-        # load happens on first local use, so flipping the flag at runtime is
-        # safe (no need to restart the worker).
         logger.info("Lazily loading Whisper model into worker context")
         transcription_model = load_whisper_model(context["device"])
         context["model"] = transcription_model
@@ -62,10 +58,6 @@ def get_diarization_pipeline() -> Pipeline:
 
     diarization_pipeline = context.get("diarization_pipeline")
     if diarization_pipeline is None:
-        # Lazy load + cache: a worker running in API-diarization mode never
-        # loads the unused local pyannote pipeline, saving resident memory.
-        # The load happens on first local use, so flipping the flag at runtime
-        # is safe (no need to restart the worker).
         logger.info("Lazily loading diarization pipeline into worker context")
         diarization_pipeline = load_diarization_pipeline(context["device"])
         context["diarization_pipeline"] = diarization_pipeline

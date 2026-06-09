@@ -36,10 +36,6 @@ def split_audio_on_timestamps(
         sample_rate = f.samplerate
         total_frames = len(f)
         for span in result_with_time:
-            # Clamp to the file length: a diarization span can extend past the
-            # actual audio (trailing silence, rounding). Seeking beyond EOF
-            # raises in libsndfile, whereas the old array slicing clamped
-            # silently.
             start_sample = min(int(span.start * sample_rate), total_frames)
             end_sample = min(int(span.end * sample_rate), total_frames)
             f.seek(start_sample)

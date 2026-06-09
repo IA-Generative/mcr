@@ -148,10 +148,6 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
         logger.trace("GPU not available — running on CPU")
         context["device"] = ComputeDevice.CPU
 
-    # Models are loaded lazily on first use (see speech_to_text/utils/models.py)
-    # so a worker running in API mode (api_based_transcription /
-    # api_based_diarization) never loads the unused local model into memory.
-
     logger.info("======== Celery worker processes initialization done =========")
 
 
