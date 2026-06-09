@@ -3,12 +3,6 @@ from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-from mcr_meeting.app.orchestrators.meeting_multipart_orchestrator import (
-    abort_multipart_upload_orchestrator,
-    complete_multipart_upload_orchestrator,
-    init_multipart_upload_orchestrator,
-    sign_multipart_part_orchestrator,
-)
 from mcr_meeting.app.schemas.S3_types import (
     MultipartAbortRequest,
     MultipartCompleteRequest,
@@ -16,6 +10,18 @@ from mcr_meeting.app.schemas.S3_types import (
     MultipartInitResponse,
     MultipartSignPartRequest,
     MultipartSignPartResponse,
+)
+from mcr_meeting.app.use_cases.abort_multipart_upload import (
+    abort_multipart_upload as abort_multipart_upload_use_case,
+)
+from mcr_meeting.app.use_cases.complete_multipart_upload import (
+    complete_multipart_upload as complete_multipart_upload_use_case,
+)
+from mcr_meeting.app.use_cases.init_multipart_upload import (
+    init_multipart_upload as init_multipart_upload_use_case,
+)
+from mcr_meeting.app.use_cases.sign_multipart_part import (
+    sign_multipart_part as sign_multipart_part_use_case,
 )
 
 api_settings = ApiSettings()
@@ -32,7 +38,7 @@ def init_multipart_upload(
     init_request: MultipartInitRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> MultipartInitResponse:
-    return init_multipart_upload_orchestrator(
+    return init_multipart_upload_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         init_request=init_request,
@@ -45,7 +51,7 @@ def sign_multipart_part(
     sign_request: MultipartSignPartRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> MultipartSignPartResponse:
-    return sign_multipart_part_orchestrator(
+    return sign_multipart_part_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         sign_request=sign_request,
@@ -61,7 +67,7 @@ def complete_multipart_upload(
     complete_request: MultipartCompleteRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> None:
-    complete_multipart_upload_orchestrator(
+    complete_multipart_upload_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         complete_request=complete_request,
@@ -77,7 +83,7 @@ def abort_multipart_upload(
     abort_request: MultipartAbortRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> None:
-    abort_multipart_upload_orchestrator(
+    abort_multipart_upload_use_case(
         meeting_id=meeting_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
         abort_request=abort_request,
