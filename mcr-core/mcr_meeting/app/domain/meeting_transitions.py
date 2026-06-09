@@ -16,18 +16,9 @@ def fail_capture_bot(meeting: Meeting) -> None:
     _apply_or_conflict(meeting, MeetingEvent.FAIL_CAPTURE_BOT)
 
 
-def _apply_or_conflict(meeting: Meeting, event: MeetingEvent) -> None:
-    """Apply ``event`` via the state machine, mapping a rejected transition to a
-    409-level ``MeetingStateConflictException`` instead of a raw ``ValueError``."""
-    try:
-        _apply(meeting, event)
-    except ValueError as exc:
-        raise MeetingStateConflictException(str(exc)) from exc
-
-
 def reset_and_start_report(meeting: Meeting) -> Meeting:
     _try_apply(meeting, MeetingEvent.RESET_REPORT)
-    _apply(meeting, MeetingEvent.START_REPORT)
+    _apply_or_conflict(meeting, MeetingEvent.START_REPORT)
     return meeting
 
 
@@ -38,6 +29,13 @@ def _apply(meeting: Meeting, event: MeetingEvent) -> None:
         meeting.status = MeetingStatus(sm.current_state_value)
     except TransitionNotAllowed as exc:
         raise ValueError(str(exc)) from exc
+
+
+def _apply_or_conflict(meeting: Meeting, event: MeetingEvent) -> None:
+    try:
+        _apply(meeting, event)
+    except ValueError as exc:
+        raise MeetingStateConflictException(str(exc)) from exc
 
 
 def _try_apply(meeting: Meeting, event: MeetingEvent) -> None:

@@ -16,6 +16,7 @@ from mcr_meeting.app.domain.authorize_meeting_access import authorize_meeting_ac
 from mcr_meeting.app.domain.meeting_transitions import reset_and_start_report
 from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
+    MeetingStateConflictException,
     NotFoundException,
     TaskCreationException,
 )
@@ -109,7 +110,11 @@ def _persist_and_dispatch(
                 kwargs=kwargs,
             )
             return deliverable
-    except (DeliverableConcurrentlyCreatedException, ValueError):
+    except (
+        DeliverableConcurrentlyCreatedException,
+        MeetingStateConflictException,
+        ValueError,
+    ):
         raise
     except Exception as exc:
         raise TaskCreationException(str(exc)) from exc
