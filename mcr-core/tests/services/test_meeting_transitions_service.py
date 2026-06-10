@@ -1,17 +1,11 @@
-from datetime import datetime, timedelta, timezone
-from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
-from sqlalchemy.orm import Session
 
-from mcr_meeting.app.configs.base import TranscriptionWaitingTimeSettings
 from mcr_meeting.app.models.meeting_model import (
-    Meeting,
     MeetingPlatforms,
     MeetingStatus,
 )
-from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.models.user_model import User
 from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mts
 from tests.factories import MeetingFactory
@@ -68,171 +62,6 @@ def test_fail_capture(
     )
 
     assert result.status == MeetingStatus.CAPTURE_FAILED
-
-
-# ---------------------------------------------------------------------------
-# Tests – Transcription
-# ---------------------------------------------------------------------------
-
-
-def test_init_transcription(
-    mock_celery_producer_app: Mock,
-    import_meeting: Meeting,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test initializing transcription transitions to TRANSCRIPTION_PENDING."""
-    result = mts.init_transcription(
-        meeting_id=import_meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_PENDING
-
-
-def test_start_transcription(db_session: Session) -> None:
-    """Test starting transcription transitions to TRANSCRIPTION_IN_PROGRESS."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.TRANSCRIPTION_PENDING,
-        name_platform=MeetingPlatforms.MCR_IMPORT,
-    )
-
-    result = mts.start_transcription(meeting_id=meeting.id)
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
-
-
-def test_start_transcription_creates_log_with_prediction() -> None:
-    """Test that start_transcription creates exactly one transition log with prediction."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.TRANSCRIPTION_PENDING,
-        name_platform=MeetingPlatforms.MCR_IMPORT,
-        with_dates=True,
-    )
-
-    result = mts.start_transcription(meeting_id=meeting.id)
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
-
-
-def test_start_transcription_missing_start_date_uses_default_prediction(
-    db_session: Session,
-) -> None:
-    """Test that start_transcription uses 1h default prediction when start_date is missing."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.TRANSCRIPTION_PENDING,
-        name_platform=MeetingPlatforms.MCR_IMPORT,
-        start_date=None,
-        end_date=datetime.now(timezone.utc),
-    )
-
-    transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
-
-    default_meeting_processing_time = (
-        int(transcription_waiting_time_settings.AVERAGE_MEETING_DURATION_HOURS * 60)
-        // transcription_waiting_time_settings.AVERAGE_TRANSCRIPTION_SPEED
-    )
-
-    # Act
-    start_time = datetime.now(timezone.utc)
-    _ = mts.start_transcription(meeting_id=meeting.id)
-
-    records = (
-        db_session.query(MeetingTransitionRecord)
-        .filter(MeetingTransitionRecord.meeting_id == meeting.id)
-        .all()
-    )
-
-    # Verify a record was created with prediction
-    assert len(records) == 1
-    record = records[0]
-    assert record.predicted_date_of_next_transition is not None
-
-    # Verify the prediction is approximately the default time from now
-    # Ensure timezone-aware comparison
-    if record.predicted_date_of_next_transition.tzinfo is None:
-        actual_prediction_time = record.predicted_date_of_next_transition.replace(
-            tzinfo=timezone.utc, microsecond=0
-        )
-    else:
-        actual_prediction_time = record.predicted_date_of_next_transition.replace(
-            microsecond=0
-        )
-
-    expected_prediction_time = start_time.replace(microsecond=0) + timedelta(
-        minutes=default_meeting_processing_time
-    )
-
-    # Allow 2 second tolerance for test execution time
-    time_diff = abs((actual_prediction_time - expected_prediction_time).total_seconds())
-    assert time_diff < 2
-
-
-def test_fail_transcription() -> None:
-    """Test transcription failure transitions to TRANSCRIPTION_FAILED."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.TRANSCRIPTION_PENDING,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.fail_transcription(meeting_id=meeting.id)
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_FAILED
-
-
-def test_update_transcription(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test updating transcription from TRANSCRIPTION_DONE stays TRANSCRIPTION_DONE."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.TRANSCRIPTION_DONE,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.update_transcription(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
-
-
-def test_update_transcription_from_report_done(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test updating transcription from REPORT_DONE transitions to TRANSCRIPTION_DONE."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.REPORT_DONE,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.update_transcription(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.TRANSCRIPTION_DONE
-
-
-def test_update_transcription_bad_status(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test that update_transcription raises exception when meeting is in wrong status."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    with pytest.raises(Exception):
-        mts.update_transcription(
-            meeting_id=meeting.id,
-            user_keycloak_uuid=user_keycloak_uuid,
-        )
 
 
 # ---------------------------------------------------------------------------

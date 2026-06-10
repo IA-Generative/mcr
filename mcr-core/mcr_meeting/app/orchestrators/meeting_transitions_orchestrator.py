@@ -33,32 +33,6 @@ def fail_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     return _apply_transition(meeting, MeetingEvent.FAIL_CAPTURE)
 
 
-def init_transcription(
-    meeting_id: int, user_keycloak_uuid: UUID4 | None = None
-) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.INIT_TRANSCRIPTION)
-
-
-def start_transcription(meeting_id: int) -> Meeting:
-    meeting = get_meeting_service(meeting_id=meeting_id)
-    return _apply_transition(meeting, MeetingEvent.START_TRANSCRIPTION)
-
-
-def fail_transcription(meeting_id: int) -> Meeting:
-    meeting = get_meeting_service(meeting_id=meeting_id)
-    return _apply_transition(meeting, MeetingEvent.FAIL_TRANSCRIPTION)
-
-
-def update_transcription(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.UPDATE_TRANSCRIPTION)
-
-
 def _apply_transition(  # type: ignore[explicit-any]
     meeting: Meeting,
     transition_name: MeetingEvent,
