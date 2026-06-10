@@ -5,13 +5,20 @@ from unittest.mock import MagicMock
 import pytest
 from sqlalchemy.orm import Session
 
+from mcr_meeting.app.db.db import get_db_session_ctx
+from mcr_meeting.app.models.deliverable_model import (
+    Deliverable,
+    DeliverableStatus,
+    DeliverableType,
+)
 from mcr_meeting.app.models.meeting_model import (
     Meeting,
     MeetingPlatforms,
     MeetingStatus,
 )
-from mcr_meeting.app.orchestrators import transcription_orchestrator as to
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
+from mcr_meeting.app.use_cases.complete_transcription import complete_transcription
 from tests.factories import MeetingFactory
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_s3 import InMemoryS3
@@ -21,7 +28,7 @@ from tests.mocks.in_memory_s3 import InMemoryS3
 def mock_generate_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
     generate_mock = MagicMock(return_value=BytesIO(b"fake docx content"))
     monkeypatch.setattr(
-        "mcr_meeting.app.services.transcription_task_service.generate_transcription_docx",
+        "mcr_meeting.app.use_cases.complete_transcription.render_transcription_docx",
         generate_mock,
     )
     return generate_mock
@@ -60,7 +67,31 @@ def sample_transcriptions(
     ]
 
 
-class TestHandleTranscriptionSuccess:
+def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
+    return list(
+        get_db_session_ctx()
+        .query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type == DeliverableType.TRANSCRIPTION,
+        )
+        .all()
+    )
+
+
+def _transcription_done_records(meeting_id: int) -> list[MeetingTransitionRecord]:
+    return list(
+        get_db_session_ctx()
+        .query(MeetingTransitionRecord)
+        .filter(
+            MeetingTransitionRecord.meeting_id == meeting_id,
+            MeetingTransitionRecord.status == MeetingStatus.TRANSCRIPTION_DONE,
+        )
+        .all()
+    )
+
+
+class TestCompleteTranscription:
     def test_generates_docx_with_transcription_data(
         self,
         transcription_in_progress_meeting: Meeting,
@@ -69,7 +100,7 @@ class TestHandleTranscriptionSuccess:
         in_memory_s3: InMemoryS3,
         in_memory_email: InMemoryEmailClient,
     ) -> None:
-        to.finalize_transcription(
+        complete_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -87,7 +118,7 @@ class TestHandleTranscriptionSuccess:
         in_memory_s3: InMemoryS3,
         in_memory_email: InMemoryEmailClient,
     ) -> None:
-        to.finalize_transcription(
+        complete_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -103,7 +134,7 @@ class TestHandleTranscriptionSuccess:
         in_memory_email: InMemoryEmailClient,
         db_session: Session,
     ) -> None:
-        to.finalize_transcription(
+        complete_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -122,7 +153,7 @@ class TestHandleTranscriptionSuccess:
         in_memory_email: InMemoryEmailClient,
         db_session: Session,
     ) -> None:
-        to.finalize_transcription(
+        complete_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
@@ -138,9 +169,66 @@ class TestHandleTranscriptionSuccess:
         in_memory_s3: InMemoryS3,
         in_memory_email: InMemoryEmailClient,
     ) -> None:
-        to.finalize_transcription(
+        complete_transcription(
             meeting_id=transcription_in_progress_meeting.id,
             transcriptions=sample_transcriptions,
         )
 
         assert len(in_memory_email.sent) == 1
+
+    def test_creates_transcription_deliverable(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        complete_transcription(
+            meeting_id=transcription_in_progress_meeting.id,
+            transcriptions=sample_transcriptions,
+        )
+
+        deliverables = _transcription_deliverables(transcription_in_progress_meeting.id)
+        assert len(deliverables) == 1
+        assert deliverables[0].status == DeliverableStatus.AVAILABLE
+
+    def test_records_single_transcription_done_transition(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        complete_transcription(
+            meeting_id=transcription_in_progress_meeting.id,
+            transcriptions=sample_transcriptions,
+        )
+
+        # The state machine no longer records this transition; the use-case does it
+        # exactly once.
+        assert (
+            len(_transcription_done_records(transcription_in_progress_meeting.id)) == 1
+        )
+
+    def test_rejects_completion_from_invalid_status(
+        self,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+
+        with pytest.raises(ValueError):
+            complete_transcription(
+                meeting_id=meeting.id,
+                transcriptions=sample_transcriptions,
+            )
+
+        assert _transcription_deliverables(meeting.id) == []
+        assert _transcription_done_records(meeting.id) == []

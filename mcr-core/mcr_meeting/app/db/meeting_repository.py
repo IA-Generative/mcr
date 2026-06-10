@@ -45,6 +45,19 @@ def get_meeting_by_id(meeting_id: int, *, with_deliverables: bool = False) -> Me
     return meeting
 
 
+def get_meeting_with_owner(meeting_id: int) -> Meeting:
+    db = get_db_session_ctx()
+    meeting: Meeting | None = (
+        db.query(Meeting)
+        .options(joinedload(Meeting.owner))
+        .filter(Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED)
+        .first()
+    )
+    if meeting is None:
+        raise NotFoundException(f"Meeting not found: id={meeting_id}")
+    return meeting
+
+
 def update_meeting(updated_meeting: Meeting) -> Meeting:
     """
     ORM link to update a meeting in the database.

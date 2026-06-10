@@ -22,6 +22,11 @@ def reset_and_start_report(meeting: Meeting) -> Meeting:
     return meeting
 
 
+def mark_transcription_done(meeting: Meeting) -> Meeting:
+    _apply(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
+    return meeting
+
+
 def _apply(meeting: Meeting, event: MeetingEvent) -> None:
     sm = get_state_machine_for_meeting(meeting)
     try:

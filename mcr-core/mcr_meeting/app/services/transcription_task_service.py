@@ -4,6 +4,10 @@ from typing import BinaryIO
 
 from loguru import logger
 
+from mcr_meeting.app.domain.transcription_rendering import (
+    HasSpeakerTranscription,
+    render_transcription_docx,
+)
 from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
     TaskCreationException,
@@ -12,10 +16,6 @@ from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
-from mcr_meeting.app.services.docx_transcription_generation_service import (
-    HasSpeakerTranscription,
-    generate_transcription_docx,
-)
 from mcr_meeting.app.services.meeting_service import (
     set_meeting_transcription_filename_and_update_status,
 )
@@ -54,7 +54,7 @@ def create_formatted_docx_transcription(
     meeting: Meeting,
     transcriptions: Sequence[HasSpeakerTranscription],
 ) -> BytesIO:
-    docx_buffer = generate_transcription_docx(meeting.name, transcriptions)
+    docx_buffer = render_transcription_docx(meeting.name, transcriptions)
     save_formatted_transcription_and_update_meeting_status(
         meeting_id=meeting.id, file_like_object=docx_buffer, filename="v0.docx"
     )

@@ -20,14 +20,14 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
     start_transcription,
 )
 from mcr_meeting.app.orchestrators.transcription_orchestrator import (
-    finalize_transcription,
     get_or_create_transcription_docx,
     upload_transcription_docx,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
-from mcr_meeting.app.services.token_exchange_service import ensure_offline_token
+from mcr_meeting.app.use_cases.complete_transcription import complete_transcription
+from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, validate_docx_upload
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -128,4 +128,4 @@ async def fail_transcription_task(meeting_id: int) -> None:
 async def success_transcription_task(
     meeting_id: int, payload: list[SpeakerTranscription]
 ) -> None:
-    finalize_transcription(meeting_id=meeting_id, transcriptions=payload)
+    complete_transcription(meeting_id=meeting_id, transcriptions=payload)

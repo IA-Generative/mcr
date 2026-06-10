@@ -4,7 +4,6 @@ from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.statemachine_actions.meeting_actions import (
     after_complete_report_handler,
-    after_complete_transcription_handler,
     after_init_transcription_handler,
     after_start_transcription_handler,
     after_transition_handler,
@@ -76,11 +75,6 @@ class RecordMeetingStateMachine(StateMachine):
         if self.meeting is None:
             return
         after_start_transcription_handler(self.meeting, self.current_state_value)
-
-    def after_COMPLETE_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        after_complete_transcription_handler(self.meeting, self.current_state_value)
 
     def after_UPDATE_TRANSCRIPTION(self) -> None:
         if self.meeting is None:

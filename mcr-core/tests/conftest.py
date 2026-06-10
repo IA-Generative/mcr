@@ -11,10 +11,11 @@ from pytest_mock import MockerFixture
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-import mcr_meeting.app.services.email.email_service as email_service_module
-import mcr_meeting.app.services.redis_token_store as redis_store_module
+import mcr_meeting.app.infrastructure.email as email_infra_module
+import mcr_meeting.app.infrastructure.keycloak as keycloak_module
+import mcr_meeting.app.infrastructure.redis as redis_store_module
 import mcr_meeting.app.services.s3_service as s3_service_module
-import mcr_meeting.app.services.token_exchange_service as token_exchange_module
+import mcr_meeting.app.use_cases.complete_transcription as complete_transcription_module
 from mcr_meeting.app.db.db import (
     Base,
     db_session_ctx,
@@ -23,6 +24,7 @@ from mcr_meeting.app.db.db import (
 from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.main import app
+from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 from tests.mocks.in_memory_redis import InMemoryRedis
@@ -92,10 +94,19 @@ def in_memory_redis() -> Generator[InMemoryRedis, None, None]:
 @pytest.fixture(autouse=True)
 def in_memory_keycloak() -> Generator[InMemoryKeycloak, None, None]:
     mock = InMemoryKeycloak()
-    original = token_exchange_module._keycloak
-    token_exchange_module._keycloak = mock  # type: ignore[assignment]
+    original = keycloak_module._keycloak
+    keycloak_module._keycloak = mock  # type: ignore[assignment]
     yield mock
-    token_exchange_module._keycloak = original
+    keycloak_module._keycloak = original
+
+
+@pytest.fixture
+def in_memory_drive() -> Generator[InMemoryDriveClient, None, None]:
+    mock = InMemoryDriveClient()
+    original = complete_transcription_module.upload_file
+    complete_transcription_module.upload_file = mock  # type: ignore[assignment]
+    yield mock
+    complete_transcription_module.upload_file = original
 
 
 @pytest.fixture
@@ -110,10 +121,10 @@ def in_memory_s3() -> Generator[InMemoryS3, None, None]:
 @pytest.fixture
 def in_memory_email() -> Generator[InMemoryEmailClient, None, None]:
     fake = InMemoryEmailClient()
-    original = email_service_module.send_email
-    email_service_module.send_email = fake  # type: ignore[assignment]
+    original = email_infra_module.send_email
+    email_infra_module.send_email = fake  # type: ignore[assignment]
     yield fake
-    email_service_module.send_email = original
+    email_infra_module.send_email = original
 
 
 @pytest.fixture

@@ -1,49 +1,60 @@
 <template>
   <div
-    v-if="transcriptionItem || displayedDeliverables.length"
+    v-if="displayedDeliverables.length"
     class="flex gap-2 flex-wrap"
   >
     <DeliverableItem
-      v-if="transcriptionItem"
-      class="border border-[#DDDDDD]"
-      :deliverable-id="TRANSCRIPTION_ITEM_ID"
-      :title="transcriptionItem.title"
-      :status="transcriptionItem.status as DeliverableStatus"
-      :file-format="transcriptionItem.fileFormat"
-      @download="$emit('downloadTranscription')"
-    />
-    <DeliverableItem
       v-for="item in displayedDeliverables"
       :key="item.id"
-      :deliverable-id="item.id"
       :title="item.title"
-      :status="item.status as DeliverableStatus"
-      :file-format="item.fileFormat"
-      :file-size="item.fileSize"
-      @download="$emit('downloadDeliverable', $event)"
+      :status="item.status"
+      :external-url="item.externalUrl"
+      @download="() => onDownload(item.id)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
+import { useDeliverables } from '@/services/deliverables/use-deliverables.ts';
 import DeliverableItem from './DeliverableItem.vue';
-import type { DeliverableStatus } from '@/services/deliverables/deliverables.types';
+import type { DeliverableDto } from '@/services/deliverables/deliverables.types';
+import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file.ts';
+import useToaster from '@/composables/use-toaster.ts';
+import { t } from '@/plugins/i18n.ts';
 
-const TRANSCRIPTION_ITEM_ID = -1;
-
-defineProps<{
-  transcriptionItem: { title: string; status: string; fileFormat: string } | null;
-  displayedDeliverables: {
-    id: number;
-    title: string;
-    status: string;
-    fileFormat: string;
-    fileSize?: string;
-  }[];
+const props = defineProps<{
+  activeDeliverables: DeliverableDto[];
 }>();
 
-defineEmits<{
-  downloadTranscription: [];
-  downloadDeliverable: [deliverableId: number];
-}>();
+const toaster = useToaster();
+
+const { downloadDeliverableMutation } = useDeliverables();
+const { mutate: downloadMutate } = downloadDeliverableMutation();
+
+const TYPE_KEY_MAP: Record<string, string> = {
+  TRANSCRIPTION: 'transcription',
+  DECISION_RECORD: 'decision-record',
+  DETAILED_SYNTHESIS: 'detailed-synthesis',
+  CUSTOM_REPORT: 'custom-report',
+};
+
+const displayedDeliverables = computed(() =>
+  props.activeDeliverables.map((d) => ({
+    id: d.id,
+    title: t(`meeting-v2.deliverable-card.type.${TYPE_KEY_MAP[d.type]}.title`),
+    status: d.status,
+    externalUrl: d.external_url,
+  })),
+);
+
+function onDownload(deliverableId: number): void {
+  downloadMutate(deliverableId, {
+    onSuccess: (response) => {
+      downloadFileFromAxios(response, extractFilenameFromResponse(response));
+    },
+    onError: () => {
+      toaster.addErrorMessage(t('error.default')!);
+    },
+  });
+}
 </script>
