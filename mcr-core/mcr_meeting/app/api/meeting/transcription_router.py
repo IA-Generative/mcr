@@ -14,20 +14,20 @@ from mcr_meeting.app.db.db import (
     router_db_session_context_manager,
 )
 from mcr_meeting.app.exceptions.exceptions import InvalidFileError
-from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    fail_transcription,
-    init_transcription,
-    start_transcription,
-)
-from mcr_meeting.app.orchestrators.transcription_orchestrator import (
-    get_or_create_transcription_docx,
-    upload_transcription_docx,
-)
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
 from mcr_meeting.app.use_cases.complete_transcription import complete_transcription
 from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
+from mcr_meeting.app.use_cases.fail_transcription import fail_transcription
+from mcr_meeting.app.use_cases.get_or_create_transcription_docx import (
+    get_or_create_transcription_docx,
+)
+from mcr_meeting.app.use_cases.init_transcription import init_transcription
+from mcr_meeting.app.use_cases.start_transcription import start_transcription
+from mcr_meeting.app.use_cases.upload_transcription_docx import (
+    upload_transcription_docx,
+)
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, validate_docx_upload
 from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
@@ -56,7 +56,7 @@ async def retrieve_or_create_formatted_meeting_transcription(
 
     """
 
-    result = await get_or_create_transcription_docx(
+    result = get_or_create_transcription_docx(
         meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
 
@@ -95,7 +95,10 @@ async def upload_meeting_transcription(
         )
 
     upload_transcription_docx(
-        meeting_id=meeting_id, file=file, user_keycloak_uuid=x_user_keycloak_uuid
+        meeting_id=meeting_id,
+        file_obj=file.file,
+        filename=file.filename,
+        user_keycloak_uuid=x_user_keycloak_uuid,
     )
 
 

@@ -311,10 +311,6 @@ def mock_celery_producer_app(
         "mcr_meeting.app.infrastructure.celery.celery_producer_app"
     )
     mocker.patch(
-        "mcr_meeting.app.statemachine_actions.meeting_actions.celery_producer_app",
-        mock_celery_producer_app,
-    )
-    mocker.patch(
         "mcr_meeting.app.use_cases.request_deliverable.celery_producer_app",
         mock_celery_producer_app,
     )

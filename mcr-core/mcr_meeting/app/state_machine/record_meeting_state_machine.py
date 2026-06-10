@@ -2,8 +2,6 @@ from statemachine import State, StateMachine
 
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.statemachine_actions.meeting_actions import (
-    after_init_transcription_handler,
-    after_start_transcription_handler,
     after_transition_handler,
     update_status_handler,
 )
@@ -64,25 +62,9 @@ class RecordMeetingStateMachine(StateMachine):
     # -------------------------------------------------------------------------
     # AFTER HOOKS (SIDE EFFECTS)
     # -------------------------------------------------------------------------
-    def after_INIT_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        after_init_transcription_handler(self.meeting, self.current_state_value)
-
-    def after_START_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        after_start_transcription_handler(self.meeting, self.current_state_value)
-
-    def after_UPDATE_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        update_status_handler(self.meeting, self.current_state_value)
-
-    def after_FAIL_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        update_status_handler(self.meeting, self.current_state_value)
+    # Transcription transitions (INIT/START/UPDATE/FAIL) are driven by their use
+    # cases, which own the persistence and side effects. The state machine only
+    # validates the transition here.
 
     def after_DELETE(self) -> None:
         if self.meeting is None:
