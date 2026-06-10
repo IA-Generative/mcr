@@ -29,7 +29,6 @@ function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSes
     deviceIdAtStop: null,
     deviceSwitchedMidSession: false,
     trackMutedAtStop: false,
-    trackEndedAtStop: false,
     permissionRevokedEvents: 0,
     ...overrides,
   };
@@ -244,9 +243,25 @@ describe('useRecordingMonitor', () => {
       expect(classifySilence(makeStats({ permissionRevokedEvents: 1 }))).toBe('wrong-device');
     });
 
-    it('should classify a track ended/muted by stop time as wrong-device', () => {
-      expect(classifySilence(makeStats({ trackEndedAtStop: true }))).toBe('wrong-device');
+    it('should classify a track muted by stop time as wrong-device', () => {
       expect(classifySilence(makeStats({ trackMutedAtStop: true }))).toBe('wrong-device');
+    });
+
+    it('should classify a healthy-device near-silent session as true-silence', () => {
+      const cause = classifySilence(
+        makeStats({
+          maxAudioLevel: 1,
+          silenceRatio: 0.9893,
+          sampleCount: 15145,
+          durationMs: 252458,
+          effectiveSampleRate: 59.99,
+          trackEndedEvents: 0,
+          trackMutedAtStop: false,
+          deviceSwitchedMidSession: false,
+          permissionRevokedEvents: 0,
+        }),
+      );
+      expect(cause).toBe('true-silence');
     });
 
     it('should classify a macOS Continuity default with a built-in alternative as wrong-device', () => {
@@ -326,7 +341,6 @@ describe('useRecordingMonitor', () => {
       detach();
 
       const stats = getStats();
-      expect(stats.trackEndedAtStop).toBe(true);
       expect(stats.trackMutedAtStop).toBe(true);
     });
   });
