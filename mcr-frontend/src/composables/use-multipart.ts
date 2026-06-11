@@ -30,25 +30,20 @@ export function useMultipart() {
 
     for (let partNumber = 1; partNumber <= totalParts; partNumber++) {
       const blob = getFilePartBlob(partNumber, totalSize, file);
-      await uploadMultipartPart(
-        {
+      try {
+        const etagHeader = await uploadMultipartPart({
           meetingId: meetingId,
           uploadId,
           objectKey,
           partNumber,
           blob,
-        },
-        {
-          onSuccess: (etagHeader) => {
-            completedParts.push({ partNumber, etag: etagHeader });
-          },
-          onError: async () => {
-            await abortMultipartUpload({ meetingId: meetingId, uploadId, objectKey });
-            toaster.addErrorMessage(t('error.file-upload')!);
-            throw new Error('Failed to upload file');
-          },
-        },
-      );
+        });
+        completedParts.push({ partNumber, etag: etagHeader });
+      } catch {
+        await abortMultipartUpload({ meetingId: meetingId, uploadId, objectKey });
+        toaster.addErrorMessage(t('error.file-upload')!);
+        throw new Error('Failed to upload file');
+      }
     }
 
     await completeMultipartUpload({
