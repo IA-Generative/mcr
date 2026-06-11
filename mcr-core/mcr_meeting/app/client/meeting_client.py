@@ -17,16 +17,32 @@ class MeetingApiClient:
         response = await self.client.get(f"/{meeting_id}")
         return MeetingResponse.model_validate(response.json())
 
-    async def start_transcription(self, meeting_id: int) -> None:
-        await self.client.post(f"/{meeting_id}/transcription/start")
+    async def start_transcription(
+        self, meeting_id: int, *, swallow_404: bool = False
+    ) -> bool:
+        response = await self.client.post(
+            f"/{meeting_id}/transcription/start", swallow_404=swallow_404
+        )
+        return response is not None
 
-    async def mark_transcription_as_failed(self, meeting_id: int) -> None:
-        await self.client.post(f"/{meeting_id}/transcription/fail")
+    async def mark_transcription_as_failed(
+        self, meeting_id: int, *, swallow_404: bool = False
+    ) -> bool:
+        response = await self.client.post(
+            f"/{meeting_id}/transcription/fail", swallow_404=swallow_404
+        )
+        return response is not None
 
     async def mark_transcription_as_success(
-        self, meeting_id: int, transcription_data: list[dict[str, object]]
-    ) -> None:
-        await self.client.post(
+        self,
+        meeting_id: int,
+        transcription_data: list[dict[str, object]],
+        *,
+        swallow_404: bool = False,
+    ) -> bool:
+        response = await self.client.post(
             f"/{meeting_id}/transcription/success",
             data=transcription_data,
+            swallow_404=swallow_404,
         )
+        return response is not None
