@@ -1,4 +1,4 @@
-.PHONY: clean help type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
+.PHONY: clean help install type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
 
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
@@ -6,6 +6,7 @@ PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
 help:
 	clear
 	@echo "================= Usage ================="
+	@echo "install                   : Install dependencies of all python packages (uv sync) and the frontend (pnpm install)."
 	@echo "start                     : Start the app with docker compose"
 	@echo "stop                      : Stop the app."
 	@echo "restart                   : Restart the app or a single service using service=..."
@@ -26,6 +27,10 @@ define CALL_TARGET_CMD_ON_ALL_PKGS
 		make -C $$pkg $(1); \
 	done
 endef
+
+install:
+	$(call CALL_TARGET_CMD_ON_ALL_PKGS, install)
+	cd mcr-frontend && pnpm install
 
 # example: make start service=mcr-frontend
 start:

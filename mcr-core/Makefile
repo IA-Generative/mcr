@@ -16,6 +16,10 @@ help:
 	@echo "test-coverage          : Run pytest coverage commands";
 	@echo "test-coverage-integration : Run pytest coverage for integration (API) tests only.";
 	@echo "evaluation 					: Run evaluation on the ASR pipeline"
+	@echo "install                : Install all dependency groups in a local .venv.";
+
+install:
+	uv sync --all-groups --all-extras --inexact
 
 type-check:
 	uv sync --group typing --inexact
