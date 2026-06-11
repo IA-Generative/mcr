@@ -2,13 +2,32 @@ from collections.abc import Generator, Iterator
 from io import BytesIO
 
 from mcr_meeting.app.configs.base import S3Settings
+from mcr_meeting.app.exceptions.exceptions import MeetingMultipartException
 from mcr_meeting.app.models.deliverable_model import DeliverableType
-from mcr_meeting.app.schemas.S3_types import PresignedAudioFileRequest, S3Object
+from mcr_meeting.app.schemas.S3_types import (
+    MultipartAbortRequest,
+    MultipartBaseRequest,
+    MultipartCompleteRequest,
+    MultipartInitRequest,
+    MultipartInitResponse,
+    MultipartSignPartRequest,
+    MultipartSignPartResponse,
+    PresignedAudioFileRequest,
+    S3Object,
+)
 from mcr_meeting.app.services.s3_service import (
+    abort_multipart_upload as abort_multipart_upload_in_s3,
+)
+from mcr_meeting.app.services.s3_service import (
+    complete_multipart_upload as complete_multipart_upload_in_s3,
+)
+from mcr_meeting.app.services.s3_service import (
+    create_multipart_upload,
     get_audio_object_prefix,
     get_file_from_s3,
     get_objects_list_from_prefix,
     get_presigned_url_for_put_file,
+    get_presigned_url_for_upload_part,
     get_report_object_name,
     put_file_to_s3,
     validate_object_list,
@@ -63,11 +82,56 @@ def build_presigned_audio_upload_url(
     return get_presigned_url_for_put_file(object_name)
 
 
+def initiate_multipart_upload(
+    meeting_id: int, init_request: MultipartInitRequest
+) -> MultipartInitResponse:
+    result = create_multipart_upload(meeting_id=meeting_id, init_request=init_request)
+    return MultipartInitResponse(
+        upload_id=result["upload_id"], object_key=result["key"]
+    )
+
+
+def sign_multipart_part(
+    meeting_id: int, sign_request: MultipartSignPartRequest
+) -> MultipartSignPartResponse:
+    _assert_object_key_belongs_to_meeting(meeting_id, sign_request)
+    url = get_presigned_url_for_upload_part(
+        object_key=sign_request.object_key,
+        upload_id=sign_request.upload_id,
+        part_number=sign_request.part_number,
+    )
+    return MultipartSignPartResponse(url=url)
+
+
+def complete_multipart_upload(
+    meeting_id: int, complete_request: MultipartCompleteRequest
+) -> None:
+    _assert_object_key_belongs_to_meeting(meeting_id, complete_request)
+    complete_multipart_upload_in_s3(complete_request)
+
+
+def abort_multipart_upload(
+    meeting_id: int, abort_request: MultipartAbortRequest
+) -> None:
+    _assert_object_key_belongs_to_meeting(meeting_id, abort_request)
+    abort_multipart_upload_in_s3(
+        object_key=abort_request.object_key, upload_id=abort_request.upload_id
+    )
+
+
 def stream_meeting_audio(meeting_id: int) -> tuple[Iterator[bytes], str]:
     objects = validate_object_list(
         get_objects_list_from_prefix(prefix=f"{meeting_id}/")
     )
     return _stream_audio_chunks(objects), AUDIO_MEDIA_TYPE
+
+
+def _assert_object_key_belongs_to_meeting(
+    meeting_id: int, request: MultipartBaseRequest
+) -> None:
+    expected_prefix = get_audio_object_prefix(str(meeting_id))
+    if not request.object_key.startswith(expected_prefix):
+        raise MeetingMultipartException("Invalid object key for this meeting.")
 
 
 def _object_name_for_deliverable(
