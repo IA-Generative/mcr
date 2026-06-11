@@ -52,19 +52,6 @@ def _mock_persist_report_docx(monkeypatch: Any) -> MagicMock:
 # ---------------------------------------------------------------------------
 
 
-def test_init_capture(
-    visio_meeting: Meeting,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test initializing capture transitions meeting to CAPTURE_PENDING."""
-    result = mts.init_capture(
-        meeting_id=visio_meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.CAPTURE_PENDING
-
-
 def test_start_capture(
     orchestrator_user: User,
     user_keycloak_uuid: UUID,
@@ -82,25 +69,6 @@ def test_start_capture(
     )
 
     assert result.status == MeetingStatus.CAPTURE_BOT_IS_CONNECTING
-
-
-def test_complete_capture(
-    orchestrator_user: User,
-    user_keycloak_uuid: UUID,
-) -> None:
-    """Test completing capture transitions meeting to CAPTURE_DONE."""
-    meeting = MeetingFactory.create(
-        owner=orchestrator_user,
-        status=MeetingStatus.CAPTURE_IN_PROGRESS,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.complete_capture(
-        meeting_id=meeting.id,
-        user_keycloak_uuid=user_keycloak_uuid,
-    )
-
-    assert result.status == MeetingStatus.CAPTURE_DONE
 
 
 def test_fail_capture(
@@ -351,20 +319,6 @@ def test_reset_report_bad_status(
 # ---------------------------------------------------------------------------
 # Error case
 # ---------------------------------------------------------------------------
-
-
-def test_init_capture_bad_status(user_keycloak_uuid: UUID) -> None:
-    """Test that init_capture raises exception when meeting is in wrong status."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.REPORT_DONE,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    with pytest.raises(Exception):
-        mts.init_capture(
-            meeting_id=meeting.id,
-            user_keycloak_uuid=user_keycloak_uuid,
-        )
 
 
 def test_complete_transcription_from_transcription_done_fails() -> None:

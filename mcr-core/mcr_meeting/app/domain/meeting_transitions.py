@@ -8,6 +8,14 @@ from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
 )
 
 
+def init_capture(meeting: Meeting) -> None:
+    _apply_or_conflict(meeting, MeetingEvent.INIT_CAPTURE)
+
+
+def complete_capture(meeting: Meeting) -> None:
+    _apply_or_conflict(meeting, MeetingEvent.COMPLETE_CAPTURE)
+
+
 def start_capture_bot(meeting: Meeting) -> None:
     _apply_or_conflict(meeting, MeetingEvent.START_CAPTURE_BOT)
 
