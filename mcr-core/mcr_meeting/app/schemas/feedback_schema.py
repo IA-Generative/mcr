@@ -1,13 +1,16 @@
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from mcr_meeting.app.models.feedback_model import VoteType
+from mcr_meeting.app.models.feedback_model import (
+    FEEDBACK_COMMENT_MAX_LENGTH,
+    VoteType,
+)
 
 
 class FeedbackRequest(BaseModel):
     """Base schema for a feedback, containing common attributes."""
 
     vote_type: VoteType
-    comment: str | None = None
+    comment: str | None = Field(default=None, max_length=FEEDBACK_COMMENT_MAX_LENGTH)
     url: str
 
     @field_validator("comment", mode="before")

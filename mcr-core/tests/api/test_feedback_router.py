@@ -3,7 +3,10 @@ from fastapi import status
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.models import User
-from mcr_meeting.app.models.feedback_model import Feedback
+from mcr_meeting.app.models.feedback_model import (
+    FEEDBACK_COMMENT_MAX_LENGTH,
+    Feedback,
+)
 
 from .conftest import PrefixedTestClient
 
@@ -118,6 +121,52 @@ def test_create_feedback_whitespace_comment_stored_as_null(
     feedback = db_session.get(Feedback, feedback_id)
     assert feedback is not None
     assert feedback.comment is None
+
+
+def test_create_feedback_comment_too_long_returns_422(
+    feedback_client: PrefixedTestClient, user_fixture: User
+) -> None:
+    # Arrange — commentaire dépassant la limite d'un caractère
+    payload = {
+        "vote_type": "POSITIVE",
+        "url": "https://example.com",
+        "comment": "a" * (FEEDBACK_COMMENT_MAX_LENGTH + 1),
+    }
+
+    # Act
+    response = feedback_client.post(
+        "/", json=payload, headers=_auth_header(user_fixture)
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_create_feedback_comment_at_max_length_returns_201(
+    feedback_client: PrefixedTestClient,
+    user_fixture: User,
+    db_session: Session,
+) -> None:
+    # Arrange — commentaire exactement à la limite
+    comment = "a" * FEEDBACK_COMMENT_MAX_LENGTH
+    payload = {
+        "vote_type": "POSITIVE",
+        "url": "https://example.com",
+        "comment": comment,
+    }
+
+    # Act
+    response = feedback_client.post(
+        "/", json=payload, headers=_auth_header(user_fixture)
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_201_CREATED
+    feedback_id = response.json()["id"]
+    db_session.expire_all()
+    feedback = db_session.get(Feedback, feedback_id)
+    assert feedback is not None
+    assert feedback.comment == comment
 
 
 def test_create_feedback_url_with_existing_meeting_stores_meeting_id(
