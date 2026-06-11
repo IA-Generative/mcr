@@ -34,6 +34,7 @@ from mcr_meeting.app.configs.base import (
     Speech2TextSettings,
     TranscriptionWaitingTimeSettings,
 )
+from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
@@ -160,6 +161,17 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
 
 @celery_worker.task(name=MCRTranscriptionTasks.TRANSCRIBE, max_retries=3)
 def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, object]]:
+    client = MeetingApiClient(owner_keycloak_uuid)
+    meeting_exists = asyncio.run(
+        client.start_transcription(meeting_id, swallow_404=True)
+    )
+    if not meeting_exists:
+        logger.warning(
+            "Meeting {} deleted before transcription started; skipping task",
+            meeting_id,
+        )
+        raise MeetingDeletedException(meeting_id)
+
     transcription_data = transcribe_meeting(meeting_id=meeting_id)
 
     result = [item.model_dump() for item in transcription_data]
@@ -168,7 +180,7 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, obje
 
 
 @task_prerun.connect(sender=transcribe)
-def set_meeting_in_progress_status(**kwargs: Any) -> None:  # type: ignore[explicit-any]
+def set_sentry_context_before_transcription(**kwargs: Any) -> None:  # type: ignore[explicit-any]
     task_args = extract_transcription_task_args(kwargs)
 
     client = MeetingApiClient(task_args.owner_keycloak_uuid)
@@ -176,9 +188,6 @@ def set_meeting_in_progress_status(**kwargs: Any) -> None:  # type: ignore[expli
         task_args.meeting_id, task_args.owner_keycloak_uuid, client
     )
     set_sentry_meeting_context(meeting_context)
-
-    asyncio.run(client.start_transcription(task_args.meeting_id))
-    logger.info("Starting transcription for meeting ID: {}", task_args.meeting_id)
 
 
 @task_success.connect(sender=transcribe)
@@ -202,7 +211,7 @@ def handle_transcription_success(  # type: ignore[explicit-any]
     client = MeetingApiClient(task_args.owner_keycloak_uuid)
     asyncio.run(
         client.mark_transcription_as_success(
-            task_args.meeting_id, transcription_data=result
+            task_args.meeting_id, transcription_data=result, swallow_404=True
         )
     )
 
@@ -214,7 +223,9 @@ def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-a
     task_args = extract_transcription_task_args(kwargs)
 
     client = MeetingApiClient(task_args.owner_keycloak_uuid)
-    asyncio.run(client.mark_transcription_as_failed(task_args.meeting_id))
+    asyncio.run(
+        client.mark_transcription_as_failed(task_args.meeting_id, swallow_404=True)
+    )
 
     logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", task_args.meeting_id)
 

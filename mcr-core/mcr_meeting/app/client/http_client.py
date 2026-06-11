@@ -1,6 +1,7 @@
 from collections.abc import Mapping
 
 import httpx
+from loguru import logger
 
 
 class HttpClient:
@@ -16,11 +17,20 @@ class HttpClient:
             headers["X-User-Keycloak-UUID"] = self.token
         return headers
 
-    async def post(self, endpoint: str, data: object | None = None) -> httpx.Response:
+    async def post(
+        self,
+        endpoint: str,
+        data: object | None = None,
+        *,
+        swallow_404: bool = False,
+    ) -> httpx.Response | None:
         async with httpx.AsyncClient(base_url=self.base_url) as client:
             response = await client.post(
                 endpoint, headers=self._get_headers(), json=data
             )
+            if swallow_404 and response.status_code == httpx.codes.NOT_FOUND:
+                logger.warning("Endpoint {} returned 404; dropping call", endpoint)
+                return None
             response.raise_for_status()
             return response
 
