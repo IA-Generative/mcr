@@ -12,6 +12,9 @@ coverage.xml
 .pytest_cache
 .coveragerc
 
+# import-linter / grimp graph cache
+.import_linter_cache/
+
 # macOS Desktop Services Store
 .DS_Store
 

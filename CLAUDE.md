@@ -119,16 +119,43 @@ mcr-generation/mcr_generation/app/
 - **Python**: 3.12+ (3.13 for mcr-generation). `uv` for package management, `ruff` for formatting/linting, `mypy --strict` for type checking, `pydantic-settings` for config
 - **Frontend**: Node 22, pnpm 10. ESLint + Prettier, `vue-tsc`
 - **DB access**: SQLAlchemy 2.0 with repository pattern
-- **Architecture layers**: API routers → Services → Repositories → DB
+- **Architecture layers**: see [Target architecture (mcr-core)](#target-architecture-mcr-core) below
 - **Commits**: Gitmoji convention — see the `/commit` skill for details
-- **PRs**: Target the `dev` branch (not `main`)
+
+### Target architecture (mcr-core)
+
+> This is the **target** layering. It is **not yet enforced everywhere** — new code should follow it, and existing code should migrate toward it.
+
+```mermaid
+flowchart LR
+    API[API routers] --> UC[Use-cases]
+    UC --> Domain[domain<br/>business rules · I/O-less]
+    UC --> DB[db<br/>repositories]
+    UC --> Infra[infra<br/>one external dep per file]
+    Shared[schemas + models<br/>shared types · cross-cutting]
+```
+
+- **API routers** — thin: validate input → call a use-case → return the response
+- **Use-cases** — own a flow's orchestration and all its side effects, coordinating `domain`, `db`, and `infra`. Best-effort enrichment runs **guard-before-IO** so the core write always happens
+- **domain** — business logic and rules, **I/O-less**
+- **db** — repositories (all SQLAlchemy queries)
+- **infra** — each file wraps exactly one external dependency (`keycloak.py`, `redis.py`, `s3.py`, …)
+- **schemas / models** — shared types used by every layer (not part of the call chain)
+
+Migration direction (existing code that doesn't yet fit):
+
+- **State-machine actions (`statemachine_actions/`)** should move into `domain` and become I/O-less; some still do orchestration/I/O today (e.g. the report path in `meeting_actions.py`)
+- **`orchestrators/` is legacy and being phased out** — its coordination moves into use-cases. Legacy `services/` likewise folds into use-cases (orchestration) and `domain` (business rules)
 
 ## Constraints (do NOT)
 
-- Don't put business logic in routers — routers validate input, call a service, return the response
+- Don't put business logic in routers — routers validate input, call a use-case, return the response
+- Don't call repositories from routers — go through a use-case
 - Don't make DB queries outside `db/` repositories
+- Don't add to `orchestrators/` or create new `services/` — put orchestration in a use-case and business rules in `domain`
+- Don't import a use-case from another use-case — share only via `use_cases/_shared/`, and only when the shared piece maps to a real business operation
 - Don't add new dependencies without checking existing ones first
-- Don't bypass ruff/mypy errors — fix them. Banned imports (logging, requests) are enforced by ruff TID251
+- Don't bypass ruff/mypy errors — fix them.
 
 ## Environment Files
 

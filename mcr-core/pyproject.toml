@@ -86,7 +86,7 @@ typing = [
     "pandas-stubs>=2.3.0.250703",
     "numpy-typing>=1.1.1",
 ]
-tools = ["mypy-clean-slate", "deptry"]
+tools = ["mypy-clean-slate", "deptry", "import-linter"]
 
 [tool.mypy]
 # disallow_any_unimported = true
@@ -162,4 +162,70 @@ DEP002 = [
     "onnxruntime",
     "llvmlite",
     "numba",
+]
+
+# -----------------------------------------------------------------------------
+# import-linter — enforce the target architecture from CLAUDE.md.
+#
+#   1. `layers` (closed-by-default) encodes the vertical call chain: nothing below
+#      use_cases may import api or use_cases.
+#   2. `domain` is I/O-less — it may not (directly) import db/infrastructure or any
+#      legacy layer. (Kept as a `forbidden` contract rather than `|`-independent layers
+#      because the ORM models import `db.db`, so every layer reaches db *indirectly*
+#      and layers contracts have no direct-only mode.)
+#   3. use-cases must not import each other (share via use_cases._shared).
+#   4. use-cases must not reach into the legacy layers.
+#
+# `ignore_imports` lists the KNOWN legacy edges still to migrate — the debt ledger.
+# It only shrinks: unmatched ignores raise an error, so removing an edge forces
+# removing its entry. `models` / `schemas` / `exceptions` are the shared kernel and
+# are left out of the layering.
+# -----------------------------------------------------------------------------
+[tool.importlinter]
+root_package = "mcr_meeting"
+
+[[tool.importlinter.contracts]]
+name = "Call chain: api > use_cases > {domain, db, infrastructure}"
+type = "layers"
+layers = [
+    "mcr_meeting.app.api",
+    "mcr_meeting.app.use_cases",
+    "mcr_meeting.app.domain : mcr_meeting.app.db : mcr_meeting.app.infrastructure",
+]
+
+[[tool.importlinter.contracts]]
+name = "domain is I/O-less (no db/infrastructure/legacy)"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["mcr_meeting.app.domain"]
+forbidden_modules = [
+    "mcr_meeting.app.db",
+    "mcr_meeting.app.infrastructure",
+    "mcr_meeting.app.orchestrators",
+    "mcr_meeting.app.services",
+    "mcr_meeting.app.client",
+    "mcr_meeting.app.state_machine",
+    "mcr_meeting.app.statemachine_actions",
+]
+ignore_imports = [
+    # TODO(arch): move get_state_machine_for_meeting into domain, drop orchestrators dep
+    "mcr_meeting.app.domain.meeting_transitions -> mcr_meeting.app.orchestrators.meeting_transitions_orchestrator",
+    # TODO(arch): render_report should not reach into the legacy docx service
+    "mcr_meeting.app.domain.report_rendering -> mcr_meeting.app.services.docx_report_generation_service",
+]
+
+[[tool.importlinter.contracts]]
+name = "Use-cases must not import each other"
+type = "independence"
+modules = ["mcr_meeting.app.use_cases.*"]
+
+[[tool.importlinter.contracts]]
+name = "Use-cases must not depend on legacy orchestrators/services/client"
+type = "forbidden"
+allow_indirect_imports = true
+source_modules = ["mcr_meeting.app.use_cases"]
+forbidden_modules = [
+    "mcr_meeting.app.orchestrators",
+    "mcr_meeting.app.services",
+    "mcr_meeting.app.client",
 ]
