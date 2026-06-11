@@ -87,7 +87,9 @@ class MultipartCompletePart(BaseModel):
 
 
 class MultipartCompleteRequest(MultipartBaseRequest):
-    parts: list[MultipartCompletePart] = Field(serialization_alias="Parts")
+    parts: list[MultipartCompletePart] = Field(
+        serialization_alias="Parts", min_length=1
+    )
 
 
 class MultipartAbortRequest(MultipartBaseRequest):
