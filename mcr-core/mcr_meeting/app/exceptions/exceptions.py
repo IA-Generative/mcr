@@ -39,6 +39,11 @@ class TaskCreationException(MCRException):
     """Raised when a transcription task couldn't be created."""
 
 
+class InvalidFeedbackDataException(MCRException):
+    """Raised when the database rejects feedback data
+    (e.g. a comment longer than the column allows)."""
+
+
 class DeliverableConcurrentlyCreatedException(MCRException):
     """Raised when a concurrent INSERT trips the partial unique index that
     forbids more than one active deliverable per (meeting, type)."""

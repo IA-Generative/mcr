@@ -10,6 +10,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     DeliverableStateConflictException,
     ForbiddenAccessException,
     InvalidAudioFileError,
+    InvalidFeedbackDataException,
     MCRException,
     MeetingMultipartException,
     MeetingStateConflictException,
@@ -23,6 +24,7 @@ from mcr_meeting.app.exceptions.exceptions import (
 EXCEPTION_STATUS_MAP = {
     InvalidAudioFileError: status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
     SilentAudioError: status.HTTP_422_UNPROCESSABLE_ENTITY,
+    InvalidFeedbackDataException: status.HTTP_422_UNPROCESSABLE_ENTITY,
     NotFoundException: status.HTTP_404_NOT_FOUND,
     NotSavedException: status.HTTP_500_INTERNAL_SERVER_ERROR,
     TaskCreationException: status.HTTP_500_INTERNAL_SERVER_ERROR,
