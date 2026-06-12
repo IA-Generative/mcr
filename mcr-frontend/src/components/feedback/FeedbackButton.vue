@@ -19,35 +19,9 @@ import communityIcon from '@dsfr-artwork/pictograms/leisure/community.svg?url';
 import FeedbackModal from './FeedbackModal.vue';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
-import type { VoteType } from '@/services/feedback/feedback.types';
-import useToaster from '@/composables/use-toaster';
 
-const toaster = useToaster();
-const selectedVote = ref<VoteType | null>(null);
-const comment = ref('');
-
-function resetRecordedParams() {
-  selectedVote.value = null;
-  comment.value = '';
-}
-
-// We need to have to reactive logic here for the comments & the votes to be kept until sent.
 const modal = useModal({
   component: FeedbackModal,
-  attrs: reactive({
-    selectedVote,
-    comment,
-    onSelectVote: (v: VoteType | null) => {
-      selectedVote.value = v;
-    },
-    onUpdateComment: (v: string) => {
-      comment.value = v;
-    },
-    onSuccess: () => {
-      resetRecordedParams();
-    },
-    onError: () => toaster.addErrorMessage(t('error.default')),
-  }),
 });
 </script>
 

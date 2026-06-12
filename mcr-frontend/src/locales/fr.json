@@ -681,7 +681,8 @@
     },
     "comment": {
       "label": "Commentaire (Optionnel)",
-      "placeholder": "Décrivez votre expérience..."
+      "placeholder": "Décrivez votre expérience...",
+      "error": "Votre commentaire dépasse la limite autorisée ({current}/{max} caractères)"
     },
     "submit": "Envoyer",
     "success": {

@@ -6,6 +6,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.db import Base
 
+# Drives BOTH the Pydantic validation (FeedbackRequest.comment) and the VARCHAR
+# length of the `comment` column below. Changing this value requires an Alembic
+# migration (alter_column) to resize the column: otherwise the DB stays at the
+# old length and a longer comment crashes at flush time instead of being
+# cleanly rejected with a 422. The frontend mirrors this value in
+# mcr-frontend/src/services/feedback/feedback.types.ts — keep them in sync.
+FEEDBACK_COMMENT_MAX_LENGTH = 1000
+
 
 class VoteType(StrEnum):
     POSITIVE = "POSITIVE"
@@ -38,7 +46,7 @@ class Feedback(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
     vote_type: Mapped[VoteType | None] = mapped_column(String)
     comment: Mapped[str | None] = mapped_column(
-        String(1000), nullable=True, default=None
+        String(FEEDBACK_COMMENT_MAX_LENGTH), nullable=True, default=None
     )
     meeting_id: Mapped[int | None] = mapped_column(
         ForeignKey("meeting.id", ondelete="SET NULL"), nullable=True, default=None
