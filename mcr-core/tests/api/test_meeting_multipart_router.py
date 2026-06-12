@@ -103,6 +103,29 @@ def test_complete_multipart(
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
+def test_complete_multipart_rejects_empty_parts(
+    mock_minio: Mock,
+    meeting_client: PrefixedTestClient,
+    user_fixture: User,
+    meeting_fixture: Meeting,
+) -> None:
+    payload = {
+        "upload_id": "1",
+        "object_key": get_audio_object_prefix(str(meeting_fixture.id)),
+        "parts": [],
+    }
+
+    # Act
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+    response = meeting_client.post(
+        f"/{meeting_fixture.id}/multipart/complete", json=payload, headers=headers
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+    mock_minio.complete_multipart_upload.assert_not_called()
+
+
 def test_abort_multipart(
     mock_minio: Mock,
     meeting_client: PrefixedTestClient,
