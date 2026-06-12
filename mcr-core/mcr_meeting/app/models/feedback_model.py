@@ -6,6 +6,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from ..db.db import Base
 
+# Drives BOTH the Pydantic validation (FeedbackRequest.comment) and the VARCHAR
+# length of the `comment` column below. Changing this value requires an Alembic
+# migration (alter_column) to resize the column: otherwise the DB stays at the
+# old length and a longer comment crashes at flush time instead of being
+# cleanly rejected with a 422. The frontend mirrors this value in
+# mcr-frontend/src/services/feedback/feedback.types.ts — keep them in sync.
 FEEDBACK_COMMENT_MAX_LENGTH = 1000
 
 

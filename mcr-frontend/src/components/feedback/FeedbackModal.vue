@@ -76,16 +76,12 @@ const { defineField, setFieldValue, values, errors, handleSubmit } = useForm({
     vote_type: draft.voteType.value ?? undefined,
     comment: draft.comment.value,
   },
-  // Without this, meta.valid stays true until the first interaction, which
-  // would leave the submit button enabled with no vote selected.
   validateOnMount: true,
 });
 
 const [comment, commentAttrs] = defineField('comment');
 const isFormValid = useIsFormValid();
 
-// Sync the form back into the draft so the text survives the modal closing.
-// No loop: the draft only feeds the form once, through initialValues.
 watch(values, (newValues) => {
   draft.voteType.value = newValues.vote_type ?? null;
   draft.comment.value = newValues.comment ?? '';
