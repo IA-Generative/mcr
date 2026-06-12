@@ -43,7 +43,7 @@ describe('FeedbackModal', () => {
     // Arrange
     const draft = useFeedbackDraft();
     renderFeedbackModal();
-    await userEvent.click(screen.getByRole('button', { name: 'Oui' }));
+    await userEvent.click(screen.getByRole('radio', { name: 'Oui' }));
 
     // Act
     const textarea = await screen.findByRole('textbox', { name: /commentaire/i });

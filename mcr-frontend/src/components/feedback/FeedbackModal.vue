@@ -6,22 +6,13 @@
   >
     <template v-if="step === 1">
       <p class="fr-text--sm">{{ t('feedback.modal.body') }}</p>
-      <div class="flex gap-4 mb-4">
-        <DsfrButton
-          :label="t('feedback.vote.positive')"
-          icon="fr-icon-thumb-up-line"
-          :no-label="false"
-          :secondary="values.vote_type !== 'POSITIVE'"
-          @click="setFieldValue('vote_type', 'POSITIVE')"
-        />
-        <DsfrButton
-          :label="t('feedback.vote.negative')"
-          icon="fr-icon-thumb-down-line"
-          :no-label="false"
-          :secondary="values.vote_type !== 'NEGATIVE'"
-          @click="setFieldValue('vote_type', 'NEGATIVE')"
-        />
-      </div>
+      <DsfrRadioButtonSet
+        v-model="voteType"
+        name="feedback-vote"
+        inline
+        :options="voteOptions"
+        class="vote-options mb-4"
+      />
 
       <Transition name="slide-down">
         <DsfrInputGroup
@@ -33,6 +24,7 @@
           :label-visible="true"
           :error-message="errors.comment"
           is-textarea
+          rows="3"
           class="comment-input"
         />
       </Transition>
@@ -53,6 +45,8 @@
 </template>
 
 <script setup lang="ts">
+import thumbDownIcon from '@gouvfr/dsfr/dist/icons/system/thumb-down-line.svg?url';
+import thumbUpIcon from '@gouvfr/dsfr/dist/icons/system/thumb-up-line.svg?url';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { createFeedbackMutation } from '@/services/feedback/use-feedback';
@@ -70,7 +64,7 @@ const toaster = useToaster();
 const draft = useFeedbackDraft();
 const mutation = createFeedbackMutation();
 
-const { defineField, setFieldValue, values, errors, handleSubmit } = useForm({
+const { defineField, values, errors, handleSubmit } = useForm({
   validationSchema: toTypedSchema(FeedbackSchema),
   initialValues: {
     vote_type: draft.voteType.value ?? undefined,
@@ -80,8 +74,16 @@ const { defineField, setFieldValue, values, errors, handleSubmit } = useForm({
 });
 
 const [comment, commentAttrs] = defineField('comment');
+const [voteType] = defineField('vote_type');
 const isFormValid = useIsFormValid();
 
+const voteOptions = [
+  { label: t('feedback.vote.positive'), value: 'POSITIVE', rich: true, img: thumbUpIcon },
+  { label: t('feedback.vote.negative'), value: 'NEGATIVE', rich: true, img: thumbDownIcon },
+];
+
+// Sync the form back into the draft so the text survives the modal closing.
+// No loop: the draft only feeds the form once, through initialValues.
 watch(values, (newValues) => {
   draft.voteType.value = newValues.vote_type ?? null;
   draft.comment.value = newValues.comment ?? '';
@@ -120,6 +122,16 @@ const step = ref<1 | 2>(1);
 const modalTitle = computed(() =>
   step.value === 1 ? t('feedback.modal.title') : t('feedback.success.title'),
 );
-const showTextInput = computed(() => !!values.vote_type);
+const showTextInput = computed(() => !!voteType.value);
 const sentIsButtonDisabled = computed(() => !isFormValid.value || mutation.isPending.value);
 </script>
+
+<style scoped>
+.vote-options :deep(.fr-fieldset__element--inline) {
+  flex: 1 1 0;
+}
+
+.vote-options :deep(.fr-radio-rich) {
+  width: 100%;
+}
+</style>
