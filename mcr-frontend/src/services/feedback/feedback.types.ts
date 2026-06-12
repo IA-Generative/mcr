@@ -1,3 +1,5 @@
+export const FEEDBACK_COMMENT_MAX_LENGTH = 1000;
+
 export const VoteType = ['POSITIVE', 'NEGATIVE'] as const;
 export type VoteType = (typeof VoteType)[number];
 

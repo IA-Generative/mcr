@@ -30,6 +30,7 @@
           :placeholder="t('feedback.comment.placeholder')"
           :label="t('feedback.comment.label')"
           :label-visible="true"
+          :error-message="commentErrorMessage"
           is-textarea
           class="comment-input"
           @update:model-value="onUpdateComment"
@@ -53,7 +54,7 @@
 
 <script setup lang="ts">
 import { t } from '@/plugins/i18n';
-import type { VoteType } from '@/services/feedback/feedback.types';
+import { FEEDBACK_COMMENT_MAX_LENGTH, type VoteType } from '@/services/feedback/feedback.types';
 import { createFeedbackMutation } from '@/services/feedback/use-feedback';
 import { useVfm } from 'vue-final-modal';
 import { useRoute } from 'vue-router';
@@ -79,7 +80,7 @@ onUnmounted(() => {
 });
 
 function submitFeedback() {
-  if (!props.selectedVote) return;
+  if (!props.selectedVote || commentTooLong.value) return;
   mutation.mutate(
     {
       vote_type: props.selectedVote,
@@ -107,5 +108,16 @@ const modalTitle = computed(() =>
   step.value === 1 ? t('feedback.modal.title') : t('feedback.success.title'),
 );
 const showTextInput = computed(() => props.selectedVote !== null);
-const sentIsButtonDisabled = computed(() => !props.selectedVote || mutation.isPending.value);
+const commentTooLong = computed(() => props.comment.length > FEEDBACK_COMMENT_MAX_LENGTH);
+const commentErrorMessage = computed(() =>
+  commentTooLong.value
+    ? t('feedback.comment.error', {
+        current: props.comment.length,
+        max: FEEDBACK_COMMENT_MAX_LENGTH,
+      })
+    : '',
+);
+const sentIsButtonDisabled = computed(
+  () => !props.selectedVote || commentTooLong.value || mutation.isPending.value,
+);
 </script>
