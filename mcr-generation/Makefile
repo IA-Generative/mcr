@@ -15,6 +15,10 @@ help:
 	@echo "test-coverage-integration : Run pytest coverage for integration (API) tests only.";
 	@echo "report-eval            : Run the offline evaluation of generated reports.";
 	@echo "report-eval-quick      : Same as report-eval but limited to 2 items.";
+	@echo "install                : Install all dependency groups in a local .venv.";
+
+install:
+	uv sync --all-groups --all-extras --inexact
 
 type-check:
 	uv sync --all-extras
