@@ -11,29 +11,29 @@
           :label="t('feedback.vote.positive')"
           icon="fr-icon-thumb-up-line"
           :no-label="false"
-          :secondary="selectedVote !== 'POSITIVE'"
-          @click="onSelectVote('POSITIVE')"
+          :secondary="values.vote_type !== 'POSITIVE'"
+          @click="setFieldValue('vote_type', 'POSITIVE')"
         />
         <DsfrButton
           :label="t('feedback.vote.negative')"
           icon="fr-icon-thumb-down-line"
           :no-label="false"
-          :secondary="selectedVote !== 'NEGATIVE'"
-          @click="onSelectVote('NEGATIVE')"
+          :secondary="values.vote_type !== 'NEGATIVE'"
+          @click="setFieldValue('vote_type', 'NEGATIVE')"
         />
       </div>
 
       <Transition name="slide-down">
         <DsfrInputGroup
           v-if="showTextInput"
-          :model-value="comment"
+          v-model="comment"
+          v-bind="commentAttrs"
           :placeholder="t('feedback.comment.placeholder')"
           :label="t('feedback.comment.label')"
           :label-visible="true"
-          :error-message="commentErrorMessage"
+          :error-message="errors.comment"
           is-textarea
           class="comment-input"
-          @update:model-value="onUpdateComment"
         />
       </Transition>
 
@@ -53,25 +53,43 @@
 </template>
 
 <script setup lang="ts">
+import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
-import { FEEDBACK_COMMENT_MAX_LENGTH, type VoteType } from '@/services/feedback/feedback.types';
 import { createFeedbackMutation } from '@/services/feedback/use-feedback';
+import { useFeedbackDraft } from '@/services/feedback/use-feedback-draft';
+import { toTypedSchema } from '@vee-validate/yup';
+import { useForm, useIsFormValid } from 'vee-validate';
 import { useVfm } from 'vue-final-modal';
 import { useRoute } from 'vue-router';
+import { FeedbackSchema } from './feedback.schema';
 
 const DELAY_TO_SHOW_THANKS = 2000; // 2 seconds
 
-const props = defineProps<{
-  selectedVote: VoteType | null;
-  comment: string;
-  onSelectVote: (v: VoteType | null) => void;
-  onUpdateComment: (v: string) => void;
-  onSuccess: () => void;
-  onError: () => void;
-}>();
-
 const route = useRoute();
+const toaster = useToaster();
+const draft = useFeedbackDraft();
 const mutation = createFeedbackMutation();
+
+const { defineField, setFieldValue, values, errors, handleSubmit } = useForm({
+  validationSchema: toTypedSchema(FeedbackSchema),
+  initialValues: {
+    vote_type: draft.voteType.value ?? undefined,
+    comment: draft.comment.value,
+  },
+  // Without this, meta.valid stays true until the first interaction, which
+  // would leave the submit button enabled with no vote selected.
+  validateOnMount: true,
+});
+
+const [comment, commentAttrs] = defineField('comment');
+const isFormValid = useIsFormValid();
+
+// Sync the form back into the draft so the text survives the modal closing.
+// No loop: the draft only feeds the form once, through initialValues.
+watch(values, (newValues) => {
+  draft.voteType.value = newValues.vote_type ?? null;
+  draft.comment.value = newValues.comment ?? '';
+});
 
 let thanksTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -79,18 +97,16 @@ onUnmounted(() => {
   if (thanksTimeout) clearTimeout(thanksTimeout);
 });
 
-function submitFeedback() {
-  if (!props.selectedVote || commentTooLong.value) return;
+const submitFeedback = handleSubmit((formValues) => {
   mutation.mutate(
     {
-      vote_type: props.selectedVote,
-      comment: props.comment || undefined,
+      vote_type: formValues.vote_type,
+      comment: formValues.comment || undefined,
       url: route.fullPath,
     },
     {
       onSuccess: () => {
-        // Reset vote & comment
-        props.onSuccess();
+        draft.reset();
         // Show thanks
         step.value = 2;
         // Close modal. In thanksTimeout to clear timeout if you close modal before the end of timeout.
@@ -98,26 +114,16 @@ function submitFeedback() {
           useVfm().close('feedback-modal');
         }, DELAY_TO_SHOW_THANKS);
       },
-      onError: () => props.onError(),
+      onError: () => toaster.addErrorMessage(t('error.default')),
     },
   );
-}
+});
+
 const step = ref<1 | 2>(1);
 
 const modalTitle = computed(() =>
   step.value === 1 ? t('feedback.modal.title') : t('feedback.success.title'),
 );
-const showTextInput = computed(() => props.selectedVote !== null);
-const commentTooLong = computed(() => props.comment.length > FEEDBACK_COMMENT_MAX_LENGTH);
-const commentErrorMessage = computed(() =>
-  commentTooLong.value
-    ? t('feedback.comment.error', {
-        current: props.comment.length,
-        max: FEEDBACK_COMMENT_MAX_LENGTH,
-      })
-    : '',
-);
-const sentIsButtonDisabled = computed(
-  () => !props.selectedVote || commentTooLong.value || mutation.isPending.value,
-);
+const showTextInput = computed(() => !!values.vote_type);
+const sentIsButtonDisabled = computed(() => !isFormValid.value || mutation.isPending.value);
 </script>
