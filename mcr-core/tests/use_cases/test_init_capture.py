@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.orm import Session
 
 from mcr_meeting.app.exceptions.exceptions import (
     ForbiddenAccessException,
@@ -6,6 +7,7 @@ from mcr_meeting.app.exceptions.exceptions import (
 )
 from mcr_meeting.app.models import MeetingStatus
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.models.user_model import User
 from mcr_meeting.app.use_cases.init_capture import init_capture
 from tests.factories.meeting_factory import MeetingFactory
@@ -17,7 +19,9 @@ def user_fixture() -> User:
     return UserFactory.create()
 
 
-def test_init_capture_sets_status_to_capture_pending(user_fixture: User) -> None:
+def test_init_capture_sets_status_to_capture_pending(
+    user_fixture: User, db_session: Session
+) -> None:
     # Arrange
     meeting = MeetingFactory.create(
         owner=user_fixture,
@@ -32,6 +36,15 @@ def test_init_capture_sets_status_to_capture_pending(user_fixture: User) -> None
 
     # Assert
     assert result.status == MeetingStatus.CAPTURE_PENDING
+    records = (
+        db_session.query(MeetingTransitionRecord)
+        .filter(
+            MeetingTransitionRecord.meeting_id == meeting.id,
+            MeetingTransitionRecord.status == MeetingStatus.CAPTURE_PENDING,
+        )
+        .all()
+    )
+    assert len(records) == 1
 
 
 def test_init_capture_fails_if_requester_isnt_owner(user_fixture: User) -> None:
