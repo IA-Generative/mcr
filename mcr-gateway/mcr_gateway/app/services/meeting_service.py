@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
-from fastapi import HTTPException, UploadFile
-from fastapi.responses import Response, StreamingResponse
+from fastapi import HTTPException
+from fastapi.responses import StreamingResponse
 from loguru import logger
 from pydantic import UUID4
 
@@ -313,42 +313,6 @@ async def generate_meeting_transcription_document(
         raise HTTPException(
             status_code=500,
             detail="An unexpected error occurred while fetching the transcription.",
-        )
-
-
-async def update_meeting_transcription_service(
-    meeting_id: int, user_keycloak_uuid: UUID4, file: UploadFile
-) -> Response:
-    """
-    Service to fetch the transcription DOCX file of a given meeting by calling the API.
-
-    Args:
-        meeting_id (int): The ID of the meeting for which the transcription DOCX is needed.
-
-    Returns:
-        StreamingResponse: The DOCX file as a streaming response.
-    """
-    try:
-        file_content = await file.read()
-        files = {
-            "file": (
-                file.filename,
-                file_content,
-                file.content_type,
-            )
-        }
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.put(url=f"{meeting_id}/transcription", files=files)
-            response.raise_for_status()  # Raise an error for non-200 responses
-
-            # Return an appropriate response based on your needs
-            return Response(status_code=204)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="An unexpected error occurred while updating the transcription.",
         )
 
 

@@ -4,7 +4,6 @@ from fastapi import (
     Depends,
     HTTPException,
     Query,
-    UploadFile,
     status,
 )
 from fastapi.responses import StreamingResponse
@@ -34,7 +33,6 @@ from mcr_gateway.app.services.meeting_service import (
     start_meeting_transcription_service,
     stop_meeting_capture_service,
     update_meeting_service,
-    update_meeting_transcription_service,
 )
 
 router = APIRouter()
@@ -295,31 +293,6 @@ async def get_meeting_transcription(
     """
     return await generate_meeting_transcription_document(
         meeting_id=meeting_id, user_keycloak_uuid=current_user.keycloak_uuid
-    )
-
-
-@router.put(
-    "/meetings/{meeting_id}/transcription",
-    tags=["Meetings"],
-    status_code=status.HTTP_204_NO_CONTENT,
-)
-async def update_meeting_transcription(
-    meeting_id: int,
-    file: UploadFile,
-    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
-) -> None:
-    """
-    Adds the modified transcription with a new version to a given meeting
-
-    Args:
-        meeting_id (int): The ID of the meeting.
-        file: Transcription DOCX file
-
-    Returns:
-        204 if the transcription has been added
-    """
-    await update_meeting_transcription_service(
-        meeting_id=meeting_id, file=file, user_keycloak_uuid=current_user.keycloak_uuid
     )
 
 

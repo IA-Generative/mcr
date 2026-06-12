@@ -2,10 +2,7 @@ from collections.abc import Generator, Iterator
 from io import BytesIO
 
 from mcr_meeting.app.configs.base import S3Settings
-from mcr_meeting.app.exceptions.exceptions import (
-    MeetingMultipartException,
-    NotFoundException,
-)
+from mcr_meeting.app.exceptions.exceptions import MeetingMultipartException
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.S3_types import (
     MultipartAbortRequest,
@@ -63,11 +60,7 @@ def upload_transcription_to_s3(
     return object_name
 
 
-def download_transcription_docx(meeting_id: int, filename: str | None) -> BytesIO:
-    if filename is None:
-        raise NotFoundException(
-            "Couldn't get transcription as meeting.transcription_filename is empty"
-        )
+def download_transcription_docx(meeting_id: int, filename: str) -> BytesIO:
     object_name = get_transcription_object_name(
         meeting_id=meeting_id, filename=filename
     )

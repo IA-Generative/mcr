@@ -10,7 +10,7 @@ from mcr_meeting.app.use_cases.get_or_create_transcription_docx import (
     INITIAL_TRANSCRIPTION_FILENAME,
     get_or_create_transcription_docx,
 )
-from tests.factories import MeetingFactory
+from tests.factories import MeetingFactory, UserFactory
 from tests.factories.transcription_factory import TranscriptionFactory
 from tests.mocks.in_memory_s3 import InMemoryS3
 
@@ -64,4 +64,17 @@ def test_rejects_non_owner(in_memory_s3: InMemoryS3) -> None:
     with pytest.raises(ForbiddenAccessException):
         get_or_create_transcription_docx(
             meeting_id=meeting.id, user_keycloak_uuid=uuid4()
+        )
+
+
+def test_rejects_other_existing_user(in_memory_s3: InMemoryS3) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    other_user = UserFactory.create()
+
+    with pytest.raises(ForbiddenAccessException):
+        get_or_create_transcription_docx(
+            meeting_id=meeting.id, user_keycloak_uuid=other_user.keycloak_uuid
         )

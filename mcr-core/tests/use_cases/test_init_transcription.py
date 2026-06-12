@@ -1,6 +1,7 @@
 from unittest.mock import Mock
 
 import pytest
+from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import TaskCreationException
@@ -74,7 +75,7 @@ def test_init_transcription_stamps_end_date_for_record_meetings(
 
 def test_init_transcription_rolls_back_on_broker_failure(
     mock_celery_producer_app: Mock,
-    db_session: object,
+    db_session: Session,
 ) -> None:
     mock_celery_producer_app.send_task.side_effect = Exception("broker down")
     meeting = MeetingFactory.create(
@@ -86,6 +87,8 @@ def test_init_transcription_rolls_back_on_broker_failure(
         init_transcription(meeting_id=meeting.id)
 
     assert _pending_records(meeting.id) == []
+    db_session.refresh(meeting)
+    assert meeting.status == MeetingStatus.TRANSCRIPTION_PENDING
 
 
 def test_init_transcription_rejects_illegal_transition(

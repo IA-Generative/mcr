@@ -20,6 +20,7 @@ def create_transition_record_service(
         MeetingStatus.TRANSCRIPTION_PENDING,
         MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         MeetingStatus.TRANSCRIPTION_DONE,
+        MeetingStatus.TRANSCRIPTION_FAILED,
         MeetingStatus.REPORT_PENDING,
         MeetingStatus.REPORT_DONE,
         MeetingStatus.REPORT_FAILED,

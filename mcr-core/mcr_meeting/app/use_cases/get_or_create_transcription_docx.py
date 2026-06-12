@@ -31,7 +31,7 @@ def get_or_create_transcription_docx(
         docx_buffer = _render_and_store(meeting)
     else:
         docx_buffer = download_transcription_docx(
-            meeting.id, meeting.transcription_filename
+            meeting_id=meeting.id, filename=meeting.transcription_filename
         )
 
     filename = build_deliverable_filename(

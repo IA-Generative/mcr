@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms, MeetingStatus
@@ -43,7 +44,7 @@ def test_start_transcription_records_predicted_transition() -> None:
     assert records[0].predicted_date_of_next_transition is not None
 
 
-def test_start_transcription_rejects_illegal_transition() -> None:
+def test_start_transcription_rejects_illegal_transition(db_session: Session) -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.CAPTURE_DONE,
         name_platform=MeetingPlatforms.COMU,
@@ -51,3 +52,7 @@ def test_start_transcription_rejects_illegal_transition() -> None:
 
     with pytest.raises(ValueError):
         start_transcription(meeting_id=meeting.id)
+
+    db_session.refresh(meeting)
+    assert meeting.status == MeetingStatus.CAPTURE_DONE
+    assert _in_progress_records(meeting.id) == []
