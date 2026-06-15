@@ -7,10 +7,11 @@ from fastapi.responses import JSONResponse
 
 from mcr_meeting.app.exceptions.exceptions import (
     BadRequestException,
+    DataConflictException,
     DeliverableStateConflictException,
     ForbiddenAccessException,
     InvalidAudioFileError,
-    InvalidFeedbackDataException,
+    InvalidDataException,
     MCRException,
     MeetingMultipartException,
     MeetingStateConflictException,
@@ -24,7 +25,8 @@ from mcr_meeting.app.exceptions.exceptions import (
 EXCEPTION_STATUS_MAP = {
     InvalidAudioFileError: status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
     SilentAudioError: status.HTTP_422_UNPROCESSABLE_ENTITY,
-    InvalidFeedbackDataException: status.HTTP_422_UNPROCESSABLE_ENTITY,
+    InvalidDataException: status.HTTP_422_UNPROCESSABLE_ENTITY,
+    DataConflictException: status.HTTP_409_CONFLICT,
     NotFoundException: status.HTTP_404_NOT_FOUND,
     NotSavedException: status.HTTP_500_INTERNAL_SERVER_ERROR,
     TaskCreationException: status.HTTP_500_INTERNAL_SERVER_ERROR,

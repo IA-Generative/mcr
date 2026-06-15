@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, SessionTransaction
 
 from mcr_meeting.app.db.db import get_db_session_ctx
+from mcr_meeting.app.db.db_errors import raise_db_write_error
 from mcr_meeting.app.exceptions.exceptions import NotSavedException
 
 
@@ -47,6 +48,9 @@ class UnitOfWork(AbstractContextManager["UnitOfWork"]):
             self.session.commit()
         except SQLAlchemyError as e:
             self.rollback()
+
+            raise_db_write_error(e)
+
             raise NotSavedException(f"Erreur lors de la transaction : {str(e)}") from e
 
     def rollback(self) -> None:
