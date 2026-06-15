@@ -27,17 +27,20 @@ def init_transcription(meeting_id: int) -> Meeting:
     meeting = get_meeting_with_owner(meeting_id)
     apply_init_transcription(meeting)
 
-    with UnitOfWork():
-        if meeting.name_platform == MeetingPlatforms.MCR_RECORD:
-            meeting.end_date = datetime.now(timezone.utc)
-        update_meeting(meeting)
-        enqueue_transcription_task(meeting.id, str(meeting.owner.keycloak_uuid))
+    if meeting.name_platform == MeetingPlatforms.MCR_RECORD:
+        meeting.end_date = datetime.now(timezone.utc)
 
+    with UnitOfWork():
+        update_meeting(meeting)
+
+    enqueue_transcription_task(meeting.id, str(meeting.owner.keycloak_uuid))
     waiting_time_minutes = estimate_wait_time_minutes(count_pending_meetings())
-    record_predicted_transition(
-        meeting_id=meeting.id,
-        status=meeting.status,
-        waiting_time_minutes=waiting_time_minutes,
-    )
+
+    with UnitOfWork():
+        record_predicted_transition(
+            meeting_id=meeting.id,
+            status=meeting.status,
+            waiting_time_minutes=waiting_time_minutes,
+        )
 
     return meeting

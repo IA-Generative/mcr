@@ -31,7 +31,9 @@ def enqueue_transcription_task(meeting_id: int, owner_keycloak_uuid: str) -> Non
             args=[meeting_id, owner_keycloak_uuid],
         )
     except Exception as e:
-        raise TaskCreationException(e)
+        raise TaskCreationException(
+            f"Failed to enqueue transcription task for meeting {meeting_id}"
+        ) from e
 
 
 def enqueue_evaluation_task(zip_bytes: bytes) -> None:

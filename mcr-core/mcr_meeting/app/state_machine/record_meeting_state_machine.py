@@ -62,9 +62,6 @@ class RecordMeetingStateMachine(StateMachine):
     # -------------------------------------------------------------------------
     # AFTER HOOKS (SIDE EFFECTS)
     # -------------------------------------------------------------------------
-    # Transcription transitions (INIT/START/UPDATE/FAIL) are driven by their use
-    # cases, which own the persistence and side effects. The state machine only
-    # validates the transition here.
 
     def after_DELETE(self) -> None:
         if self.meeting is None:

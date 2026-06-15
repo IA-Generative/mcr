@@ -16,16 +16,15 @@ def start_transcription(meeting_id: int) -> Meeting:
     meeting = get_meeting_by_id(meeting_id)
     apply_start_transcription(meeting)
 
-    with UnitOfWork():
-        update_meeting(meeting)
-
     waiting_time_minutes = estimate_transcription_duration_minutes(
         meeting.duration_minutes
     )
-    record_predicted_transition(
-        meeting_id=meeting.id,
-        status=meeting.status,
-        waiting_time_minutes=waiting_time_minutes,
-    )
+    with UnitOfWork():
+        update_meeting(meeting)
+        record_predicted_transition(
+            meeting_id=meeting.id,
+            status=meeting.status,
+            waiting_time_minutes=waiting_time_minutes,
+        )
 
     return meeting

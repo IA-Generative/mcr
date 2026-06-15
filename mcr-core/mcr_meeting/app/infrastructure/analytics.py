@@ -6,7 +6,6 @@ from datetime import datetime, timedelta, timezone
 from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
 )
-from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
@@ -26,5 +25,4 @@ def record_predicted_transition(
         status=status,
     )
 
-    with UnitOfWork():
-        save_meeting_transition_record(transition_record)
+    save_meeting_transition_record(transition_record)

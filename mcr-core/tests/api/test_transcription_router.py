@@ -55,7 +55,10 @@ class TestCreateTranscriptionTask:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         response_data = response.json()
         assert "detail" in response_data
-        assert "Celery connection failed" in response_data["detail"]
+        assert (
+            f"Failed to enqueue transcription task for meeting {meeting.id}"
+            in response_data["detail"]
+        )
         mock_celery_producer_app.send_task.assert_called_once_with(
             "transcription_worker.transcribe",
             args=[meeting.id, str(meeting.owner.keycloak_uuid)],
