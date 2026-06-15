@@ -1,4 +1,5 @@
 from datetime import datetime
+from io import BytesIO
 from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -8,6 +9,14 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableType,
 )
 from mcr_meeting.app.schemas.report_generation import ReportResponse
+
+
+class DeliverableFileResult(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    buffer: BytesIO
+    meeting_name: str
+    deliverable_type: DeliverableType
 
 
 class DeliverableResponse(BaseModel):

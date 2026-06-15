@@ -35,6 +35,16 @@ def mark_transcription_done(meeting: Meeting) -> Meeting:
     return meeting
 
 
+def complete_report(meeting: Meeting) -> Meeting:
+    _apply_or_conflict(meeting, MeetingEvent.COMPLETE_REPORT)
+    return meeting
+
+
+def fail_report(meeting: Meeting) -> Meeting:
+    _apply_or_conflict(meeting, MeetingEvent.FAIL_REPORT)
+    return meeting
+
+
 def _apply(meeting: Meeting, event: MeetingEvent) -> None:
     sm = get_state_machine_for_meeting(meeting)
     try:

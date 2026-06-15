@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
-from typing import Any
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 from uuid import UUID
 
 import pytest
@@ -15,13 +14,7 @@ from mcr_meeting.app.models.meeting_model import (
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.models.user_model import User
 from mcr_meeting.app.orchestrators import meeting_transitions_orchestrator as mts
-from mcr_meeting.app.schemas.report_generation import (
-    ReportGenerationResponse,
-    ReportHeader,
-)
-from mcr_meeting.app.statemachine_actions import meeting_actions
 from tests.factories import MeetingFactory
-from tests.mocks.in_memory_email import InMemoryEmailClient
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -32,19 +25,6 @@ from tests.mocks.in_memory_email import InMemoryEmailClient
 def user_keycloak_uuid(orchestrator_user: User) -> UUID:
     """Use the keycloak_uuid from the orchestrator_user fixture."""
     return orchestrator_user.keycloak_uuid
-
-
-@pytest.fixture
-def _mock_persist_report_docx(monkeypatch: Any) -> MagicMock:
-    persist_mock = MagicMock()
-
-    monkeypatch.setattr(
-        meeting_actions,
-        "persist_report_docx",
-        persist_mock,
-    )
-
-    return persist_mock
 
 
 # ---------------------------------------------------------------------------
@@ -199,18 +179,6 @@ def test_fail_transcription() -> None:
     assert result.status == MeetingStatus.TRANSCRIPTION_FAILED
 
 
-def test_fail_report() -> None:
-    """Test report failure transitions to REPORT_FAILED."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.REPORT_PENDING,
-        name_platform=MeetingPlatforms.COMU,
-    )
-
-    result = mts.fail_report(meeting_id=meeting.id)
-
-    assert result.status == MeetingStatus.REPORT_FAILED
-
-
 def test_update_transcription(
     orchestrator_user: User,
     user_keycloak_uuid: UUID,
@@ -270,32 +238,6 @@ def test_update_transcription_bad_status(
 # ---------------------------------------------------------------------------
 # Tests – Report
 # ---------------------------------------------------------------------------
-
-
-def test_complete_report(
-    _mock_persist_report_docx: MagicMock,
-    in_memory_email: InMemoryEmailClient,
-) -> None:
-    """Test completing report transitions to REPORT_DONE."""
-    meeting = MeetingFactory.create(
-        status=MeetingStatus.REPORT_PENDING,
-        name_platform=MeetingPlatforms.COMU,
-    )
-    report_response = ReportGenerationResponse(
-        header=ReportHeader(
-            title="Test Meeting",
-            objective=None,
-            participants=[],
-            next_meeting=None,
-        ),
-        topics_with_decision=[],
-        next_steps=[],
-    )
-
-    result = mts.complete_report(meeting_id=meeting.id, report_response=report_response)
-
-    assert result.status == MeetingStatus.REPORT_DONE
-    assert len(in_memory_email.sent) == 1
 
 
 def test_reset_report_bad_status(

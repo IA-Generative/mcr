@@ -51,6 +51,8 @@ def create_transition_record_service(
         MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         MeetingStatus.TRANSCRIPTION_DONE,
         MeetingStatus.REPORT_PENDING,
+        MeetingStatus.REPORT_DONE,
+        MeetingStatus.REPORT_FAILED,
     ]
 
     if next_status in status_with_special_transition_record_handlers:

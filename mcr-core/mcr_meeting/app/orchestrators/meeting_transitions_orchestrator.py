@@ -7,7 +7,6 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingEvent,
     MeetingPlatforms,
 )
-from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.services.meeting_service import get_meeting_service
 from mcr_meeting.app.state_machine.import_meeting_state_machine import (
     ImportMeetingStateMachine,
@@ -58,21 +57,6 @@ def update_transcription(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
     )
     return _apply_transition(meeting, MeetingEvent.UPDATE_TRANSCRIPTION)
-
-
-def complete_report(meeting_id: int, report_response: ReportResponse) -> Meeting:
-    meeting = get_meeting_service(meeting_id=meeting_id)
-
-    return _apply_transition(
-        meeting,
-        MeetingEvent.COMPLETE_REPORT,
-        report_response=report_response,
-    )
-
-
-def fail_report(meeting_id: int) -> Meeting:
-    meeting = get_meeting_service(meeting_id=meeting_id)
-    return _apply_transition(meeting, MeetingEvent.FAIL_REPORT)
 
 
 def _apply_transition(  # type: ignore[explicit-any]
