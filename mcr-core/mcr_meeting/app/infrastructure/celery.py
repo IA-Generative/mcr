@@ -1,6 +1,8 @@
 from celery import Celery
+from loguru import logger
 
 from mcr_meeting.app.configs.base import CelerySettings
+from mcr_meeting.app.exceptions.exceptions import TaskCreationException
 from mcr_meeting.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     MCRTranscriptionTasks,
@@ -20,3 +22,23 @@ celery_producer_app.conf.task_routes = {
         "queue": MCRReportGenerationTasks.BASE_NAME
     },
 }
+
+
+def enqueue_evaluation_task(zip_bytes: bytes) -> None:
+    try:
+        celery_producer_app.send_task(MCRTranscriptionTasks.EVALUATE, args=[zip_bytes])
+        logger.info("Evaluation task created")
+    except Exception as exc:
+        logger.error("Error creating evaluation task: {}", exc)
+        raise TaskCreationException(str(exc)) from exc
+
+
+def enqueue_evaluation_from_s3_task(zip_name: str) -> None:
+    try:
+        celery_producer_app.send_task(
+            MCRTranscriptionTasks.EVALUATE_FROM_S3, args=[zip_name]
+        )
+        logger.info("Evaluation from S3 task created for: {}", zip_name)
+    except Exception as exc:
+        logger.error("Error creating evaluation from S3 task: {}", exc)
+        raise TaskCreationException(str(exc)) from exc
