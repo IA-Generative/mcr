@@ -20,13 +20,6 @@ from mcr_meeting.app.state_machine.visio_meeting_state_machine import (
 )
 
 
-def init_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.INIT_CAPTURE)
-
-
 def start_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
     meeting = get_meeting_service(
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
@@ -39,15 +32,6 @@ def fail_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
         meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
     )
     return _apply_transition(meeting, MeetingEvent.FAIL_CAPTURE)
-
-
-def complete_capture(
-    meeting_id: int, user_keycloak_uuid: UUID4 | None = None
-) -> Meeting:
-    meeting = get_meeting_service(
-        meeting_id=meeting_id, current_user_keycloak_uuid=user_keycloak_uuid
-    )
-    return _apply_transition(meeting, MeetingEvent.COMPLETE_CAPTURE)
 
 
 def init_transcription(

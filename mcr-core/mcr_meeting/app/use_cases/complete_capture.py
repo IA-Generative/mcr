@@ -10,24 +10,24 @@ from mcr_meeting.app.db.meeting_transition_record_repository import (
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.domain.authorize_meeting_access import authorize_meeting_access
 from mcr_meeting.app.domain.meeting_transitions import (
-    start_capture_bot as apply_start_capture_bot,
+    complete_capture as apply_complete_capture,
 )
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
 
-def start_capture_bot(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
-    """Record that the capture bot successfully connected to the meeting.
+def complete_capture(meeting_id: int, user_keycloak_uuid: UUID4) -> Meeting:
+    """Mark the capture of a meeting as complete.
 
-    Transitions the meeting to ``CAPTURE_IN_PROGRESS``, stamps its start date and
-    records the transition.
+    Transitions the meeting to ``CAPTURE_DONE``, stamps its end date and records
+    the transition.
     """
     meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
     authorize_meeting_access(meeting, user_keycloak_uuid)
-    apply_start_capture_bot(meeting)
+    apply_complete_capture(meeting)
 
     with UnitOfWork():
-        meeting.start_date = datetime.now(timezone.utc)
+        meeting.end_date = datetime.now(timezone.utc)
         update_meeting_in_db(meeting)
         save_meeting_transition_record(
             MeetingTransitionRecord(

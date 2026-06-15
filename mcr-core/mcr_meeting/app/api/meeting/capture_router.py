@@ -9,11 +9,9 @@ from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    complete_capture,
-    init_capture,
-)
+from mcr_meeting.app.use_cases.complete_capture import complete_capture
 from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
+from mcr_meeting.app.use_cases.init_capture import init_capture
 
 api_settings = ApiSettings()
 router = APIRouter(

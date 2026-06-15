@@ -26,14 +26,6 @@ from mcr_meeting.app.services.transcription_waiting_time_service import (
 )
 
 
-def after_complete_capture_handler(
-    meeting: Meeting, next_status: MeetingStatus
-) -> None:
-    with UnitOfWork():
-        update_meeting_status(meeting, next_status)
-        update_meeting_end_date(meeting, datetime.now(timezone.utc))
-
-
 def after_init_transcription_handler(
     meeting: Meeting, next_status: MeetingStatus
 ) -> None:

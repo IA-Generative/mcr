@@ -43,6 +43,10 @@ def create_transition_record_service(
     next_status: MeetingStatus,
 ) -> None:
     status_with_special_transition_record_handlers = [
+        MeetingStatus.CAPTURE_PENDING,
+        MeetingStatus.CAPTURE_IN_PROGRESS,
+        MeetingStatus.CAPTURE_DONE,
+        MeetingStatus.CAPTURE_BOT_CONNECTION_FAILED,
         MeetingStatus.TRANSCRIPTION_PENDING,
         MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         MeetingStatus.TRANSCRIPTION_DONE,
