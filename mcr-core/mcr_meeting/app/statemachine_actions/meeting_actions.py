@@ -1,16 +1,11 @@
 from datetime import datetime, timezone
 
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
-from mcr_meeting.app.domain.email import build_report_ready_email
-from mcr_meeting.app.infrastructure import email as email_infra
 from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
-)
-from mcr_meeting.app.schemas.report_generation import (
-    ReportResponse,
 )
 from mcr_meeting.app.services.meeting_service import (
     update_meeting_end_date,
@@ -20,7 +15,6 @@ from mcr_meeting.app.services.meeting_transition_record_service import (
     create_transcription_transition_record_with_estimation,
     create_transition_record_service,
 )
-from mcr_meeting.app.services.report_task_service import persist_report_docx
 from mcr_meeting.app.services.transcription_waiting_time_service import (
     TranscriptionQueueEstimationService,
 )
@@ -66,23 +60,6 @@ def after_start_transcription_handler(
         meeting_id=meeting.id,
         meeting_status=next_status,
         waiting_time_minutes=waiting_time_minutes,
-    )
-
-
-def after_complete_report_handler(
-    meeting: Meeting,
-    next_status: MeetingStatus,
-    report_response: ReportResponse,
-) -> None:
-    with UnitOfWork():
-        update_meeting_status(meeting, next_status)
-        persist_report_docx(meeting_id=meeting.id, report_response=report_response)
-
-    content = build_report_ready_email(meeting.name or "", meeting.id)
-    email_infra.send_email(
-        to_email=meeting.owner.email,
-        subject=content.subject,
-        html=content.html,
     )
 
 

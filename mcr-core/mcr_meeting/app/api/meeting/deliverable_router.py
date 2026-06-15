@@ -4,9 +4,6 @@ from pydantic import UUID4
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-from mcr_meeting.app.orchestrators.deliverable_orchestrator import (
-    mark_deliverable_failure,
-)
 from mcr_meeting.app.schemas.deliverable_schema import (
     CustomDeliverableCreateRequest,
     DeliverableCreateRequest,
@@ -18,6 +15,7 @@ from mcr_meeting.app.use_cases.get_deliverable_file import get_deliverable_file
 from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
 )
+from mcr_meeting.app.use_cases.mark_deliverable_failure import mark_deliverable_failure
 from mcr_meeting.app.use_cases.mark_deliverable_success import (
     mark_deliverable_success,
 )

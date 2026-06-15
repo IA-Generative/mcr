@@ -7,14 +7,14 @@ from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
-from mcr_meeting.app.domain import deliverable_transitions
+from mcr_meeting.app.domain import deliverable_transitions, meeting_transitions
 from mcr_meeting.app.domain.email import build_report_ready_email
 from mcr_meeting.app.domain.report_rendering import render_report
 from mcr_meeting.app.exceptions.exceptions import DeliverableStateConflictException
 from mcr_meeting.app.infrastructure import email as email_infra
 from mcr_meeting.app.infrastructure.s3 import upload_report_to_s3
 from mcr_meeting.app.models.deliverable_model import Deliverable
-from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
+from mcr_meeting.app.models.meeting_model import Meeting
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.report_generation import ReportResponse
 
@@ -30,7 +30,10 @@ def mark_deliverable_success(
     try:
         docx = render_report(report_response, meeting_name=meeting.name or "")
         upload_report_to_s3(meeting.id, deliverable.type, docx)
-        _persist_success_atomically(deliverable, meeting, external_url)
+
+        deliverable_transitions.mark_available(deliverable, external_url=external_url)
+        meeting_transitions.complete_report(meeting)
+        _persist_success_atomically(deliverable, meeting)
     except DeliverableStateConflictException:
         raise
     except Exception:
@@ -41,21 +44,16 @@ def mark_deliverable_success(
     return deliverable
 
 
-def _persist_success_atomically(
-    deliverable: Deliverable, meeting: Meeting, external_url: str | None
-) -> None:
+def _persist_success_atomically(deliverable: Deliverable, meeting: Meeting) -> None:
     with UnitOfWork():
-        deliverable_transitions.mark_available(deliverable, external_url=external_url)
         deliverable_repository.save_deliverable(deliverable)
-
-        meeting.status = MeetingStatus.REPORT_DONE
         meeting_repository.update_meeting(meeting)
 
         save_meeting_transition_record(
             MeetingTransitionRecord(
                 meeting_id=meeting.id,
                 timestamp=datetime.now(timezone.utc),
-                status=MeetingStatus.REPORT_DONE,
+                status=meeting.status,
             )
         )
 
