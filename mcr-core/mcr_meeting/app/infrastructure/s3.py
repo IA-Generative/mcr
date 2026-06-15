@@ -25,6 +25,7 @@ from mcr_meeting.app.services.s3_service import (
     create_multipart_upload,
     get_audio_object_prefix,
     get_file_from_s3,
+    get_file_from_s3_or_none,
     get_objects_list_from_prefix,
     get_presigned_url_for_put_file,
     get_presigned_url_for_upload_part,
@@ -71,6 +72,25 @@ def upload_report_to_s3(
         content_type=DOCX_MIME_TYPE,
     )
     return object_name
+
+
+def get_report_from_s3(meeting_id: int, filename: str) -> BytesIO:
+    object_name = get_report_object_name(meeting_id=meeting_id, filename=filename)
+    return get_file_from_s3(object_name)
+
+
+def get_typed_deliverable_from_s3(
+    meeting_id: int, deliverable_type: DeliverableType
+) -> BytesIO | None:
+    object_name = _object_name_for_deliverable(meeting_id, deliverable_type)
+    return get_file_from_s3_or_none(object_name)
+
+
+def get_transcription_from_s3(meeting_id: int, filename: str) -> BytesIO:
+    object_name = get_transcription_object_name(
+        meeting_id=meeting_id, filename=filename
+    )
+    return get_file_from_s3(object_name)
 
 
 def build_presigned_audio_upload_url(

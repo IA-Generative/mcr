@@ -455,7 +455,7 @@ class TestGetFileRoute:
             status=DeliverableStatus.AVAILABLE,
         )
         mocker.patch(
-            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            "mcr_meeting.app.use_cases.get_deliverable_file.get_typed_deliverable_from_s3",
             return_value=BytesIO(b"typed docx content"),
         )
 
@@ -491,7 +491,7 @@ class TestGetFileRoute:
             status=DeliverableStatus.AVAILABLE,
         )
         mocker.patch(
-            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            "mcr_meeting.app.use_cases.get_deliverable_file.get_typed_deliverable_from_s3",
             return_value=BytesIO(b"typed docx content"),
         )
 
@@ -524,11 +524,11 @@ class TestGetFileRoute:
             status=DeliverableStatus.AVAILABLE,
         )
         mocker.patch(
-            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_typed_deliverable_from_s3",
+            "mcr_meeting.app.use_cases.get_deliverable_file.get_typed_deliverable_from_s3",
             return_value=None,
         )
         mocker.patch(
-            "mcr_meeting.app.orchestrators.deliverable_orchestrator.get_formatted_report_from_s3",
+            "mcr_meeting.app.use_cases.get_deliverable_file.get_report_from_s3",
             return_value=BytesIO(b"legacy docx content"),
         )
 
