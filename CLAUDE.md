@@ -119,6 +119,7 @@ mcr-generation/mcr_generation/app/
 - **Python**: 3.12+ (3.13 for mcr-generation). `uv` for package management, `ruff` for formatting/linting, `mypy --strict` for type checking, `pydantic-settings` for config
 - **Frontend**: Node 22, pnpm 10. ESLint + Prettier, `vue-tsc`
 - **DB access**: SQLAlchemy 2.0 with repository pattern
+- **Comments**: don't add comments unless a block isn't understandable on its own — comment the non-obvious *why* (constraints, gotchas), not the *what*
 - **Architecture layers**: see [Target architecture (mcr-core)](#target-architecture-mcr-core) below
 - **Commits**: Gitmoji convention — see the `/commit` skill for details
 

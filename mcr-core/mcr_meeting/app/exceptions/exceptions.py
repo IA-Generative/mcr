@@ -39,9 +39,15 @@ class TaskCreationException(MCRException):
     """Raised when a transcription task couldn't be created."""
 
 
-class InvalidFeedbackDataException(MCRException):
-    """Raised when the database rejects feedback data
-    (e.g. a comment longer than the column allows)."""
+class InvalidDataException(MCRException):
+    """Raised when the database rejects a write because the client data violates
+    a column constraint (e.g. a value longer than the column allows). Mapped to
+    HTTP 422. See raise_db_write_error."""
+
+
+class DataConflictException(MCRException):
+    """Raised when the database rejects a write because the client data violates
+    a table constraint (unique, foreign key, ...). Mapped to HTTP 409."""
 
 
 class DeliverableConcurrentlyCreatedException(MCRException):
