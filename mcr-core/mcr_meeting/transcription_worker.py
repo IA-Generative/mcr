@@ -5,12 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, TypedDict
 
-import celery.app.trace  # type: ignore[import-untyped]
-import sentry_sdk
-from celery import Celery, Task
-from celery.signals import (
-    setup_logging as celery_setup_logging,
-)
+from celery import Task
 from celery.signals import (
     task_failure,
     task_prerun,
@@ -18,23 +13,15 @@ from celery.signals import (
     worker_process_init,
 )
 from faster_whisper import WhisperModel
-from langfuse import Langfuse
 from loguru import logger
 from pyannote.audio import Pipeline
-from sentry_sdk.integrations.celery import CeleryIntegration
 
 from mcr_meeting.app.client.meeting_client import MeetingApiClient
-from mcr_meeting.app.configs.base import (
-    CelerySettings,
-    EvaluationSettings,
-    LangfuseSettings,
-    SentrySettings,
-    ServiceSettings,
-    Settings,
-    Speech2TextSettings,
-    TranscriptionWaitingTimeSettings,
-)
+from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
+from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
+from mcr_meeting.app.infrastructure.langfuse import init_langfuse
+from mcr_meeting.app.infrastructure.sentry import init_sentry
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
@@ -59,82 +46,11 @@ from mcr_meeting.app.utils.sentry_context import (
 )
 from mcr_meeting.evaluation.asr.evaluation_pipeline import ASREvaluationPipeline
 from mcr_meeting.evaluation.asr.types import EvaluationInput, TranscriptionOutput
-from mcr_meeting.setup.logger import setup_logging
 
-setup_logging()
+init_sentry()
+init_langfuse()
 
-
-@celery_setup_logging.connect
-def _configure_celery_logging(**_: Any) -> None:  # type: ignore[explicit-any]
-    # Connecting any receiver tells Celery to skip its own logging setup
-    # (which would install [LEVEL/Worker-N] handlers). setup_logging() already
-    # ran at module import — nothing to do here.
-    pass
-
-
-# Drop %(return_value)s from Celery's success log: the transcribe task returns
-# the full transcription, which would dump thousands of chars per task.
-celery.app.trace.LOG_SUCCESS = "Task %(name)s[%(id)s] succeeded in %(runtime)ss"
-
-
-s2t_settings = Speech2TextSettings()
-celerySettings = CelerySettings()
-service_settings = ServiceSettings()
-transcription_waiting_time_settings = TranscriptionWaitingTimeSettings()
-sentrySettings = SentrySettings()
-settings = Settings()
 SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
-
-try:
-    sentry_sdk.init(
-        dsn=sentrySettings.SENTRY_TRANSCRIPTION_DSN,
-        send_default_pii=sentrySettings.SEND_DEFAULT_PII,
-        traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
-        environment=settings.ENV_MODE,
-        ignore_errors=[],
-        integrations=[CeleryIntegration()],
-    )
-except Exception as e:
-    logger.warning("Sentry initialization failed, continuing without it: {}", e)
-
-langfuse_settings = LangfuseSettings()
-
-Langfuse(
-    secret_key=langfuse_settings.LANGFUSE_SECRET_KEY,
-    public_key=langfuse_settings.LANGFUSE_PUBLIC_KEY,
-    host=langfuse_settings.LANGFUSE_HOST,
-    environment=settings.ENV_MODE.lower(),
-)
-
-celery_worker = Celery(
-    "transcriber",
-    broker=celerySettings.CELERY_BROKER_URL,
-    backend=celerySettings.CELERY_BACKEND_URL,
-)
-
-celery_worker.conf.task_track_started = True
-celery_worker.conf.result_expires = 3600
-celery_worker.conf.task_default_queue = MCRTranscriptionTasks.BASE_NAME
-
-celery_worker.conf.worker_concurrency = 1
-celery_worker.conf.worker_prefetch_multiplier = 1
-celery_worker.conf.task_acks_late = True
-celery_worker.conf.worker_soft_shutdown_timeout = (
-    celerySettings.WORKER_SOFT_SHUTDOWN_TIMEOUT
-)
-celery_worker.conf.broker_transport_options = {
-    "visibility_timeout": celerySettings.REDIS_VISIBILITY_TIMEOUT,
-    # Transcriptions run for a long time, so this worker needs a long
-    # visibility_timeout. Kombu's Redis transport restores (redelivers) unacked
-    # messages by scanning a broker-global "unacked index" with no queue filter,
-    # using each consumer's own visibility_timeout as the cutoff. Any other Celery
-    # app on this Redis DB with a shorter timeout would therefore redeliver our
-    # still-running tasks, causing duplicate transcriptions. Dedicated unacked keys
-    # scope this worker's restore bookkeeping to its own messages only.
-    "unacked_key": "unacked_transcription",
-    "unacked_index_key": "unacked_index_transcription",
-    "unacked_mutex_key": "unacked_mutex_transcription",
-}
 
 
 class WorkerContext(TypedDict):
