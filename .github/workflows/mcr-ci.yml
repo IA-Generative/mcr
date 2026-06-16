@@ -55,6 +55,26 @@ jobs:
           GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
           GITHUB_TOKEN: ${{ github.token }}
 
+  commit-message-hygiene:
+    name: Commit message hygiene
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject coding-agent references in commit messages
+        run: |
+          base='${{ github.event.pull_request.base.sha }}'
+          head='${{ github.event.pull_request.head.sha }}'
+          hits=$(git log --format='%H %s' "$base..$head" --grep='noreply@anthropic.com' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::Commit messages must not reference the coding agent (no Co-Authored-By / AI / Claude / Anthropic attribution). Offending commits:"
+            echo "$hits"
+            exit 1
+          fi
+
   mcr-gateway-ci:
     needs: filter-out-unmodified-services
     if: ${{ needs.filter-out-unmodified-services.outputs.mcr-gateway == 'true' }}

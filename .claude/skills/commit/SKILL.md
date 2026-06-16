@@ -148,5 +148,6 @@ EOF
 
 - NEVER amend an existing commit unless the user explicitly asks
 - NEVER push to remote — only commit locally
+- NEVER reference the coding agent in a commit message: no `Co-Authored-By` trailer and no AI/Claude/Anthropic attribution (e.g. `noreply@anthropic.com`, "Generated with Claude")
 - If there are no changes to commit, tell the user and stop
 - If you are unsure about the gitmoji or description, propose the commit message and ask the user to confirm before committing
