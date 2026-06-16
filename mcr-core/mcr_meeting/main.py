@@ -1,6 +1,7 @@
 import sentry_sdk
 import uvicorn
 from fastapi import FastAPI
+from loguru import logger
 
 from mcr_meeting.app.api.evaluation_router import router as evaluation_router
 from mcr_meeting.app.api.feature_flag_router import router as feature_flag_router
@@ -35,13 +36,16 @@ sentry_settings = SentrySettings()
 setting = Settings()
 
 if setting.ENV_MODE and setting.ENV_MODE != "test":
-    sentry_sdk.init(
-        dsn=sentry_settings.SENTRY_CORE_DSN,
-        send_default_pii=sentry_settings.SEND_DEFAULT_PII,
-        traces_sample_rate=sentry_settings.TRACES_SAMPLE_RATE,
-        environment=setting.ENV_MODE,
-        ignore_errors=[],
-    )
+    try:
+        sentry_sdk.init(
+            dsn=sentry_settings.SENTRY_CORE_DSN,
+            send_default_pii=sentry_settings.SEND_DEFAULT_PII,
+            traces_sample_rate=sentry_settings.TRACES_SAMPLE_RATE,
+            environment=setting.ENV_MODE,
+            ignore_errors=[],
+        )
+    except Exception as e:
+        logger.warning("Sentry initialization failed, continuing without it: {}", e)
 
 app = FastAPI()
 

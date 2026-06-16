@@ -85,14 +85,17 @@ sentrySettings = SentrySettings()
 settings = Settings()
 SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
 
-sentry_sdk.init(
-    dsn=sentrySettings.SENTRY_TRANSCRIPTION_DSN,
-    send_default_pii=sentrySettings.SEND_DEFAULT_PII,
-    traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
-    environment=settings.ENV_MODE,
-    ignore_errors=[],
-    integrations=[CeleryIntegration()],
-)
+try:
+    sentry_sdk.init(
+        dsn=sentrySettings.SENTRY_TRANSCRIPTION_DSN,
+        send_default_pii=sentrySettings.SEND_DEFAULT_PII,
+        traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
+        environment=settings.ENV_MODE,
+        ignore_errors=[],
+        integrations=[CeleryIntegration()],
+    )
+except Exception as e:
+    logger.warning("Sentry initialization failed, continuing without it: {}", e)
 
 langfuse_settings = LangfuseSettings()
 

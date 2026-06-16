@@ -138,7 +138,9 @@ class SentrySettings(EnvBaseSettings):
     Configuration settings for Sentry
     """
 
-    SENTRY_GENERATION_DSN: str = Field(description="Sentry DSN for core service")
+    SENTRY_GENERATION_DSN: str = Field(
+        default="", description="Sentry DSN for core service"
+    )
     SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
     TRACES_SAMPLE_RATE: float = Field(
         default=0.2, description="Sentry traces sample rate"

@@ -4,6 +4,7 @@ import sentry_sdk
 from celery import Celery
 from celery.signals import task_postrun, worker_shutdown
 from langfuse import get_client
+from loguru import logger
 from sentry_sdk.integrations.celery import CeleryIntegration
 
 from mcr_generation.app.configs.settings import CelerySettings, SentrySettings
@@ -11,14 +12,17 @@ from mcr_generation.app.schemas.celery_types import MCRReportGenerationTasks
 
 sentrySettings = SentrySettings()
 
-sentry_sdk.init(
-    dsn=sentrySettings.SENTRY_GENERATION_DSN,
-    send_default_pii=sentrySettings.SEND_DEFAULT_PII,
-    traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
-    environment=sentrySettings.ENV_MODE,
-    ignore_errors=[],
-    integrations=[CeleryIntegration()],
-)
+try:
+    sentry_sdk.init(
+        dsn=sentrySettings.SENTRY_GENERATION_DSN,
+        send_default_pii=sentrySettings.SEND_DEFAULT_PII,
+        traces_sample_rate=sentrySettings.TRACES_SAMPLE_RATE,
+        environment=sentrySettings.ENV_MODE,
+        ignore_errors=[],
+        integrations=[CeleryIntegration()],
+    )
+except Exception as e:
+    logger.warning("Sentry initialization failed, continuing without it: {}", e)
 
 celerySettings = CelerySettings()
 
