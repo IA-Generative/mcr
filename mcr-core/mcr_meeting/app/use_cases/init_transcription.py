@@ -1,9 +1,12 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from mcr_meeting.app.db.meeting_repository import (
     count_pending_meetings,
     get_meeting_with_owner,
     update_meeting,
+)
+from mcr_meeting.app.db.meeting_transition_record_repository import (
+    save_meeting_transition_record,
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.domain.meeting_transitions import (
@@ -12,10 +15,10 @@ from mcr_meeting.app.domain.meeting_transitions import (
 from mcr_meeting.app.domain.transcription_queue_estimation import (
     estimate_wait_time_minutes,
 )
-from mcr_meeting.app.infrastructure.analytics import record_predicted_transition
 from mcr_meeting.app.infrastructure.celery import enqueue_transcription_task
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 
 
 def init_transcription(meeting_id: int) -> Meeting:
@@ -32,15 +35,20 @@ def init_transcription(meeting_id: int) -> Meeting:
 
     with UnitOfWork():
         update_meeting(meeting)
+        enqueue_transcription_task(meeting.id, str(meeting.owner.keycloak_uuid))
 
-    enqueue_transcription_task(meeting.id, str(meeting.owner.keycloak_uuid))
     waiting_time_minutes = estimate_wait_time_minutes(count_pending_meetings())
 
+    now = datetime.now(timezone.utc)
     with UnitOfWork():
-        record_predicted_transition(
-            meeting_id=meeting.id,
-            status=meeting.status,
-            waiting_time_minutes=waiting_time_minutes,
+        save_meeting_transition_record(
+            MeetingTransitionRecord(
+                meeting_id=meeting.id,
+                timestamp=now,
+                predicted_date_of_next_transition=now
+                + timedelta(minutes=waiting_time_minutes),
+                status=meeting.status,
+            )
         )
 
     return meeting
