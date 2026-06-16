@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
+from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms, MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.use_cases.start_transcription import start_transcription
@@ -50,7 +51,7 @@ def test_start_transcription_rejects_illegal_transition(db_session: Session) -> 
         name_platform=MeetingPlatforms.COMU,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(MeetingStateConflictException):
         start_transcription(meeting_id=meeting.id)
 
     db_session.refresh(meeting)

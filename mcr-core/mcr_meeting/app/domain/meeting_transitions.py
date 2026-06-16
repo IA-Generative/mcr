@@ -51,7 +51,7 @@ def init_transcription(meeting: Meeting) -> Meeting:
 
 
 def start_transcription(meeting: Meeting) -> Meeting:
-    _apply(meeting, MeetingEvent.START_TRANSCRIPTION)
+    _apply_or_conflict(meeting, MeetingEvent.START_TRANSCRIPTION)
     return meeting
 
 

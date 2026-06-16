@@ -1,5 +1,6 @@
 from mcr_meeting.app.client.http_client import HttpClient
 from mcr_meeting.app.configs.base import ApiSettings, ServiceSettings
+from mcr_meeting.app.exceptions.celery_exception_handler import raise_for_core_status
 from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
 
 
@@ -17,32 +18,27 @@ class MeetingApiClient:
         response = await self.client.get(f"/{meeting_id}")
         return MeetingResponse.model_validate(response.json())
 
-    async def start_transcription(
-        self, meeting_id: int, *, swallow_404: bool = False
-    ) -> bool:
-        response = await self.client.post(
-            f"/{meeting_id}/transcription/start", swallow_404=swallow_404
-        )
-        return response is not None
+    async def start_transcription(self, meeting_id: int) -> None:
+        response = await self.client.post(f"/{meeting_id}/transcription/start")
+        if raise_for_core_status(response.status_code, meeting_id):
+            return
+        response.raise_for_status()
 
-    async def mark_transcription_as_failed(
-        self, meeting_id: int, *, swallow_404: bool = False
-    ) -> bool:
-        response = await self.client.post(
-            f"/{meeting_id}/transcription/fail", swallow_404=swallow_404
-        )
-        return response is not None
+    async def mark_transcription_as_failed(self, meeting_id: int) -> None:
+        response = await self.client.post(f"/{meeting_id}/transcription/fail")
+        if raise_for_core_status(response.status_code, meeting_id):
+            return
+        response.raise_for_status()
 
     async def mark_transcription_as_success(
         self,
         meeting_id: int,
         transcription_data: list[dict[str, object]],
-        *,
-        swallow_404: bool = False,
-    ) -> bool:
+    ) -> None:
         response = await self.client.post(
             f"/{meeting_id}/transcription/success",
             data=transcription_data,
-            swallow_404=swallow_404,
         )
-        return response is not None
+        if raise_for_core_status(response.status_code, meeting_id):
+            return
+        response.raise_for_status()

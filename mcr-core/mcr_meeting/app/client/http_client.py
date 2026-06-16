@@ -1,7 +1,6 @@
 from collections.abc import Mapping
 
 import httpx
-from loguru import logger
 
 
 class HttpClient:
@@ -21,18 +20,11 @@ class HttpClient:
         self,
         endpoint: str,
         data: object | None = None,
-        *,
-        swallow_404: bool = False,
-    ) -> httpx.Response | None:
+    ) -> httpx.Response:
+        """Return the raw response without raising; callers decide what each
+        status means (see raise_for_core_status)."""
         async with httpx.AsyncClient(base_url=self.base_url) as client:
-            response = await client.post(
-                endpoint, headers=self._get_headers(), json=data
-            )
-            if swallow_404 and response.status_code == httpx.codes.NOT_FOUND:
-                logger.warning("Endpoint {} returned 404; dropping call", endpoint)
-                return None
-            response.raise_for_status()
-            return response
+            return await client.post(endpoint, headers=self._get_headers(), json=data)
 
     async def get(
         self, endpoint: str, params: JsonParams | None = None
