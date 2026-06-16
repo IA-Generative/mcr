@@ -121,6 +121,16 @@ celery_worker.conf.worker_prefetch_multiplier = 1
 celery_worker.conf.task_acks_late = True
 celery_worker.conf.broker_transport_options = {
     "visibility_timeout": celerySettings.REDIS_VISIBILITY_TIMEOUT,
+    # Transcriptions run for a long time, so this worker needs a long
+    # visibility_timeout. Kombu's Redis transport restores (redelivers) unacked
+    # messages by scanning a broker-global "unacked index" with no queue filter,
+    # using each consumer's own visibility_timeout as the cutoff. Any other Celery
+    # app on this Redis DB with a shorter timeout would therefore redeliver our
+    # still-running tasks, causing duplicate transcriptions. Dedicated unacked keys
+    # scope this worker's restore bookkeeping to its own messages only.
+    "unacked_key": "unacked_transcription",
+    "unacked_index_key": "unacked_index_transcription",
+    "unacked_mutex_key": "unacked_mutex_transcription",
 }
 
 
