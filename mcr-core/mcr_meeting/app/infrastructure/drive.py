@@ -11,6 +11,8 @@ from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 
 _settings = DriveSettings()
 
+_HTTP_TIMEOUT = httpx.Timeout(30.0, connect=5.0)
+
 
 @dataclass(frozen=True)
 class CreatedDriveItem:
@@ -25,6 +27,7 @@ class DriveClient:
         self._client = httpx.Client(
             base_url=f"{_settings.DRIVE_API_BASE_URL}{self.ITEMS_API_PATH}",
             headers={"Authorization": f"Bearer {access_token}"},
+            timeout=_HTTP_TIMEOUT,
         )
 
     def __enter__(self) -> DriveClient:
@@ -64,6 +67,7 @@ def upload_to_presigned_url(item: CreatedDriveItem, file_bytes: bytes) -> None:
             item.presigned_url,
             content=file_bytes,
             headers={"Content-Type": DOCX_MIME_TYPE, "x-amz-acl": "private"},
+            timeout=_HTTP_TIMEOUT,
         )
         resp.raise_for_status()
     else:
