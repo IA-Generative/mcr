@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from mcr_meeting.app.configs.base import ApiSettings
+from mcr_meeting.app.infrastructure.redis import get_refresh_token, save_refresh_token
 from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
@@ -19,7 +20,9 @@ from mcr_meeting.main import app
 from tests.api.conftest import PrefixedTestClient
 from tests.factories import MeetingFactory, UserFactory
 from tests.factories.deliverable_factory import DeliverableFactory
+from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
+from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 from tests.mocks.in_memory_s3 import InMemoryS3
 
 api_settings = ApiSettings()
@@ -218,6 +221,58 @@ class TestPostDeliverableRoute:
             "deliverable_id": deliverable_id,
         }
 
+    def test_stores_offline_token_when_access_token_header_provided(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        in_memory_keycloak: InMemoryKeycloak,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        in_memory_keycloak.exchange_refresh_token = "offline-refresh-token"
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
+            headers={
+                "X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid),
+                "X-User-Access-Token": "user-access-token",
+            },
+        )
+
+        assert response.status_code == 202
+        assert (
+            get_refresh_token(str(user_fixture.keycloak_uuid))
+            == "offline-refresh-token"
+        )
+
+    def test_returns_202_without_access_token_header(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        mock_celery_producer_app: Mock,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename="transcription.docx",
+        )
+
+        response = deliverables_client.post(
+            "",
+            json={"meeting_id": meeting.id, "type": "DECISION_RECORD"},
+            headers={"X-User-Keycloak-UUID": str(user_fixture.keycloak_uuid)},
+        )
+
+        assert response.status_code == 202
+        assert get_refresh_token(str(user_fixture.keycloak_uuid)) is None
+
 
 class TestPostCustomReportRoute:
     def test_returns_202_for_custom_report_with_prompt(
@@ -338,6 +393,7 @@ class TestSuccessCallbackRoute:
         user_fixture: User,
         in_memory_s3: InMemoryS3,
         in_memory_email: InMemoryEmailClient,
+        in_memory_drive: InMemoryDriveClient,
         db_session: Any,
     ) -> None:
         meeting = MeetingFactory.create(
@@ -345,6 +401,7 @@ class TestSuccessCallbackRoute:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
+        save_refresh_token(str(user_fixture.keycloak_uuid), "refresh-token")
         pending = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
@@ -353,17 +410,14 @@ class TestSuccessCallbackRoute:
 
         response = deliverables_client.post(
             f"/{pending.id}/success",
-            json={
-                "external_url": "https://drive.example.com/abc",
-                "report_response": _decision_record_body(),
-            },
+            json={"report_response": _decision_record_body()},
         )
 
         assert response.status_code == 200
         db_session.refresh(pending)
         db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.AVAILABLE
-        assert pending.external_url == "https://drive.example.com/abc"
+        assert pending.external_url == in_memory_drive.url
         assert meeting.status == MeetingStatus.REPORT_DONE
         assert len(in_memory_s3.objects) == 1
         assert len(in_memory_email.sent) == 1
