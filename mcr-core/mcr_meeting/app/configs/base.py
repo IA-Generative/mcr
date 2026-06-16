@@ -324,12 +324,26 @@ class CelerySettings(BaseSettings):
     REDIS_VHOST_RESULT_DB: int = 1
     REDIS_TOKEN_STORE_DB: int = 2
     REDIS_TOKEN_TTL_SECONDS: int = 2_592_000  # 30 days
-    # Must be >= the longest possible task attempt (including retry backoff) so a
-    # still-running transcription is never redelivered as a duplicate. On a graceful
-    # deploy Kombu's restore_at_shutdown (default) requeues in-flight messages
-    # immediately, so this timeout is really the safety net for hard kills
-    # (OOM / SIGKILL / node loss) — covering those needs the full attempt window.
-    REDIS_VISIBILITY_TIMEOUT: int = 21600  # 6h
+    REDIS_VISIBILITY_TIMEOUT: int = Field(
+        default=21600,
+        description="""
+    Must be >= the longest possible task attempt (including retry backoff) so a
+    still-running transcription is never redelivered as a duplicate. On a graceful
+    deploy Kombu's restore_at_shutdown (default) requeues in-flight messages
+    immediately, so this timeout is really the safety net for hard kills
+    (OOM / SIGKILL / node loss) — covering those needs the full attempt window
+    """,
+    )
+    WORKER_SOFT_SHUTDOWN_TIMEOUT_SECONDS: int = Field(
+        default=60,
+        description="""
+    On a deploy, k8s SIGTERM is remapped to SIGQUIT (REMAP_SIGTERM env) so Celery
+    does a cold shutdown. This bounds the grace window before still-running tasks
+    are cancelled and their messages requeued (acks_late + restore_at_shutdown).
+    Keep it short: long transcriptions are requeued, not awaited. Must stay below
+    the pod's terminationGracePeriodSeconds or k8s SIGKILLs mid-window.
+    """,
+    )
 
     @property
     def CELERY_BROKER_URL(self) -> str:

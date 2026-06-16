@@ -119,6 +119,9 @@ celery_worker.conf.task_default_queue = MCRTranscriptionTasks.BASE_NAME
 celery_worker.conf.worker_concurrency = 1
 celery_worker.conf.worker_prefetch_multiplier = 1
 celery_worker.conf.task_acks_late = True
+celery_worker.conf.worker_soft_shutdown_timeout = (
+    celerySettings.WORKER_SOFT_SHUTDOWN_TIMEOUT
+)
 celery_worker.conf.broker_transport_options = {
     "visibility_timeout": celerySettings.REDIS_VISIBILITY_TIMEOUT,
     # Transcriptions run for a long time, so this worker needs a long
