@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
 
-from mcr_meeting.app.models.meeting_model import MeetingStatus
-from mcr_meeting.app.services.transcription_waiting_time_service import (
-    TranscriptionQueueEstimationService,
+from mcr_meeting.app.db.meeting_repository import count_pending_meetings
+from mcr_meeting.app.domain.transcription_queue_estimation import (
+    estimate_wait_time_minutes,
 )
+from mcr_meeting.app.models.meeting_model import MeetingStatus
 from tests.factories import MeetingFactory
 
 
-class TestTranscriptionQueueEstimationService:
-    """Tests for the transcription queue estimation service."""
+class TestEstimateWaitTimeMinutes:
+    """Tests for the transcription queue wait-time estimation."""
 
     def test_estimate_wait_time_should_return_zero_when_no_pending_meetings(
         self,
@@ -17,9 +18,7 @@ class TestTranscriptionQueueEstimationService:
         # Arrange - no meetings created, so count is 0
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 0 slots * 12 minutes = 0 minutes
@@ -33,9 +32,7 @@ class TestTranscriptionQueueEstimationService:
         MeetingFactory.create_batch(5, status=MeetingStatus.TRANSCRIPTION_PENDING)
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 5 meetings / 14 parallel pods = 0 slots needed (floor division)
@@ -51,9 +48,7 @@ class TestTranscriptionQueueEstimationService:
         MeetingFactory.create_batch(28, status=MeetingStatus.TRANSCRIPTION_PENDING)
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 28 meetings / 14 parallel pods = 2 slots needed
@@ -69,9 +64,7 @@ class TestTranscriptionQueueEstimationService:
         MeetingFactory.create_batch(15, status=MeetingStatus.TRANSCRIPTION_PENDING)
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 15 meetings / 14 parallel pods = 1 slot needed (floor division)
@@ -88,9 +81,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 100 meetings / 14 parallel pods = 7 slots (floor division)
@@ -109,9 +100,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 20 meetings / 14 parallel pods = 1 slot (floor division)
@@ -138,9 +127,7 @@ class TestTranscriptionQueueEstimationService:
         )  # Should NOT count (wrong status)
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # Should count only 13 meetings (only meetings with TRANSCRIPTION_PENDING status)
@@ -157,9 +144,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # 28 meetings / 14 parallel pods = 2 slots needed
@@ -183,9 +168,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # Only 28 recent meetings should be counted (15 stale ones ignored)
@@ -212,9 +195,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # The 14 meetings at exactly 24h should NOT be counted (> not >=)
@@ -233,9 +214,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # All 28 meetings should be counted (just under threshold)
@@ -268,9 +247,7 @@ class TestTranscriptionQueueEstimationService:
         )
 
         # Act
-        result = (
-            TranscriptionQueueEstimationService.estimate_current_wait_time_minutes()
-        )
+        result = estimate_wait_time_minutes(count_pending_meetings())
 
         # Assert
         # Only the 10 recent TRANSCRIPTION_PENDING meetings should be counted

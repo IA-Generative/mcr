@@ -24,6 +24,18 @@ celery_producer_app.conf.task_routes = {
 }
 
 
+def enqueue_transcription_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    try:
+        celery_producer_app.send_task(
+            MCRTranscriptionTasks.TRANSCRIBE,
+            args=[meeting_id, owner_keycloak_uuid],
+        )
+    except Exception as e:
+        raise TaskCreationException(
+            f"Failed to enqueue transcription task for meeting {meeting_id}"
+        ) from e
+
+
 def enqueue_evaluation_task(zip_bytes: bytes) -> None:
     try:
         celery_producer_app.send_task(MCRTranscriptionTasks.EVALUATE, args=[zip_bytes])

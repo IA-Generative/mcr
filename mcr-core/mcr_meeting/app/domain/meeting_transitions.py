@@ -45,6 +45,26 @@ def fail_report(meeting: Meeting) -> Meeting:
     return meeting
 
 
+def init_transcription(meeting: Meeting) -> Meeting:
+    _apply(meeting, MeetingEvent.INIT_TRANSCRIPTION)
+    return meeting
+
+
+def start_transcription(meeting: Meeting) -> Meeting:
+    _apply(meeting, MeetingEvent.START_TRANSCRIPTION)
+    return meeting
+
+
+def fail_transcription(meeting: Meeting) -> Meeting:
+    _apply(meeting, MeetingEvent.FAIL_TRANSCRIPTION)
+    return meeting
+
+
+def update_transcription(meeting: Meeting) -> Meeting:
+    _apply(meeting, MeetingEvent.UPDATE_TRANSCRIPTION)
+    return meeting
+
+
 def _apply(meeting: Meeting, event: MeetingEvent) -> None:
     sm = get_state_machine_for_meeting(meeting)
     try:

@@ -2,8 +2,6 @@ from statemachine import State, StateMachine
 
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.statemachine_actions.meeting_actions import (
-    after_init_transcription_handler,
-    after_start_transcription_handler,
     after_transition_handler,
     update_status_handler,
 )
@@ -84,26 +82,6 @@ class VisioMeetingStateMachine(StateMachine):
         update_status_handler(self.meeting, self.current_state_value)
 
     def after_FAIL_CAPTURE(self) -> None:
-        if self.meeting is None:
-            return
-        update_status_handler(self.meeting, self.current_state_value)
-
-    def after_INIT_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        after_init_transcription_handler(self.meeting, self.current_state_value)
-
-    def after_START_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        after_start_transcription_handler(self.meeting, self.current_state_value)
-
-    def after_UPDATE_TRANSCRIPTION(self) -> None:
-        if self.meeting is None:
-            return
-        update_status_handler(self.meeting, self.current_state_value)
-
-    def after_FAIL_TRANSCRIPTION(self) -> None:
         if self.meeting is None:
             return
         update_status_handler(self.meeting, self.current_state_value)

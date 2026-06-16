@@ -60,6 +60,13 @@ def upload_transcription_to_s3(
     return object_name
 
 
+def download_transcription_docx(meeting_id: int, filename: str) -> BytesIO:
+    object_name = get_transcription_object_name(
+        meeting_id=meeting_id, filename=filename
+    )
+    return get_file_from_s3(object_name)
+
+
 def upload_report_to_s3(
     meeting_id: int,
     deliverable_type: DeliverableType,
