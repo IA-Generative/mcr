@@ -2,20 +2,15 @@ from collections.abc import Sequence
 from io import BytesIO
 from typing import BinaryIO
 
-from loguru import logger
-
 from mcr_meeting.app.domain.transcription_rendering import (
     HasSpeakerTranscription,
     render_transcription_docx,
 )
 from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
-    TaskCreationException,
 )
-from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting
-from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.services.meeting_service import (
     set_meeting_transcription_filename_and_update_status,
 )
@@ -78,24 +73,3 @@ def save_formatted_transcription_and_update_meeting_status(
         meeting_id=meeting_id,
         filename=name,
     )
-
-
-def create_evaluation_task_service(zip_bytes: bytes) -> None:
-    try:
-        celery_producer_app.send_task(MCRTranscriptionTasks.EVALUATE, args=[zip_bytes])
-        logger.info("Evaluation task created")
-
-    except Exception as e:
-        logger.error("Error creating transcription task: {}", e)
-        raise TaskCreationException(str(e))
-
-
-def create_evaluation_from_s3_task_service(zip_name: str) -> None:
-    try:
-        celery_producer_app.send_task(
-            MCRTranscriptionTasks.EVALUATE_FROM_S3, args=[zip_name]
-        )
-        logger.info("Evaluation from S3 task created for: {}", zip_name)
-
-    except Exception as e:
-        raise TaskCreationException(str(e))

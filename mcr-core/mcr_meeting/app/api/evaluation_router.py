@@ -1,6 +1,3 @@
-import zipfile
-from io import BytesIO
-
 from fastapi import (
     APIRouter,
     File,
@@ -12,14 +9,16 @@ from fastapi import (
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel
 
-from mcr_meeting.app.configs.base import ApiSettings, EvaluationSettings
-from mcr_meeting.app.services.transcription_task_service import (
-    create_evaluation_from_s3_task_service,
-    create_evaluation_task_service,
+from mcr_meeting.app.configs.base import ApiSettings
+from mcr_meeting.app.domain.evaluation_zip import is_zip_filename
+from mcr_meeting.app.use_cases.evaluate_transcription_from_s3 import (
+    evaluate_transcription_from_s3,
+)
+from mcr_meeting.app.use_cases.evaluate_transcription_from_zip import (
+    evaluate_transcription_from_zip,
 )
 
 api_settings = ApiSettings()
-EVALUATION_SETTINGS = EvaluationSettings()
 router = APIRouter(prefix=api_settings.TRANSCRIPTION_API_PREFIX)
 
 
@@ -50,48 +49,20 @@ async def evaluate_transcription_from_zip_async(
             └── ...
     ```
     """
-
-    filename = file.filename
-    if not filename:
+    if not file.filename:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Corrupted file. Please upload a valid zip file.",
         )
 
-    if not filename.endswith(".zip"):
+    if not is_zip_filename(file.filename):
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail="Invalid file type. Please upload a zip file.",
         )
 
     zip_data = await file.read()
-
-    with zipfile.ZipFile(BytesIO(zip_data), "r") as z:
-        files = z.namelist()
-
-        has_audio_dir = any(
-            "raw_audios/" in f
-            and any(
-                f.endswith(f".{fmt}")
-                for fmt in EVALUATION_SETTINGS.SUPPORTED_AUDIO_FORMATS
-            )
-            for f in files
-        )
-        has_ref_dir = any(
-            "reference_transcripts/" in f and f.endswith(".json") for f in files
-        )
-
-    if not has_audio_dir or not has_ref_dir:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"Zip file must contain 'raw_audios/' with "
-                f"{' or '.join('.' + fmt for fmt in EVALUATION_SETTINGS.SUPPORTED_AUDIO_FORMATS)} files and "
-                "'reference_transcripts/' with .json files at the root level."
-            ),
-        )
-
-    create_evaluation_task_service(zip_bytes=zip_data)
+    evaluate_transcription_from_zip(zip_bytes=zip_data)
 
     return PlainTextResponse(
         status_code=status.HTTP_202_ACCEPTED,
@@ -118,13 +89,7 @@ async def evaluate_transcription_from_s3_async(
     noisy_dataset.zip
     ```
     """
-    if not request.zip_name.endswith(".zip"):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="zip_name must reference a .zip file.",
-        )
-
-    create_evaluation_from_s3_task_service(zip_name=request.zip_name)
+    evaluate_transcription_from_s3(zip_name=request.zip_name)
 
     return PlainTextResponse(
         status_code=status.HTTP_202_ACCEPTED,

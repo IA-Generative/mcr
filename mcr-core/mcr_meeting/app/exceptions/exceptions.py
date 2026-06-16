@@ -31,6 +31,11 @@ class BadRequestException(MCRException):
     """Raised when an inbound request fails a business rule (mapped to HTTP 400)."""
 
 
+class InvalidEvaluationZipError(MCRException):
+    """Raised when an ASR evaluation archive is corrupted or has an invalid
+    structure (mapped to HTTP 400)."""
+
+
 class NotSavedException(MCRException):
     """Raised when a resource is not saved."""
 
