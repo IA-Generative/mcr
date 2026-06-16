@@ -324,7 +324,12 @@ class CelerySettings(BaseSettings):
     REDIS_VHOST_RESULT_DB: int = 1
     REDIS_TOKEN_STORE_DB: int = 2
     REDIS_TOKEN_TTL_SECONDS: int = 2_592_000  # 30 days
-    REDIS_VISIBILITY_TIMEOUT: int = 7200  # 120 min
+    # Must be >= the longest possible task attempt (including retry backoff) so a
+    # still-running transcription is never redelivered as a duplicate. On a graceful
+    # deploy Kombu's restore_at_shutdown (default) requeues in-flight messages
+    # immediately, so this timeout is really the safety net for hard kills
+    # (OOM / SIGKILL / node loss) — covering those needs the full attempt window.
+    REDIS_VISIBILITY_TIMEOUT: int = 21600  # 6h
 
     @property
     def CELERY_BROKER_URL(self) -> str:
