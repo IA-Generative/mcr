@@ -165,15 +165,7 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
 @celery_worker.task(name=MCRTranscriptionTasks.TRANSCRIBE, max_retries=3)
 def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, object]]:
     client = MeetingApiClient(owner_keycloak_uuid)
-    meeting_exists = asyncio.run(
-        client.start_transcription(meeting_id, swallow_404=True)
-    )
-    if not meeting_exists:
-        logger.warning(
-            "Meeting {} deleted before transcription started; skipping task",
-            meeting_id,
-        )
-        raise MeetingDeletedException(meeting_id)
+    asyncio.run(client.start_transcription(meeting_id))
 
     transcription_data = transcribe_meeting(meeting_id=meeting_id)
 
@@ -212,11 +204,18 @@ def handle_transcription_success(  # type: ignore[explicit-any]
     )
 
     client = MeetingApiClient(task_args.owner_keycloak_uuid)
-    asyncio.run(
-        client.mark_transcription_as_success(
-            task_args.meeting_id, transcription_data=result, swallow_404=True
+    try:
+        asyncio.run(
+            client.mark_transcription_as_success(
+                task_args.meeting_id, transcription_data=result
+            )
         )
-    )
+    except MeetingDeletedException:
+        logger.warning(
+            "Meeting {} deleted; skipping TRANSCRIPTION_DONE update",
+            task_args.meeting_id,
+        )
+        return
 
     logger.info("Meeting {} updated to TRANSCRIPTION_DONE", task_args.meeting_id)
 
@@ -226,11 +225,14 @@ def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-a
     task_args = extract_transcription_task_args(kwargs)
 
     client = MeetingApiClient(task_args.owner_keycloak_uuid)
-    asyncio.run(
-        client.mark_transcription_as_failed(task_args.meeting_id, swallow_404=True)
-    )
-
-    logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", task_args.meeting_id)
+    try:
+        asyncio.run(client.mark_transcription_as_failed(task_args.meeting_id))
+    except MeetingDeletedException:
+        logger.warning(
+            "Meeting {} deleted; skipping TRANSCRIPTION_FAILED update",
+            task_args.meeting_id,
+        )
+        return
 
 
 def _run_evaluation(zip_data: bytes) -> None:
