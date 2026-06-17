@@ -1,7 +1,9 @@
 import httpx
+from fastapi import status
+from loguru import logger
 
 from mcr_meeting.app.configs.base import ApiSettings, ServiceSettings
-from mcr_meeting.app.exceptions.celery_exception_handler import raise_for_core_status
+from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
 
 
@@ -45,4 +47,16 @@ class MeetingApiClient:
                 headers=self.headers,
                 json=data,
             )
-        raise_for_core_status(response, meeting_id)
+        _raise_for_core_status(response, meeting_id)
+
+
+def _raise_for_core_status(response: httpx.Response, meeting_id: int) -> None:
+    if response.status_code == status.HTTP_404_NOT_FOUND:
+        raise MeetingDeletedException()
+    if response.status_code == status.HTTP_409_CONFLICT:
+        logger.warning(
+            "Core returned 409 for meeting {}: already transitioned; continuing",
+            meeting_id,
+        )
+        return
+    response.raise_for_status()

@@ -234,8 +234,6 @@ def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-a
         )
         return
 
-    logger.error("Meeting {} updated to TRANSCRIPTION_FAILED", task_args.meeting_id)
-
 
 def _run_evaluation(zip_data: bytes) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
