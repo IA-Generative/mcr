@@ -379,9 +379,9 @@ class SentrySettings(BaseSettings):
 
     model_config = SettingsConfigDict(case_sensitive=True)
 
-    SENTRY_CORE_DSN: str = Field(description="Sentry DSN for core service")
+    SENTRY_CORE_DSN: str = Field(default="", description="Sentry DSN for core service")
     SENTRY_TRANSCRIPTION_DSN: str = Field(
-        description="Sentry DSN for transcription service"
+        default="", description="Sentry DSN for transcription service"
     )
     SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
     TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
