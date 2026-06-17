@@ -94,7 +94,7 @@ const radioOptions = computed(() => [
     label: t('meeting-v2.deliverable-card.type.structured-minutes.label'),
     hint: t('meeting-v2.deliverable-card.type.structured-minutes.hint'),
     value: 'STRUCTURED_MINUTES' as DeliverableType,
-    disabled: sucessfullyGeneratedTypes.value.has('STRUCTURED_MINUTES'),
+    disabled: successfullyGeneratedTypes.value.has('STRUCTURED_MINUTES'),
   },
   {
     label: t('meeting-v2.deliverable-card.type.custom-report.label'),
