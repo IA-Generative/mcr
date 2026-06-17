@@ -24,27 +24,7 @@ import { useUnleash } from '@/composables/use-unleash.ts';
 const app = createApp(App);
 const vfm = createVfm();
 
-const envMode = (window as any).ENV_MODE || import.meta.env.VITE_ENV_MODE;
-if (envMode) {
-  const dsn = (window as any).VITE_SENTRY_FRONTEND_DSN || import.meta.env.VITE_SENTRY_FRONTEND_DSN;
-  try {
-    Sentry.init({
-      app,
-      dsn,
-      sendDefaultPii: true,
-      environment: envMode,
-      enableLogs: true,
-      integrations: [
-        Sentry.consoleLoggingIntegration({
-          levels: ['info', 'warn', 'error'],
-        }),
-      ],
-      tracesSampleRate: 1.0,
-    });
-  } catch (e) {
-    console.error('Sentry initialization failed, continuing without it:', e);
-  }
-}
+initSentry(app);
 
 useUnleash();
 

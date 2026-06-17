@@ -89,18 +89,22 @@ function resolveSentryConfig() {
 }
 
 export function initSentry(app: App): void {
-  const { environment, dsn } = resolveSentryConfig();
-  if (!environment) return;
+  try {
+    const { environment, dsn } = resolveSentryConfig();
+    if (!environment) return;
 
-  Sentry.init({
-    app,
-    dsn,
-    environment,
-    sendDefaultPii: true,
-    enableLogs: true,
-    integrations: [Sentry.consoleLoggingIntegration({ levels: ['info', 'warn', 'error'] })],
-    tracesSampleRate: 1.0,
-    beforeBreadcrumb: scrubBreadcrumb,
-    beforeSend: scrubRequest,
-  });
+    Sentry.init({
+      app,
+      dsn,
+      environment,
+      sendDefaultPii: true,
+      enableLogs: true,
+      integrations: [Sentry.consoleLoggingIntegration({ levels: ['info', 'warn', 'error'] })],
+      tracesSampleRate: 1.0,
+      beforeBreadcrumb: scrubBreadcrumb,
+      beforeSend: scrubRequest,
+    });
+  } catch (e) {
+    console.error('Sentry initialization failed, continuing without it:', e);
+  }
 }
