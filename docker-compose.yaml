@@ -36,7 +36,12 @@ services:
     depends_on:
       - redis
     restart: always
+    # Mirrors prod: SIGTERM is remapped to SIGQUIT (cold shutdown) so a stop requeues
+    # the in-flight task immediately; stop_grace_period is the docker analog of k8s
+    # terminationGracePeriodSeconds and must stay above worker_soft_shutdown_timeout (60s).
+    stop_grace_period: 120s
     environment:
+      - REMAP_SIGTERM=SIGQUIT
       - STT_MODEL=${STT_MODEL}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
