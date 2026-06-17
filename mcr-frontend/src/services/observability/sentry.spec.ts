@@ -57,6 +57,32 @@ describe('initSentry', () => {
     expect(event.request.url).toBe('https://s3.fr-par.scw.cloud/bucket/audio/1/x.m4a?[redacted]');
     expect(event.request.headers).toEqual({ 'X-Keep': 'ok' });
   });
+
+  it('swallows the error and does not throw when Sentry.init fails (e.g. malformed DSN)', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    init.mockImplementationOnce(() => {
+      throw new Error('Invalid Sentry Dsn');
+    });
+    vi.stubGlobal('window', { ENV_MODE: 'PROD', VITE_SENTRY_FRONTEND_DSN: 'not-a-valid-dsn' });
+
+    expect(() => initSentry({} as App)).not.toThrow();
+  });
+
+  it('logs the fail-safe message with the original error when Sentry.init fails', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const initError = new Error('Invalid Sentry Dsn');
+    init.mockImplementationOnce(() => {
+      throw initError;
+    });
+    vi.stubGlobal('window', { ENV_MODE: 'PROD', VITE_SENTRY_FRONTEND_DSN: 'not-a-valid-dsn' });
+
+    initSentry({} as App);
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'Sentry initialization failed, continuing without it:',
+      initError,
+    );
+  });
 });
 
 describe('reportError', () => {
