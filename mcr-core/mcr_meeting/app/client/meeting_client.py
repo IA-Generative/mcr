@@ -1,4 +1,5 @@
-from mcr_meeting.app.client.http_client import HttpClient
+import httpx
+
 from mcr_meeting.app.configs.base import ApiSettings, ServiceSettings
 from mcr_meeting.app.exceptions.celery_exception_handler import raise_for_core_status
 from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
@@ -6,39 +7,42 @@ from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
 
 class MeetingApiClient:
     def __init__(self, user_uuid: str):
-        self.api_settings = ApiSettings()
-        self.service_settings = ServiceSettings()
-
-        self.client = HttpClient(base_url=self._get_base_url(), token=user_uuid)
-
-    def _get_base_url(self) -> str:
-        return f"{self.service_settings.CORE_SERVICE_BASE_URL}{self.api_settings.MEETING_API_PREFIX}"
+        api_settings = ApiSettings()
+        service_settings = ServiceSettings()
+        self.base_url = (
+            f"{service_settings.CORE_SERVICE_BASE_URL}{api_settings.MEETING_API_PREFIX}"
+        )
+        self.headers = {
+            "Content-Type": "application/json",
+            "X-User-Keycloak-UUID": user_uuid,
+        }
 
     async def get_meeting(self, meeting_id: int) -> MeetingResponse:
-        response = await self.client.get(f"/{meeting_id}")
+        async with httpx.AsyncClient(base_url=self.base_url) as client:
+            response = await client.get(f"/{meeting_id}", headers=self.headers)
+        response.raise_for_status()
         return MeetingResponse.model_validate(response.json())
 
     async def start_transcription(self, meeting_id: int) -> None:
-        response = await self.client.post(f"/{meeting_id}/transcription/start")
-        if raise_for_core_status(response.status_code, meeting_id):
-            return
-        response.raise_for_status()
+        await self._post_transition(meeting_id, "start")
 
     async def mark_transcription_as_failed(self, meeting_id: int) -> None:
-        response = await self.client.post(f"/{meeting_id}/transcription/fail")
-        if raise_for_core_status(response.status_code, meeting_id):
-            return
-        response.raise_for_status()
+        await self._post_transition(meeting_id, "fail")
 
     async def mark_transcription_as_success(
         self,
         meeting_id: int,
         transcription_data: list[dict[str, object]],
     ) -> None:
-        response = await self.client.post(
-            f"/{meeting_id}/transcription/success",
-            data=transcription_data,
-        )
-        if raise_for_core_status(response.status_code, meeting_id):
-            return
-        response.raise_for_status()
+        await self._post_transition(meeting_id, "success", data=transcription_data)
+
+    async def _post_transition(
+        self, meeting_id: int, transition: str, data: object | None = None
+    ) -> None:
+        async with httpx.AsyncClient(base_url=self.base_url) as client:
+            response = await client.post(
+                f"/{meeting_id}/transcription/{transition}",
+                headers=self.headers,
+                json=data,
+            )
+        raise_for_core_status(response, meeting_id)
