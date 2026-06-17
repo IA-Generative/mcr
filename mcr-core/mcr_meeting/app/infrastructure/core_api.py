@@ -1,5 +1,5 @@
-from mcr_meeting.app.client.http_client import HttpClient
 from mcr_meeting.app.configs.base import ApiSettings, ServiceSettings
+from mcr_meeting.app.infrastructure.http import HttpClient
 from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
 
 

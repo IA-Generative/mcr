@@ -4,7 +4,7 @@ from typing import TypedDict
 import sentry_sdk
 from loguru import logger
 
-from mcr_meeting.app.client.meeting_client import MeetingApiClient
+from mcr_meeting.app.infrastructure.core_api import MeetingApiClient
 
 
 class MeetingContext(TypedDict):

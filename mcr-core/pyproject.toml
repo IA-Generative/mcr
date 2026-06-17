@@ -210,8 +210,6 @@ forbidden_modules = [
 ignore_imports = [
     # TODO(arch): move get_state_machine_for_meeting into domain, drop orchestrators dep
     "mcr_meeting.app.domain.meeting_transitions -> mcr_meeting.app.orchestrators.meeting_transitions_orchestrator",
-    # TODO(arch): render_report should not reach into the legacy docx service
-    "mcr_meeting.app.domain.report_rendering -> mcr_meeting.app.services.docx_report_generation_service",
 ]
 
 [[tool.importlinter.contracts]]

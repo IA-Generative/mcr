@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 from loguru import logger
 
-from mcr_meeting.app.services.s3_service import put_file_to_s3, s3_settings
+from mcr_meeting.app.infrastructure.s3 import put_file_to_s3, s3_settings
 from mcr_meeting.evaluation.asr.types import (
     EvaluationOutput,
     EvaluationSummary,

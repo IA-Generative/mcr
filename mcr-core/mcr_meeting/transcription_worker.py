@@ -23,7 +23,6 @@ from loguru import logger
 from pyannote.audio import Pipeline
 from sentry_sdk.integrations.celery import CeleryIntegration
 
-from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import (
     CelerySettings,
     EvaluationSettings,
@@ -35,15 +34,16 @@ from mcr_meeting.app.configs.base import (
     TranscriptionWaitingTimeSettings,
 )
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
+from mcr_meeting.app.infrastructure.core_api import MeetingApiClient
+from mcr_meeting.app.infrastructure.s3 import (
+    get_evaluation_dataset_object_name,
+    get_file_from_s3,
+)
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
 )
 from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
-from mcr_meeting.app.services.s3_service import (
-    get_evaluation_dataset_object_name,
-    get_file_from_s3,
-)
 from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
     get_gpu_name,

@@ -2,9 +2,20 @@ from io import BytesIO
 from typing import BinaryIO
 
 from mcr_meeting.app.db.meeting_repository import get_meeting_by_id
+from mcr_meeting.app.domain.docx_report_generation import (
+    generate_custom_report_docx,
+    generate_detailed_synthesis_docx,
+    generate_docx_decisions_reports_from_template,
+)
 from mcr_meeting.app.exceptions.exceptions import (
     MCRException,
     NotFoundException,
+)
+from mcr_meeting.app.infrastructure.s3 import (
+    get_file_from_s3,
+    get_file_from_s3_or_none,
+    get_report_object_name,
+    put_file_to_s3,
 )
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import DeliverableType
@@ -14,18 +25,7 @@ from mcr_meeting.app.schemas.report_generation import (
     is_decision_report_synthesis,
     is_detailed_synthesis,
 )
-from mcr_meeting.app.services.docx_report_generation_service import (
-    generate_custom_report_docx,
-    generate_detailed_synthesis_docx,
-    generate_docx_decisions_reports_from_template,
-)
 from mcr_meeting.app.services.meeting_service import set_meeting_report_filename
-from mcr_meeting.app.services.s3_service import (
-    get_file_from_s3,
-    get_file_from_s3_or_none,
-    get_report_object_name,
-    put_file_to_s3,
-)
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
 
 DEFAULT_REPORT_FILENAME = "report.docx"

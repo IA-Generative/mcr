@@ -1,11 +1,11 @@
+from mcr_meeting.app.domain.report_content.template_renderer import (
+    render_markdown_template,
+)
 from mcr_meeting.app.schemas.report_generation import (
     DetailedSynthesisGenerationResponse,
     ReportDetailedDiscussion,
     ReportHeader,
     ReportParticipant,
-)
-from mcr_meeting.app.services.report_content.template_renderer import (
-    render_markdown_template,
 )
 
 
@@ -142,7 +142,7 @@ def test_render_detailed_synthesis_markdown():
 def test_generate_detailed_synthesis_docx():
     from docx import Document
 
-    from mcr_meeting.app.services.docx_report_generation_service import (
+    from mcr_meeting.app.domain.docx_report_generation import (
         generate_detailed_synthesis_docx,
     )
 

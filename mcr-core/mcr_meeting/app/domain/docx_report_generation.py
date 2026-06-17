@@ -1,9 +1,17 @@
+# TODO(arch, étape 2): ce module n'est pas I/O-less (lecture de templates .docx
+# sur disque via docxtpl/jinja2). Relocalisé ici pour supprimer la violation
+# domain -> services, mais la frontière de rendu doit migrer vers infrastructure/.
 import os
 from io import BytesIO
 from typing import Any
 
 from docxtpl import RichText
 
+from mcr_meeting.app.domain.docx_generation.templated_docx_generator import (
+    TemplatedDocxGenerator,
+)
+from mcr_meeting.app.domain.report_content.markdown_to_docx import markdown_to_docx
+from mcr_meeting.app.domain.report_content.template_renderer import render_to_docx
 from mcr_meeting.app.schemas.report_generation import (
     CustomReportResponse,
     DetailedSynthesisGenerationResponse,
@@ -11,11 +19,6 @@ from mcr_meeting.app.schemas.report_generation import (
     ReportHeader,
     ReportParticipant,
 )
-from mcr_meeting.app.services.docx_generation.templated_docx_generator import (
-    TemplatedDocxGenerator,
-)
-from mcr_meeting.app.services.report_content.markdown_to_docx import markdown_to_docx
-from mcr_meeting.app.services.report_content.template_renderer import render_to_docx
 
 
 def generate_docx_decisions_reports_from_template(

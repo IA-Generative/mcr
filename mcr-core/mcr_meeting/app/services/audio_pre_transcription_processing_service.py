@@ -21,8 +21,8 @@ from mcr_meeting.app.exceptions.exceptions import (
     NoAudioFoundError,
     SilentAudioError,
 )
+from mcr_meeting.app.infrastructure.s3 import get_file_from_s3
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.s3_service import get_file_from_s3
 from mcr_meeting.setup.logger import log_ffmpeg_command
 
 s2t_settings = Speech2TextSettings()

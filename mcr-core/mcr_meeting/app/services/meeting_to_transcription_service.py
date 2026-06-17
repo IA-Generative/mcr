@@ -10,14 +10,14 @@ from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     NoAudioFoundError,
 )
+from mcr_meeting.app.infrastructure.s3 import (
+    get_objects_list_from_prefix,
+)
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
 from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
     download_and_concatenate_s3_audio_chunks_into_bytes,
-)
-from mcr_meeting.app.services.s3_service import (
-    get_objects_list_from_prefix,
 )
 from mcr_meeting.app.services.speech_to_text.participants_naming.match_speakers_with_participants import (
     enrich_segments_with_participants,

@@ -1,16 +1,16 @@
 from io import BytesIO
 
+from mcr_meeting.app.domain.docx_report_generation import (
+    generate_custom_report_docx,
+    generate_detailed_synthesis_docx,
+    generate_docx_decisions_reports_from_template,
+)
 from mcr_meeting.app.exceptions.exceptions import MCRException
 from mcr_meeting.app.schemas.report_generation import (
     ReportResponse,
     is_custom_report,
     is_decision_report_synthesis,
     is_detailed_synthesis,
-)
-from mcr_meeting.app.services.docx_report_generation_service import (
-    generate_custom_report_docx,
-    generate_detailed_synthesis_docx,
-    generate_docx_decisions_reports_from_template,
 )
 
 
