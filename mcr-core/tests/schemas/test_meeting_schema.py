@@ -98,8 +98,18 @@ def test_comu_url_validator(name: str, url: str, should_match: bool) -> None:
 webinaire_test_cases = [
     # ✅ Valid URLs
     (
-        "Valid URL",
+        "Valid URL with creator segment",
         "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/creator/456/hash/abcdef0123456789abcdef0123456789abcdef01",
+        True,
+    ),
+    (
+        "Valid URL without creator segment (creator is optional)",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/hash/abcdef0123456789abcdef0123456789abcdef01",
+        True,
+    ),
+    (
+        "Valid URL with long numeric ids",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/9876543210/creator/1234567890/hash/abcdef0123456789abcdef0123456789abcdef01",
         True,
     ),
     # ❌ Invalid domain
@@ -114,6 +124,16 @@ webinaire_test_cases = [
         False,
     ),
     (
+        "Attendee role instead of moderator",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/invite/123/hash/abcdef0123456789abcdef0123456789abcdef01",
+        False,
+    ),
+    (
+        "Missing role segment",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/123/hash/abcdef0123456789abcdef0123456789abcdef01",
+        False,
+    ),
+    (
         "Non-numeric user_id",
         "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/abc/creator/456/hash/abcdef0123456789abcdef0123456789abcdef01",
         False,
@@ -121,6 +141,11 @@ webinaire_test_cases = [
     (
         "Non-numeric creator_id",
         "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/creator/xyz/hash/abcdef0123456789abcdef0123456789abcdef01",
+        False,
+    ),
+    (
+        "Creator keyword without id",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/creator/hash/abcdef0123456789abcdef0123456789abcdef01",
         False,
     ),
     (
@@ -139,13 +164,23 @@ webinaire_test_cases = [
         False,
     ),
     (
-        "Missing /creator segment",
-        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/hash/abcdef0123456789abcdef0123456789abcdef01",
+        "Uppercase hex in hash",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/hash/ABCDEF0123456789ABCDEF0123456789ABCDEF01",
+        False,
+    ),
+    (
+        "Missing hash",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/creator/456",
         False,
     ),
     (
         "Extra trailing slash",
         "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/creator/456/hash/abcdef0123456789abcdef0123456789abcdef01/",
+        False,
+    ),
+    (
+        "Extra query params",
+        "https://webinaire.numerique.gouv.fr/meeting/signin/moderateur/123/hash/abcdef0123456789abcdef0123456789abcdef01?foo=bar",
         False,
     ),
 ]

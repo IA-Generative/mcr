@@ -39,7 +39,7 @@ const webinaireUrlPattern = {
 };
 
 export const webinaireModeratorUrlValidator = RegExp(
-  `^https://${webinaireUrlPattern.domain.source}/meeting/signin/moderateur/${webinaireUrlPattern.meetingId.source}/creator/${webinaireUrlPattern.creatorId.source}/hash/${webinaireUrlPattern.validationHash.source}$`,
+  `^https://${webinaireUrlPattern.domain.source}/meeting/signin/moderateur/${webinaireUrlPattern.meetingId.source}(/creator/${webinaireUrlPattern.creatorId.source})?/hash/${webinaireUrlPattern.validationHash.source}$`,
 );
 
 export const webinairePublicUrlValidator = RegExp(`^https://${webinaireUrlPattern.domain.source}`);
