@@ -1,11 +1,9 @@
 from statemachine.exceptions import TransitionNotAllowed
 
+from mcr_meeting.app.domain.meeting_state_machine import get_state_machine_for_meeting
 from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.meeting_model import MeetingEvent
-from mcr_meeting.app.orchestrators.meeting_transitions_orchestrator import (
-    get_state_machine_for_meeting,
-)
 
 
 def init_capture(meeting: Meeting) -> None:

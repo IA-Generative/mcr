@@ -111,10 +111,8 @@ metrics:
 	EVALUATION_DATA_DIR=$(EVALUATION_DATA_DIR) EVALUATION_OUTPUT_DIR=$(EVALUATION_OUTPUT_DIR) \
 	uv run python -m mcr_meeting.evaluation.cli.cli_generate_metrics
 
-# Before running this, make sure you have graphviz installed in your system.
-# On MacOS, you can install it using: brew install graphviz
 generate-graphs:
 	@echo "Generating state machine graphs..."
 	@uv sync --inexact --group dev >/dev/null 2>&1 || true
 	@uv run python scripts/generate_state_machine_graph.py
-	@echo "Graphs generated successfully in mcr_meeting/app/state_machine/graph/"
+	@echo "Graphs generated successfully in docs/state_machine/"

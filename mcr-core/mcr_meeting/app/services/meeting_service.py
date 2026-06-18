@@ -5,7 +5,7 @@ from pydantic import UUID4
 from mcr_meeting.app.exceptions.exceptions import (
     ForbiddenAccessException,
 )
-from mcr_meeting.app.models import Meeting, MeetingStatus
+from mcr_meeting.app.models import Meeting
 
 from ..db.meeting_repository import (
     get_meeting_by_id,
@@ -35,11 +35,6 @@ def get_meeting_service(
         raise ForbiddenAccessException("Meeting is owned by a different user")
 
     return meeting
-
-
-def update_meeting_status(meeting: Meeting, meeting_status: MeetingStatus) -> Meeting:
-    meeting.status = meeting_status
-    return update_meeting(meeting)
 
 
 def set_meeting_report_filename(meeting_id: int, filename: str) -> None:
