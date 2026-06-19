@@ -11,6 +11,7 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableResponse,
     DeliverableSuccessRequest,
 )
+from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 from mcr_meeting.app.use_cases.get_deliverable_file import get_deliverable_file
 from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
@@ -61,7 +62,9 @@ async def list_meeting_deliverables(
 async def create_deliverable(
     body: DeliverableCreateRequest,
     x_user_keycloak_uuid: UUID4 = Header(),
+    x_user_access_token: str | None = Header(default=None),
 ) -> DeliverableResponse:
+    ensure_offline_token(str(x_user_keycloak_uuid), x_user_access_token)
     custom_prompt = (
         body.custom_prompt if isinstance(body, CustomDeliverableCreateRequest) else None
     )
@@ -107,7 +110,6 @@ async def deliverable_success_callback(
 ) -> DeliverableResponse:
     deliverable = mark_deliverable_success(
         deliverable_id=deliverable_id,
-        external_url=body.external_url,
         report_response=body.report_response,
     )
     return DeliverableResponse.model_validate(deliverable)

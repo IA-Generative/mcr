@@ -15,7 +15,7 @@ import mcr_meeting.app.infrastructure.email as email_infra_module
 import mcr_meeting.app.infrastructure.keycloak as keycloak_module
 import mcr_meeting.app.infrastructure.redis as redis_store_module
 import mcr_meeting.app.services.s3_service as s3_service_module
-import mcr_meeting.app.use_cases.complete_transcription as complete_transcription_module
+import mcr_meeting.app.use_cases._shared.drive_upload as drive_upload_module
 from mcr_meeting.app.db.db import (
     Base,
     db_session_ctx,
@@ -103,10 +103,10 @@ def in_memory_keycloak() -> Generator[InMemoryKeycloak, None, None]:
 @pytest.fixture
 def in_memory_drive() -> Generator[InMemoryDriveClient, None, None]:
     mock = InMemoryDriveClient()
-    original = complete_transcription_module.upload_file
-    complete_transcription_module.upload_file = mock  # type: ignore[assignment]
+    original = drive_upload_module.upload_file
+    drive_upload_module.upload_file = mock  # type: ignore[assignment]
     yield mock
-    complete_transcription_module.upload_file = original
+    drive_upload_module.upload_file = original
 
 
 @pytest.fixture

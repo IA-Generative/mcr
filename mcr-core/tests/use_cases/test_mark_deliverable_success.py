@@ -3,6 +3,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.exceptions.exceptions import DeliverableStateConflictException
+from mcr_meeting.app.infrastructure.redis import get_refresh_token, save_refresh_token
 from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
@@ -21,7 +22,9 @@ from mcr_meeting.app.use_cases.mark_deliverable_success import (
 )
 from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
+from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
+from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 from tests.mocks.in_memory_s3 import InMemoryS3
 
 
@@ -55,7 +58,6 @@ class TestHappyPath:
 
         result = mark_deliverable_success(
             deliverable_id=pending.id,
-            external_url=None,
             report_response=_decision_record_response(),
         )
 
@@ -79,6 +81,150 @@ class TestHappyPath:
         assert len(records) == 1
 
 
+class TestDriveUpload:
+    def test_persists_drive_url_when_upload_succeeds(
+        self,
+        db_session: Session,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_drive: InMemoryDriveClient,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        save_refresh_token(str(meeting.owner.keycloak_uuid), "refresh-token")
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        result = mark_deliverable_success(
+            deliverable_id=pending.id,
+            report_response=_decision_record_response(),
+        )
+
+        db_session.refresh(pending)
+        assert result.status == DeliverableStatus.AVAILABLE
+        assert pending.external_url == in_memory_drive.url
+
+    def test_drive_upload_failure_is_best_effort(
+        self,
+        db_session: Session,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_drive: InMemoryDriveClient,
+    ) -> None:
+        in_memory_drive.should_fail = True
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        save_refresh_token(str(meeting.owner.keycloak_uuid), "refresh-token")
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        result = mark_deliverable_success(
+            deliverable_id=pending.id,
+            report_response=_decision_record_response(),
+        )
+
+        db_session.refresh(pending)
+        db_session.refresh(meeting)
+        assert result.status == DeliverableStatus.AVAILABLE
+        assert pending.external_url is None
+        assert meeting.status == MeetingStatus.REPORT_DONE
+        assert len(in_memory_email.sent) == 1
+
+    def test_skips_drive_when_no_refresh_token(
+        self,
+        db_session: Session,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_drive: InMemoryDriveClient,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        result = mark_deliverable_success(
+            deliverable_id=pending.id,
+            report_response=_decision_record_response(),
+        )
+
+        db_session.refresh(pending)
+        assert result.status == DeliverableStatus.AVAILABLE
+        assert pending.external_url is None
+
+    def test_drops_refresh_token_when_refresh_fails(
+        self,
+        db_session: Session,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_keycloak: InMemoryKeycloak,
+    ) -> None:
+        in_memory_keycloak.should_fail_refresh = True
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        user_sub = str(meeting.owner.keycloak_uuid)
+        save_refresh_token(user_sub, "refresh-token")
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        result = mark_deliverable_success(
+            deliverable_id=pending.id,
+            report_response=_decision_record_response(),
+        )
+
+        db_session.refresh(pending)
+        assert result.status == DeliverableStatus.AVAILABLE
+        assert pending.external_url is None
+        assert get_refresh_token(user_sub) is None
+
+    def test_persists_rotated_refresh_token(
+        self,
+        db_session: Session,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_keycloak: InMemoryKeycloak,
+        in_memory_drive: InMemoryDriveClient,
+    ) -> None:
+        in_memory_keycloak.rotated_refresh_token = "rotated-token"
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        user_sub = str(meeting.owner.keycloak_uuid)
+        save_refresh_token(user_sub, "refresh-token")
+        pending = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        mark_deliverable_success(
+            deliverable_id=pending.id,
+            report_response=_decision_record_response(),
+        )
+
+        assert get_refresh_token(user_sub) == "rotated-token"
+
+
 class TestFailureRollback:
     def test_s3_failure_marks_deliverable_failed(
         self,
@@ -100,7 +246,6 @@ class TestFailureRollback:
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
                 deliverable_id=pending.id,
-                external_url=None,
                 report_response=_decision_record_response(),
             )
 
@@ -135,7 +280,6 @@ class TestFailureRollback:
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
                 deliverable_id=pending.id,
-                external_url=None,
                 report_response=_decision_record_response(),
             )
 
@@ -166,7 +310,6 @@ class TestFailureRollback:
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
                 deliverable_id=pending.id,
-                external_url=None,
                 report_response=_decision_record_response(),
             )
 
@@ -174,7 +317,6 @@ class TestFailureRollback:
         with pytest.raises(DeliverableStateConflictException):
             mark_deliverable_success(
                 deliverable_id=pending.id,
-                external_url=None,
                 report_response=_decision_record_response(),
             )
 
@@ -199,7 +341,6 @@ class TestPostCommitFailures:
 
         result = mark_deliverable_success(
             deliverable_id=pending.id,
-            external_url=None,
             report_response=_decision_record_response(),
         )
 
@@ -230,7 +371,6 @@ class TestConflict:
         with pytest.raises(DeliverableStateConflictException):
             mark_deliverable_success(
                 deliverable_id=existing.id,
-                external_url=None,
                 report_response=_decision_record_response(),
             )
 

@@ -22,10 +22,11 @@ from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 @asynccontextmanager
 async def get_deliverable_http_client(
     user_keycloak_uuid: UUID4,
+    access_token: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
     client = httpx.AsyncClient(
         base_url=settings.DELIVERABLE_SERVICE_URL,
-        auth=MCRCoreCustomAuth(user_keycloak_uuid),
+        auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
     )
     try:
         yield client
@@ -49,10 +50,14 @@ async def list_deliverables_for_meeting(
 
 
 async def request_deliverable(
-    body: DeliverableCreateRequest, user_keycloak_uuid: UUID4
+    body: DeliverableCreateRequest,
+    user_keycloak_uuid: UUID4,
+    access_token: str | None = None,
 ) -> Response:
     try:
-        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+        async with get_deliverable_http_client(
+            user_keycloak_uuid, access_token
+        ) as client:
             response = await client.post(url="", json=body.model_dump(mode="json"))
             response.raise_for_status()
             return Response(

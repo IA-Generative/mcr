@@ -75,6 +75,28 @@ async def test_create_deliverable_forwards_body_and_returns_202(
 
 
 @pytest.mark.asyncio
+async def test_create_deliverable_forwards_access_token_header(
+    httpx_mock: HTTPXMock,
+) -> None:
+    user_uuid = uuid.uuid4()
+    httpx_mock.add_response(
+        method="POST",
+        url=f"{settings.DELIVERABLE_SERVICE_URL}",
+        json=_deliverable_payload(deliverable_id=99, meeting_id=42),
+        status_code=202,
+    )
+
+    body = StructuredDeliverableCreateRequest(meeting_id=42, type="DECISION_RECORD")
+    await request_deliverable(
+        body=body, user_keycloak_uuid=user_uuid, access_token="user-access-token"
+    )
+
+    request = httpx_mock.get_requests()[0]
+    assert request.headers["X-User-Keycloak-Uuid"] == str(user_uuid)
+    assert request.headers["X-User-Access-Token"] == "user-access-token"
+
+
+@pytest.mark.asyncio
 async def test_create_deliverable_propagates_400_for_transcription(
     httpx_mock: HTTPXMock,
 ) -> None:

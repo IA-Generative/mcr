@@ -14,6 +14,8 @@ class TokenRefreshResult:
 
 _settings = KeycloakExchangeSettings()
 
+_KEYCLOAK_TIMEOUT_SECONDS = 10
+
 
 def _is_keycloak_configured() -> bool:
     return bool(
@@ -29,6 +31,7 @@ _keycloak: KeycloakOpenID | None = (
         client_id=_settings.KEYCLOAK_CORE_CLIENT_ID,
         client_secret_key=_settings.KEYCLOAK_CORE_CLIENT_SECRET,
         realm_name=_settings.KEYCLOAK_REALM,
+        timeout=_KEYCLOAK_TIMEOUT_SECONDS,
     )
     if _is_keycloak_configured()
     else None

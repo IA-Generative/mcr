@@ -17,11 +17,13 @@ from mcr_meeting.app.models.deliverable_model import Deliverable
 from mcr_meeting.app.models.meeting_model import Meeting
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.report_generation import ReportResponse
+from mcr_meeting.app.use_cases._shared.drive_upload import (
+    try_upload_deliverable_to_drive,
+)
 
 
 def mark_deliverable_success(
     deliverable_id: int,
-    external_url: str | None,
     report_response: ReportResponse,
 ) -> Deliverable:
     deliverable = deliverable_repository.get_by_id(deliverable_id)
@@ -30,6 +32,9 @@ def mark_deliverable_success(
     try:
         docx = render_report(report_response, meeting_name=meeting.name or "")
         upload_report_to_s3(meeting.id, deliverable.type, docx)
+        external_url = try_upload_deliverable_to_drive(
+            meeting, deliverable.type, docx.getvalue()
+        )
 
         deliverable_transitions.mark_available(deliverable, external_url=external_url)
         meeting_transitions.complete_report(meeting)

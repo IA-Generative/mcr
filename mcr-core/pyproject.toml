@@ -218,6 +218,11 @@ ignore_imports = [
 name = "Use-cases must not import each other"
 type = "independence"
 modules = ["mcr_meeting.app.use_cases.*"]
+# Shared business operations live in use_cases._shared and may be imported by
+# any use-case (see CLAUDE.md). Independence still holds between use-cases.
+ignore_imports = [
+    "mcr_meeting.app.use_cases.* -> mcr_meeting.app.use_cases._shared.**",
+]
 
 [[tool.importlinter.contracts]]
 name = "Use-cases must not depend on legacy orchestrators/services/client"
