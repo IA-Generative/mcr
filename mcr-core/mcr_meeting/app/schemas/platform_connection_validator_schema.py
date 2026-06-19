@@ -66,10 +66,7 @@ def validate_webinaire_connection(values: PlatformConnectionInfoValidator) -> No
         raise ValueError(
             f"meeting_password and meeting_platform_id are not supported for platform {values.name_platform}"
         )
-    pattern = re.compile(
-        r"^https:\/\/webinaire\.numerique\.gouv\.fr\/meeting\/signin\/moderateur\/\d+\/creator\/\d+\/hash\/[a-f0-9]{40}$"
-    )
-    if values.url is None or not pattern.match(values.url):
+    if values.url is None or not WebinaireUrlValidator().validate_url(values.url):
         raise ValueError(f"Invalid URL format for platform {values.name_platform}")
 
 
@@ -151,7 +148,7 @@ class WebinaireUrlValidator:
     @property
     def url_regex(self) -> re.Pattern[str]:
         return re.compile(
-            rf"^https://{self.domain.pattern}/meeting/signin/moderateur/{self.user_id.pattern}/creator/{self.creator_id.pattern}/hash/{self.hash.pattern}$"
+            rf"^https://{self.domain.pattern}/meeting/signin/moderateur/{self.user_id.pattern}(/creator/{self.creator_id.pattern})?/hash/{self.hash.pattern}$"
         )
 
     def validate_url(self, url: str) -> bool:
