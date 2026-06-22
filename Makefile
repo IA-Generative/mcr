@@ -1,4 +1,4 @@
-.PHONY: clean help install type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
+.PHONY: clean help install install-hooks type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
 
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
@@ -6,7 +6,8 @@ PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
 help:
 	clear
 	@echo "================= Usage ================="
-	@echo "install                   : Install dependencies of all python packages (uv sync) and the frontend (pnpm install)."
+	@echo "install                   : Install dependencies of all python packages (uv sync), the frontend (pnpm install) and the git pre-commit hooks."
+	@echo "install-hooks             : Install the git pre-commit hooks (uvx pre-commit install)."
 	@echo "start                     : Start the app with docker compose"
 	@echo "stop                      : Stop the app."
 	@echo "restart                   : Restart the app or a single service using service=..."
@@ -28,9 +29,12 @@ define CALL_TARGET_CMD_ON_ALL_PKGS
 	done
 endef
 
-install:
+install: install-hooks
 	$(call CALL_TARGET_CMD_ON_ALL_PKGS, install)
 	cd mcr-frontend && pnpm install
+
+install-hooks:
+	uvx pre-commit install
 
 # example: make start service=mcr-frontend
 start:
@@ -49,7 +53,7 @@ rebuild:
 	docker compose build $(service)
 	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
 
-type-check: 
+type-check:
 	$(call CALL_TARGET_CMD_ON_ALL_PKGS, type-check)
 
 lint:

@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.5
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+        exclude: \.lock$
+      - id: trailing-whitespace
+
+  - repo: https://github.com/zricethezav/gitleaks
+    rev: v8.28.0
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: frontend-eslint
+        name: eslint (mcr-frontend)
+        language: system
+        files: ^mcr-frontend/.*\.(vue|ts|tsx|js|jsx|cjs|mjs|cts|mts)$
+        pass_filenames: false
+        entry: pnpm -C mcr-frontend run lint
+      - id: frontend-prettier
+        name: prettier (mcr-frontend)
+        language: system
+        files: ^mcr-frontend/.*\.(vue|ts|tsx|js|jsx|cjs|mjs|cts|mts|css|scss|json|md)$
+        pass_filenames: false
+        entry: pnpm -C mcr-frontend run format
