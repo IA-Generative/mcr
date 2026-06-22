@@ -1,4 +1,4 @@
-import { getRetryDelay, MAX_RETRIES, PART_SIZE } from '@/config/meeting';
+import { getRetryDelay, MAX_RETRIES, PART_SIZE, PUT_TIMEOUT_MS } from '@/config/meeting';
 import HttpService from '@/services/http/http.service';
 import { getAxiosCode, getStatusCode } from '@/services/http/http.utils';
 import {
@@ -14,14 +14,14 @@ import { useMutation } from '@tanstack/vue-query';
 
 export type UploadPhase = 'init' | 'sign' | 'put' | 'complete';
 
-export class UploadStepError extends Error {
+export class UploadError extends Error {
   constructor(
     readonly phase: UploadPhase,
     readonly cause: unknown,
     readonly partNumber?: number,
   ) {
-    super(`Multipart upload failed during ${phase}`);
-    this.name = 'UploadStepError';
+    super(`${phase} failed`);
+    this.name = 'UploadError';
   }
 }
 
@@ -41,7 +41,7 @@ export function useMultipart() {
     try {
       return await fn();
     } catch (cause) {
-      throw new UploadStepError(phase, cause, partNumber);
+      throw new UploadError(phase, cause, partNumber);
     }
   }
 
@@ -93,10 +93,9 @@ export function useMultipart() {
         // best-effort cleanup; its own failure must stay silent
         await abortMultipartUpload({ meetingId, uploadId, objectKey }).catch(() => {});
       }
-      const stepError =
-        error instanceof UploadStepError ? error : new UploadStepError('init', error);
+      const stepError = error instanceof UploadError ? error : new UploadError('init', error);
       reportError(
-        stepError.cause,
+        stepError,
         buildUploadReport(stepError, {
           meetingId,
           totalParts,
@@ -110,7 +109,7 @@ export function useMultipart() {
   }
 
   function buildUploadReport(
-    error: UploadStepError,
+    error: UploadError,
     meta: {
       meetingId: number;
       totalParts: number;
@@ -171,6 +170,7 @@ export function useMultipart() {
       const { url, blob } = params;
 
       const response = await HttpService.put(url, blob, {
+        timeout: PUT_TIMEOUT_MS,
         transformRequest: (data, headers) => {
           setFileHeaders(blob, headers);
           return data;

@@ -30,7 +30,7 @@ vi.mock('@tanstack/vue-query', () => ({
   }),
 }));
 
-import { useMultipart } from './use-multipart';
+import { useMultipart, UploadError } from './use-multipart';
 
 function makeFile() {
   return new File([new Uint8Array(10)], 'rec.m4a', { type: 'audio/m4a' });
@@ -66,7 +66,10 @@ describe('useMultipart.uploadFile', () => {
 
     expect(reportError).toHaveBeenCalledTimes(1);
     const [reported, opts] = reportError.mock.calls[0];
-    expect(reported).toBe(err); // original cause, not a synthetic "Failed to upload file"
+    expect(reported).toBeInstanceOf(UploadError);
+    expect((reported as UploadError).phase).toBe('put');
+    expect((reported as Error).message).toBe('put failed');
+    expect((reported as UploadError).cause).toBe(err);
     expect(opts.feature).toBe('meeting.upload');
     expect(opts.contexts.upload).toMatchObject({
       phase: 'put', // the S3 PUT (crosses the user's network/proxy), not the presign
