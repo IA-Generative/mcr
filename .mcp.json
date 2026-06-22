@@ -2,11 +2,18 @@
   "mcpServers": {
     "sentry": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@sentry/mcp-server@0.33.0"],
+      "command": "op",
+      "args": [
+        "run",
+        "--no-masking",
+        "--",
+        "npx",
+        "-y",
+        "@sentry/mcp-server@0.33.0"
+      ],
       "env": {
-        "SENTRY_ACCESS_TOKEN": "${SENTRY_PAT}",
-        "SENTRY_HOST": "${SENTRY_HOST}"
+        "SENTRY_ACCESS_TOKEN": "op://Private/Sentry MCP Access Token/credential",
+        "SENTRY_HOST": "op://Private/Sentry MCP Access Token/hostname"
       }
     }
   }
