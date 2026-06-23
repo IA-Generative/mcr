@@ -243,3 +243,42 @@ class DetailedSynthesis(BaseReport):
 class CustomMarkdownReport(BaseModel):
     model_config = ConfigDict(frozen=True)
     markdown_content: str
+
+
+class MinuteDecision(BaseModel):
+    """Décision ou action décidée pendant la réunion."""
+
+    item: str = Field(
+        ...,
+        description="La décision ou l'action décidée, formulée de manière claire et concise.",
+    )
+    owner: str | None = Field(
+        None,
+        description="Personne ou équipe responsable de la décision/action. null si non évoqué.",
+    )
+    due: str | None = Field(
+        None,
+        description="Échéance (date au format JJ/MM/AAAA ou formulation relative). null si non évoquée.",
+    )
+
+
+class MinuteTheme(BaseModel):
+    """Thématique discutée avec ses décisions associées."""
+
+    title: str = Field(..., description="Titre court de la thématique.")
+    summary: str | None = Field(
+        None,
+        description="Résumé en 1-3 phrases de la thématique. null si rien de pertinent.",
+    )
+    decisions: list[MinuteDecision] = Field(
+        default_factory=list,
+        description="Décisions/actions explicitement décidées sur cette thématique.",
+    )
+
+
+class StructuredMinutes(BaseReport):
+    """Compte-rendu structuré (thèmes, décisions, points en suspens, recommandations)."""
+
+    themes: list[MinuteTheme]
+    open_points: list[str]
+    recommendations: list[str]

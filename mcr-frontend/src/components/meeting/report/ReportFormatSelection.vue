@@ -24,8 +24,9 @@
         </DsfrButton>
         <DsfrButton
           secondary
-          disabled
+          :class="{ active: choice === 'STRUCTURED_MINUTES' }"
           class="fr-tile shadow-none"
+          @click="handleSelect('STRUCTURED_MINUTES')"
         >
           {{ $t('meeting.report.type.cr3') }}
         </DsfrButton>

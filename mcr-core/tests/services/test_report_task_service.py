@@ -12,6 +12,7 @@ from mcr_meeting.app.schemas.report_generation import (
     DetailedSynthesisGenerationResponse,
     ReportGenerationResponse,
     ReportHeader,
+    StructuredMinutesResponse,
 )
 from mcr_meeting.app.services import report_task_service as rts
 from tests.factories import MeetingFactory
@@ -36,6 +37,17 @@ def _detailed_synthesis_response() -> DetailedSynthesisGenerationResponse:
         detailed_discussions=[],
         to_do_list=[],
         to_monitor_list=[],
+    )
+
+
+def _structured_minutes_response() -> StructuredMinutesResponse:
+    return StructuredMinutesResponse(
+        header=ReportHeader(
+            title="t", objective=None, participants=[], next_meeting=None
+        ),
+        themes=[],
+        open_points=[],
+        recommendations=[],
     )
 
 
@@ -108,6 +120,30 @@ class TestPersistReportDocx:
 
         save_mock.assert_called_once()
         assert save_mock.call_args.kwargs["filename"] == "detailed_synthesis.docx"
+
+    def test_structured_minutes_writes_typed_filename(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.REPORT_PENDING, name_platform=MeetingPlatforms.COMU
+        )
+        save_mock = mocker.patch(
+            "mcr_meeting.app.services.report_task_service.save_formatted_report"
+        )
+        gen_mock = mocker.patch(
+            "mcr_meeting.app.services.report_task_service.generate_structured_minutes_docx",
+            return_value=BytesIO(b"docx"),
+        )
+
+        rts.persist_report_docx(
+            meeting_id=meeting.id,
+            report_response=_structured_minutes_response(),
+        )
+
+        gen_mock.assert_called_once()
+        save_mock.assert_called_once()
+        assert save_mock.call_args.kwargs["filename"] == "structured_minutes.docx"
 
     def test_custom_report_writes_typed_filename(
         self,

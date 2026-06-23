@@ -10,6 +10,7 @@ export const DeliverableType = [
   'TRANSCRIPTION',
   'DECISION_RECORD',
   'DETAILED_SYNTHESIS',
+  'STRUCTURED_MINUTES',
   'CUSTOM_REPORT',
 ] as const;
 export type DeliverableType = (typeof DeliverableType)[number];

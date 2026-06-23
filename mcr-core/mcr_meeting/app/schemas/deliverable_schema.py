@@ -39,7 +39,11 @@ class StructuredDeliverableCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     meeting_id: int
-    type: Literal[DeliverableType.DECISION_RECORD, DeliverableType.DETAILED_SYNTHESIS]
+    type: Literal[
+        DeliverableType.DECISION_RECORD,
+        DeliverableType.DETAILED_SYNTHESIS,
+        DeliverableType.STRUCTURED_MINUTES,
+    ]
 
 
 class CustomDeliverableCreateRequest(BaseModel):
