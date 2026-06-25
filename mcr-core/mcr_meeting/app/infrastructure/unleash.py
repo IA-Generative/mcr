@@ -19,6 +19,7 @@ class FeatureFlag(StrEnum):
     """Centralized enum for all feature flag names in the application."""
 
     AUDIO_NOISE_FILTERING = "audio_noise_filtering"
+    AUDIO_PHASE_AWARE_DOWNMIX = "audio_phase_aware_downmix"
     API_BASED_DIARIZATION = "api_based_diarization"
     API_BASED_TRANSCRIPTION = "api_based_transcription"
 

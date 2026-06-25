@@ -161,12 +161,13 @@ def test_integration_full_process(
     assert all(seg.text.strip() for seg in transcription_segments)
 
     # Verify: Feature flag was checked during pre-processing and post-processing
-    # Pre-processing: audio_noise_filtering flag
+    # Pre-processing: audio_phase_aware_downmix then audio_noise_filtering flags
     # Post-processing: spelling_correction flag
-    assert mock_feature_flag_client_audio_filter.is_enabled.call_count == 2
+    assert mock_feature_flag_client_audio_filter.is_enabled.call_count == 3
     calls = mock_feature_flag_client_audio_filter.is_enabled.call_args_list
-    assert calls[0][0][0] == "audio_noise_filtering"
-    assert calls[1][0][0] == "spelling_correction"
+    assert calls[0][0][0] == "audio_phase_aware_downmix"
+    assert calls[1][0][0] == "audio_noise_filtering"
+    assert calls[2][0][0] == "spelling_correction"
 
     # verify content - after post_process merging
     if expected_segments_count == 4:  # multiple speakers scenario
