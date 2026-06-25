@@ -1,16 +1,4 @@
 <template>
-  <DsfrInputGroup
-    v-model="comuUrl"
-    class="m-0"
-    :label="$t('meeting-v2.visio-form.comu.url')"
-    :hint="$t('meeting-v2.visio-form.comu.url_hint')"
-    :error-message="comuUrlError"
-    label-visible
-    :disabled="!isUrlEnabled"
-  />
-
-  <VisioConnectionSeparator />
-
   <div class="flex flex-row gap-x-6 pb-4">
     <DsfrInputGroup
       v-model="comuId"
@@ -30,6 +18,17 @@
       :disabled="!isIdPasswordEnabled"
     />
   </div>
+  <VisioConnectionSeparator />
+  <DsfrInputGroup
+  v-model="comuUrl"
+  class="m-0"
+  :label="$t('meeting-v2.visio-form.comu.url')"
+  :placeholder="$t('meeting-v2.visio-form.comu.url_hint')"
+  :error-message="comuUrlError"
+  label-visible
+  :disabled="!isUrlEnabled"
+/>
+
 </template>
 
 <script setup lang="ts">
