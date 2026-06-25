@@ -22,6 +22,7 @@ class FeatureFlag(StrEnum):
     AUDIO_PHASE_AWARE_DOWNMIX = "audio_phase_aware_downmix"
     API_BASED_DIARIZATION = "api_based_diarization"
     API_BASED_TRANSCRIPTION = "api_based_transcription"
+    SPELLING_CORRECTION = "spelling_correction"
 
 
 class FeatureFlagClient(ABC):

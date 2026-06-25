@@ -70,7 +70,7 @@ class SpeechToTextPipeline:
 
         check_audio_is_not_silent(wav_audio_bytes)
 
-        if feature_flag_client.is_enabled("audio_noise_filtering"):
+        if feature_flag_client.is_enabled(FeatureFlag.AUDIO_NOISE_FILTERING):
             if is_audio_noisy(wav_audio_bytes):
                 logger.debug("Noisy audio detected, applying noise filtering")
                 pre_processed_bytes = filter_noise_from_audio_bytes(wav_audio_bytes)
@@ -111,7 +111,7 @@ class SpeechToTextPipeline:
         acronym_corrector = AcronymCorrector()
         cleaned_segments = acronym_corrector.correct(cleaned_segments)
 
-        if feature_flag_client.is_enabled("spelling_correction"):
+        if feature_flag_client.is_enabled(FeatureFlag.SPELLING_CORRECTION):
             logger.debug("Spelling correction enabled, correcting segments")
             corrector = SpellingCorrector()
             cleaned_segments = corrector.correct(cleaned_segments)
