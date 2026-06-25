@@ -18,11 +18,11 @@ importers:
         specifier: ^0.12.2
         version: 0.12.2
       '@gouvfr/dsfr':
-        specifier: ~1.14.1
-        version: 1.14.1
+        specifier: ~1.14.4
+        version: 1.14.4
       '@gouvminint/vue-dsfr':
-        specifier: ^8.8.0
-        version: 8.8.0(@iconify/vue@4.3.0(vue@3.5.21(typescript@5.5.4)))(vue-router@4.5.1(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))
+        specifier: ^8.17.0
+        version: 8.17.0(@iconify/vue@4.3.0(vue@3.5.21(typescript@5.5.4)))(vue-router@4.5.1(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))
       '@sentry/vue':
         specifier: ^10.7.0
         version: 10.17.0(pinia@2.3.1(typescript@5.5.4)(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))
@@ -586,22 +586,18 @@ packages:
     resolution: {integrity: sha512-ouyoW+4JB7WxjeZ2y6KpRvB+dLp7Cp4ro8z0HIVpZVCM7AwFlHa0c4R8Y/a4M3wMqATpYKhC7lSFHQ0T11MEDw==}
     engines: {node: '>=18.x'}
 
-  '@gouvfr/dsfr@1.13.2':
-    resolution: {integrity: sha512-4Q9ggFFzwD/KFr37sJO1hFH9PcqlZ7F3jMiFJXnBLJfkH1+s28vnQp/oXoY8TosWsLMSjdhNCrxvrUdm5XzBlg==}
-    engines: {node: '>=18.16.1'}
-
-  '@gouvfr/dsfr@1.14.1':
-    resolution: {integrity: sha512-UVR5yE+v2PAr3TVl1xi8B6sboRIbRP4AIwD66KW+AnAUfAKHpJGVhwyNR6v+/L5FXWXli9vuG2WOnJ9FcMTiUg==}
+  '@gouvfr/dsfr@1.14.4':
+    resolution: {integrity: sha512-Ca17apmTyAF2tMFwMcLwQN7fTlbfMFeyYSLUIUmjoSg1XVF4vDDkbvvKBpWJWaoTLDSFZBbvvHzcDyxw9wSkLA==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
-  '@gouvminint/vue-dsfr@8.8.0':
-    resolution: {integrity: sha512-WMc8KE8NClyzl6sUqoufcjLq3kmLkdhtBiJ0dlk2pJlV2knDGKT5fCyhLtSGf8azDNemi9iCYTl3OvnhPGLoVw==}
-    engines: {node: '>=20.x.x', npm: '>=10.x.x'}
+  '@gouvminint/vue-dsfr@8.17.0':
+    resolution: {integrity: sha512-kpvVzTPcahOyplc2rI76P2aL2cvOBSVoMiKGkMqW5bW0WUmDFTOmWnAocxCNHKXfySqKQQS407J5WUkV6MZoTw==}
+    engines: {node: '>=22.0.0', pnpm: '>=10.0.0'}
     hasBin: true
     peerDependencies:
       '@iconify/vue': ^4.2.0
-      vue: ^3.5.13
-      vue-router: ^4.5.0
+      vue: ^3.5.27
+      vue-router: ^5.0.3
 
   '@humanwhocodes/config-array@0.13.0':
     resolution: {integrity: sha512-DZLEEqFWQFiyK6h5YIeynKx7JlvCYWL0cImfSRXZ9l4Sg2efkFGTuFf6vzXjK1cq6IYkU+Eg/JizXw+TD2vRNw==}
@@ -687,8 +683,8 @@ packages:
     resolution: {integrity: sha512-BcmHpb5bQyeVNrptC3UhzpBZB/YHHDoEREOUERrmF2BRxsyOEuRrq+Z96C/D4+2KJb8kuHiouzAei7BXlG0YYw==}
     engines: {node: '>= 16'}
 
-  '@intlify/shared@11.4.4':
-    resolution: {integrity: sha512-QRUCHqda1U6aR14FR0vvXD4+4gj6+fm0AhAozvSuRCw0fCvrmCugWpgiR4xH2NI6s8am6N9p5OhirplsX8ZS3g==}
+  '@intlify/shared@11.4.6':
+    resolution: {integrity: sha512-m1p1HHAMLhqSpTRH7VnXdrN0CQ4y+9vunFkpLkbD8soIuBsnQdawZXqMCgvwI2UVF9Ww7sVaw7g9tV2VO7shoA==}
     engines: {node: '>= 22'}
 
   '@intlify/shared@12.0.0-alpha.4':
@@ -2418,6 +2414,9 @@ packages:
   focus-trap@7.6.5:
     resolution: {integrity: sha512-7Ke1jyybbbPZyZXFxEftUtxFGLMpE2n6A+z//m4CRDlj0hW+o3iYSmh8nFlYMurOiJVDmJRilUQtJr08KfIxlg==}
 
+  focus-trap@8.2.2:
+    resolution: {integrity: sha512-qV0g8hRYBqgACcFOH3f9wXc4zPKhr/0z9RI2a6ZijZ72EeBi4g8oBy8zAWuUR1TsMpOzwpUMFvjdasrC41Joug==}
+
   follow-redirects@1.15.11:
     resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
     engines: {node: '>=4.0'}
@@ -3554,6 +3553,9 @@ packages:
   tabbable@6.2.0:
     resolution: {integrity: sha512-Cat63mxsVJlzYvN51JmVXIgNoUokrIaT2zLclCXjRd8boZ0004U4KCs/sToJ75C6sdlByWxpYnb5Boif1VSFew==}
 
+  tabbable@6.5.0:
+    resolution: {integrity: sha512-wieBHXygIm7OyQOu5hQlkk62/WyCFYGlWg7L6/ZCUZwx0o398Zkn4pVmMyfYhfMG8kGrj/Krt8eIk6UKC6VzwA==}
+
   tailwindcss@3.4.17:
     resolution: {integrity: sha512-w33E2aCvSDP0tW9RZuNXadXlkHXqFzSkQew/aIa2i/Sj8fThxwovwlXHSPXTbAHwEIhBFXAedUhP2tueAKP8Og==}
     engines: {node: '>=14.0.0'}
@@ -4381,16 +4383,14 @@ snapshots:
 
   '@ffmpeg/util@0.12.2': {}
 
-  '@gouvfr/dsfr@1.13.2': {}
+  '@gouvfr/dsfr@1.14.4': {}
 
-  '@gouvfr/dsfr@1.14.1': {}
-
-  '@gouvminint/vue-dsfr@8.8.0(@iconify/vue@4.3.0(vue@3.5.21(typescript@5.5.4)))(vue-router@4.5.1(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))':
+  '@gouvminint/vue-dsfr@8.17.0(@iconify/vue@4.3.0(vue@3.5.21(typescript@5.5.4)))(vue-router@4.5.1(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))':
     dependencies:
-      '@gouvfr/dsfr': 1.13.2
+      '@gouvfr/dsfr': 1.14.4
       '@iconify/vue': 4.3.0(vue@3.5.21(typescript@5.5.4))
-      focus-trap: 7.6.5
-      focus-trap-vue: 4.1.0(focus-trap@7.6.5)(vue@3.5.21(typescript@5.5.4))
+      focus-trap: 8.2.2
+      focus-trap-vue: 4.1.0(focus-trap@8.2.2)(vue@3.5.21(typescript@5.5.4))
       vue: 3.5.21(typescript@5.5.4)
       vue-router: 4.5.1(vue@3.5.21(typescript@5.5.4))
 
@@ -4472,7 +4472,7 @@ snapshots:
 
   '@intlify/shared@10.0.8': {}
 
-  '@intlify/shared@11.4.4': {}
+  '@intlify/shared@11.4.6': {}
 
   '@intlify/shared@12.0.0-alpha.4': {}
 
@@ -4480,8 +4480,8 @@ snapshots:
     dependencies:
       '@eslint-community/eslint-utils': 4.9.0(eslint@8.57.1)
       '@intlify/bundle-utils': 9.0.0(vue-i18n@10.0.8(vue@3.5.21(typescript@5.5.4)))
-      '@intlify/shared': 11.4.4
-      '@intlify/vue-i18n-extensions': 7.0.0(@intlify/shared@11.4.4)(@vue/compiler-dom@3.5.21)(vue-i18n@10.0.8(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))
+      '@intlify/shared': 11.4.6
+      '@intlify/vue-i18n-extensions': 7.0.0(@intlify/shared@11.4.6)(@vue/compiler-dom@3.5.21)(vue-i18n@10.0.8(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))
       '@rollup/pluginutils': 5.3.0(rollup@4.50.2)
       '@typescript-eslint/scope-manager': 8.44.0
       '@typescript-eslint/typescript-estree': 8.44.0(typescript@5.5.4)
@@ -4503,11 +4503,11 @@ snapshots:
       - supports-color
       - typescript
 
-  '@intlify/vue-i18n-extensions@7.0.0(@intlify/shared@11.4.4)(@vue/compiler-dom@3.5.21)(vue-i18n@10.0.8(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))':
+  '@intlify/vue-i18n-extensions@7.0.0(@intlify/shared@11.4.6)(@vue/compiler-dom@3.5.21)(vue-i18n@10.0.8(vue@3.5.21(typescript@5.5.4)))(vue@3.5.21(typescript@5.5.4))':
     dependencies:
       '@babel/parser': 7.28.4
     optionalDependencies:
-      '@intlify/shared': 11.4.4
+      '@intlify/shared': 11.4.6
       '@vue/compiler-dom': 3.5.21
       vue: 3.5.21(typescript@5.5.4)
       vue-i18n: 10.0.8(vue@3.5.21(typescript@5.5.4))
@@ -6197,9 +6197,18 @@ snapshots:
       focus-trap: 7.6.5
       vue: 3.5.21(typescript@5.5.4)
 
+  focus-trap-vue@4.1.0(focus-trap@8.2.2)(vue@3.5.21(typescript@5.5.4)):
+    dependencies:
+      focus-trap: 8.2.2
+      vue: 3.5.21(typescript@5.5.4)
+
   focus-trap@7.6.5:
     dependencies:
       tabbable: 6.2.0
+
+  focus-trap@8.2.2:
+    dependencies:
+      tabbable: 6.5.0
 
   follow-redirects@1.15.11: {}
 
@@ -7439,6 +7448,8 @@ snapshots:
       '@pkgr/core': 0.2.9
 
   tabbable@6.2.0: {}
+
+  tabbable@6.5.0: {}
 
   tailwindcss@3.4.17:
     dependencies:
