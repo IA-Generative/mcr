@@ -176,6 +176,46 @@ def create_silent_audio_buffer() -> Callable[[float], BytesIO]:
 
 
 @pytest.fixture
+def create_phase_inverted_stereo_buffer() -> Callable[[float], BytesIO]:
+    """Factory fixture for stereo WAV whose right channel is the left, phase-inverted."""
+
+    def _create_buffer(duration_seconds: float) -> BytesIO:
+        left = (
+            Sine(440, sample_rate=16000)
+            .to_audio_segment(duration=int(duration_seconds * 1000))
+            .set_sample_width(2)
+        )
+        stereo = AudioSegment.from_mono_audiosegments(left, left.invert_phase())
+
+        audio_buffer = BytesIO()
+        stereo.export(audio_buffer, format="wav")
+        audio_buffer.seek(0)
+        return audio_buffer
+
+    return _create_buffer
+
+
+@pytest.fixture
+def create_inphase_stereo_buffer() -> Callable[[float], BytesIO]:
+    """Factory fixture for normal stereo WAV with identical (in-phase) channels."""
+
+    def _create_buffer(duration_seconds: float) -> BytesIO:
+        left = (
+            Sine(440, sample_rate=16000)
+            .to_audio_segment(duration=int(duration_seconds * 1000))
+            .set_sample_width(2)
+        )
+        stereo = AudioSegment.from_mono_audiosegments(left, left)
+
+        audio_buffer = BytesIO()
+        stereo.export(audio_buffer, format="wav")
+        audio_buffer.seek(0)
+        return audio_buffer
+
+    return _create_buffer
+
+
+@pytest.fixture
 def pre_processed_audio_bytes(create_audio_buffer: Callable[[str], BytesIO]) -> BytesIO:
     """Create pre-processed audio bytes for testing."""
     return create_audio_buffer("wav")

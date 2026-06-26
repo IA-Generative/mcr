@@ -6,6 +6,7 @@ from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.infrastructure.unleash import (
+    FeatureFlag,
     get_feature_flag_client,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
@@ -62,11 +63,14 @@ class SpeechToTextPipeline:
             BytesIO: The pre-processed audio bytes.
         """
         feature_flag_client = get_feature_flag_client()
-        wav_audio_bytes = audio_bytes_to_wav_bytes(audio_bytes)
+        phase_aware_downmix = feature_flag_client.is_enabled(
+            FeatureFlag.AUDIO_PHASE_AWARE_DOWNMIX
+        )
+        wav_audio_bytes = audio_bytes_to_wav_bytes(audio_bytes, phase_aware_downmix)
 
         check_audio_is_not_silent(wav_audio_bytes)
 
-        if feature_flag_client.is_enabled("audio_noise_filtering"):
+        if feature_flag_client.is_enabled(FeatureFlag.AUDIO_NOISE_FILTERING):
             if is_audio_noisy(wav_audio_bytes):
                 logger.debug("Noisy audio detected, applying noise filtering")
                 pre_processed_bytes = filter_noise_from_audio_bytes(wav_audio_bytes)
@@ -107,7 +111,7 @@ class SpeechToTextPipeline:
         acronym_corrector = AcronymCorrector()
         cleaned_segments = acronym_corrector.correct(cleaned_segments)
 
-        if feature_flag_client.is_enabled("spelling_correction"):
+        if feature_flag_client.is_enabled(FeatureFlag.SPELLING_CORRECTION):
             logger.debug("Spelling correction enabled, correcting segments")
             corrector = SpellingCorrector()
             cleaned_segments = corrector.correct(cleaned_segments)

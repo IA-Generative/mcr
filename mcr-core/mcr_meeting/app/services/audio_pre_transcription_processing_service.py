@@ -103,12 +103,65 @@ def check_audio_is_not_silent(wav_bytes: BytesIO) -> None:
         )
 
 
-def audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
+def _mean_volume_with_pan(input_path: str, pan_expr: str) -> float:
+    """Return the mean volume in dBFS of a mono mixdown defined by a pan expression.
+
+    Returns -inf when the mixdown is fully cancelled (volumedetect reports no measurable
+    level), so a silent mid signal against a loud side signal still reads as inverted.
+    """
+
+    _, stderr = (
+        ffmpeg.input(input_path)
+        .output("pipe:", format="null", af=f"pan=mono|c0={pan_expr},volumedetect")
+        .run(capture_stdout=True, capture_stderr=True)
+    )
+
+    try:
+        return _parse_mean_volume(stderr.decode("utf-8", errors="replace"))
+
+    except RuntimeError:
+        return float("-inf")
+
+
+def _is_phase_inverted_stereo(input_path: str) -> bool:
+    """Detect stereo whose channels are phase-inverted (averaging would cancel the signal).
+
+    Compares the mid signal (L+R)/2 — what a plain mono downmix produces — against the side
+    signal (L-R)/2. For phase-inverted recordings the mid cancels to near silence while the
+    side carries the full signal, so a large side-over-mid gap flags the inversion.
+    """
+
+    try:
+        probe = ffmpeg.probe(input_path)
+
+        audio_stream = next(
+            s for s in probe["streams"] if s.get("codec_type") == "audio"
+        )
+
+        if int(audio_stream.get("channels", 1)) < 2:
+            return False
+
+        mid_db = _mean_volume_with_pan(input_path, "0.5*c0+0.5*c1")
+        side_db = _mean_volume_with_pan(input_path, "0.5*c0-0.5*c1")
+
+    except (ffmpeg.Error, StopIteration, RuntimeError, KeyError, ValueError):
+        # On any probe/parse failure, fall back to the default averaging downmix.
+        return False
+
+    return side_db - mid_db > noise_detection_settings.PHASE_INVERSION_THRESHOLD_DB
+
+
+def audio_bytes_to_wav_bytes(
+    input_bytes: BytesIO, phase_aware_downmix: bool = False
+) -> BytesIO:
     """
     Bytes→normalized WAV bytes, using FFmpeg via stdin/stdout pipes.
 
     Args:
         input_bytes (BytesIO): Raw audio bytes to be normalized.
+        phase_aware_downmix (bool): When True, stereo input whose channels are phase-inverted
+            is downmixed using the side signal (L-R)/2 instead of the cancelling average,
+            recovering speech that a plain mono downmix would silence.
     Returns:
         BytesIO: Normalized WAV bytes.
     """
@@ -126,15 +179,20 @@ def audio_bytes_to_wav_bytes(input_bytes: BytesIO) -> BytesIO:
         tmp_input_path = tmp_input.name
 
     try:
+        if phase_aware_downmix and _is_phase_inverted_stereo(tmp_input_path):
+            logger.warning(
+                "Phase-inverted stereo detected; using side signal (L-R)/2 for mono downmix"
+            )
+            output_kwargs = dict(
+                format="wav", ar=sample_rate, af="pan=mono|c0=0.5*c0-0.5*c1"
+            )
+        else:
+            output_kwargs = dict(format="wav", ar=sample_rate, ac=nb_channels)
+
         # pipe:1 = write to stdout
         stream = ffmpeg.input(tmp_input_path, err_detect="ignore_err")
         stream = (
-            stream.output(
-                "pipe:1",
-                format="wav",  # Specify WAV container format
-                ar=sample_rate,  # Audio rate (sample rate)
-                ac=nb_channels,  # Audio channels (mono/stereo)
-            )
+            stream.output("pipe:1", **output_kwargs)
             .overwrite_output()
             .global_args("-loglevel", "warning")
         )

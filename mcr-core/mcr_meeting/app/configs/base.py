@@ -77,7 +77,7 @@ class AudioSettings(BaseSettings):
 
     NO_SPEECH_PROB_THRESHOLD: float = Field(
         0.6,
-        description="""non speech probability threshold. we exclude segment 
+        description="""non speech probability threshold. we exclude segment
                        with non speech probability higher than this value """,
     )
 
@@ -110,6 +110,13 @@ class NoiseDetectionSettings(BaseSettings):
         description="Fixed absolute threshold in dB for silence detection used by the silent audio check. "
         "Unlike SILENCE_THRESHOLD_OFFSET_DB (relative to mean volume), this is an absolute floor "
         "so it works even on fully silent audio.",
+    )
+    PHASE_INVERSION_THRESHOLD_DB: float = Field(
+        default=15.0,
+        description="If the side signal (L-R)/2 is louder than the mid signal (L+R)/2 by more "
+        "than this many dB, the stereo channels are treated as phase-inverted and the side "
+        "signal is used for the mono downmix instead of the cancelling average. Affected "
+        "recordings show ~35 dB; normally-correlated stereo is near 0 dB.",
     )
 
     # === CONSTANTS ===
@@ -504,8 +511,8 @@ class TranscriptionApiSettings(BaseSettings):
     MAX_RETRIES: int = Field(
         default=6,
         description="""
-        Number of retries for API requests on network errors. 
-        Set to 6 so that the total retry time is over 1 minute (63s) 
+        Number of retries for API requests on network errors.
+        Set to 6 so that the total retry time is over 1 minute (63s)
         with a backoff of 0.5s (base for httpx and openAI client)
         This was set as the goal on 27/02/26
         """,
