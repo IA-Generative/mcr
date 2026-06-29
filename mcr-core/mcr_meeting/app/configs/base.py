@@ -490,9 +490,8 @@ class TranscriptionApiSettings(BaseSettings):
         description="Model name for transcription API",
     )
 
-    # Diarization API (custom endpoint)
     DIARIZATION_API_BASE_URL: str = Field(
-        description="Base URL for diarization API endpoint"
+        description="Base URL of the diarization async job system."
     )
     DIARIZATION_API_KEY: str = Field(description="API key for diarization service")
     DIARIZATION_API_MODEL: str = Field(
