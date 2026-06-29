@@ -13,9 +13,11 @@ const {
   abortMultipartUploadService: vi.fn(),
 }));
 const { put } = vi.hoisted(() => ({ put: vi.fn() }));
+const { isStorageReachable } = vi.hoisted(() => ({ isStorageReachable: vi.fn() }));
 
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
 vi.mock('@/services/http/http.service', () => ({ default: { put } }));
+vi.mock('@/services/http/reachability', () => ({ isStorageReachable }));
 vi.mock('@/services/meetings/meetings.service', () => ({
   initMultipartUploadService,
   signMultipartPartService,
@@ -48,6 +50,7 @@ describe('useMultipart.uploadFile', () => {
     completeMultipartUploadService.mockResolvedValue(undefined);
     abortMultipartUploadService.mockResolvedValue(undefined);
     put.mockResolvedValue({ headers: { etag: '"abc"' } });
+    isStorageReachable.mockResolvedValue(false);
   });
 
   it('completes a successful upload without reporting', async () => {
@@ -77,6 +80,9 @@ describe('useMultipart.uploadFile', () => {
       axiosCode: 'ERR_NETWORK',
       online: expect.any(Boolean),
     });
+    // a no-response error on the PUT is classified and probed → indexed Sentry tags
+    expect(isStorageReachable).toHaveBeenCalledWith('https://s3/put-url');
+    expect(opts.tags['upload.failure_type']).toBe('blocked');
     expect(abortMultipartUploadService).toHaveBeenCalledTimes(1); // best-effort cleanup
   });
 
@@ -90,6 +96,10 @@ describe('useMultipart.uploadFile', () => {
     expect(put).not.toHaveBeenCalled(); // never reached the S3 PUT
     const [, opts] = reportError.mock.calls[0];
     expect(opts.contexts.upload).toMatchObject({ phase: 'sign', partNumber: 1 });
+    // the probe targets the storage host, so it only runs for a 'put' failure
+    expect(isStorageReachable).not.toHaveBeenCalled();
+    expect(opts.tags['upload.failure_type']).toBe('blocked');
+    expect(opts.tags).not.toHaveProperty('upload.storage_reachable');
   });
 
   it('reports exactly once even when the abort also fails (silent abort)', async () => {

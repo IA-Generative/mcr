@@ -697,6 +697,7 @@
     "audio-capture": "Erreur lors de la captation audio de la visioconférence",
     "report-generation": "Erreur lors de la génération du compte-rendu. Veuillez réessayer.",
     "file-upload": "Erreur lors de l'envoi du fichier. Veuillez réessayer.",
+    "file-upload-blocked": "L'envoi du fichier semble bloqué par votre réseau ou par un proxy (Orion ou autre). Vérifiez que vous êtes bien connecté à internet et que les outils fournis par votre service informatique sont correctement configurés.",
     "deliverable-generation": "La génération du livrable a échoué."
   }
 }

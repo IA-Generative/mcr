@@ -1,6 +1,12 @@
 import { getRetryDelay, MAX_RETRIES, PART_SIZE, PUT_TIMEOUT_MS } from '@/config/meeting';
 import HttpService from '@/services/http/http.service';
-import { getAxiosCode, getStatusCode } from '@/services/http/http.utils';
+import {
+  classifyUploadFailure,
+  getAxiosCode,
+  getStatusCode,
+  type UploadFailureType,
+} from '@/services/http/http.utils';
+import { isStorageReachable } from '@/services/http/reachability';
 import {
   abortMultipartUploadService,
   completeMultipartUploadService,
@@ -54,6 +60,7 @@ export function useMultipart() {
     let bytesSent = 0;
     let uploadId: string | undefined;
     let objectKey: string | undefined;
+    let lastPutUrl: string | undefined;
 
     try {
       const init = await step('init', () =>
@@ -75,6 +82,7 @@ export function useMultipart() {
             }),
           partNumber,
         );
+        lastPutUrl = url;
         const etag = await step('put', () => putMultipartPart({ url, blob }), partNumber);
         completedParts.push({ partNumber, etag });
         bytesSent += blob.size;
@@ -93,7 +101,16 @@ export function useMultipart() {
         // best-effort cleanup; its own failure must stay silent
         await abortMultipartUpload({ meetingId, uploadId, objectKey }).catch(() => {});
       }
+
       const stepError = error instanceof UploadError ? error : new UploadError('init', error);
+      const online = navigator.onLine;
+      const failureType = classifyUploadFailure(stepError.cause, online);
+
+      let storageReachable = undefined;
+      if (stepError.phase === 'put' && failureType === 'blocked' && lastPutUrl) {
+        storageReachable = await isStorageReachable(lastPutUrl);
+      }
+
       reportError(
         stepError,
         buildUploadReport(stepError, {
@@ -102,6 +119,9 @@ export function useMultipart() {
           fileSize: totalSize,
           bytesSent,
           durationMs: Math.round(performance.now() - startedAt),
+          online,
+          failureType,
+          storageReachable,
         }),
       );
       throw stepError.cause instanceof Error ? stepError.cause : stepError;
@@ -116,12 +136,19 @@ export function useMultipart() {
       fileSize: number;
       bytesSent: number;
       durationMs: number;
+      online: boolean;
+      failureType: UploadFailureType;
+      storageReachable?: boolean;
     },
   ): ReportOptions {
     const connection = (navigator as { connection?: { effectiveType?: string } }).connection;
     return {
       feature: 'meeting.upload',
-      tags: { 'meeting.id': meta.meetingId, 'upload.phase': error.phase },
+      tags: {
+        'meeting.id': meta.meetingId,
+        'upload.phase': error.phase,
+        'upload.failure_type': meta.failureType,
+      },
       contexts: {
         upload: {
           phase: error.phase,
@@ -132,8 +159,10 @@ export function useMultipart() {
           durationMs: meta.durationMs,
           httpStatus: getStatusCode(error.cause),
           axiosCode: getAxiosCode(error.cause),
-          online: navigator.onLine,
+          online: meta.online,
           effectiveType: connection?.effectiveType ?? null,
+          failureType: meta.failureType,
+          storageReachable: meta.storageReachable ?? null,
         },
       },
     };

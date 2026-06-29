@@ -53,6 +53,7 @@ import type {
   AddOnlineMeetingDto,
   AddRecordMeetingDto,
 } from '@/services/meetings/meetings.types';
+import { classifyUploadFailure } from '@/services/http/http.utils';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { getFileExtension } from '@/utils/file';
 import { useModal } from 'vue-final-modal';
@@ -154,8 +155,12 @@ async function uploadFileWithMultipart(dto: AddImportMeetingDto, file: File): Pr
 
   try {
     await uploadFile({ meetingId: meeting.id, file });
-  } catch {
-    toaster.addErrorMessage(t('error.file-upload')!);
+  } catch (error) {
+    const messageKey =
+      classifyUploadFailure(error, navigator.onLine) === 'blocked'
+        ? 'error.file-upload-blocked'
+        : 'error.file-upload';
+    toaster.addErrorMessage(t(messageKey)!);
     return;
   }
 
