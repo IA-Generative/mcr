@@ -3,10 +3,12 @@
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
+import httpx
 import pytest
 
 from mcr_meeting.app.configs.base import TranscriptionApiSettings
 from mcr_meeting.app.exceptions.exceptions import (
+    DiarizationError,
     MCRException,
     UnknownDiarizationStatus,
 )
@@ -109,6 +111,145 @@ class TestNextPollInterval:
 
     def test_no_queue_position_after_threshold_is_slow(self) -> None:
         assert next_poll_interval(phase_elapsed_s=Y + 1, queue_position=None) == SLOW
+
+
+def _get_response(payload: dict) -> MagicMock:
+    response = MagicMock()
+    response.json.return_value = payload
+    response.raise_for_status.return_value = None
+    return response
+
+
+def _client_returning(*items: object) -> MagicMock:
+    """Mock httpx client whose successive GET calls yield the given items
+    (a payload dict -> response, or an exception -> raised)."""
+    client = MagicMock()
+    client.get.side_effect = [
+        item if isinstance(item, BaseException) else _get_response(item)
+        for item in items
+    ]
+    return client
+
+
+class TestPollDiarizationJob:
+    def _poll(self, processor: DiarizationProcessor, client: MagicMock) -> object:
+        with (
+            patch.object(processor, "_get_http_client", return_value=client),
+            patch.object(dp.time, "sleep"),
+        ):
+            return processor._poll_diarization_job("job-1")
+
+    def test_nominal_pending_processing_completed(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning(
+            {"status": "pending", "queue_position": 3},
+            {"status": "processing"},
+            {
+                "status": "completed",
+                "result": {
+                    "segments": [
+                        {"speaker": "SPEAKER_00", "start": 0.0, "end": 2.7},
+                        {"speaker": "SPEAKER_01", "start": 7.3, "end": 12.7},
+                    ]
+                },
+            },
+        )
+
+        segments = self._poll(processor, client)
+
+        assert [(s.speaker, s.start, s.end) for s in segments] == [
+            ("LOCUTEUR_00", 0.0, 2.7),
+            ("LOCUTEUR_01", 7.3, 12.7),
+        ]
+
+    def test_failed_raises_diarization_error(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning({"status": "failed", "error": "boom"})
+
+        with pytest.raises(DiarizationError, match="boom"):
+            self._poll(processor, client)
+
+    def test_unknown_status_is_fail_loud(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning({"status": "queued"})
+
+        with pytest.raises(UnknownDiarizationStatus, match="queued"):
+            self._poll(processor, client)
+
+    def test_completed_with_no_segments_raises(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning({"status": "completed", "result": {"segments": []}})
+
+        with pytest.raises(DiarizationError, match="no segments"):
+            self._poll(processor, client)
+
+    def test_transient_errors_then_success(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning(
+            httpx.ReadTimeout("timeout"),
+            httpx.ConnectError("down"),
+            {
+                "status": "completed",
+                "result": {
+                    "segments": [{"speaker": "SPEAKER_00", "start": 0, "end": 1}]
+                },
+            },
+        )
+
+        segments = self._poll(processor, client)
+
+        assert [s.speaker for s in segments] == ["LOCUTEUR_00"]
+
+    def test_transient_errors_exceed_threshold(self) -> None:
+        processor = DiarizationProcessor()
+        budget = dp.api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS
+        client = _client_returning(
+            *[httpx.ReadTimeout("timeout") for _ in range(budget + 1)]
+        )
+
+        with pytest.raises(DiarizationError, match="transient errors"):
+            self._poll(processor, client)
+
+    def test_adaptive_cadence_sequence(self) -> None:
+        """pending(qp=8, t>=Y) -> processing(phase reset, t<Y) -> processing(t>=Y)
+        -> completed must sleep SLOW, FAST, SLOW (processing reopens a FAST window)."""
+        processor = DiarizationProcessor()
+        client = _client_returning(
+            {"status": "pending", "queue_position": 8},
+            {"status": "processing"},
+            {"status": "processing"},
+            {
+                "status": "completed",
+                "result": {
+                    "segments": [{"speaker": "SPEAKER_00", "start": 0, "end": 1}]
+                },
+            },
+        )
+        # monotonic() calls, in order: started_at, then per iteration
+        # (deadline check, optional phase reset, phase_elapsed).
+        clock = [0, 0, Y, Y, Y, Y + 1, Y + 1, 2 * Y + 5, 2 * Y + 6]
+
+        with (
+            patch.object(processor, "_get_http_client", return_value=client),
+            patch.object(dp.time, "sleep") as mock_sleep,
+            patch.object(dp.time, "monotonic", side_effect=clock),
+        ):
+            processor._poll_diarization_job("job-1")
+
+        assert [c.args[0] for c in mock_sleep.call_args_list] == [SLOW, FAST, SLOW]
+
+    def test_deadline_exceeded(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning({"status": "pending"})
+        deadline = dp.celery_settings.REDIS_VISIBILITY_TIMEOUT
+
+        with (
+            patch.object(processor, "_get_http_client", return_value=client),
+            patch.object(dp.time, "sleep"),
+            patch.object(dp.time, "monotonic", side_effect=[0.0, deadline + 1]),
+        ):
+            with pytest.raises(DiarizationError, match="deadline"):
+                processor._poll_diarization_job("job-1")
 
 
 class TestHttpClientTimeout:

@@ -1,15 +1,18 @@
 import tempfile
+import time
 from io import BytesIO
 
 import httpx
 from loguru import logger
 
 from mcr_meeting.app.configs.base import (
+    CelerySettings,
     PyannoteDiarizationParameters,
     TranscriptionApiSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import (
     DiarizationError,
+    MCRException,
     UnknownDiarizationStatus,
 )
 from mcr_meeting.app.infrastructure.unleash import (
@@ -26,6 +29,9 @@ from mcr_meeting.app.services.speech_to_text.utils.models import (
 
 api_settings = TranscriptionApiSettings()
 diarization_params = PyannoteDiarizationParameters()
+celery_settings = CelerySettings()
+
+_ALLOWED_DIARIZATION_JOB_STATUSES = {"pending", "processing", "completed", "failed"}
 
 
 def next_poll_interval(phase_elapsed_s: float, queue_position: int | None) -> float:
@@ -107,12 +113,6 @@ class DiarizationProcessor:
             return diarization_segments
 
     def _submit_diarization_job(self, audio_bytes: BytesIO) -> str:
-        """POST the audio as an async diarization job, return the job_id.
-
-        Unlike the synchronous endpoint, this returns immediately (202) with a
-        job_id instead of blocking ~1h on the full computation. The bytes are the
-        pre-processed WAV, so we keep the wav filename/content-type.
-        """
         client = self._get_http_client()
 
         response = client.post(
@@ -131,6 +131,88 @@ class DiarizationProcessor:
         job_id: str = response.json()["job_id"]
         logger.debug("Submitted async diarization job {}", job_id)
         return job_id
+
+    def _diarize_async_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
+        job_id = self._submit_diarization_job(audio_bytes)
+        return self._poll_diarization_job(job_id)
+
+    def _poll_diarization_job(self, job_id: str) -> list[DiarizationSegment]:
+        client = self._get_http_client()
+        url = f"{api_settings.DIARIZATION_API_BASE_URL}/jobs/audio/{job_id}"
+
+        deadline = celery_settings.REDIS_VISIBILITY_TIMEOUT
+        started_at = time.monotonic()
+        phase_started_at = started_at
+        seen_processing = False
+        transient_errors = 0
+
+        while True:
+            if time.monotonic() - started_at >= deadline:
+                raise DiarizationError(
+                    f"Diarization job {job_id} exceeded the {deadline}s deadline"
+                )
+
+            try:
+                response = client.get(url)
+                response.raise_for_status()
+            except httpx.HTTPError as e:
+                transient_errors += 1
+                if (
+                    transient_errors
+                    > api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS
+                ):
+                    raise DiarizationError(
+                        f"Diarization job {job_id} polling failed after "
+                        f"{transient_errors} consecutive transient errors: {e}"
+                    ) from e
+                logger.warning(
+                    "Transient error polling diarization job {} ({}/{}): {}",
+                    job_id,
+                    transient_errors,
+                    api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS,
+                    e,
+                )
+                time.sleep(api_settings.DIARIZATION_POLL_FAST_INTERVAL_SECONDS)
+                continue
+
+            transient_errors = 0
+            data = response.json()
+            status = data["status"]
+
+            if status not in _ALLOWED_DIARIZATION_JOB_STATUSES:
+                raise UnknownDiarizationStatus(
+                    f"Diarization job {job_id} returned unknown status {status!r}"
+                )
+
+            if status == "completed":
+                # result.segments carries pyannote-labelled segments (SPEAKER_00);
+                # same shape/output as the local path so nothing downstream changes.
+                segments = [
+                    DiarizationSegment(
+                        start=segment["start"],
+                        end=segment["end"],
+                        speaker=convert_to_french_speaker(segment["speaker"]),
+                    )
+                    for segment in data["result"]["segments"]
+                ]
+                if not segments:
+                    raise DiarizationError("Diarization job completed with no segments")
+                return segments
+
+            if status == "failed":
+                raise DiarizationError(
+                    f"Diarization job {job_id} failed: {data.get('error')}"
+                )
+
+            # pending / processing: the threshold window reopens at the
+            # pending->processing transition so the start of processing stays FAST.
+            if status == "processing" and not seen_processing:
+                seen_processing = True
+                phase_started_at = time.monotonic()
+
+            phase_elapsed = time.monotonic() - phase_started_at
+            interval = next_poll_interval(phase_elapsed, data.get("queue_position"))
+            time.sleep(interval)
 
     def _diarize_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
         """Diarize using external API"""
