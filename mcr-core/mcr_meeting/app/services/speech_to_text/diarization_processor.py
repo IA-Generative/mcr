@@ -8,7 +8,10 @@ from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
     TranscriptionApiSettings,
 )
-from mcr_meeting.app.exceptions.exceptions import DiarizationError
+from mcr_meeting.app.exceptions.exceptions import (
+    DiarizationError,
+    UnknownDiarizationStatus,
+)
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -32,7 +35,10 @@ class DiarizationProcessor:
     def _get_http_client(self) -> httpx.Client:
         if self._http_client is None:
             self._http_client = httpx.Client(
-                timeout=api_settings.API_TIMEOUT,
+                timeout=api_settings.DIARIZATION_POLL_HTTP_TIMEOUT_SECONDS,
+                # Default Bearer header so BOTH the POST and the polling GET are
+                # authenticated (the job system maps the key to a consumer).
+                headers={"Authorization": f"Bearer {api_settings.DIARIZATION_API_KEY}"},
                 transport=httpx.HTTPTransport(
                     retries=api_settings.MAX_RETRIES,
                 ),
@@ -90,6 +96,32 @@ class DiarizationProcessor:
 
             return diarization_segments
 
+    def _submit_diarization_job(self, audio_bytes: BytesIO) -> str:
+        """POST the audio as an async diarization job, return the job_id.
+
+        Unlike the synchronous endpoint, this returns immediately (202) with a
+        job_id instead of blocking ~1h on the full computation. The bytes are the
+        pre-processed WAV, so we keep the wav filename/content-type.
+        """
+        client = self._get_http_client()
+
+        response = client.post(
+            f"{api_settings.DIARIZATION_API_BASE_URL}/jobs/audio",
+            files={"file": ("audio.wav", audio_bytes, "audio/wav")},
+            data={
+                "operation": "diarization",
+                "model": api_settings.DIARIZATION_API_MODEL,
+                "min_duration_off": diarization_params.min_duration_off,
+                "clustering_threshold": diarization_params.threshold,
+            },
+        )
+        audio_bytes.seek(0)
+        response.raise_for_status()
+
+        job_id: str = response.json()["job_id"]
+        logger.debug("Submitted async diarization job {}", job_id)
+        return job_id
+
     def _diarize_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
         """Diarize using external API"""
         try:
@@ -111,6 +143,58 @@ class DiarizationProcessor:
             audio_bytes.seek(0)
 
             response.raise_for_status()
+    def _diarize_async_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
+        job_id = self._submit_diarization_job(audio_bytes)
+        return self._poll_diarization_job(job_id)
+
+    def _poll_diarization_job(self, job_id: str) -> list[DiarizationSegment]:
+        client = self._get_http_client()
+        url = f"{api_settings.DIARIZATION_API_BASE_URL}/jobs/audio/{job_id}"
+
+        deadline = celery_settings.REDIS_VISIBILITY_TIMEOUT
+        started_at = time.monotonic()
+        phase_started_at = started_at
+        seen_processing = False
+        transient_errors = 0
+
+        while True:
+            if time.monotonic() - started_at >= deadline:
+                raise DiarizationError(
+                    f"Diarization job {job_id} exceeded the {deadline}s deadline"
+                )
+
+            try:
+                response = client.get(url)
+                response.raise_for_status()
+            except httpx.HTTPError as e:
+                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code in (
+                    httpx.codes.UNAUTHORIZED,
+                    httpx.codes.FORBIDDEN,
+                ):
+                    raise DiarizationError(
+                        f"Diarization job {job_id} polling unauthorized "
+                        f"(HTTP {e.response.status_code}); check DIARIZATION_API_KEY"
+                    ) from e
+                transient_errors += 1
+                if (
+                    transient_errors
+                    > api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS
+                ):
+                    raise DiarizationError(
+                        f"Diarization job {job_id} polling failed after "
+                        f"{transient_errors} consecutive transient errors: {e}"
+                    ) from e
+                logger.warning(
+                    "Transient error polling diarization job {} ({}/{}): {}",
+                    job_id,
+                    transient_errors,
+                    api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS,
+                    e,
+                )
+                time.sleep(api_settings.DIARIZATION_POLL_FAST_INTERVAL_SECONDS)
+                continue
+
+            transient_errors = 0
             data = response.json()
 
             # Parse response to DiarizationSegment format
