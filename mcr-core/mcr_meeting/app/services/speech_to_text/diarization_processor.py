@@ -28,6 +28,16 @@ api_settings = TranscriptionApiSettings()
 diarization_params = PyannoteDiarizationParameters()
 
 
+def next_poll_interval(phase_elapsed_s: float, queue_position: int | None) -> float:
+    near_front = queue_position is not None and queue_position <= 1
+    short_guess = (
+        phase_elapsed_s < api_settings.DIARIZATION_POLL_LONG_AUDIO_THRESHOLD_SECONDS
+    )
+    if near_front or short_guess:
+        return api_settings.DIARIZATION_POLL_FAST_INTERVAL_SECONDS
+    return api_settings.DIARIZATION_POLL_SLOW_INTERVAL_SECONDS
+
+
 class DiarizationProcessor:
     def __init__(self) -> None:
         self._http_client: httpx.Client | None = None

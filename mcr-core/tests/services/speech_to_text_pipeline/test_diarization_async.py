@@ -13,7 +13,12 @@ from mcr_meeting.app.exceptions.exceptions import (
 from mcr_meeting.app.services.speech_to_text import diarization_processor as dp
 from mcr_meeting.app.services.speech_to_text.diarization_processor import (
     DiarizationProcessor,
+    next_poll_interval,
 )
+
+FAST = dp.api_settings.DIARIZATION_POLL_FAST_INTERVAL_SECONDS
+SLOW = dp.api_settings.DIARIZATION_POLL_SLOW_INTERVAL_SECONDS
+Y = dp.api_settings.DIARIZATION_POLL_LONG_AUDIO_THRESHOLD_SECONDS
 
 
 class TestPollSettings:
@@ -87,6 +92,23 @@ class TestSubmitDiarizationJob:
             pytest.raises(RuntimeError),
         ):
             processor._submit_diarization_job(BytesIO(b"audio"))
+
+
+class TestNextPollInterval:
+    def test_near_front_is_fast_even_after_threshold(self) -> None:
+        assert next_poll_interval(phase_elapsed_s=Y + 100, queue_position=1) == FAST
+
+    def test_short_phase_is_fast(self) -> None:
+        assert next_poll_interval(phase_elapsed_s=Y - 1, queue_position=8) == FAST
+
+    def test_long_phase_not_near_front_is_slow(self) -> None:
+        assert next_poll_interval(phase_elapsed_s=Y, queue_position=8) == SLOW
+
+    def test_no_queue_position_within_threshold_is_fast(self) -> None:
+        assert next_poll_interval(phase_elapsed_s=Y - 1, queue_position=None) == FAST
+
+    def test_no_queue_position_after_threshold_is_slow(self) -> None:
+        assert next_poll_interval(phase_elapsed_s=Y + 1, queue_position=None) == SLOW
 
 
 class TestHttpClientTimeout:
