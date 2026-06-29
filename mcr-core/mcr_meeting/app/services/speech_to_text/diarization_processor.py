@@ -85,7 +85,7 @@ class DiarizationProcessor:
             List[DiarizationSegment]: The diarization result with speaker segments.
         """
         if self._is_api_diarization_enabled():
-            return self._diarize_api(audio_bytes)
+            return self._diarize_async_api(audio_bytes)
         else:
             return self._diarize_local(audio_bytes)
 
@@ -213,105 +213,6 @@ class DiarizationProcessor:
             phase_elapsed = time.monotonic() - phase_started_at
             interval = next_poll_interval(phase_elapsed, data.get("queue_position"))
             time.sleep(interval)
-
-    def _diarize_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
-        """Diarize using external API"""
-        try:
-            client = self._get_http_client()
-
-            form_data = {
-                "model": api_settings.DIARIZATION_API_MODEL,
-                "min_duration_off": diarization_params.min_duration_off,
-                "clustering_threshold": diarization_params.threshold,
-            }
-
-            response = client.post(
-                f"{api_settings.DIARIZATION_API_BASE_URL}/audio/diarizations",
-                files={"file": ("audio.wav", audio_bytes, "audio/wav")},
-                data=form_data,
-                headers={"Authorization": f"Bearer {api_settings.DIARIZATION_API_KEY}"},
-            )
-
-            audio_bytes.seek(0)
-
-            response.raise_for_status()
-    def _diarize_async_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
-        job_id = self._submit_diarization_job(audio_bytes)
-        return self._poll_diarization_job(job_id)
-
-    def _poll_diarization_job(self, job_id: str) -> list[DiarizationSegment]:
-        client = self._get_http_client()
-        url = f"{api_settings.DIARIZATION_API_BASE_URL}/jobs/audio/{job_id}"
-
-        deadline = celery_settings.REDIS_VISIBILITY_TIMEOUT
-        started_at = time.monotonic()
-        phase_started_at = started_at
-        seen_processing = False
-        transient_errors = 0
-
-        while True:
-            if time.monotonic() - started_at >= deadline:
-                raise DiarizationError(
-                    f"Diarization job {job_id} exceeded the {deadline}s deadline"
-                )
-
-            try:
-                response = client.get(url)
-                response.raise_for_status()
-            except httpx.HTTPError as e:
-                if isinstance(e, httpx.HTTPStatusError) and e.response.status_code in (
-                    httpx.codes.UNAUTHORIZED,
-                    httpx.codes.FORBIDDEN,
-                ):
-                    raise DiarizationError(
-                        f"Diarization job {job_id} polling unauthorized "
-                        f"(HTTP {e.response.status_code}); check DIARIZATION_API_KEY"
-                    ) from e
-                transient_errors += 1
-                if (
-                    transient_errors
-                    > api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS
-                ):
-                    raise DiarizationError(
-                        f"Diarization job {job_id} polling failed after "
-                        f"{transient_errors} consecutive transient errors: {e}"
-                    ) from e
-                logger.warning(
-                    "Transient error polling diarization job {} ({}/{}): {}",
-                    job_id,
-                    transient_errors,
-                    api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS,
-                    e,
-                )
-                time.sleep(api_settings.DIARIZATION_POLL_FAST_INTERVAL_SECONDS)
-                continue
-
-            transient_errors = 0
-            data = response.json()
-
-            # Parse response to DiarizationSegment format
-            segments = []
-            if "segments" in data:
-                for segment_data in data["segments"]:
-                    # Convert speaker labels to French format
-                    speaker = convert_to_french_speaker(segment_data["speaker"])
-                    segments.append(
-                        DiarizationSegment(
-                            start=segment_data["start"],
-                            end=segment_data["end"],
-                            speaker=speaker,
-                        )
-                    )
-
-            logger.debug("API diarization returned {} segments", len(segments))
-
-        except Exception as e:
-            raise DiarizationError(f"Error calling diarization API: {e}") from e
-
-        if not segments:
-            raise DiarizationError("Diarization API returned no segments")
-
-        return segments
 
     def __del__(self) -> None:
         """Clean up HTTP client on deletion"""

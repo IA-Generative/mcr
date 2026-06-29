@@ -80,9 +80,6 @@ class TestSubmitDiarizationJob:
             kwargs["data"]["min_duration_off"] == dp.diarization_params.min_duration_off
         )
         assert kwargs["data"]["clustering_threshold"] == dp.diarization_params.threshold
-        assert kwargs["headers"]["Authorization"] == (
-            f"Bearer {dp.api_settings.DIARIZATION_API_KEY}"
-        )
 
     def test_raises_for_http_error(self) -> None:
         processor = DiarizationProcessor()
@@ -129,6 +126,14 @@ def _client_returning(*items: object) -> MagicMock:
         for item in items
     ]
     return client
+
+
+def _status_error(status_code: int) -> httpx.HTTPStatusError:
+    request = httpx.Request("GET", "https://gateway/jobs/audio/job-1")
+    response = httpx.Response(status_code, request=request)
+    return httpx.HTTPStatusError(
+        f"HTTP {status_code}", request=request, response=response
+    )
 
 
 class TestPollDiarizationJob:
@@ -210,6 +215,39 @@ class TestPollDiarizationJob:
         with pytest.raises(DiarizationError, match="transient errors"):
             self._poll(processor, client)
 
+    def test_unauthorized_fails_fast_without_retrying(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning(_status_error(401))
+
+        with pytest.raises(DiarizationError, match="unauthorized"):
+            self._poll(processor, client)
+
+        # No retry: a 401 is permanent, so the budget is never burned.
+        assert client.get.call_count == 1
+
+    def test_forbidden_fails_fast(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning(_status_error(403))
+
+        with pytest.raises(DiarizationError, match="unauthorized"):
+            self._poll(processor, client)
+
+    def test_server_error_is_still_transient(self) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning(
+            _status_error(503),
+            {
+                "status": "completed",
+                "result": {
+                    "segments": [{"speaker": "SPEAKER_00", "start": 0, "end": 1}]
+                },
+            },
+        )
+
+        segments = self._poll(processor, client)
+
+        assert [s.speaker for s in segments] == ["LOCUTEUR_00"]
+
     def test_adaptive_cadence_sequence(self) -> None:
         """pending(qp=8, t>=Y) -> processing(phase reset, t<Y) -> processing(t>=Y)
         -> completed must sleep SLOW, FAST, SLOW (processing reopens a FAST window)."""
@@ -252,6 +290,37 @@ class TestPollDiarizationJob:
                 processor._poll_diarization_job("job-1")
 
 
+class TestDiarizeRouting:
+    def _diarize_with_flag(self, enabled: bool) -> tuple[MagicMock, MagicMock]:
+        processor = DiarizationProcessor()
+        ff_client = MagicMock()
+        ff_client.is_enabled.return_value = enabled
+
+        with (
+            patch.object(dp, "get_feature_flag_client", return_value=ff_client),
+            patch.object(processor, "_diarize_async_api") as mock_async,
+            patch.object(processor, "_diarize_local") as mock_local,
+        ):
+            processor.diarize(BytesIO(b"audio"))
+
+        return mock_async, mock_local
+
+    def test_routes_to_async_api_when_flag_on(self) -> None:
+        mock_async, mock_local = self._diarize_with_flag(enabled=True)
+
+        mock_async.assert_called_once()
+        mock_local.assert_not_called()
+
+    def test_routes_to_local_when_flag_off(self) -> None:
+        mock_async, mock_local = self._diarize_with_flag(enabled=False)
+
+        mock_local.assert_called_once()
+        mock_async.assert_not_called()
+
+    def test_sync_diarize_api_is_removed(self) -> None:
+        assert not hasattr(DiarizationProcessor, "_diarize_api")
+
+
 class TestHttpClientTimeout:
     def test_client_uses_explicit_timeout(self) -> None:
         processor = DiarizationProcessor()
@@ -262,3 +331,16 @@ class TestHttpClientTimeout:
         timeout = mock_client_cls.call_args.kwargs["timeout"]
         assert timeout is not None
         assert timeout == dp.api_settings.DIARIZATION_POLL_HTTP_TIMEOUT_SECONDS
+
+    def test_client_sends_bearer_auth_on_every_request(self) -> None:
+        # The Authorization header lives on the client (default header) so both
+        # the POST and the polling GET are authenticated — not just the POST.
+        processor = DiarizationProcessor()
+
+        with patch.object(dp.httpx, "Client") as mock_client_cls:
+            processor._get_http_client()
+
+        headers = mock_client_cls.call_args.kwargs["headers"]
+        assert headers["Authorization"] == (
+            f"Bearer {dp.api_settings.DIARIZATION_API_KEY}"
+        )
