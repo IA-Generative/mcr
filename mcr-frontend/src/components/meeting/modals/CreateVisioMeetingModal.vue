@@ -1,19 +1,13 @@
 <template>
   <BaseModal
     :modal-id="CREATE_MEETING_MODAL_ID"
-    :title="''"
+    :title="$t('meeting-v2.visio-form.title')"
     size="lg"
-    class="max-sm:p-4"
+    class="visio-meeting-modal max-sm:p-4"
     no-actions
   >
-    <div>
+    <div class="visio-meeting-modal-title-illustration">
       <img src="@dsfr-artwork/pictograms/digital/self-training.svg?url" />
-      <h2
-        id="modal-title"
-        class="fr-modal__title"
-      >
-        {{ $t('meeting-v2.visio-form.title') }}
-      </h2>
     </div>
     <CreateVisioMeetingForm @submit="(dto: AddOnlineMeetingDto) => onSubmit(dto)" />
   </BaseModal>
@@ -39,7 +33,17 @@ function onSubmit(dto: AddOnlineMeetingDto) {
 </script>
 
 <style scoped>
-:deep(.fr-modal__title) {
+:global(#meeting-visio-modal-V2.fr-modal__title) {
   color: var(--blue-france-sun-113-625);
+  max-width: 83.33333%;
+  width: 83.33333%;
+  margin-left: 16.66667%;
+}
+
+.visio-meeting-modal-title-illustration {
+  max-width: 16.66667%;
+  width: 16.66667%;
+  position: absolute;
+  top: 2rem;
 }
 </style>
