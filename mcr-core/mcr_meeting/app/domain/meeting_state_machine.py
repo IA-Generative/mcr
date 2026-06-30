@@ -1,11 +1,3 @@
-"""Pure transition validators for meetings.
-
-These ``python-statemachine`` classes model the *allowed* status transitions per
-platform. They are deliberately I/O-less: no side effects, no persistence, no
-``after_*`` hooks. Applying a transition and persisting the result is the caller's
-responsibility (``domain.meeting_transitions`` validates, the use-case persists).
-"""
-
 from statemachine import State, StateMachine
 
 from mcr_meeting.app.models import Meeting, MeetingStatus
