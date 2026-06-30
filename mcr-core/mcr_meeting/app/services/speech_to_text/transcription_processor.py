@@ -63,7 +63,7 @@ class TranscriptionProcessor:
         transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
 
         logger.debug(
-            "Starting transcription of {} input audio chunks", len(transcription_inputs)
+            "Starting transcription of {} input audio chunks", len(chunk_spans)
         )
 
         transcription_model = get_transcription_model()

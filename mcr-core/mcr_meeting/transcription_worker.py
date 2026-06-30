@@ -36,10 +36,6 @@ from mcr_meeting.app.utils.compute_devices import (
     get_gpu_name,
     is_gpu_available,
 )
-from mcr_meeting.app.utils.load_speech_to_text_model import (
-    load_diarization_pipeline,
-    load_whisper_model,
-)
 from mcr_meeting.app.utils.sentry_context import (
     gather_meeting_context,
     set_sentry_meeting_context,
@@ -84,9 +80,6 @@ def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
     else:
         logger.trace("GPU not available — running on CPU")
         context["device"] = ComputeDevice.CPU
-
-    context["model"] = load_whisper_model(context["device"])
-    context["diarization_pipeline"] = load_diarization_pipeline(context["device"])
 
     logger.info("======== Celery worker processes initialization done =========")
 
