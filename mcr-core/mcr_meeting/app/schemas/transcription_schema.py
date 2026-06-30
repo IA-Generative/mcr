@@ -1,3 +1,4 @@
+from enum import StrEnum
 from io import BytesIO
 
 from pydantic import BaseModel, Field
@@ -41,3 +42,31 @@ class TranscriptionDocxResult(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class DiarizationJobStatus(StrEnum):
+    """Lifecycle statuses returned by the async diarization job API."""
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class DiarizationJobSegment(BaseModel):
+    start: float
+    end: float
+    speaker: str
+
+
+class DiarizationJobResult(BaseModel):
+    segments: list[DiarizationJobSegment]
+
+
+class DiarizationJobResponse(BaseModel):
+    # `status` stays a plain str (not the enum) so an unexpected value surfaces as
+    # our own UnknownDiarizationStatus downstream, not a pydantic ValidationError.
+    status: str
+    queue_position: int | None = None
+    error: str | None = None
+    result: DiarizationJobResult | None = None
