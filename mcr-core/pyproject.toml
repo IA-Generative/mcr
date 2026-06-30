@@ -201,15 +201,10 @@ source_modules = ["mcr_meeting.app.domain"]
 forbidden_modules = [
     "mcr_meeting.app.db",
     "mcr_meeting.app.infrastructure",
-    "mcr_meeting.app.orchestrators",
     "mcr_meeting.app.services",
     "mcr_meeting.app.client",
-    "mcr_meeting.app.state_machine",
-    "mcr_meeting.app.statemachine_actions",
 ]
 ignore_imports = [
-    # TODO(arch): move get_state_machine_for_meeting into domain, drop orchestrators dep
-    "mcr_meeting.app.domain.meeting_transitions -> mcr_meeting.app.orchestrators.meeting_transitions_orchestrator",
     # TODO(arch): render_report should not reach into the legacy docx service
     "mcr_meeting.app.domain.report_rendering -> mcr_meeting.app.services.docx_report_generation_service",
 ]
@@ -225,12 +220,11 @@ ignore_imports = [
 ]
 
 [[tool.importlinter.contracts]]
-name = "Use-cases must not depend on legacy orchestrators/services/client"
+name = "Use-cases must not depend on legacy services/client"
 type = "forbidden"
 allow_indirect_imports = true
 source_modules = ["mcr_meeting.app.use_cases"]
 forbidden_modules = [
-    "mcr_meeting.app.orchestrators",
     "mcr_meeting.app.services",
     "mcr_meeting.app.client",
 ]

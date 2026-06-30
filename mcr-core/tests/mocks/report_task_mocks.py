@@ -8,7 +8,7 @@ import pytest
 def mock_persist_report_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
     persist_mock = MagicMock()
     monkeypatch.setattr(
-        "mcr_meeting.app.statemachine_actions.meeting_actions.persist_report_docx",
+        "mcr_meeting.app.services.report_task_service.persist_report_docx",
         persist_mock,
     )
     return persist_mock
