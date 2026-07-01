@@ -3,7 +3,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any
 
 from celery import Task
 from celery.signals import (
@@ -12,9 +12,7 @@ from celery.signals import (
     task_success,
     worker_process_init,
 )
-from faster_whisper import WhisperModel
 from loguru import logger
-from pyannote.audio import Pipeline
 
 from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import EvaluationSettings
@@ -22,6 +20,7 @@ from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.sentry import init_sentry
+from mcr_meeting.app.infrastructure.speech_to_text_models import context
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
@@ -51,19 +50,6 @@ init_sentry()
 init_langfuse()
 
 SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
-
-
-class WorkerContext(TypedDict):
-    device: ComputeDevice
-    model: WhisperModel | None
-    diarization_pipeline: Pipeline | None
-
-
-context: WorkerContext = {
-    "device": ComputeDevice.CPU,
-    "model": None,
-    "diarization_pipeline": None,
-}
 
 
 @worker_process_init.connect
