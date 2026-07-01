@@ -16,6 +16,7 @@ from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
+from mcr_meeting.app.infrastructure import s3
 from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
@@ -32,10 +33,6 @@ from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
-)
-from mcr_meeting.app.services.s3_service import (
-    get_evaluation_dataset_object_name,
-    get_file_from_s3,
 )
 from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
 from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
@@ -249,7 +246,7 @@ def evaluate(zip_data: bytes) -> None:
 
 @celery_worker.task(name=MCRTranscriptionTasks.EVALUATE_FROM_S3, max_retries=3)
 def evaluate_from_s3(zip_name: str) -> None:
-    object_name = get_evaluation_dataset_object_name(zip_name)
+    object_name = s3.get_evaluation_dataset_object_name(zip_name)
     logger.info("Downloading evaluation zip from S3: {}", object_name)
-    zip_buffer = get_file_from_s3(object_name)
+    zip_buffer = s3.get_file_from_s3(object_name)
     _run_evaluation(zip_buffer.getvalue())
