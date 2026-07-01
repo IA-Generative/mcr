@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
-from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.app.infrastructure.s3 import (
     download_and_concatenate_s3_audio_chunks_into_bytes,
 )
+from mcr_meeting.app.schemas.S3_types import S3Object
 
 
 class TestDownloadAndConcatenateS3AudioChunks:

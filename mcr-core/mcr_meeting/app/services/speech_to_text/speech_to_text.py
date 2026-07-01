@@ -4,6 +4,12 @@ from io import BytesIO
 
 from loguru import logger
 
+from mcr_meeting.app.domain.audio import (
+    audio_bytes_to_wav_bytes,
+    check_audio_is_not_silent,
+    filter_noise_from_audio_bytes,
+    is_audio_noisy,
+)
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
@@ -13,12 +19,6 @@ from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
-)
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
-    audio_bytes_to_wav_bytes,
-    check_audio_is_not_silent,
-    filter_noise_from_audio_bytes,
-    is_audio_noisy,
 )
 from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
     AcronymCorrector,

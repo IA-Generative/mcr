@@ -6,13 +6,13 @@ from io import BytesIO
 
 import pytest
 
-from mcr_meeting.app.exceptions.exceptions import SilentAudioError
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
+from mcr_meeting.app.domain.audio import (
     _is_phase_inverted_stereo,
     audio_bytes_to_wav_bytes,
     check_audio_is_not_silent,
     compute_silence_ratio,
 )
+from mcr_meeting.app.exceptions.exceptions import SilentAudioError
 
 
 def _to_temp_file(buffer: BytesIO) -> str:
