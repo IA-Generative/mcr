@@ -36,8 +36,12 @@ _SEAM_TRANSCRIPTION_MODEL = (
 _SEAM_TRANSCRIPTION_FF = (
     "mcr_meeting.app.infrastructure.transcription.get_feature_flag_client"
 )
-_SEAM_PIPELINE_FF = (
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
+_SEAM_RUN_DIARIZATION_FF = (
+    "mcr_meeting.app.use_cases.transcription.run_diarization.get_feature_flag_client"
+)
+_SEAM_RUN_FINALIZE_FF = (
+    "mcr_meeting.app.use_cases.transcription."
+    "run_finalize_transcription.get_feature_flag_client"
 )
 _SEAM_LLM_FROM_OPENAI = (
     "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
@@ -84,7 +88,12 @@ class TranscriptionSeams:
     def install_feature_flags(self, **flags: bool) -> None:
         self._flags = {str(name): value for name, value in flags.items()}
         client = _FakeFeatureFlagClient(self._flags)
-        for target in (_SEAM_PIPELINE_FF, _SEAM_DIARIZATION_FF, _SEAM_TRANSCRIPTION_FF):
+        for target in (
+            _SEAM_RUN_DIARIZATION_FF,
+            _SEAM_RUN_FINALIZE_FF,
+            _SEAM_DIARIZATION_FF,
+            _SEAM_TRANSCRIPTION_FF,
+        ):
             self._mocker.patch(target, return_value=client)
 
     def install_diarization(self, segments: list[DiarizationSegment]) -> None:
