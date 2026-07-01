@@ -52,6 +52,9 @@ class MCRTranscriptionTasks(MCRCeleryTask):
     BASE_NAME = "transcription_worker"
 
     TRANSCRIBE = f"{BASE_NAME}.transcribe"
+    DIARIZE = f"{BASE_NAME}.diarize"
+    TRANSCRIBE_CHUNKS = f"{BASE_NAME}.transcribe_chunks"
+    FINALIZE_TRANSCRIPTION = f"{BASE_NAME}.finalize_transcription"
     EVALUATE = f"{BASE_NAME}.evaluate"
     EVALUATE_FROM_S3 = f"{BASE_NAME}.evaluate_from_s3"
 
