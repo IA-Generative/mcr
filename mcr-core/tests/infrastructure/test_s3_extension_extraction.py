@@ -1,10 +1,10 @@
 import pytest
 
-from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.s3_service import (
+from mcr_meeting.app.infrastructure.s3 import (
     get_extension_from_object_list,
     validate_object_list,
 )
+from mcr_meeting.app.schemas.S3_types import S3Object
 
 
 class TestGetExtensionFromObjectList:

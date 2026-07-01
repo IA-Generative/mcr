@@ -262,7 +262,7 @@ def meeting_factory(db_session, user_fixture):
 def mock_minio(request: pytest.FixtureRequest, mocker: MockerFixture) -> Mock:
     bucket_name = "my_bucket"
     should_error_on_delete = getattr(request, "param", "default")
-    mock_minio = mocker.patch("mcr_meeting.app.services.s3_service.s3_client")
+    mock_minio = mocker.patch("mcr_meeting.app.infrastructure.s3.s3_client")
     mock_minio.put_object.return_value = SimpleNamespace(
         bucket_name=bucket_name,
         object_name="my/super/file",

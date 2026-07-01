@@ -3,6 +3,7 @@ from unittest.mock import Mock
 from fastapi import status
 from pydantic import UUID4
 
+from mcr_meeting.app.infrastructure.s3 import get_audio_object_prefix
 from mcr_meeting.app.models import Meeting, User
 from mcr_meeting.app.schemas.S3_types import (
     MultipartAbortRequest,
@@ -11,7 +12,6 @@ from mcr_meeting.app.schemas.S3_types import (
     MultipartInitRequest,
     MultipartSignPartRequest,
 )
-from mcr_meeting.app.services.s3_service import get_audio_object_prefix
 
 from .conftest import PrefixedTestClient
 

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, sessionmaker
 import mcr_meeting.app.infrastructure.email as email_infra_module
 import mcr_meeting.app.infrastructure.keycloak as keycloak_module
 import mcr_meeting.app.infrastructure.redis as redis_store_module
-import mcr_meeting.app.services.s3_service as s3_service_module
+import mcr_meeting.app.infrastructure.s3 as s3_module
 import mcr_meeting.app.use_cases._shared.drive_upload as drive_upload_module
 from mcr_meeting.app.db.db import (
     Base,
@@ -112,10 +112,10 @@ def in_memory_drive() -> Generator[InMemoryDriveClient, None, None]:
 @pytest.fixture
 def in_memory_s3() -> Generator[InMemoryS3, None, None]:
     fake = InMemoryS3()
-    original = s3_service_module.s3_client
-    s3_service_module.s3_client = fake  # type: ignore[assignment]
+    original = s3_module.s3_client
+    s3_module.s3_client = fake  # type: ignore[assignment]
     yield fake
-    s3_service_module.s3_client = original
+    s3_module.s3_client = original
 
 
 @pytest.fixture
@@ -131,7 +131,7 @@ def in_memory_email() -> Generator[InMemoryEmailClient, None, None]:
 def mock_minio(request: pytest.FixtureRequest, mocker: MockerFixture) -> Mock:
     bucket_name = "my_bucket"
     should_error_on_delete = getattr(request, "param", "default")
-    mock_minio = mocker.patch("mcr_meeting.app.services.s3_service.s3_client")
+    mock_minio = mocker.patch("mcr_meeting.app.infrastructure.s3.s3_client")
     mock_minio.put_object.return_value = SimpleNamespace(
         bucket_name=bucket_name,
         object_name="my/super/file",
