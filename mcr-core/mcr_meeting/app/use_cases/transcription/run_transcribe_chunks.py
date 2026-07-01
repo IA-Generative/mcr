@@ -5,7 +5,9 @@ from mcr_meeting.app.domain.transcription.vad import diarize_vad_transcription_s
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.app.use_cases.transcription.artifacts import DiarizationArtifact
+from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
+    DiarizationArtifact,
+)
 
 
 def run_transcribe_chunks(
