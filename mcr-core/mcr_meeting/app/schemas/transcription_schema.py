@@ -1,7 +1,9 @@
 from enum import StrEnum
 from io import BytesIO
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from mcr_meeting.app.exceptions.exceptions import UnknownDiarizationStatus
 
 
 class SpeakerTranscription(BaseModel):
@@ -44,6 +46,12 @@ class TranscriptionDocxResult(BaseModel):
         arbitrary_types_allowed = True
 
 
+class DiarizationSegment(BaseModel):
+    start: float
+    end: float
+    speaker: str
+
+
 class DiarizationJobStatus(StrEnum):
     """Lifecycle statuses returned by the async diarization job API."""
 
@@ -53,20 +61,22 @@ class DiarizationJobStatus(StrEnum):
     FAILED = "failed"
 
 
-class DiarizationJobSegment(BaseModel):
-    start: float
-    end: float
-    speaker: str
-
-
 class DiarizationJobResult(BaseModel):
-    segments: list[DiarizationJobSegment]
+    segments: list[DiarizationSegment]
 
 
 class DiarizationJobResponse(BaseModel):
-    # `status` stays a plain str (not the enum) so an unexpected value surfaces as
-    # our own UnknownDiarizationStatus downstream, not a pydantic ValidationError.
-    status: str
+    status: DiarizationJobStatus
     queue_position: int | None = None
     error: str | None = None
     result: DiarizationJobResult | None = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _validate_status(cls, value: str) -> DiarizationJobStatus:
+        try:
+            return DiarizationJobStatus(value)
+        except ValueError as e:
+            raise UnknownDiarizationStatus(
+                f"Diarization job returned unknown status {value!r}"
+            ) from e
