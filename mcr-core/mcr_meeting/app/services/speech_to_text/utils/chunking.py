@@ -3,7 +3,7 @@
 from collections.abc import Iterable
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
-from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
+from mcr_meeting.app.schemas.transcription_schema import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 _settings = WhisperTranscriptionSettings()

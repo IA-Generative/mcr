@@ -73,6 +73,12 @@ class DiarizationError(MCRException):
     """Raised when the diarization fails"""
 
 
+class UnknownDiarizationStatus(MCRException):
+    """Raised when the diarization job reports a status outside the contractual
+    allow-list (pending/processing/completed/failed). Fail-loud: we never guess
+    a non-contractual status."""
+
+
 class TranscriptionError(MCRException):
     """Raised when the transcription fails"""
 

@@ -490,9 +490,8 @@ class TranscriptionApiSettings(BaseSettings):
         description="Model name for transcription API",
     )
 
-    # Diarization API (custom endpoint)
     DIARIZATION_API_BASE_URL: str = Field(
-        description="Base URL for diarization API endpoint"
+        description="Base URL of the diarization async job system."
     )
     DIARIZATION_API_KEY: str = Field(description="API key for diarization service")
     DIARIZATION_API_MODEL: str = Field(
@@ -516,6 +515,32 @@ class TranscriptionApiSettings(BaseSettings):
         with a backoff of 0.5s (base for httpx and openAI client)
         This was set as the goal on 27/02/26
         """,
+    )
+
+    DIARIZATION_POLL_FAST_INTERVAL_SECONDS: float = Field(
+        default=10,
+        description="Fast poll cadence: used when near the front of the queue or "
+        "when the current phase is still presumed short (audio not yet 'long').",
+    )
+    DIARIZATION_POLL_SLOW_INTERVAL_SECONDS: float = Field(
+        default=90,
+        description="Slow poll cadence: used once the audio is declared 'long' "
+        "(waited past the threshold in the current phase and not near front).",
+    )
+    DIARIZATION_POLL_LONG_AUDIO_THRESHOLD_SECONDS: float = Field(
+        default=180,
+        description="Time waited within the current job phase before switching from "
+        "FAST to SLOW cadence. Restarts on the pending->processing transition.",
+    )
+    DIARIZATION_POLL_HTTP_TIMEOUT_SECONDS: float = Field(
+        default=30,
+        description="Per-request HTTP timeout for the POST and GET job calls. "
+        "Explicit (vs API_TIMEOUT=None) so a hanging GET never blocks the worker.",
+    )
+    DIARIZATION_POLL_MAX_TRANSIENT_ERRORS: int = Field(
+        default=8,
+        description="Number of consecutive transient errors (network / 5xx / timeout) "
+        "tolerated on the GET poll before the loop gives up.",
     )
 
 

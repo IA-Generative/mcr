@@ -1,6 +1,9 @@
+from enum import StrEnum
 from io import BytesIO
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from mcr_meeting.app.exceptions.exceptions import UnknownDiarizationStatus
 
 
 class SpeakerTranscription(BaseModel):
@@ -41,3 +44,39 @@ class TranscriptionDocxResult(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class DiarizationSegment(BaseModel):
+    start: float
+    end: float
+    speaker: str
+
+
+class DiarizationJobStatus(StrEnum):
+    """Lifecycle statuses returned by the async diarization job API."""
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+class DiarizationJobResult(BaseModel):
+    segments: list[DiarizationSegment]
+
+
+class DiarizationJobResponse(BaseModel):
+    status: DiarizationJobStatus
+    queue_position: int | None = None
+    error: str | None = None
+    result: DiarizationJobResult | None = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def _validate_status(cls, value: str) -> DiarizationJobStatus:
+        try:
+            return DiarizationJobStatus(value)
+        except ValueError as e:
+            raise UnknownDiarizationStatus(
+                f"Diarization job returned unknown status {value!r}"
+            ) from e
