@@ -7,10 +7,10 @@ from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     NoAudioFoundError,
 )
-from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.infrastructure.s3 import (
     fetch_audio_bytes,
 )
+from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
     remove_hallucinations,
 )
