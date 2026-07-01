@@ -43,7 +43,7 @@ _SEAM_LLM_FROM_OPENAI = (
     "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
 )
 _SEAM_AUDIO_SOURCE = (
-    "mcr_meeting.app.services.meeting_to_transcription_service.fetch_audio_bytes"
+    "mcr_meeting.app.use_cases.transcription.run_diarization.fetch_audio_bytes"
 )
 
 

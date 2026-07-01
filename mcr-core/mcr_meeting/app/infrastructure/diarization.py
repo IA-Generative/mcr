@@ -12,6 +12,9 @@ from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import DiarizationError
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    get_diarization_pipeline,
+)
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -20,9 +23,6 @@ from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationJobResponse,
     DiarizationJobStatus,
     DiarizationSegment,
-)
-from mcr_meeting.app.services.speech_to_text.utils.models import (
-    get_diarization_pipeline,
 )
 
 api_settings = TranscriptionApiSettings()
