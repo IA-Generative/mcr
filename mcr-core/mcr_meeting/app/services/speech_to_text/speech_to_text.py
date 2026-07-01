@@ -1,5 +1,6 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
+from collections.abc import Callable
 from io import BytesIO
 
 from loguru import logger
@@ -15,11 +16,18 @@ from mcr_meeting.app.domain.transcription.post_process import (
     merge_consecutive_segments_per_speaker,
     remove_hallucinations,
 )
+from mcr_meeting.app.domain.transcription.text_chunking import (
+    chunk_text,
+    format_segments_for_llm,
+    reassemble_corrected_segments,
+)
 from mcr_meeting.app.domain.transcription.vad import (
     diarize_vad_transcription_segments,
 )
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.llm.acronyms import correct_acronyms
+from mcr_meeting.app.infrastructure.llm.spelling import correct_spelling
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
@@ -31,12 +39,18 @@ from mcr_meeting.app.schemas.transcription_schema import (
     TimeSpan,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
-    AcronymCorrector,
-)
-from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
-    SpellingCorrector,
-)
+
+
+def _apply_text_correction(
+    segments: list[DiarizedTranscriptionSegment],
+    correct_chunk: Callable[[str], str],
+) -> list[DiarizedTranscriptionSegment]:
+    if not segments:
+        return []
+    text = format_segments_for_llm(segments)
+    chunks = chunk_text(text, chunk_overlap=0)
+    corrected_chunks = [correct_chunk(chunk) for chunk in chunks]
+    return reassemble_corrected_segments(corrected_chunks, segments)
 
 
 class SpeechToTextPipeline:
@@ -104,13 +118,13 @@ class SpeechToTextPipeline:
         cleaned_segments = remove_hallucinations(merged_segments)
 
         logger.debug("Acronym correction: correcting segments")
-        acronym_corrector = AcronymCorrector()
-        cleaned_segments = acronym_corrector.correct(cleaned_segments)
+        cleaned_segments = _apply_text_correction(cleaned_segments, correct_acronyms)
 
         if feature_flag_client.is_enabled(FeatureFlag.SPELLING_CORRECTION):
             logger.debug("Spelling correction enabled, correcting segments")
-            corrector = SpellingCorrector()
-            cleaned_segments = corrector.correct(cleaned_segments)
+            cleaned_segments = _apply_text_correction(
+                cleaned_segments, correct_spelling
+            )
         else:
             logger.debug("Spelling correction disabled, skipping correction")
         return cleaned_segments

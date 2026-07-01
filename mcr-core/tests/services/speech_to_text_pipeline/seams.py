@@ -16,13 +16,11 @@ from unittest.mock import MagicMock
 
 from pytest_mock import MockerFixture
 
+from mcr_meeting.app.infrastructure.llm.client import CorrectedText
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     Participant,
     TranscriptionSegment,
-)
-from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
-    CorrectedText,
 )
 
 # --- Seam targets: the single edit point per external dependency. ---
@@ -42,7 +40,7 @@ _SEAM_PIPELINE_FF = (
     "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
 )
 _SEAM_LLM_FROM_OPENAI = (
-    "mcr_meeting.app.services.llm_post_processing.instructor.from_openai"
+    "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
 )
 _SEAM_AUDIO_SOURCE = (
     "mcr_meeting.app.services.meeting_to_transcription_service.fetch_audio_bytes"
