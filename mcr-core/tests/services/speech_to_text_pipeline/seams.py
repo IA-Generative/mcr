@@ -18,13 +18,11 @@ from pytest_mock import MockerFixture
 
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
+    Participant,
     TranscriptionSegment,
 )
 from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
     CorrectedText,
-)
-from mcr_meeting.app.services.speech_to_text.participants_naming.participant_extraction import (
-    Participant,
 )
 
 # --- Seam targets: the single edit point per external dependency. ---

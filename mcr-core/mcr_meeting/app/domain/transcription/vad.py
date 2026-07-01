@@ -1,0 +1,109 @@
+"""Align VAD transcription segments with diarization results to assign speakers."""
+
+from loguru import logger
+
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizationSegment,
+    DiarizedTranscriptionSegment,
+    TimeSpan,
+    TranscriptionSegment,
+)
+
+
+def find_best_matching_diarization(
+    transcription_span: TimeSpan,
+    diarization_spans: list[tuple[TimeSpan, DiarizationSegment]],
+) -> tuple[DiarizationSegment | None, float]:
+    best: DiarizationSegment | None = None
+    max_overlap_seconds = 0.0
+    for span, diarization_segment in diarization_spans:
+        overlap_seconds = transcription_span.overlap(span)
+        if overlap_seconds > max_overlap_seconds:
+            max_overlap_seconds = overlap_seconds
+            best = diarization_segment
+    return best, max_overlap_seconds
+
+
+def transcription_span_outside_diarization_range(
+    transcription_span: TimeSpan, diarization_range: TimeSpan
+) -> bool:
+    outside = (
+        transcription_span.end < diarization_range.start
+        or transcription_span.start > diarization_range.end
+    )
+    if outside:
+        logger.warning(
+            "Transcription segment is outside the diarization range: start={}, end={}",
+            transcription_span.start,
+            transcription_span.end,
+        )
+    return outside
+
+
+def diarize_vad_transcription_segments(
+    vad_transcription_segments: list[TranscriptionSegment],
+    diarization_result: list[DiarizationSegment],
+) -> list[DiarizedTranscriptionSegment]:
+    aligned_segments: list[DiarizedTranscriptionSegment] = []
+
+    if not diarization_result:
+        logger.warning("Diarization result is empty, returning empty speakers.")
+        empty_speaker_transcription_segments = [
+            DiarizedTranscriptionSegment(
+                id=segment.id,
+                start=segment.start,
+                end=segment.end,
+                text=segment.text,
+                speaker="",
+            )
+            for segment in vad_transcription_segments
+        ]
+        return empty_speaker_transcription_segments
+
+    diarization_spans = [(TimeSpan(d.start, d.end), d) for d in diarization_result]
+    diarization_range = TimeSpan(
+        diarization_result[0].start, diarization_result[-1].end
+    )
+
+    logger.debug(
+        "Matching transcription against diarization segments in the range: start={} to end={}",
+        diarization_range.start,
+        diarization_range.end,
+    )
+
+    for transcription_segment in vad_transcription_segments:
+        transcription_span = TimeSpan(
+            transcription_segment.start, transcription_segment.end
+        )
+
+        if transcription_span_outside_diarization_range(
+            transcription_span, diarization_range
+        ):
+            continue
+
+        best_matching_diarization, max_overlap_seconds = find_best_matching_diarization(
+            transcription_span, diarization_spans
+        )
+
+        if best_matching_diarization and max_overlap_seconds > 0:
+            if best_matching_diarization.speaker:
+                speaker = best_matching_diarization.speaker
+            else:
+                speaker = f"INCONNU_{transcription_segment.id}"
+            aligned_segments.append(
+                DiarizedTranscriptionSegment(
+                    id=transcription_segment.id,
+                    start=transcription_segment.start,
+                    end=transcription_segment.end,
+                    text=transcription_segment.text,
+                    speaker=speaker,
+                )
+            )
+        else:
+            logger.debug(
+                "No matching diarization segment found for transcription segment: start={}, end={}",
+                transcription_segment.start,
+                transcription_segment.end,
+            )
+
+    return aligned_segments

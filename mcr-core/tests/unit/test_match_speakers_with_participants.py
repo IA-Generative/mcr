@@ -1,9 +1,11 @@
-from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.app.services.speech_to_text.participants_naming.match_speakers_with_participants import (
+from mcr_meeting.app.domain.transcription.speaker_segments import (
     replace_speaker_name_if_available,
 )
-from mcr_meeting.app.services.speech_to_text.participants_naming.participant_extraction import (
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
     Participant,
+)
+from mcr_meeting.app.services.speech_to_text.participants_naming.participant_extraction import (
     ParticipantExtraction,
 )
 

@@ -10,6 +10,14 @@ from mcr_meeting.app.domain.audio import (
     filter_noise_from_audio_bytes,
     is_audio_noisy,
 )
+from mcr_meeting.app.domain.transcription.chunking import compute_transcription_chunks
+from mcr_meeting.app.domain.transcription.post_process import (
+    merge_consecutive_segments_per_speaker,
+    remove_hallucinations,
+)
+from mcr_meeting.app.domain.transcription.vad import (
+    diarize_vad_transcription_segments,
+)
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
@@ -18,6 +26,7 @@ from mcr_meeting.app.infrastructure.unleash import (
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
+    TimeSpan,
     TranscriptionSegment,
 )
 from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
@@ -29,18 +38,9 @@ from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector impor
 from mcr_meeting.app.services.speech_to_text.diarization_processor import (
     DiarizationProcessor,
 )
-from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
-    merge_consecutive_segments_per_speaker,
-    remove_hallucinations,
-)
 from mcr_meeting.app.services.speech_to_text.transcription_processor import (
     TranscriptionProcessor,
 )
-from mcr_meeting.app.services.speech_to_text.utils import (
-    compute_transcription_chunks,
-    diarize_vad_transcription_segments,
-)
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 
 class SpeechToTextPipeline:

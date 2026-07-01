@@ -1,11 +1,10 @@
 """Unit tests for compute_transcription_chunks."""
 
-from mcr_meeting.app.schemas.transcription_schema import DiarizationSegment
-from mcr_meeting.app.services.speech_to_text.utils.chunking import (
+from mcr_meeting.app.domain.transcription.chunking import (
     MAX_CHUNK_DURATION,
     compute_transcription_chunks,
 )
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
+from mcr_meeting.app.schemas.transcription_schema import DiarizationSegment, TimeSpan
 
 
 def _seg(start: float, end: float, speaker: str = "S1") -> DiarizationSegment:
