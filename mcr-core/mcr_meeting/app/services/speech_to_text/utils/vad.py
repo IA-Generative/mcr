@@ -5,10 +5,10 @@ import re
 from loguru import logger
 
 from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizationSegment,
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 

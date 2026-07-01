@@ -10,6 +10,7 @@ from mcr_meeting.app.infrastructure.unleash import (
     get_feature_flag_client,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizationSegment,
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
 )
@@ -35,7 +36,6 @@ from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
 from mcr_meeting.app.services.speech_to_text.transcription_processor import (
     TranscriptionProcessor,
 )
-from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
     compute_transcription_chunks,
     diarize_vad_transcription_segments,

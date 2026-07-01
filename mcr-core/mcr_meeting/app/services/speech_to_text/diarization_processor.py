@@ -10,10 +10,7 @@ from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
     TranscriptionApiSettings,
 )
-from mcr_meeting.app.exceptions.exceptions import (
-    DiarizationError,
-    UnknownDiarizationStatus,
-)
+from mcr_meeting.app.exceptions.exceptions import DiarizationError
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -21,8 +18,8 @@ from mcr_meeting.app.infrastructure.unleash import (
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationJobResponse,
     DiarizationJobStatus,
+    DiarizationSegment,
 )
-from mcr_meeting.app.services.speech_to_text.types import DiarizationSegment
 from mcr_meeting.app.services.speech_to_text.utils import (
     convert_to_french_speaker,
 )
@@ -214,17 +211,10 @@ class DiarizationProcessor:
     def _interpret_job_status(
         self, data: DiarizationJobResponse, job_id: str
     ) -> list[DiarizationSegment] | None:
-        try:
-            status = DiarizationJobStatus(data.status)
-        except ValueError as e:
-            raise UnknownDiarizationStatus(
-                f"Diarization job {job_id} returned unknown status {data.status!r}"
-            ) from e
-
-        if status == DiarizationJobStatus.COMPLETED:
+        if data.status == DiarizationJobStatus.COMPLETED:
             return self._segments_from_result(data)
 
-        if status == DiarizationJobStatus.FAILED:
+        if data.status == DiarizationJobStatus.FAILED:
             raise DiarizationError(f"Diarization job {job_id} failed: {data.error}")
 
         return None

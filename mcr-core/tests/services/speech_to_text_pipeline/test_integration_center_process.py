@@ -8,13 +8,11 @@ from loguru import logger
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizationSegment,
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
 )
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
-from mcr_meeting.app.services.speech_to_text.types import (
-    DiarizationSegment,
-)
 from mcr_meeting.app.services.speech_to_text.utils import (
     compute_transcription_chunks,
     diarize_vad_transcription_segments,
