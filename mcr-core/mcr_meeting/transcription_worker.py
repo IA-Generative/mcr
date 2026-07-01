@@ -5,17 +5,11 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from celery import Task
-from celery.signals import (
-    task_failure,
-    task_prerun,
-    task_success,
-    worker_process_init,
-)
+from celery import Task, chain
+from celery.signals import worker_process_init
 from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
-from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure import s3
 from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
@@ -30,9 +24,14 @@ from mcr_meeting.app.infrastructure.speech_to_text_models import (
     load_whisper_model,
 )
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
-from mcr_meeting.app.schemas.celery_types import (
-    MCRTranscriptionTasks,
-    extract_transcription_task_args,
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag, is_enabled
+from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
+from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
+from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
+    DiarizationArtifact,
+)
+from mcr_meeting.app.use_cases.transcription._shared.on_pipeline_failure import (
+    on_pipeline_failure,
 )
 from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
 from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
@@ -84,83 +83,124 @@ def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
     logger.info("======== Celery worker processes initialization done =========")
 
 
-@celery_worker.task(name=MCRTranscriptionTasks.TRANSCRIBE, max_retries=3)
-def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, object]]:
-    client = MeetingApiClient(owner_keycloak_uuid)
-    asyncio.run(client.start_transcription(meeting_id))
+def structural_split_enabled() -> bool:
+    try:
+        return is_enabled(FeatureFlag.STRUCTURAL_SPLIT_ENABLED)
+    except Exception as e:
+        logger.warning(
+            "Failed to read STRUCTURAL_SPLIT_ENABLED, defaulting to legacy: {}", e
+        )
+        return False
 
+
+def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
     artifact = run_diarization(
         meeting_id, DiarizationProcessor(get_diarization_pipeline)
     )
     segments = run_transcribe_chunks(
         artifact, TranscriptionProcessor(get_transcription_model)
     )
-    transcription_data = run_finalize_transcription(meeting_id, segments)
-
-    result = [item.model_dump() for item in transcription_data]
+    speaker_transcriptions = run_finalize_transcription(meeting_id, segments)
+    _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
     logger.info("Transcription completed for meeting {}", meeting_id)
-    return result
 
 
-@task_prerun.connect(sender=transcribe)
-def set_sentry_context_before_transcription(**kwargs: Any) -> None:  # type: ignore[explicit-any]
-    task_args = extract_transcription_task_args(kwargs)
-
-    client = MeetingApiClient(task_args.owner_keycloak_uuid)
-    meeting_context = gather_meeting_context(
-        task_args.meeting_id, task_args.owner_keycloak_uuid, client
-    )
-    set_sentry_meeting_context(meeting_context)
-
-
-@task_success.connect(sender=transcribe)
-def handle_transcription_success(  # type: ignore[explicit-any]
-    sender: Task[Any, Any],
-    result: Any,
-    **kwargs: Any,
+def _mark_success(
+    meeting_id: int,
+    owner_keycloak_uuid: str,
+    speaker_transcriptions: list[SpeakerTranscription],
 ) -> None:
-    try:
-        task_args = extract_transcription_task_args(kwargs, sender=sender)
-    except ValueError:
-        logger.error(
-            "Unable to retrieve meeting_id/owner_keycloak_uuid in the success signal"
+    result = [item.model_dump() for item in speaker_transcriptions]
+    asyncio.run(
+        MeetingApiClient(owner_keycloak_uuid).mark_transcription_as_success(
+            meeting_id, transcription_data=result
         )
-        return
-
-    logger.info(
-        "Transcription success signal received for meeting {}.", task_args.meeting_id
     )
+    logger.info("Meeting {} updated to TRANSCRIPTION_DONE", meeting_id)
 
-    client = MeetingApiClient(task_args.owner_keycloak_uuid)
-    try:
-        asyncio.run(
-            client.mark_transcription_as_success(
-                task_args.meeting_id, transcription_data=result
-            )
+
+class TranscriptionPipelineTask(Task[Any, Any]):  # type: ignore[explicit-any]
+    def before_start(  # type: ignore[explicit-any]
+        self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> None:
+        meeting_id, owner_keycloak_uuid = args[0], args[1]
+        client = MeetingApiClient(owner_keycloak_uuid)
+        meeting_context = gather_meeting_context(
+            meeting_id, owner_keycloak_uuid, client
         )
-    except MeetingDeletedException:
-        logger.warning(
-            "Meeting {} deleted; skipping TRANSCRIPTION_DONE update",
-            task_args.meeting_id,
-        )
+        set_sentry_meeting_context(meeting_context)
+
+    def on_failure(  # type: ignore[explicit-any]
+        self,
+        exc: Exception,
+        task_id: str,
+        args: tuple[Any, ...],
+        kwargs: dict[str, Any],
+        einfo: object,
+    ) -> None:
+        meeting_id, owner_keycloak_uuid = args[0], args[1]
+        on_pipeline_failure(meeting_id, owner_keycloak_uuid, error_code=self.name)
+
+
+@celery_worker.task(
+    base=TranscriptionPipelineTask,
+    name=MCRTranscriptionTasks.TRANSCRIBE,
+    max_retries=3,
+)
+def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    asyncio.run(MeetingApiClient(owner_keycloak_uuid).start_transcription(meeting_id))
+
+    if structural_split_enabled():
+        chain(
+            diarize.si(meeting_id, owner_keycloak_uuid),
+            transcribe_chunks.si(meeting_id, owner_keycloak_uuid),
+            finalize_transcription.si(meeting_id, owner_keycloak_uuid),
+        ).apply_async()
         return
 
-    logger.info("Meeting {} updated to TRANSCRIPTION_DONE", task_args.meeting_id)
+    run_transcription_in_task(meeting_id, owner_keycloak_uuid)
 
 
-@task_failure.connect(sender=transcribe)
-def handle_transcription_fail(**kwargs: Any) -> None:  # type: ignore[explicit-any]
-    task_args = extract_transcription_task_args(kwargs)
+@celery_worker.task(
+    base=TranscriptionPipelineTask,
+    name=MCRTranscriptionTasks.DIARIZE,
+    max_retries=3,
+)
+def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    artifact = run_diarization(
+        meeting_id, DiarizationProcessor(get_diarization_pipeline)
+    )
+    s3.write_preprocessed_audio(meeting_id, artifact.preprocessed_audio)
+    s3.write_diarization(meeting_id, artifact.diarization)
+    logger.info("Diarization completed for meeting {}", meeting_id)
 
-    client = MeetingApiClient(task_args.owner_keycloak_uuid)
-    try:
-        asyncio.run(client.mark_transcription_as_failed(task_args.meeting_id))
-    except MeetingDeletedException:
-        logger.warning(
-            "Meeting {} deleted; skipping TRANSCRIPTION_FAILED update",
-            task_args.meeting_id,
-        )
-        return
+
+@celery_worker.task(
+    base=TranscriptionPipelineTask,
+    name=MCRTranscriptionTasks.TRANSCRIBE_CHUNKS,
+    max_retries=3,
+)
+def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    artifact = DiarizationArtifact(
+        preprocessed_audio=s3.read_preprocessed_audio(meeting_id),
+        diarization=s3.read_diarization(meeting_id),
+    )
+    segments = run_transcribe_chunks(
+        artifact, TranscriptionProcessor(get_transcription_model)
+    )
+    s3.write_transcription_raw(meeting_id, segments)
+    logger.info("Chunk transcription completed for meeting {}", meeting_id)
+
+
+@celery_worker.task(
+    base=TranscriptionPipelineTask,
+    name=MCRTranscriptionTasks.FINALIZE_TRANSCRIPTION,
+    max_retries=3,
+)
+def finalize_transcription(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    segments = s3.read_transcription_raw(meeting_id)
+    speaker_transcriptions = run_finalize_transcription(meeting_id, segments)
+    _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
 
 
 def _run_evaluation(zip_data: bytes) -> None:
