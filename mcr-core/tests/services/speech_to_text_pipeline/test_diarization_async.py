@@ -11,8 +11,8 @@ from mcr_meeting.app.exceptions.exceptions import (
     MCRException,
     UnknownDiarizationStatus,
 )
-from mcr_meeting.app.services.speech_to_text import diarization_processor as dp
-from mcr_meeting.app.services.speech_to_text.diarization_processor import (
+from mcr_meeting.app.infrastructure import diarization as dp
+from mcr_meeting.app.infrastructure.diarization import (
     DiarizationProcessor,
     next_poll_interval,
 )

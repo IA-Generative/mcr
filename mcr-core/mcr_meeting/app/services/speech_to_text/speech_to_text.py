@@ -19,6 +19,8 @@ from mcr_meeting.app.domain.transcription.vad import (
     diarize_vad_transcription_segments,
 )
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -34,12 +36,6 @@ from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
 )
 from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
     SpellingCorrector,
-)
-from mcr_meeting.app.services.speech_to_text.diarization_processor import (
-    DiarizationProcessor,
-)
-from mcr_meeting.app.services.speech_to_text.transcription_processor import (
-    TranscriptionProcessor,
 )
 
 

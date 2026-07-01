@@ -27,20 +27,16 @@ from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector impor
 
 # --- Seam targets: the single edit point per external dependency. ---
 _SEAM_DIARIZATION_PIPELINE = (
-    "mcr_meeting.app.services.speech_to_text."
-    "diarization_processor.get_diarization_pipeline"
+    "mcr_meeting.app.infrastructure.diarization.get_diarization_pipeline"
 )
 _SEAM_DIARIZATION_FF = (
-    "mcr_meeting.app.services.speech_to_text."
-    "diarization_processor.get_feature_flag_client"
+    "mcr_meeting.app.infrastructure.diarization.get_feature_flag_client"
 )
 _SEAM_TRANSCRIPTION_MODEL = (
-    "mcr_meeting.app.services.speech_to_text."
-    "transcription_processor.get_transcription_model"
+    "mcr_meeting.app.infrastructure.transcription.get_transcription_model"
 )
 _SEAM_TRANSCRIPTION_FF = (
-    "mcr_meeting.app.services.speech_to_text."
-    "transcription_processor.get_feature_flag_client"
+    "mcr_meeting.app.infrastructure.transcription.get_feature_flag_client"
 )
 _SEAM_PIPELINE_FF = (
     "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
