@@ -20,7 +20,11 @@ from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 from mcr_meeting.app.infrastructure.sentry import init_sentry
-from mcr_meeting.app.infrastructure.speech_to_text_models import context
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    context,
+    load_diarization_pipeline,
+    load_whisper_model,
+)
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
@@ -40,10 +44,6 @@ from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
     get_gpu_name,
     is_gpu_available,
-)
-from mcr_meeting.app.utils.load_speech_to_text_model import (
-    load_diarization_pipeline,
-    load_whisper_model,
 )
 from mcr_meeting.app.utils.sentry_context import (
     gather_meeting_context,
