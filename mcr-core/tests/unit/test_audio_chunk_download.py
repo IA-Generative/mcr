@@ -5,7 +5,7 @@ import pytest
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
+from mcr_meeting.app.infrastructure.s3 import (
     download_and_concatenate_s3_audio_chunks_into_bytes,
 )
 
@@ -14,7 +14,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
     """Tests for the function download_and_concatenate_s3_audio_chunks_into_bytes."""
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_raise_invalid_audio_file_error_when_s3_download_fails(
         self, mock_get_file_from_s3: MagicMock
@@ -44,7 +44,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
         assert "S3 connection timeout" in str(exc_info.value)
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_process_successfully_when_valid_chunks(
         self, mock_get_file_from_s3: MagicMock
@@ -85,7 +85,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
         assert result.tell() == 0
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_handle_empty_chunks_gracefully(
         self, mock_get_file_from_s3: MagicMock
@@ -123,7 +123,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
         assert result.tell() == 0
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_handle_single_chunk_successfully(
         self, mock_get_file_from_s3: MagicMock
@@ -149,7 +149,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
         assert result.tell() == 0
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_handle_large_number_of_chunks(
         self, mock_get_file_from_s3: MagicMock
@@ -182,7 +182,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
         assert result.tell() == 0
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_handle_different_s3_error_types(
         self, mock_get_file_from_s3: MagicMock
@@ -219,7 +219,7 @@ class TestDownloadAndConcatenateS3AudioChunks:
             )
 
     @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.get_file_from_s3"
+        "mcr_meeting.app.infrastructure.s3.get_file_from_s3"
     )
     def test_should_return_buffer_at_beginning(
         self, mock_get_file_from_s3: MagicMock
