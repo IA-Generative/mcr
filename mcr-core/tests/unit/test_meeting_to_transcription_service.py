@@ -3,6 +3,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from mcr_meeting.app.domain.transcription.post_process import (
+    remove_hallucinations,
+)
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     NoAudioFoundError,
@@ -11,17 +14,12 @@ from mcr_meeting.app.infrastructure.s3 import (
     fetch_audio_bytes,
 )
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
-    remove_hallucinations,
-)
 
 
 class TestFetchAudioBytes:
     """Tests pour la fonction fetch_audio_bytes."""
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     def test_should_raise_no_audio_found_error_when_no_audio_files_found(
         self, mock_get_objects_list: Mock
     ) -> None:
@@ -35,9 +33,7 @@ class TestFetchAudioBytes:
 
         mock_get_objects_list.assert_called_once_with(prefix="123/")
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -53,9 +49,7 @@ class TestFetchAudioBytes:
         ):
             fetch_audio_bytes(meeting_id=123)
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -73,9 +67,7 @@ class TestFetchAudioBytes:
         ):
             fetch_audio_bytes(meeting_id=123)
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -91,9 +83,7 @@ class TestFetchAudioBytes:
         ):
             fetch_audio_bytes(meeting_id=123)
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -113,9 +103,7 @@ class TestFetchAudioBytes:
         mock_get_objects_list.assert_called_once_with(prefix="123/")
         mock_assemble.assert_called_once()
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -133,9 +121,7 @@ class TestFetchAudioBytes:
         assert result.getvalue() == b"audio_data"
         mock_assemble.assert_called_once()
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -157,9 +143,7 @@ class TestFetchAudioBytes:
             with pytest.raises(InvalidAudioFileError):
                 fetch_audio_bytes(meeting_id=123)
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -175,9 +159,7 @@ class TestFetchAudioBytes:
 
         assert result.getvalue() == b""
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     @patch(
         "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
@@ -196,9 +178,7 @@ class TestFetchAudioBytes:
         assert result.getvalue() == large_audio_data
         assert len(result.getvalue()) == 5 * 1024 * 1024
 
-    @patch(
-        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
-    )
+    @patch("mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix")
     def test_should_call_get_objects_list_with_correct_prefix_format(
         self, mock_get_objects_list: Mock
     ) -> None:
@@ -222,7 +202,7 @@ class TestRemoveHallucinations:
     """Tests for the remove_hallucinations function."""
 
     @patch(
-        "mcr_meeting.app.services.speech_to_text.transcription_post_process.TranscriptionForbiddenSentences"
+        "mcr_meeting.app.domain.transcription.post_process.TranscriptionForbiddenSentences"
     )
     def test_should_remove_nothing_when_no_forbidden_sentences_present(
         self, mock_settings: Mock
@@ -246,7 +226,7 @@ class TestRemoveHallucinations:
         assert result[1].text == "This is a test."
 
     @patch(
-        "mcr_meeting.app.services.speech_to_text.transcription_post_process.TranscriptionForbiddenSentences"
+        "mcr_meeting.app.domain.transcription.post_process.TranscriptionForbiddenSentences"
     )
     def test_should_remove_exact_forbidden_sentences(self, mock_settings: Mock) -> None:
         """Checks that exact forbidden sentences are removed."""
@@ -273,7 +253,7 @@ class TestRemoveHallucinations:
         assert result[0].text == "Hello world."
 
     @patch(
-        "mcr_meeting.app.services.speech_to_text.transcription_post_process.TranscriptionForbiddenSentences"
+        "mcr_meeting.app.domain.transcription.post_process.TranscriptionForbiddenSentences"
     )
     def test_should_clean_whitespace(self, mock_settings: Mock) -> None:
         """Checks that extra whitespace is cleaned."""
@@ -295,7 +275,7 @@ class TestRemoveHallucinations:
         assert result[0].text == "Too many spaces"
 
     @patch(
-        "mcr_meeting.app.services.speech_to_text.transcription_post_process.TranscriptionForbiddenSentences"
+        "mcr_meeting.app.domain.transcription.post_process.TranscriptionForbiddenSentences"
     )
     def test_should_remove_empty_segments(self, mock_settings: Mock) -> None:
         """Checks that segments that become empty after cleaning are removed."""
@@ -320,7 +300,7 @@ class TestRemoveHallucinations:
         assert result[0].id == 2
 
     @patch(
-        "mcr_meeting.app.services.speech_to_text.transcription_post_process.TranscriptionForbiddenSentences"
+        "mcr_meeting.app.domain.transcription.post_process.TranscriptionForbiddenSentences"
     )
     def test_should_remove_forbidden_sentences_middle_of_text(
         self, mock_settings: Mock

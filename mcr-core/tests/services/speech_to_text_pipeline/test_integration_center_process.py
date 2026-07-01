@@ -7,17 +7,15 @@ import pytest
 from loguru import logger
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
+from mcr_meeting.app.domain.transcription.chunking import compute_transcription_chunks
+from mcr_meeting.app.domain.transcription.vad import diarize_vad_transcription_segments
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
+    TimeSpan,
     TranscriptionSegment,
 )
 from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
-from mcr_meeting.app.services.speech_to_text.utils import (
-    compute_transcription_chunks,
-    diarize_vad_transcription_segments,
-)
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 transcription_settings = WhisperTranscriptionSettings()
 M = transcription_settings.MAX_CHUNK_DURATION
