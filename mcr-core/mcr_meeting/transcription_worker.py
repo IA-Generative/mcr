@@ -14,21 +14,27 @@ from celery.signals import (
 )
 from loguru import logger
 
-from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
+from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 from mcr_meeting.app.infrastructure.sentry import init_sentry
 from mcr_meeting.app.infrastructure.speech_to_text_models import context
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
 from mcr_meeting.app.services.s3_service import (
     get_evaluation_dataset_object_name,
     get_file_from_s3,
+)
+from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
+from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
+    run_finalize_transcription,
+)
+from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
+    run_transcribe_chunks,
 )
 from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
@@ -82,7 +88,9 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, obje
     client = MeetingApiClient(owner_keycloak_uuid)
     asyncio.run(client.start_transcription(meeting_id))
 
-    transcription_data = transcribe_meeting(meeting_id=meeting_id)
+    artifact = run_diarization(meeting_id)
+    segments = run_transcribe_chunks(artifact)
+    transcription_data = run_finalize_transcription(meeting_id, segments)
 
     result = [item.model_dump() for item in transcription_data]
     logger.info("Transcription completed for meeting {}", meeting_id)

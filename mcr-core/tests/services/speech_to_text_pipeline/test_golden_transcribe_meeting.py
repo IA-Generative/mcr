@@ -18,13 +18,26 @@ from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
+from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
+from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
+    run_finalize_transcription,
+)
+from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
+    run_transcribe_chunks,
+)
 from tests.services.speech_to_text_pipeline.seams import (
     TranscriptionSeams,
     make_participant,
 )
 
 MEETING_ID = 123
+
+
+def _transcribe(meeting_id: int) -> list[SpeakerTranscription]:
+    artifact = run_diarization(meeting_id)
+    segments = run_transcribe_chunks(artifact)
+    return run_finalize_transcription(meeting_id, segments)
+
 
 _LOCAL_MODEL_FLAGS = dict(
     audio_phase_aware_downmix=False,
@@ -47,7 +60,7 @@ def test_multi_speaker_golden(
     transcription_seams.install_transcription(mock_transcription_segments_normal)
     transcription_seams.install_llm(participants=[])
 
-    result = transcribe_meeting(meeting_id=MEETING_ID)
+    result = _transcribe(MEETING_ID)
 
     assert all(isinstance(item, SpeakerTranscription) for item in result)
     assert all(item.meeting_id == MEETING_ID for item in result)
@@ -81,7 +94,7 @@ def test_single_speaker_golden(
     transcription_seams.install_transcription(mock_transcription_segments_normal)
     transcription_seams.install_llm(participants=[])
 
-    result = transcribe_meeting(meeting_id=MEETING_ID)
+    result = _transcribe(MEETING_ID)
 
     assert len(result) == 1
     assert result[0].transcription_index == 0
@@ -102,7 +115,7 @@ def test_empty_diarization_returns_empty(
     transcription_seams.install_transcription([])
     transcription_seams.install_llm(participants=[])
 
-    result = transcribe_meeting(meeting_id=MEETING_ID)
+    result = _transcribe(MEETING_ID)
 
     assert result == []
 
@@ -121,7 +134,7 @@ def test_enrich_participants_failure_keeps_raw_labels(
         participants_error=RuntimeError("LLM participant extraction failed")
     )
 
-    result = transcribe_meeting(meeting_id=MEETING_ID)
+    result = _transcribe(MEETING_ID)
 
     assert [item.speaker for item in result] == [
         "Intervenant 1",
@@ -148,6 +161,6 @@ def test_participant_names_replace_speaker_labels(
         ]
     )
 
-    result = transcribe_meeting(meeting_id=MEETING_ID)
+    result = _transcribe(MEETING_ID)
 
     assert [item.speaker for item in result] == ["Alice", "Bob", "Alice", "Bob"]

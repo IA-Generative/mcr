@@ -1,8 +1,8 @@
 import httpx
 import pytest
 
-from mcr_meeting.app.client.meeting_client import _raise_for_core_status
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
+from mcr_meeting.app.infrastructure.meeting_api_client import _raise_for_core_status
 
 MEETING_ID = 42
 
