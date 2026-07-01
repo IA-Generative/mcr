@@ -59,7 +59,7 @@ SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FO
 
 
 @worker_process_init.connect
-def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
+def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
     """
     Initialize worker processes with model and device setup.
     This worker consume both `transcribe` and `evaluate` tasks.

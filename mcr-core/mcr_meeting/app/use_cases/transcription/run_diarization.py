@@ -8,17 +8,19 @@ from mcr_meeting.app.domain.audio import (
     filter_noise_from_audio_bytes,
     is_audio_noisy,
 )
+from mcr_meeting.app.infrastructure import s3
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
-from mcr_meeting.app.infrastructure.s3 import fetch_audio_bytes
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
 )
-from mcr_meeting.app.use_cases.transcription.artifacts import DiarizationArtifact
+from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
+    DiarizationArtifact,
+)
 
 
 def run_diarization(meeting_id: int) -> DiarizationArtifact:
-    audio_bytes = fetch_audio_bytes(meeting_id)
+    audio_bytes = s3.fetch_audio_bytes(meeting_id)
     preprocessed_audio = _preprocess_audio(audio_bytes)
     diarization = DiarizationProcessor().diarize(audio_bytes=preprocessed_audio)
     return DiarizationArtifact(

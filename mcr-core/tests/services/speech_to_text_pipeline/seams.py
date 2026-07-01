@@ -42,9 +42,7 @@ _SEAM_PIPELINE_FF = (
 _SEAM_LLM_FROM_OPENAI = (
     "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
 )
-_SEAM_AUDIO_SOURCE = (
-    "mcr_meeting.app.use_cases.transcription.run_diarization.fetch_audio_bytes"
-)
+_SEAM_AUDIO_SOURCE = "mcr_meeting.app.infrastructure.s3.fetch_audio_bytes"
 
 
 class _FakeFeatureFlagClient:
