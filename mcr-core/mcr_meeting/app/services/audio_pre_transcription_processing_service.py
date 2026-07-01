@@ -2,7 +2,6 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Iterator
 from io import BytesIO
 
 import ffmpeg
@@ -18,11 +17,8 @@ from mcr_meeting.app.configs.base import (
 )
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
-    NoAudioFoundError,
     SilentAudioError,
 )
-from mcr_meeting.app.schemas.S3_types import S3Object
-from mcr_meeting.app.services.s3_service import get_file_from_s3
 from mcr_meeting.setup.logger import log_ffmpeg_command
 
 s2t_settings = Speech2TextSettings()
@@ -277,42 +273,6 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
         raise InvalidAudioFileError(
             f"Unexpected error during noise filtering: {e}"
         ) from e
-
-
-def download_and_concatenate_s3_audio_chunks_into_bytes(
-    obj_iterator: Iterator[S3Object],
-) -> BytesIO:
-    """
-    Concatenates audio chunks from an S3 object iterator into a BytesIO object.
-
-    Args:
-        obj_iterator (Iterator[S3Object]): An iterator over S3 objects containing audio chunks.
-
-    Returns:
-        BytesIO: A BytesIO object containing the concatenated audio data.
-
-    Raises:
-        NoAudioFoundError: If no audio chunks are found
-        InvalidAudioFileError: If S3 download fails
-    """
-    audio_buffer = BytesIO()
-    chunk_count = 0
-
-    for obj_info in obj_iterator:
-        chunk_count += 1
-        try:
-            audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
-            audio_buffer.write(audio_chunk_data.read())
-        except Exception as chunk_error:
-            raise InvalidAudioFileError(
-                f"Failed to download audio chunk {obj_info.object_name}: {chunk_error}"
-            ) from chunk_error
-
-    if chunk_count == 0:
-        raise NoAudioFoundError("No audio chunks found in iterator")
-
-    audio_buffer.seek(0)
-    return audio_buffer
 
 
 def _parse_mean_volume(ffmpeg_stderr: str) -> float:

@@ -8,7 +8,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     NoAudioFoundError,
 )
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.app.services.meeting_to_transcription_service import (
+from mcr_meeting.app.infrastructure.s3 import (
     fetch_audio_bytes,
 )
 from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
@@ -20,7 +20,7 @@ class TestFetchAudioBytes:
     """Tests pour la fonction fetch_audio_bytes."""
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     def test_should_raise_no_audio_found_error_when_no_audio_files_found(
         self, mock_get_objects_list: Mock
@@ -36,10 +36,10 @@ class TestFetchAudioBytes:
         mock_get_objects_list.assert_called_once_with(prefix="123/")
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_raise_invalid_audio_file_error_when_audio_processing_fails(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -54,10 +54,10 @@ class TestFetchAudioBytes:
             fetch_audio_bytes(meeting_id=123)
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_raise_invalid_audio_file_error_when_unexpected_value_error_occurs(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -74,10 +74,10 @@ class TestFetchAudioBytes:
             fetch_audio_bytes(meeting_id=123)
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_raise_invalid_audio_file_error_when_unexpected_error_occurs(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -92,10 +92,10 @@ class TestFetchAudioBytes:
             fetch_audio_bytes(meeting_id=123)
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_return_audio_bytes_when_successful(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -114,10 +114,10 @@ class TestFetchAudioBytes:
         mock_assemble.assert_called_once()
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_handle_different_audio_extensions(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -134,10 +134,10 @@ class TestFetchAudioBytes:
         mock_assemble.assert_called_once()
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_handle_different_error_types_from_assemble(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -158,10 +158,10 @@ class TestFetchAudioBytes:
                 fetch_audio_bytes(meeting_id=123)
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_handle_empty_audio_bytes(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -176,10 +176,10 @@ class TestFetchAudioBytes:
         assert result.getvalue() == b""
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.download_and_concatenate_s3_audio_chunks_into_bytes"
+        "mcr_meeting.app.infrastructure.s3.download_and_concatenate_s3_audio_chunks_into_bytes"
     )
     def test_should_handle_large_audio_files(
         self, mock_assemble: Mock, mock_get_objects_list: Mock
@@ -197,7 +197,7 @@ class TestFetchAudioBytes:
         assert len(result.getvalue()) == 5 * 1024 * 1024
 
     @patch(
-        "mcr_meeting.app.services.meeting_to_transcription_service.get_objects_list_from_prefix"
+        "mcr_meeting.app.infrastructure.s3.get_objects_list_from_prefix"
     )
     def test_should_call_get_objects_list_with_correct_prefix_format(
         self, mock_get_objects_list: Mock
