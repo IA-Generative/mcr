@@ -47,7 +47,9 @@ describe('MeetingListPage', () => {
 
     expect(screen.getByText("J'importe un fichier audio ou vidéo")).toBeInTheDocument();
     expect(
-      screen.getByText('Importez un fichier au format : .mp3, .wav, .m4a, .mp4, .mov.'),
+      screen.getByText(
+        'Importez un fichier au format : .aac, .flac, .m4a, .mkv, .mov, .mp3, .mp4, .ogg, .opus, .wav, .webm.',
+      ),
     ).toBeInTheDocument();
   });
 
