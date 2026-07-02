@@ -76,19 +76,48 @@ function renameWithTimestamp(file: File): File {
   });
 }
 
+const METADATA_READ_TIMEOUT_MS = 10_000;
+
 async function updateDtoWithDates(
   dto: AddImportMeetingDto,
   file: File,
 ): Promise<AddImportMeetingDto> {
-  const audio = new Audio();
-  audio.src = URL.createObjectURL(file);
-  await new Promise((resolve) => (audio.onloadedmetadata = resolve));
-  const duration = audio.duration;
+  const duration = await readAudioDurationSeconds(file);
 
-  const endDate = new Date(Date.now());
+  if (duration === null) {
+    return dto;
+  }
+
+  const endDate = new Date();
   const startDate = new Date(endDate.getTime() - duration * 1000);
+
   dto.start_date = startDate.toISOString();
   dto.end_date = endDate.toISOString();
 
   return dto;
+}
+
+function readAudioDurationSeconds(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    const objectUrl = URL.createObjectURL(file);
+
+    const finish = (duration: number | null) => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(duration);
+    };
+
+    const timeoutId = setTimeout(() => finish(null), METADATA_READ_TIMEOUT_MS);
+
+    audio.onloadedmetadata = () => {
+      clearTimeout(timeoutId);
+      finish(Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : null);
+    };
+    audio.onerror = () => {
+      clearTimeout(timeoutId);
+      finish(null);
+    };
+
+    audio.src = objectUrl;
+  });
 }
