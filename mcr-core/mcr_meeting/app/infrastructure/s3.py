@@ -164,17 +164,11 @@ def fetch_audio_bytes(meeting_id: int) -> BytesIO:
         return audio_bytes
 
     except NoAudioFoundError as no_files_error:
-        logger.error(
-            "No audio files found for meeting {}: {}", meeting_id, no_files_error
-        )
         raise NoAudioFoundError(
             f"No audio files found for meeting {meeting_id}"
         ) from no_files_error
 
     except Exception as fetch_error:
-        logger.error(
-            "Failed to fetch audio bytes for meeting {}: {}", meeting_id, fetch_error
-        )
         raise InvalidAudioFileError(
             f"Failed to fetch audio bytes for meeting {meeting_id}: {fetch_error}"
         ) from fetch_error
