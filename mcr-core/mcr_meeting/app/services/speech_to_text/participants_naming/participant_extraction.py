@@ -3,15 +3,15 @@ import json
 from langfuse import observe
 from loguru import logger
 
+from mcr_meeting.app.infrastructure.llm.prompts.participants import (
+    INITIAL_PROMPT_TEMPLATE,
+    REFINE_PROMPT_TEMPLATE,
+)
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     Participant,
 )
 from mcr_meeting.app.services.llm_post_processing import Chunk, LLMPostProcessing
-from mcr_meeting.app.services.speech_to_text.participants_naming.prompts import (
-    INITIAL_PROMPT_TEMPLATE,
-    REFINE_PROMPT_TEMPLATE,
-)
 from mcr_meeting.app.utils.langfuse_observability import (
     record_participant_name_lost_event,
 )

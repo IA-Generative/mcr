@@ -1,6 +1,6 @@
 from mcr_meeting.app.configs.base import LLMSettings
 from mcr_meeting.app.infrastructure.llm.client import CorrectedText, build_llm_client
-from mcr_meeting.app.services.correct_acronyms.prompt import (
+from mcr_meeting.app.infrastructure.llm.prompts.acronyms import (
     ACRONYM_PROMPT_TEMPLATE,
     GLOSSARY_CONTENT,
 )

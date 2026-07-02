@@ -1,6 +1,6 @@
 from mcr_meeting.app.configs.base import LLMSettings
 from mcr_meeting.app.infrastructure.llm.client import CorrectedText, build_llm_client
-from mcr_meeting.app.services.correct_spelling_mistakes.prompt import PROMPT_TEMPLATE
+from mcr_meeting.app.infrastructure.llm.prompts.spelling import PROMPT_TEMPLATE
 
 
 def correct_spelling(text: str) -> str:

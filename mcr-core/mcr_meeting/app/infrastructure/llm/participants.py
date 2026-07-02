@@ -2,11 +2,11 @@ import json
 
 from mcr_meeting.app.configs.base import LLMSettings
 from mcr_meeting.app.infrastructure.llm.client import build_llm_client
-from mcr_meeting.app.schemas.transcription_schema import Participant
-from mcr_meeting.app.services.speech_to_text.participants_naming.prompts import (
+from mcr_meeting.app.infrastructure.llm.prompts.participants import (
     INITIAL_PROMPT_TEMPLATE,
     REFINE_PROMPT_TEMPLATE,
 )
+from mcr_meeting.app.schemas.transcription_schema import Participant
 
 
 def extract_participants(chunk_text: str) -> list[Participant]:
