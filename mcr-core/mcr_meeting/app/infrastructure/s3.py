@@ -1,4 +1,5 @@
 import itertools
+import tempfile
 from collections.abc import Generator, Iterable, Iterator
 from io import BytesIO
 from typing import cast
@@ -257,11 +258,15 @@ def read_preprocessed_audio(meeting_id: int) -> BytesIO:
 
 
 def write_diarization(meeting_id: int, diarization: list[DiarizationSegment]) -> None:
-    put_file_to_s3(
-        BytesIO(_DIARIZATION_ADAPTER.dump_json(diarization)),
-        get_diarization_object_name(meeting_id),
-        _JSON_CONTENT_TYPE,
-    )
+    with tempfile.NamedTemporaryFile(suffix=".json") as tmp:
+        tmp.write(_DIARIZATION_ADAPTER.dump_json(diarization))
+        tmp.flush()
+        tmp.seek(0)
+        put_file_to_s3(
+            BytesIO(tmp.read()),
+            get_diarization_object_name(meeting_id),
+            _JSON_CONTENT_TYPE,
+        )
 
 
 def read_diarization(meeting_id: int) -> list[DiarizationSegment]:
