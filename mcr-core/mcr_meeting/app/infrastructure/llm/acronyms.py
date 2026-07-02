@@ -1,5 +1,5 @@
 from mcr_meeting.app.configs.base import LLMSettings
-from mcr_meeting.app.infrastructure.llm.client import CorrectedText, build_llm_client
+from mcr_meeting.app.infrastructure.llm.client import CorrectedText, get_llm_client
 from mcr_meeting.app.infrastructure.llm.prompts.acronyms import (
     ACRONYM_PROMPT_TEMPLATE,
     GLOSSARY_CONTENT,
@@ -12,7 +12,7 @@ _PROMPT_TEMPLATE = ACRONYM_PROMPT_TEMPLATE.format(
 
 
 def correct_acronyms(text: str) -> str:
-    client = build_llm_client()
+    client = get_llm_client()
     result = client.chat.completions.create(
         model=LLMSettings().LLM_MODEL_NAME,
         response_model=CorrectedText,

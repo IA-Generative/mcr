@@ -20,3 +20,13 @@ def build_llm_client() -> instructor.Instructor:
         ),
         mode=instructor.Mode.JSON,
     )
+
+
+_client: instructor.Instructor | None = None
+
+
+def get_llm_client() -> instructor.Instructor:
+    global _client
+    if _client is None:
+        _client = build_llm_client()
+    return _client

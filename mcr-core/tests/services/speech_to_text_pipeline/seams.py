@@ -127,6 +127,11 @@ class TranscriptionSeams:
                 completions=_FakeLLMCompletions(participants or [], participants_error)
             )
         )
+        # Reset the lazy singleton so this test's client is built from the
+        # patched from_openai (and the cache is restored after the test).
+        self._mocker.patch(
+            "mcr_meeting.app.infrastructure.llm.client._client", new=None
+        )
         self._mocker.patch(_SEAM_LLM_FROM_OPENAI, return_value=fake_client)
 
     def install_audio_source(self, audio_bytes: BytesIO) -> None:
