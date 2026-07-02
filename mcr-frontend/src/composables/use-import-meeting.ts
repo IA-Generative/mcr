@@ -3,6 +3,7 @@ import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { ROUTES } from '@/router/routes';
 import type { AddImportMeetingDto } from '@/services/meetings/meetings.types';
+import { classifyUploadFailure } from '@/services/http/http.utils';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { getFileExtension } from '@/utils/file';
 import { useVideo2audioConverter } from '@/utils/video2audioConverter';
@@ -50,8 +51,12 @@ export function useImportMeeting() {
 
     try {
       await uploadFile({ meetingId: meeting.id, file });
-    } catch {
-      toaster.addErrorMessage(t('error.file-upload')!);
+    } catch (error) {
+      const messageKey =
+        classifyUploadFailure(error, navigator.onLine) === 'blocked'
+          ? 'error.file-upload-blocked'
+          : 'error.file-upload';
+      toaster.addErrorMessage(t(messageKey)!);
       return;
     }
 
