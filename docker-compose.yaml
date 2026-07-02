@@ -118,7 +118,6 @@ services:
       target: dev
     container_name: mcr-orchestrator
     ports:
-      - "8000:8000"
       # Debugging port
       - "5678:5678"
     volumes:
@@ -255,6 +254,23 @@ services:
       - VITE_UNLEASH_URL=${VITE_UNLEASH_URL}
       - VITE_UNLEASH_CLIENT_KEY=${VITE_UNLEASH_CLIENT_KEY}
       - VITE_DRIVE_URL=${VITE_DRIVE_URL}
+      # Behind the ingress the HMR websocket must point at the ingress origin.
+      - VITE_HMR_CLIENT_PORT=8080
+      # In-container target for the dev-server /api proxy (host dev uses localhost:8000).
+      - VITE_API_PROXY_TARGET=http://mcr-orchestrator:8000
+    networks:
+      - mcr-network
+
+  ingress:
+    image: nginx:1.27-alpine
+    container_name: mcr-ingress
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/ingress/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - orchestrator
+      - frontend
     networks:
       - mcr-network
 

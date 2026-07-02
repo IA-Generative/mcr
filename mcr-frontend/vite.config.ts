@@ -86,9 +86,15 @@ export default defineConfig(() => {
         'Cross-Origin-Opener-Policy': 'same-origin',
         'Cross-Origin-Embedder-Policy': 'require-corp',
       },
+      // Behind the local ingress the page is served on a different port than the
+      // dev server, so the HMR client must be told the public (ingress) port.
+      hmr: process.env.VITE_HMR_CLIENT_PORT
+        ? { clientPort: Number(process.env.VITE_HMR_CLIENT_PORT) }
+        : undefined,
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',
+          // Host dev → localhost:8000; in docker → the gateway service.
+          target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
           changeOrigin: true,
           secure: false,
         },
