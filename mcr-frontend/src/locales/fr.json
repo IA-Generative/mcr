@@ -85,7 +85,6 @@
       "title": "Liste des réunions",
       "actions": {
         "add-visio": "Utiliser une URL de visio",
-        "add-import": "Importer un fichier audio ou vidéo",
         "add-record": "Démarrer une réunion en présentiel"
       },
       "add": "Ajouter une réunion",
@@ -105,7 +104,7 @@
     },
     "tile-import": {
       "title": "J'importe un fichier audio ou vidéo",
-      "subtitle": "Importez un fichier au format : .mp3, .wav, .m4a, .mp4, .mov."
+      "subtitle": "Importez un fichier au format : {formats}."
     },
     "tile-record": {
       "title": "J'enregistre une réunion en présentiel",
@@ -121,7 +120,6 @@
       "new-subtitle": "Consultez les statuts des transcriptions et des comptes-rendus. Une fois la transcription disponible, générez votre compte-rendu depuis la fiche réunion, puis téléchargez vos documents.",
       "actions": {
         "add-visio": "Utiliser une URL de visio",
-        "add-import": "Importer un fichier audio ou vidéo",
         "add-record": "Démarrer une réunion en présentiel"
       },
       "columns": {
@@ -176,7 +174,7 @@
         "step-2": "Rappels aux participants"
       },
       "fields": {
-        "name": "@:meeting.import-form.fields.name",
+        "name": "Titre de la réunion",
         "devices": "Microphone",
         "notice": {
           "title": "Pour garantir une bonne qualité de la transcription\u00a0:",
@@ -206,26 +204,12 @@
         "cancel": "@:common.cancel"
       }
     },
-    "import-form": {
-      "title": "@:meetings.table.actions.add-import",
-      "fields": {
-        "file": {
-          "label": "Sélectionner un fichier",
-          "download-in-progress": "Téléchargement en cours",
-          "download-done": "Téléchargement terminé",
-          "placeholder": "Aucun fichier sélectionné",
-          "hint": "Formats supportés :  .mp3, .wav, .m4a, .mp4, .mov."
-        },
-        "name": "Titre de la réunion",
-        "date": "Date de la réunion"
-      },
+    "import": {
       "errors": {
-        "file-size": "Le fichier est trop volumineux. Taille maximale : 200 Mo",
-        "file-type": "Type de fichier non pris en charge",
+        "file-format-unsupported": "Format non supporté. Formats acceptés : {formats}.",
+        "file-too-long": "Fichier trop long. La durée maximum est de {maxDuration}.",
         "file-invalid": "Le fichier sélectionné n'a pas pu être converti."
-      },
-      "submit": "Importer et transcrire",
-      "update": "@:common.form.update"
+      }
     },
     "form": {
       "title": "Utiliser une URL de visioconférence",

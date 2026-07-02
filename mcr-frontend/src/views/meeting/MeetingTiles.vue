@@ -7,7 +7,9 @@
         :small="true"
         :img-src="videoSvgPath"
         :title="t('meetings_v2.tile-import.title')"
-        :description="t('meetings_v2.tile-import.subtitle')"
+        :description="
+          t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL })
+        "
         :disabled="isImporting"
         @click="openFilePicker"
       />
@@ -24,7 +26,7 @@
       <input
         ref="fileInput"
         type="file"
-        accept="video/*, audio/*"
+        :accept="IMPORT_ACCEPT_ATTR"
         hidden
         @change="onFileSelected"
       />
@@ -71,6 +73,7 @@ import type {
   AddRecordMeetingDto,
 } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
+import { ALLOWED_IMPORT_FORMATS_LABEL, IMPORT_ACCEPT_ATTR } from '@/utils/file';
 import { useModal } from 'vue-final-modal';
 
 const tileClasses =

@@ -9,6 +9,7 @@ type Primitive = string | number | boolean;
 export type Feature =
   | 'meeting.upload'
   | 'meeting.create'
+  | 'meeting.import'
   | 'recording'
   | 'transcription'
   | 'mutation'
