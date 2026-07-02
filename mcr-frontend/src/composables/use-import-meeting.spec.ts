@@ -53,6 +53,7 @@ describe('useImportMeeting.importFile', () => {
       },
     );
     URL.createObjectURL = vi.fn(() => 'blob:fake');
+    URL.revokeObjectURL = vi.fn();
   });
 
   afterEach(() => {
@@ -92,6 +93,29 @@ describe('useImportMeeting.importFile', () => {
     expect(transcodeToMp3).toHaveBeenCalledTimes(1);
     const uploadedFile = uploadFile.mock.calls[0][0].file as File;
     expect(uploadedFile.name).toMatch(/\.mp3$/);
+  });
+
+  it('still imports (without dates) when the audio metadata cannot be read', async () => {
+    vi.stubGlobal(
+      'Audio',
+      class {
+        onloadedmetadata: (() => void) | null = null;
+        onerror: (() => void) | null = null;
+        duration = NaN;
+        set src(_value: string) {
+          setTimeout(() => this.onerror?.(), 0);
+        }
+      },
+    );
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('meeting.mp3', 'audio/mpeg'));
+
+    const dto = createMeetingAsync.mock.calls[0][0];
+    expect(dto.start_date).toBeUndefined();
+    expect(dto.end_date).toBeUndefined();
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(push).toHaveBeenCalledWith('/meetings/7');
   });
 
   it('shows a toast and creates no meeting when transcoding fails', async () => {
