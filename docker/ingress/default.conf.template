@@ -1,8 +1,13 @@
-# Local stand-in for the prod cluster ingress: one origin (localhost:8080) that
-# path-routes /api -> gateway and everything else -> the frontend dev server.
-# Keeps frontend<->API same-origin (like prod), so no CORS and no per-port hacks.
+# Local stand-in for the prod cluster ingress: one origin that path-routes
+# /api -> gateway and everything else -> the frontend dev server. Keeps
+# frontend<->API same-origin (like prod), so no CORS and no per-port hacks.
+#
+# Rendered at container start by the nginx image's envsubst step: only the
+# ${INGRESS_*} placeholders are substituted (see NGINX_ENVSUBST_FILTER in
+# docker-compose.yaml) — nginx's own $host/$scheme/... runtime vars are left
+# untouched. The real values live in the ingress service in docker-compose.yaml.
 server {
-    listen 8080;
+    listen ${INGRESS_LISTEN_PORT};
     server_name localhost;
 
     # Docker embedded DNS; re-resolve upstreams so `compose --watch` restarts
@@ -13,7 +18,7 @@ server {
 
     # Keep the /api prefix — gateway routes are mounted under /api (main.py).
     location /api/ {
-        set $gw http://mcr-orchestrator:8000;
+        set $gw http://${INGRESS_GATEWAY_UPSTREAM};
         proxy_pass $gw;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -24,7 +29,7 @@ server {
 
     # SPA + vite HMR websocket.
     location / {
-        set $fe http://mcr-frontend:5173;
+        set $fe http://${INGRESS_FRONTEND_UPSTREAM};
         proxy_pass $fe;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

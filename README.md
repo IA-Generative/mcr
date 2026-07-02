@@ -57,6 +57,7 @@ Avant de démarrer, assurez-vous d’avoir installé les éléments suivants :
 - [Docker Compose](https://docs.docker.com/compose/install/)
 
 - Les librairies ffmpeg, pnpm et uv
+
 ```bash
 brew install ffmpeg node pnpm uv
 ```
@@ -82,7 +83,7 @@ Les secrets du MCP Sentry ne sont pas stockés dans des variables d’environnem
 
 Pour le configurer :
 
-1. Dans votre vault personnel 1Password (« Employee » ou « Private » selon le compte), créez un item de type **API Credentials** (dans *Show more*) nommé exactement `Sentry MCP Access Token`, avec les champs :
+1. Dans votre vault personnel 1Password (« Employee » ou « Private » selon le compte), créez un item de type **API Credentials** (dans _Show more_) nommé exactement `Sentry MCP Access Token`, avec les champs :
    - **credential** : votre Personal Access Token Sentry (scopes `org:read`, `project:read`, `event:read`, `issue:read`) ;
    - **hostname** : le hostname de l’instance Sentry du projet (à demander à l’équipe).
 
@@ -102,26 +103,70 @@ Ces credentials ne sont **pas** des variables de runtime des services MCR : ils 
 
 ### **5. Lancement de MCR en local**
 
-1) Clonez le repository :
+1. Clonez le repository :
 
 ```bash
 git clone git@github.com:IA-Generative/mcr.git
 cd mcr
 ```
-2) Demander un .env à l'équipe
 
-3) Lancer le projet à l’aide de la commande `make`
+2. Demander un .env à l'équipe
+
+3. Lancer le projet à l’aide de la commande `make`
+
 ```bash
 make start
 ```
 
 ---
 
-### **6. Licence**
+### **6. Ports locaux**
+
+Une fois la stack démarrée (`make start`), les services sont exposés sur les ports suivants.
+
+**Point d’entrée principal** — c’est le seul port à utiliser dans le navigateur : le frontend et l’API sont servis sur la même origine (parité avec la prod).
+
+| Port   | Service     | Rôle                                                          |
+| ------ | ----------- | ------------------------------------------------------------- |
+| `8080` | mcr-ingress | Application complète : SPA + API sous `/api` (origine unique) |
+
+**Interfaces d’administration**
+
+| Port                      | Service      | Rôle                        |
+| ------------------------- | ------------ | --------------------------- |
+| `keycloak.localhost:8083` | mcr-keycloak | Keycloak (authentification) |
+| `5555`                    | mcr-flower   | Flower (monitoring Celery)  |
+| `9001`                    | mcr-minio    | Console Minio (UI)          |
+| `8025`                    | mcr-mailpit  | Mailpit (webmail de dev)    |
+| `8080/api/docs`           | mcr-gateway  | Swagger                     |
+| `8001/docs`               | mcr-core     | Swagger API mcr-core        |
+
+**Bases de données & infra**
+
+| Port   | Service         | Rôle                                     |
+| ------ | --------------- | ---------------------------------------- |
+| `5433` | mcr-postgres    | PostgreSQL applicatif (→ `5432` interne) |
+| `5434` | mcr-kc-postgres | PostgreSQL de Keycloak                   |
+| `6379` | mcr-redis       | Redis (broker Celery + cache)            |
+| `9000` | mcr-minio       | API S3 Minio                             |
+| `1025` | mcr-mailpit     | SMTP (Mailpit)                           |
+
+**Ports de debug (debugpy)**
+
+| Port   | Service                  | Rôle                 |
+| ------ | ------------------------ | -------------------- |
+| `5678` | mcr-orchestrator         | debug mcr-gateway    |
+| `7001` | mcr-core                 | debug mcr-core       |
+| `7002` | mcr-transcription-worker | debug transcription  |
+| `7003` | mcr-generation           | debug mcr-generation |
+
+---
+
+### **7. Licence**
 
 Ce projet est distribué sous licence Apache 2.0.
 
-### **7. Avis de sécurité**
+### **8. Avis de sécurité**
 
 Tous les identifiants, noms d’utilisateurs, adresses e-mail, mots de passe et clés présents dans ce dépôt sont **des valeurs fictives**, utilisées **uniquement à des fins de développement local**.
 

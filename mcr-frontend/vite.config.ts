@@ -91,14 +91,6 @@ export default defineConfig(() => {
       hmr: process.env.VITE_HMR_CLIENT_PORT
         ? { clientPort: Number(process.env.VITE_HMR_CLIENT_PORT) }
         : undefined,
-      proxy: {
-        '/api': {
-          // Host dev → localhost:8000; in docker → the gateway service.
-          target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
     },
     base: process.env.BASE_URL || '/',
     resolve: {
