@@ -28,6 +28,10 @@ from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.llm.acronyms import correct_acronyms
 from mcr_meeting.app.infrastructure.llm.spelling import correct_spelling
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    get_diarization_pipeline,
+    get_transcription_model,
+)
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
@@ -57,8 +61,14 @@ class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        self.transcription_processor = TranscriptionProcessor()
-        self.diarization_processor = DiarizationProcessor()
+        # Late-bound lambdas so the models resolve at call time, after the
+        # worker context is populated (and after test patches are installed).
+        self.transcription_processor = TranscriptionProcessor(
+            lambda: get_transcription_model()
+        )
+        self.diarization_processor = DiarizationProcessor(
+            lambda: get_diarization_pipeline()
+        )
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.

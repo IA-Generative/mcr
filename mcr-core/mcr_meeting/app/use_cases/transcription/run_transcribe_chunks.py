@@ -12,6 +12,7 @@ from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
 
 def run_transcribe_chunks(
     artifact: DiarizationArtifact,
+    transcription_processor: TranscriptionProcessor,
 ) -> list[DiarizedTranscriptionSegment]:
     if not artifact.diarization:
         logger.warning("No diarization result. Returning empty transcription.")
@@ -19,7 +20,7 @@ def run_transcribe_chunks(
 
     transcription_chunk_spans = compute_transcription_chunks(artifact.diarization)
 
-    transcription_segments = TranscriptionProcessor().transcribe(
+    transcription_segments = transcription_processor.transcribe(
         audio_bytes=artifact.preprocessed_audio,
         chunk_spans=transcription_chunk_spans,
     )

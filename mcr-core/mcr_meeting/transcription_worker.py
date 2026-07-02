@@ -17,14 +17,18 @@ from loguru import logger
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 from mcr_meeting.app.infrastructure.sentry import init_sentry
 from mcr_meeting.app.infrastructure.speech_to_text_models import (
     context,
+    get_diarization_pipeline,
+    get_transcription_model,
     load_diarization_pipeline,
     load_whisper_model,
 )
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
@@ -88,8 +92,12 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, obje
     client = MeetingApiClient(owner_keycloak_uuid)
     asyncio.run(client.start_transcription(meeting_id))
 
-    artifact = run_diarization(meeting_id)
-    segments = run_transcribe_chunks(artifact)
+    artifact = run_diarization(
+        meeting_id, DiarizationProcessor(get_diarization_pipeline)
+    )
+    segments = run_transcribe_chunks(
+        artifact, TranscriptionProcessor(get_transcription_model)
+    )
     transcription_data = run_finalize_transcription(meeting_id, segments)
 
     result = [item.model_dump() for item in transcription_data]

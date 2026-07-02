@@ -1,8 +1,9 @@
 """Worker-held speech-to-text models (whisper + pyannote) and their accessors.
 
 The heavy models are loaded once per Celery worker process (see the transcription
-worker's worker_process_init) and stored in ``context``. This module owns that
-registry so the infra model callers can read it without importing the router.
+worker's worker_process_init) and stored in ``context``. The router reads the
+accessors and injects them into the infra processors — infra never reads the
+registry directly.
 """
 
 from typing import TypedDict

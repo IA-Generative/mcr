@@ -24,14 +24,16 @@ from mcr_meeting.app.schemas.transcription_schema import (
 )
 
 # --- Seam targets: the single edit point per external dependency. ---
+# The model accessors are patched at their home module: the processors now
+# receive them as injected providers resolved at call time.
 _SEAM_DIARIZATION_PIPELINE = (
-    "mcr_meeting.app.infrastructure.diarization.get_diarization_pipeline"
+    "mcr_meeting.app.infrastructure.speech_to_text_models.get_diarization_pipeline"
 )
 _SEAM_DIARIZATION_FF = (
     "mcr_meeting.app.infrastructure.diarization.get_feature_flag_client"
 )
 _SEAM_TRANSCRIPTION_MODEL = (
-    "mcr_meeting.app.infrastructure.transcription.get_transcription_model"
+    "mcr_meeting.app.infrastructure.speech_to_text_models.get_transcription_model"
 )
 _SEAM_TRANSCRIPTION_FF = (
     "mcr_meeting.app.infrastructure.transcription.get_feature_flag_client"

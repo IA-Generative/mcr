@@ -19,10 +19,12 @@ from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
 )
 
 
-def run_diarization(meeting_id: int) -> DiarizationArtifact:
+def run_diarization(
+    meeting_id: int, diarization_processor: DiarizationProcessor
+) -> DiarizationArtifact:
     audio_bytes = s3.fetch_audio_bytes(meeting_id)
     preprocessed_audio = _preprocess_audio(audio_bytes)
-    diarization = DiarizationProcessor().diarize(audio_bytes=preprocessed_audio)
+    diarization = diarization_processor.diarize(audio_bytes=preprocessed_audio)
     return DiarizationArtifact(
         preprocessed_audio=preprocessed_audio, diarization=diarization
     )

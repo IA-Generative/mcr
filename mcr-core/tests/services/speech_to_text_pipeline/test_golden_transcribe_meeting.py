@@ -13,6 +13,9 @@ LLM text splitting/reassembly, participant reconciliation) run for real.
 from collections.abc import Callable
 from io import BytesIO
 
+from mcr_meeting.app.infrastructure import speech_to_text_models
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     SpeakerTranscription,
@@ -34,8 +37,15 @@ MEETING_ID = 123
 
 
 def _transcribe(meeting_id: int) -> list[SpeakerTranscription]:
-    artifact = run_diarization(meeting_id)
-    segments = run_transcribe_chunks(artifact)
+    # Providers are read off the module at call time, after the seams patched it.
+    artifact = run_diarization(
+        meeting_id,
+        DiarizationProcessor(speech_to_text_models.get_diarization_pipeline),
+    )
+    segments = run_transcribe_chunks(
+        artifact,
+        TranscriptionProcessor(speech_to_text_models.get_transcription_model),
+    )
     return run_finalize_transcription(meeting_id, segments)
 
 

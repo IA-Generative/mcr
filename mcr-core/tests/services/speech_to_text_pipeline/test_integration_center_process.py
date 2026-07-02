@@ -94,8 +94,10 @@ def run_the_code_to_test(
 )
 @patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
 @patch("mcr_meeting.app.infrastructure.transcription.get_feature_flag_client")
-@patch("mcr_meeting.app.infrastructure.transcription.get_transcription_model")
-@patch("mcr_meeting.app.infrastructure.diarization.get_diarization_pipeline")
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
+@patch(
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+)
 def test_integration_center_process_normal_flow(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_transcription_model: MagicMock,
@@ -202,7 +204,9 @@ def test_integration_center_process_normal_flow(
 
 
 @patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
-@patch("mcr_meeting.app.infrastructure.diarization.get_diarization_pipeline")
+@patch(
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+)
 def test_integration_center_process_empty_diarization(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_feature_flag_client_diarization: MagicMock,
@@ -241,8 +245,10 @@ def test_integration_center_process_empty_diarization(
 
 @patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
 @patch("mcr_meeting.app.infrastructure.transcription.get_feature_flag_client")
-@patch("mcr_meeting.app.infrastructure.transcription.get_transcription_model")
-@patch("mcr_meeting.app.infrastructure.diarization.get_diarization_pipeline")
+@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
+@patch(
+    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
+)
 def test_integration_center_process_with_empty_chunks(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_transcription_model: MagicMock,
