@@ -104,7 +104,7 @@ describe('reportError', () => {
     reportError(new Error('x'), {
       feature: 'meeting.upload',
       level: 'warning',
-      tags: { 'meeting.id': 7, 'upload.phase': 'put' },
+      tags: { 'meeting.id': 7, 'upload.phase': 'put', 'upload.failure_type': 'blocked' },
       contexts: {
         upload: {
           phase: 'put',
@@ -113,6 +113,7 @@ describe('reportError', () => {
           bytesSent: 0,
           durationMs: 5,
           online: true,
+          failureType: 'blocked',
         },
       },
     });

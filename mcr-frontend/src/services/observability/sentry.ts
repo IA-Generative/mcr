@@ -1,3 +1,4 @@
+import type { UploadFailureType } from '@/services/http/http.utils';
 import * as Sentry from '@sentry/vue';
 import type { Contexts, SeverityLevel } from '@sentry/vue';
 import type { App } from 'vue';
@@ -24,6 +25,8 @@ export interface UploadContext {
   axiosCode?: string;
   online: boolean;
   effectiveType?: string | null;
+  failureType: UploadFailureType;
+  storageReachable?: boolean | null;
   // allow assignment to Sentry's `Context` (Record<string, unknown>)
   [key: string]: unknown;
 }

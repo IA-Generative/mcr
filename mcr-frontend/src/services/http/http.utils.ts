@@ -66,3 +66,43 @@ export function isUnexpectedHttpError(error: unknown): boolean {
   if (status === undefined) return true;
   return !EXPECTED_CLIENT_STATUS_CODES.has(status);
 }
+
+export type UploadFailureType =
+  | 'offline'
+  | 'blocked'
+  | 'timeout'
+  | 'http-client'
+  | 'http-server'
+  | 'unknown';
+
+export function classifyUploadFailure(error: unknown, online: boolean): UploadFailureType {
+  const status = getStatusCode(error);
+
+  if (status !== undefined) {
+    if (status >= 500) {
+      return 'http-server';
+    }
+
+    if (status >= 400) {
+      return 'http-client';
+    }
+
+    return 'unknown';
+  }
+
+  if (!online) {
+    return 'offline';
+  }
+
+  const code = getAxiosCode(error);
+
+  if (code === 'ECONNABORTED' || code === 'ETIMEDOUT') {
+    return 'timeout';
+  }
+
+  if (code === 'ERR_NETWORK') {
+    return 'blocked';
+  }
+
+  return 'unknown';
+}
