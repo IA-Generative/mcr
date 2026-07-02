@@ -1,3 +1,4 @@
+import re
 import tempfile
 import time
 from io import BytesIO
@@ -11,6 +12,9 @@ from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import DiarizationError
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    get_diarization_pipeline,
+)
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -20,16 +24,15 @@ from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationJobStatus,
     DiarizationSegment,
 )
-from mcr_meeting.app.services.speech_to_text.utils import (
-    convert_to_french_speaker,
-)
-from mcr_meeting.app.services.speech_to_text.utils.models import (
-    get_diarization_pipeline,
-)
 
 api_settings = TranscriptionApiSettings()
 diarization_params = PyannoteDiarizationParameters()
 celery_settings = CelerySettings()
+
+
+def convert_to_french_speaker(speaker_label: str) -> str:
+    """Convert speaker labels to French format"""
+    return re.sub(r"SPEAKER_(\d+)", r"LOCUTEUR_\1", speaker_label)
 
 
 def next_poll_interval(phase_elapsed_s: float, queue_position: int | None) -> float:

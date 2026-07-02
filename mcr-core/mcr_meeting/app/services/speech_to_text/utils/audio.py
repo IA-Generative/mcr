@@ -8,7 +8,7 @@ from loguru import logger
 from numpy.typing import NDArray
 from pydantic import BaseModel, ConfigDict
 
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
+from mcr_meeting.app.schemas.transcription_schema import TimeSpan
 
 
 class TranscriptionInput(BaseModel):

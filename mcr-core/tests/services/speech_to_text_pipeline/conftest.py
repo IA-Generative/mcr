@@ -8,14 +8,21 @@ from unittest.mock import patch
 import pytest
 from pydub import AudioSegment
 from pydub.generators import Sine
+from pytest_mock import MockerFixture
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     TranscriptionSegment,
 )
+from tests.services.speech_to_text_pipeline.seams import TranscriptionSeams
 
 M = WhisperTranscriptionSettings().MAX_CHUNK_DURATION
+
+
+@pytest.fixture
+def transcription_seams(mocker: MockerFixture) -> TranscriptionSeams:
+    return TranscriptionSeams(mocker)
 
 
 @pytest.fixture

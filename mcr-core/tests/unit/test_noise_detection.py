@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
+from mcr_meeting.app.domain.audio import (
     _parse_loudnorm_stats,
     _parse_mean_volume,
     _parse_silence_intervals,
@@ -64,27 +64,21 @@ class TestParseLoudnormStats:
 
 
 class TestIsAudioNoisy:
-    @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.compute_spectral_flatness_on_silences"
-    )
+    @patch("mcr_meeting.app.domain.audio.compute_spectral_flatness_on_silences")
     def test_clean_audio(self, mock_flatness):
         mock_flatness.return_value = 0.01
         wav_bytes = BytesIO(b"fake wav data")
         assert is_audio_noisy(wav_bytes) is False
         assert wav_bytes.tell() == 0  # cursor reset
 
-    @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.compute_spectral_flatness_on_silences"
-    )
+    @patch("mcr_meeting.app.domain.audio.compute_spectral_flatness_on_silences")
     def test_noisy_audio(self, mock_flatness):
         mock_flatness.return_value = 0.1
         wav_bytes = BytesIO(b"fake wav data")
         assert is_audio_noisy(wav_bytes) is True
         assert wav_bytes.tell() == 0
 
-    @patch(
-        "mcr_meeting.app.services.audio_pre_transcription_processing_service.compute_spectral_flatness_on_silences"
-    )
+    @patch("mcr_meeting.app.domain.audio.compute_spectral_flatness_on_silences")
     def test_no_silence_segments(self, mock_flatness):
         mock_flatness.return_value = None
         wav_bytes = BytesIO(b"fake wav data")
