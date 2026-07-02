@@ -2,14 +2,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 const { addErrorMessage } = vi.hoisted(() => ({ addErrorMessage: vi.fn() }));
-const { createMeetingAsync, startTranscription, uploadFile, transcodeToMp3 } = vi.hoisted(() => ({
+const {
+  createMeetingAsync,
+  startTranscription,
+  uploadFile,
+  transcodeToMp3,
+  classifyUploadFailure,
+} = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
   startTranscription: vi.fn(),
   uploadFile: vi.fn(),
   transcodeToMp3: vi.fn(),
+  classifyUploadFailure: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/services/http/http.utils', () => ({ classifyUploadFailure }));
 vi.mock('@/composables/use-toaster', () => ({ default: () => ({ addErrorMessage }) }));
 vi.mock('@/plugins/i18n', () => ({ t: (key: string) => key }));
 vi.mock('@/router/routes', () => ({ ROUTES: { MEETINGS: { path: '/meetings' } } }));
@@ -41,6 +49,7 @@ describe('useImportMeeting.importFile', () => {
       opts?.onSuccess?.(),
     );
     transcodeToMp3.mockResolvedValue(makeFile('output.mp3', 'audio/mpeg'));
+    classifyUploadFailure.mockReturnValue('unknown');
 
     vi.stubGlobal(
       'Audio',
@@ -147,6 +156,17 @@ describe('useImportMeeting.importFile', () => {
 
     expect(addErrorMessage).toHaveBeenCalledWith('error.file-upload');
     expect(startTranscription).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('shows the proxy-blocked message when the upload is classified as blocked', async () => {
+    uploadFile.mockRejectedValue(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('blocked');
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('meeting.mp3', 'audio/mpeg'));
+
+    expect(addErrorMessage).toHaveBeenCalledWith('error.file-upload-blocked');
     expect(push).not.toHaveBeenCalled();
   });
 
