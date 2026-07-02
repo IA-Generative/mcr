@@ -1,5 +1,7 @@
 """Build speaker transcriptions and map speaker labels to participant names."""
 
+import re
+
 from loguru import logger
 
 from mcr_meeting.app.schemas.transcription_schema import (
@@ -7,6 +9,11 @@ from mcr_meeting.app.schemas.transcription_schema import (
     Participant,
     SpeakerTranscription,
 )
+
+
+def convert_to_french_speaker(speaker_label: str) -> str:
+    """Convert speaker labels to French format"""
+    return re.sub(r"SPEAKER_(\d+)", r"LOCUTEUR_\1", speaker_label)
 
 
 def replace_speaker_name_if_available(

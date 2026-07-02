@@ -10,6 +10,7 @@ from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
     WhisperTranscriptionSettings,
 )
+from mcr_meeting.app.domain.audio import split_audio_on_timestamps
 from mcr_meeting.app.exceptions.exceptions import TranscriptionError
 from mcr_meeting.app.infrastructure.speech_to_text_models import (
     get_transcription_model,
@@ -21,9 +22,6 @@ from mcr_meeting.app.infrastructure.unleash import (
 from mcr_meeting.app.schemas.transcription_schema import (
     TimeSpan,
     TranscriptionSegment,
-)
-from mcr_meeting.app.services.speech_to_text.utils.audio import (
-    split_audio_on_timestamps,
 )
 
 transcription_settings = WhisperTranscriptionSettings()

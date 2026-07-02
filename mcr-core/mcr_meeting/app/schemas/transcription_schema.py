@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from io import BytesIO
 
-from pydantic import BaseModel, Field, field_validator
+import numpy as np
+from numpy.typing import NDArray
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from mcr_meeting.app.exceptions.exceptions import UnknownDiarizationStatus
 
@@ -43,6 +45,13 @@ class TimeSpan:
         if self.end >= other.start:
             return None
         return TimeSpan(self.end, other.start)
+
+
+class TranscriptionInput(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    audio: NDArray[np.float32]
+    span: TimeSpan
 
 
 class SpeakerTranscription(BaseModel):

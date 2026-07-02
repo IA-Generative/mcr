@@ -7,6 +7,7 @@ from io import BytesIO
 import ffmpeg
 import numpy as np
 import numpy.typing as npt
+import soundfile as sf
 from loguru import logger
 
 from mcr_meeting.app.configs.base import (
@@ -19,6 +20,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     SilentAudioError,
 )
+from mcr_meeting.app.schemas.transcription_schema import TimeSpan, TranscriptionInput
 from mcr_meeting.setup.logger import log_ffmpeg_command
 
 s2t_settings = Speech2TextSettings()
@@ -436,3 +438,40 @@ def is_audio_noisy(wav_bytes: BytesIO) -> bool:
     return (
         flatness is None or flatness > noise_detection_settings.NOISE_FLATNESS_THRESHOLD
     )
+
+
+def split_audio_on_timestamps(
+    audio_bytes: BytesIO,
+    result_with_time: list[TimeSpan],
+) -> list[TranscriptionInput]:
+    """
+    Split mono audio bytes into chunks based on time spans.
+
+    Args:
+        audio_bytes (bytes): Full audio data (mono WAV/PCM encoded).
+        result_with_time (List[TimeSpan]): Spans with start/end times in seconds.
+
+    Returns:
+        List[TranscriptionInput]: List of audio chunks aligned with time spans.
+    """
+    data, sample_rate = sf.read(audio_bytes)  # already mono
+    transcription_inputs: list[TranscriptionInput] = []
+
+    for span in result_with_time:
+        start_sample = int(span.start * sample_rate)
+        end_sample = int(span.end * sample_rate)
+        chunk_data = data[start_sample:end_sample]
+
+        transcription_inputs.append(
+            TranscriptionInput(
+                audio=chunk_data.astype("float32"),
+                span=span,
+            )
+        )
+
+    logger.debug(
+        "Created {} transcription inputs from diarization segments",
+        len(transcription_inputs),
+    )
+
+    return transcription_inputs
