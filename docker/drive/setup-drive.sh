@@ -41,9 +41,9 @@ write_or_replace() {
   fi
 }
 
-write_or_replace "OIDC_OP_URL" "http://localhost:8083/realms/mirai" "$DRIVE_COMMON_LOCAL"
+write_or_replace "OIDC_OP_URL" "http://keycloak.localhost:8083/realms/mirai" "$DRIVE_COMMON_LOCAL"
 write_or_replace "OIDC_OP_JWKS_ENDPOINT" "http://nginx:8083/realms/mirai/protocol/openid-connect/certs" "$DRIVE_COMMON_LOCAL"
-write_or_replace "OIDC_OP_AUTHORIZATION_ENDPOINT" "http://localhost:8083/realms/mirai/protocol/openid-connect/auth" "$DRIVE_COMMON_LOCAL"
+write_or_replace "OIDC_OP_AUTHORIZATION_ENDPOINT" "http://keycloak.localhost:8083/realms/mirai/protocol/openid-connect/auth" "$DRIVE_COMMON_LOCAL"
 write_or_replace "OIDC_OP_TOKEN_ENDPOINT" "http://nginx:8083/realms/mirai/protocol/openid-connect/token" "$DRIVE_COMMON_LOCAL"
 write_or_replace "OIDC_OP_USER_ENDPOINT" "http://nginx:8083/realms/mirai/protocol/openid-connect/userinfo" "$DRIVE_COMMON_LOCAL"
 write_or_replace "OIDC_OP_INTROSPECTION_ENDPOINT" "http://nginx:8083/realms/mirai/protocol/openid-connect/token/introspect" "$DRIVE_COMMON_LOCAL"

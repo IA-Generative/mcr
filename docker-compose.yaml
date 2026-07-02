@@ -85,7 +85,6 @@ services:
       - LANGFUSE_HOST=${LANGFUSE_HOST}
 
     ports:
-      - "5672:5672"
       # Debugging port
       - "7002:7002"
     volumes:
@@ -118,7 +117,6 @@ services:
       target: dev
     container_name: mcr-orchestrator
     ports:
-      - "8000:8000"
       # Debugging port
       - "5678:5678"
     volumes:
@@ -220,7 +218,6 @@ services:
       - LEVEL=${LEVEL}
       - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
     ports:
-      - "8003:8003"
       # Debugging port
       - "7003:7003"
     volumes:
@@ -237,8 +234,6 @@ services:
       context: ./mcr-frontend
       target: dev
     container_name: mcr-frontend
-    ports:
-      - "8881:5173"
     volumes:
       - ./mcr-frontend/src:/app/src
     develop:
@@ -255,6 +250,28 @@ services:
       - VITE_UNLEASH_URL=${VITE_UNLEASH_URL}
       - VITE_UNLEASH_CLIENT_KEY=${VITE_UNLEASH_CLIENT_KEY}
       - VITE_DRIVE_URL=${VITE_DRIVE_URL}
+      # Behind the ingress the HMR websocket must point at the ingress origin.
+      - VITE_HMR_CLIENT_PORT=8080
+    networks:
+      - mcr-network
+
+  ingress:
+    image: nginx:1.27-alpine
+    container_name: mcr-ingress
+    ports:
+      # Published port must match INGRESS_LISTEN_PORT below.
+      - "8080:8080"
+    environment:
+      - INGRESS_LISTEN_PORT=8080
+      - INGRESS_GATEWAY_UPSTREAM=mcr-orchestrator:8000
+      - INGRESS_FRONTEND_UPSTREAM=mcr-frontend:5173
+      # Only substitute our INGRESS_* placeholders; leave nginx's own $vars alone.
+      - NGINX_ENVSUBST_FILTER=^INGRESS_
+    volumes:
+      - ./docker/ingress/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    depends_on:
+      - orchestrator
+      - frontend
     networks:
       - mcr-network
 
@@ -387,8 +404,8 @@ services:
       - --http-port=8083
       - --import-realm
       - --proxy=edge
-      - --hostname-url=http://localhost:8083
-      - --hostname-admin-url=http://localhost:8083/
+      - --hostname-url=http://keycloak.localhost:8083
+      - --hostname-admin-url=http://keycloak.localhost:8083/
       - --hostname-strict=false
       - --hostname-strict-https=false
       - --health-enabled=true
@@ -408,7 +425,9 @@ services:
         condition: service_healthy
         restart: true
     networks:
-      - mcr-network
+      mcr-network:
+        aliases:
+          - keycloak.localhost
 
 networks:
   mcr-network:

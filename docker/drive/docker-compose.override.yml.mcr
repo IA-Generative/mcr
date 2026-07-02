@@ -10,8 +10,12 @@ services:
 
   keycloak:
     networks:
-      - mcr-network
-      - shared-network
+      # Map form to stay merge-compatible with the base compose, which sets a
+      # keycloak.localhost alias on mcr-network.
+      mcr-network:
+        aliases:
+          - keycloak.localhost
+      shared-network: {}
 
 networks:
   shared-network:

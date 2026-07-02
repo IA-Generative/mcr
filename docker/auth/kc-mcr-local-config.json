@@ -718,7 +718,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": true,
       "clientAuthenticatorType": "client-secret",
-      "redirectUris": ["http://localhost:8881/*", "http://localhost:8000/*"],
+      "redirectUris": ["http://localhost:8881/*", "http://localhost:8000/*", "http://localhost:8080/*"],
       "webOrigins": ["+"],
       "notBefore": 0,
       "bearerOnly": false,

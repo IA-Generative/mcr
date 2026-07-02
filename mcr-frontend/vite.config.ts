@@ -86,13 +86,11 @@ export default defineConfig(() => {
         'Cross-Origin-Opener-Policy': 'same-origin',
         'Cross-Origin-Embedder-Policy': 'require-corp',
       },
-      proxy: {
-        '/api': {
-          target: 'http://localhost:8000',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
+      // Behind the local ingress the page is served on a different port than the
+      // dev server, so the HMR client must be told the public (ingress) port.
+      hmr: process.env.VITE_HMR_CLIENT_PORT
+        ? { clientPort: Number(process.env.VITE_HMR_CLIENT_PORT) }
+        : undefined,
     },
     base: process.env.BASE_URL || '/',
     resolve: {
