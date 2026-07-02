@@ -2,9 +2,8 @@ import factory
 from factory import Faker, LazyAttribute, Sequence, SubFactory
 
 from mcr_meeting.app.models.transcription_model import Transcription
-
-from .base import BaseFactory
-from .meeting_factory import MeetingFactory
+from tests.factories.base import BaseFactory
+from tests.factories.meeting_factory import MeetingFactory
 
 
 class TranscriptionFactory(BaseFactory[Transcription]):

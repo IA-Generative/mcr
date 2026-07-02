@@ -8,8 +8,7 @@ import pytest
 from fastapi import status
 
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
-
-from .conftest import PrefixedTestClient
+from tests.api.conftest import PrefixedTestClient
 
 
 def _build_zip(names: list[str]) -> bytes:

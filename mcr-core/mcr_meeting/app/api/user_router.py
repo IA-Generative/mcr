@@ -2,12 +2,8 @@ from fastapi import APIRouter, Depends
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
-
-from ..schemas.user_schema import (
-    UserCreate,
-    UserResponse,
-)
-from ..use_cases.get_or_create_user_by_keycloak import (
+from mcr_meeting.app.schemas.user_schema import UserCreate, UserResponse
+from mcr_meeting.app.use_cases.get_or_create_user_by_keycloak import (
     get_or_create_user_by_keycloak,
 )
 

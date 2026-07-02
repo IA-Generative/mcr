@@ -8,9 +8,8 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingPlatforms,
     MeetingStatus,
 )
-
-from .base import BaseFactory
-from .user_factory import UserFactory
+from tests.factories.base import BaseFactory
+from tests.factories.user_factory import UserFactory
 
 
 class MeetingFactory(BaseFactory[Meeting]):

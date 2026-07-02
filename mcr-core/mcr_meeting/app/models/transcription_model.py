@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # Avoid circular imports but allow proper typing
-    from .meeting_model import Meeting
+    from mcr_meeting.app.models.meeting_model import Meeting
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..db.db import Base
+from mcr_meeting.app.db.db import Base
 
 
 class Transcription(Base):

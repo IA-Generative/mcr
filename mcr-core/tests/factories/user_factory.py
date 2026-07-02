@@ -3,8 +3,7 @@ import uuid
 from factory import Faker, LazyFunction, Sequence, Trait
 
 from mcr_meeting.app.models.user_model import Role, User
-
-from .base import BaseFactory
+from tests.factories.base import BaseFactory
 
 
 class UserFactory(BaseFactory[User]):

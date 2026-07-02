@@ -10,8 +10,7 @@ from pydantic import UUID4
 
 from mcr_meeting.app.models import Meeting, User
 from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, MeetingUpdate
-
-from .conftest import PrefixedTestClient
+from tests.api.conftest import PrefixedTestClient
 
 
 def test_create_meeting(meeting_client: PrefixedTestClient, user_fixture: User) -> None:

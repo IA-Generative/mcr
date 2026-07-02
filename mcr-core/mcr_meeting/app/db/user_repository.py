@@ -1,10 +1,9 @@
 from loguru import logger
 from pydantic import UUID4
 
+from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import NotFoundException
 from mcr_meeting.app.models import User
-
-from ..db.db import get_db_session_ctx
 
 
 def save_user(user: User) -> User:

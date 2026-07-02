@@ -3,9 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from mcr_meeting.app.db.db import Base
 from mcr_meeting.app.models.meeting_model import MeetingStatus
-
-from ..db.db import Base
 
 
 class MeetingTransitionRecord(Base):

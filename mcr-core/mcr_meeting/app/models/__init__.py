@@ -1,10 +1,18 @@
 # Export the models for easy access
-from .deliverable_model import Deliverable, DeliverableStatus, DeliverableType
-from .feedback_model import Feedback, VoteType
-from .meeting_model import Meeting, MeetingPlatforms, MeetingStatus
-from .meeting_transition_record import MeetingTransitionRecord
-from .transcription_model import Transcription
-from .user_model import Role, User
+from mcr_meeting.app.models.deliverable_model import (
+    Deliverable,
+    DeliverableStatus,
+    DeliverableType,
+)
+from mcr_meeting.app.models.feedback_model import Feedback, VoteType
+from mcr_meeting.app.models.meeting_model import (
+    Meeting,
+    MeetingPlatforms,
+    MeetingStatus,
+)
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
+from mcr_meeting.app.models.transcription_model import Transcription
+from mcr_meeting.app.models.user_model import Role, User
 
 __all__ = [
     "Deliverable",

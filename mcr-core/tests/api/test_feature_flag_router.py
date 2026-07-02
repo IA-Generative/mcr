@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-from .conftest import PrefixedTestClient
+from tests.api.conftest import PrefixedTestClient
 
 
 def test_get_feature_flag_status_enabled(
