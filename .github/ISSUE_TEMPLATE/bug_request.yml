@@ -1,6 +1,6 @@
 name: "Bug / Retour utilisateur"
 description: Signaler un bug ou remonter un retour utilisateur
-title: "BUG ou Feedback utilisateur - "
+title: "Titre court à remplir"
 type: bug
 body:
   - type: dropdown
@@ -22,7 +22,7 @@ body:
       options:
         - MCR
         - OCR
-        - Résumé
+        - Résumer
     validations:
       required: true
 

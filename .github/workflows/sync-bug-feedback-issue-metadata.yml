@@ -1,0 +1,83 @@
+name: Sync bug/feedback issue metadata
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  sync-type:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set issue type based on "Type de demande" answer
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          BODY: ${{ github.event.issue.body }}
+        run: |
+          ANSWER=$(printf '%s\n' "$BODY" | awk '/^### Type de demande/{found=1; next} found && NF {print; exit}')
+
+          case "$ANSWER" in
+            "Retour utilisateur")
+              gh issue edit "$NUMBER" --repo "$REPO" --type Feature
+              ;;
+            "Bug")
+              gh issue edit "$NUMBER" --repo "$REPO" --type Bug
+              ;;
+            *)
+              echo "ℹ️ No 'Type de demande' field found, skipping"
+              ;;
+          esac
+
+  sync-product:
+    runs-on: ubuntu-latest
+    steps:
+      # Projects v2 is org-level and the default GITHUB_TOKEN cannot write to it.
+      # Requires a repo secret PROJECTS_TOKEN: a PAT (classic or fine-grained) with the `project` scope,
+      # created by someone with access to the "Mirai - la suite" project.
+      - name: Add issue to "Mirai - la suite" and set Produit field
+        env:
+          GH_TOKEN: ${{ secrets.PROJECTS_TOKEN }}
+          CONTENT_ID: ${{ github.event.issue.node_id }}
+          BODY: ${{ github.event.issue.body }}
+          PROJECT_ID: PVT_kwDOCK1NKM4ApLnn
+          PRODUIT_FIELD_ID: PVTSSF_lADOCK1NKM4ApLnnzg_MNyE
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "⚠️ PROJECTS_TOKEN secret is not set, skipping project sync"
+            exit 0
+          fi
+
+          ANSWER=$(printf '%s\n' "$BODY" | awk '/^### Produit concerné/{found=1; next} found && NF {print; exit}')
+
+          case "$ANSWER" in
+            "MCR") OPTION_ID="6fa5ca95" ;;
+            "OCR") OPTION_ID="32d3ccdb" ;;
+            "Résumer") OPTION_ID="5a96fa74" ;;
+            *)
+              echo "ℹ️ No matching 'Produit concerné' answer found, skipping"
+              exit 0
+              ;;
+          esac
+
+          ITEM_ID=$(gh api graphql -f query='
+            mutation($project: ID!, $content: ID!) {
+              addProjectV2ItemById(input: { projectId: $project, contentId: $content }) {
+                item { id }
+              }
+            }' -f project="$PROJECT_ID" -f content="$CONTENT_ID" --jq '.data.addProjectV2ItemById.item.id')
+
+          gh api graphql -f query='
+            mutation($project: ID!, $item: ID!, $field: ID!, $option: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $project,
+                itemId: $item,
+                fieldId: $field,
+                value: { singleSelectOptionId: $option }
+              }) {
+                projectV2Item { id }
+              }
+            }' -f project="$PROJECT_ID" -f item="$ITEM_ID" -f field="$PRODUIT_FIELD_ID" -f option="$OPTION_ID"
