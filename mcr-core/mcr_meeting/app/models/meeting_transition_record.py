@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mcr_meeting.app.db.db import Base
@@ -22,6 +22,13 @@ class MeetingTransitionRecord(Base):
     """
 
     __tablename__ = "meeting_transition_record"
+    __table_args__ = (
+        Index(
+            "ix_meeting_transition_record_meeting_id_timestamp",
+            "meeting_id",
+            "timestamp",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
     meeting_id: Mapped[int] = mapped_column(
