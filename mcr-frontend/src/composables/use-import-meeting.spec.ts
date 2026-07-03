@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 const { addErrorMessage } = vi.hoisted(() => ({ addErrorMessage: vi.fn() }));
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 const {
   createMeetingAsync,
   startTranscription,
@@ -17,6 +18,7 @@ const {
 }));
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/services/observability/sentry', () => ({ reportError }));
 vi.mock('@/services/http/http.utils', () => ({ classifyUploadFailure }));
 vi.mock('@/composables/use-toaster', () => ({ default: () => ({ addErrorMessage }) }));
 vi.mock('@/plugins/i18n', () => ({ t: (key: string) => key }));
@@ -72,7 +74,6 @@ describe('useImportMeeting.importFile', () => {
   it.each([
     ['Réunion client.mp3', 'Réunion client'],
     ['nom.avec.points.wav', 'nom.avec.points'],
-    ['sansextension', 'sansextension'],
   ])('derives the title from the filename without extension: %s', async (fileName, expected) => {
     const { importFile } = useImportMeeting();
     await importFile(makeFile(fileName, 'audio/mpeg'));
@@ -133,8 +134,66 @@ describe('useImportMeeting.importFile', () => {
     const { importFile } = useImportMeeting();
     await importFile(makeFile('demo.mp4', 'video/mp4'));
 
-    expect(addErrorMessage).toHaveBeenCalledWith('meeting.import-form.errors.file-invalid');
+    expect(addErrorMessage).toHaveBeenCalledWith('meeting.import.errors.file-invalid');
     expect(createMeetingAsync).not.toHaveBeenCalled();
+  });
+
+  it('reports the unexpected transcode failure to Sentry', async () => {
+    transcodeToMp3.mockRejectedValue(new Error('boom'));
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('demo.mp4', 'video/mp4'));
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ feature: 'meeting.import' }),
+    );
+  });
+
+  it.each([
+    ['notes.txt', 'text/plain'],
+    ['sansextension', 'audio/mpeg'],
+  ])(
+    'rejects an unsupported file (%s) without transcoding, creating or uploading',
+    async (fileName, type) => {
+      const { importFile } = useImportMeeting();
+      await importFile(makeFile(fileName, type));
+
+      expect(addErrorMessage).toHaveBeenCalledWith('meeting.import.errors.file-format-unsupported');
+      expect(transcodeToMp3).not.toHaveBeenCalled();
+      expect(createMeetingAsync).not.toHaveBeenCalled();
+      expect(uploadFile).not.toHaveBeenCalled();
+      expect(reportError).not.toHaveBeenCalled();
+    },
+  );
+
+  it('rejects a file longer than 4 hours before any transcode or create', async () => {
+    vi.stubGlobal(
+      'Audio',
+      class {
+        onloadedmetadata: (() => void) | null = null;
+        duration = 4 * 60 * 60 + 1;
+        set src(_value: string) {
+          setTimeout(() => this.onloadedmetadata?.(), 0);
+        }
+      },
+    );
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('marathon.mp4', 'video/mp4'));
+
+    expect(addErrorMessage).toHaveBeenCalledWith('meeting.import.errors.file-too-long');
+    expect(transcodeToMp3).not.toHaveBeenCalled();
+    expect(createMeetingAsync).not.toHaveBeenCalled();
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it('transcodes a video file even when its MIME type is empty', async () => {
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('demo.mp4', ''));
+
+    expect(transcodeToMp3).toHaveBeenCalledTimes(1);
+    expect(uploadFile).toHaveBeenCalledTimes(1);
   });
 
   it('shows a toast and does not upload when meeting creation fails', async () => {

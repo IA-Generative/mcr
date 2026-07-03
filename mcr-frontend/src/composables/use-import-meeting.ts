@@ -5,7 +5,15 @@ import { ROUTES } from '@/router/routes';
 import type { AddImportMeetingDto } from '@/services/meetings/meetings.types';
 import { classifyUploadFailure } from '@/services/http/http.utils';
 import { useMeetings } from '@/services/meetings/use-meeting';
-import { getFileExtension } from '@/utils/file';
+import { reportError } from '@/services/observability/sentry';
+import {
+  ALLOWED_IMPORT_EXTENSIONS,
+  ALLOWED_IMPORT_FORMATS_LABEL,
+  MAX_IMPORT_DURATION_SECONDS,
+  VIDEO_IMPORT_EXTENSIONS,
+  getFileExtension,
+} from '@/utils/file';
+import { formatDurationLabel } from '@/utils/timeFormatting';
 import { useVideo2audioConverter } from '@/utils/video2audioConverter';
 import { useRouter } from 'vue-router';
 
@@ -18,13 +26,45 @@ export function useImportMeeting() {
   const { uploadFile } = useMultipart();
 
   async function importFile(file: File): Promise<void> {
+    const extension = getFileExtension(file)?.toLowerCase();
+    if (!extension || !ALLOWED_IMPORT_EXTENSIONS.includes(extension)) {
+      toaster.addErrorMessage(
+        t('meeting.import.errors.file-format-unsupported', {
+          formats: ALLOWED_IMPORT_FORMATS_LABEL,
+        })!,
+      );
+      return;
+    }
+
+    const duration = await readAudioDurationSeconds(file);
+    if (duration !== null && duration > MAX_IMPORT_DURATION_SECONDS) {
+      toaster.addErrorMessage(
+        t('meeting.import.errors.file-too-long', {
+          maxDuration: formatDurationLabel(MAX_IMPORT_DURATION_SECONDS),
+        })!,
+      );
+      return;
+    }
+
     let audioFile = file;
-    if (file.type.startsWith('video/')) {
+    if (VIDEO_IMPORT_EXTENSIONS.includes(extension)) {
       try {
         const { transcodeToMp3 } = useVideo2audioConverter();
         audioFile = await transcodeToMp3(file);
-      } catch {
-        toaster.addErrorMessage(t('meeting.import-form.errors.file-invalid')!);
+      } catch (error) {
+        reportError(error, {
+          feature: 'meeting.import',
+          tags: { 'import.phase': 'transcode' },
+          contexts: {
+            import: {
+              extension,
+              mimeType: file.type,
+              sizeBytes: file.size,
+              durationSeconds: duration,
+            },
+          },
+        });
+        toaster.addErrorMessage(t('meeting.import.errors.file-invalid')!);
         return;
       }
     }
@@ -35,8 +75,8 @@ export function useImportMeeting() {
       creation_date: new Date().toISOString(),
     };
 
-    const dtoWithDates = await updateDtoWithDates(dto, audioFile);
-    await uploadFileWithMultipart(dtoWithDates, renameWithTimestamp(audioFile));
+    applyDurationToDates(dto, duration);
+    await uploadFileWithMultipart(dto, renameWithTimestamp(audioFile));
   }
 
   async function uploadFileWithMultipart(dto: AddImportMeetingDto, file: File): Promise<void> {
@@ -83,14 +123,9 @@ function renameWithTimestamp(file: File): File {
 
 const METADATA_READ_TIMEOUT_MS = 10_000;
 
-async function updateDtoWithDates(
-  dto: AddImportMeetingDto,
-  file: File,
-): Promise<AddImportMeetingDto> {
-  const duration = await readAudioDurationSeconds(file);
-
+function applyDurationToDates(dto: AddImportMeetingDto, duration: number | null): void {
   if (duration === null) {
-    return dto;
+    return;
   }
 
   const endDate = new Date();
@@ -98,8 +133,6 @@ async function updateDtoWithDates(
 
   dto.start_date = startDate.toISOString();
   dto.end_date = endDate.toISOString();
-
-  return dto;
 }
 
 function readAudioDurationSeconds(file: File): Promise<number | null> {

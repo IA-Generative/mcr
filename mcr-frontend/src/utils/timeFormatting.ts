@@ -22,3 +22,29 @@ export function formatDurationMinutes(durationMinutes: number | undefined): stri
     formattedTime,
   });
 }
+
+export function formatDurationLabel(durationSeconds: number): string {
+  const parts: string[] = [];
+
+  const days = Math.floor(durationSeconds / 86400);
+  if (days > 0) {
+    parts.push(`${days} j`);
+  }
+
+  const hours = Math.floor((durationSeconds % 86400) / 3600);
+  if (hours > 0) {
+    parts.push(`${hours} h`);
+  }
+
+  const minutes = Math.floor((durationSeconds % 3600) / 60);
+  if (minutes > 0) {
+    parts.push(`${minutes} min`);
+  }
+
+  const seconds = Math.floor(durationSeconds % 60);
+  if (seconds > 0) {
+    parts.push(`${seconds} s`);
+  }
+
+  return parts.length > 0 ? parts.join(' ') : '0 s';
+}
