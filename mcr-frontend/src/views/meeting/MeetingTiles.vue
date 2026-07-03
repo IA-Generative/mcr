@@ -7,18 +7,18 @@
         :disabled="hasActiveUploads"
         @click="openFilePicker"
       >
-        <span class="flex h-full w-full items-center justify-between gap-4">
-          <span class="flex flex-col gap-2 text-left">
-            <span class="text-lg font-bold">{{ t('meetings_v2.tile-import.title') }}</span>
-            <span class="text-sm font-normal">
-              {{ t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL }) }}
-            </span>
-          </span>
+        <span class="flex h-full w-full items-center gap-4">
           <img
             :src="videoSvgPath"
             alt=""
             class="h-20 w-20 shrink-0"
           />
+          <span class="flex flex-col gap-2 text-left">
+            <span class="action-tile-title">{{ t('meetings_v2.tile-import.title') }}</span>
+            <span class="action-tile-desc">
+              {{ t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL }) }}
+            </span>
+          </span>
         </span>
       </DsfrButton>
       <div
@@ -44,16 +44,16 @@
       :class="[tileClasses, 'action-tile']"
       @click="openRecordModal"
     >
-      <span class="flex h-full w-full items-center justify-between gap-4">
-        <span class="flex flex-col gap-2 text-left">
-          <span class="text-lg font-bold">{{ t('meetings_v2.tile-record.title') }}</span>
-          <span class="text-sm font-normal">{{ t('meetings_v2.tile-record.subtitle') }}</span>
-        </span>
+      <span class="flex h-full w-full items-center gap-4">
         <img
           :src="podcastSvgPath"
           alt=""
           class="h-20 w-20 shrink-0"
         />
+        <span class="flex flex-col gap-2 text-left">
+          <span class="action-tile-title">{{ t('meetings_v2.tile-record.title') }}</span>
+          <span class="action-tile-desc">{{ t('meetings_v2.tile-record.subtitle') }}</span>
+        </span>
       </span>
     </DsfrButton>
     <DsfrButton
@@ -61,10 +61,15 @@
       :class="[tileClasses, 'action-tile']"
       @click="openVisioMeetingModal"
     >
-      <span class="flex h-full w-full items-center justify-between gap-4">
+      <span class="flex h-full w-full items-center gap-4">
+        <img
+          :src="selfTrainingSvgPath"
+          alt=""
+          class="h-20 w-20 shrink-0"
+        />
         <span class="flex flex-col gap-2 text-left">
-          <span class="text-lg font-bold">{{ t('meetings_v2.tile-visio.title') }}</span>
-          <span class="text-sm font-normal">
+          <span class="action-tile-title">{{ t('meetings_v2.tile-visio.title') }}</span>
+          <span class="action-tile-desc">
             {{
               isWebexEnabled
                 ? t('meetings_v2.tile-visio.subtitle-with-webex')
@@ -72,11 +77,6 @@
             }}
           </span>
         </span>
-        <img
-          :src="selfTrainingSvgPath"
-          alt=""
-          class="h-20 w-20 shrink-0"
-        />
       </span>
     </DsfrButton>
   </div>
@@ -179,10 +179,23 @@ function redirectToMeetingPage(meetingId: number) {
 }
 
 /* DsfrButton wraps its slot in a plain <span>; make it fill the button so the
-   card layout (text left, pictogram right) can spread */
+   card layout (pictogram left, text right) can spread */
 .action-tile > :deep(span) {
   display: flex;
   height: 100%;
   width: 100%;
+}
+
+/* same text colors as the former DsfrTile (title/desc), instead of the
+   secondary button's action blue */
+.action-tile-title {
+  color: var(--text-title-grey);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.action-tile-desc {
+  color: var(--text-default-grey);
+  font-size: 0.875rem;
 }
 </style>
