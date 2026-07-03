@@ -118,6 +118,8 @@ cd mcr
 make start
 ```
 
+> **Ma modif du `.env` n'est pas prise en compte ?** Si une variable est exportée dans votre shell (settings VSCode `terminal.integrated.env`, direnv, dotfiles), elle **masque silencieusement** la valeur du `.env` — docker compose donne priorité au shell sur `--env-file`. `make start` affiche un warning listant les variables concernées ; vérifiez avec `printenv MA_VAR`, supprimez la source de l'export, puis ouvrez un nouveau terminal.
+
 ---
 
 ### **6. Ports locaux**

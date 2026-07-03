@@ -1,4 +1,4 @@
-.PHONY: clean help install install-hooks type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
+.PHONY: clean help install install-hooks type-check lint format pre-commit check-env start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
 
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
@@ -36,19 +36,24 @@ install: install-hooks
 install-hooks:
 	uvx pre-commit install
 
+# docker compose resolves ${VAR} with "shell > --env-file" precedence: a variable
+# exported by the terminal silently overrides .env edits. Warn before every `up`.
+check-env:
+	@./scripts/check_env.py
+
 # example: make start service=mcr-frontend
-start:
+start: check-env
 	touch .env
 	docker compose --env-file .env.local.docker --env-file .env up $(service) --watch
 
 stop:
 	docker compose down $(service)
 
-restart:
+restart: check-env
 	docker compose down $(service)
 	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
 
-rebuild:
+rebuild: check-env
 	docker compose down $(service)
 	docker compose build $(service)
 	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
@@ -77,7 +82,7 @@ eval-participants:
 init-drive:  ## One-time: copy config, build images
 	./docker/drive/setup-drive.sh
 
-start-drive:  ## Start MCR + Drive
+start-drive: check-env  ## Start MCR + Drive
 	@if [ ! -f ../drive/compose.override.yml ]; then \
 		echo "Drive is not set up. Run 'make init-drive' first."; \
 		exit 1; \
