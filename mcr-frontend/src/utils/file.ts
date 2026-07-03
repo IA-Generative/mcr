@@ -36,6 +36,7 @@ export const IMPORT_ACCEPT_ATTR = ALLOWED_IMPORT_EXTENSIONS.map((e) => `.${e}`).
 export const ALLOWED_IMPORT_FORMATS_LABEL = ALLOWED_IMPORT_EXTENSIONS.map((e) => `.${e}`).join(
   ', ',
 );
+export const MAX_IMPORT_DURATION_SECONDS = 4 * 60 * 60;
 
 export function extractFilenameFromResponse(response: AxiosResponse): string | undefined {
   // mcr-core always emits Content-Disposition as filename*=UTF-8''<url-encoded>

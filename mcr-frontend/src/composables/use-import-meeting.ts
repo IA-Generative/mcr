@@ -9,14 +9,13 @@ import { reportError } from '@/services/observability/sentry';
 import {
   ALLOWED_IMPORT_EXTENSIONS,
   ALLOWED_IMPORT_FORMATS_LABEL,
+  MAX_IMPORT_DURATION_SECONDS,
   VIDEO_IMPORT_EXTENSIONS,
   getFileExtension,
 } from '@/utils/file';
 import { formatDurationLabel } from '@/utils/timeFormatting';
 import { useVideo2audioConverter } from '@/utils/video2audioConverter';
 import { useRouter } from 'vue-router';
-
-const MAX_IMPORT_DURATION_SECONDS = 4 * 60 * 60;
 
 export function useImportMeeting() {
   const router = useRouter();
