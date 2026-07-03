@@ -1,5 +1,6 @@
-import { useMultipart } from '@/composables/use-multipart';
+import { UploadAbortedError, useMultipart } from '@/composables/use-multipart';
 import useToaster from '@/composables/use-toaster';
+import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
 import { ROUTES } from '@/router/routes';
 import type { AddImportMeetingDto } from '@/services/meetings/meetings.types';
@@ -24,8 +25,36 @@ export function useImportMeeting() {
   const { mutateAsync: createMeetingAsync } = addMeetingMutation();
   const { mutate: startTranscription } = startTranscriptionMutation();
   const { uploadFile } = useMultipart();
+  const { registerUpload, unregisterUpload } = useUploadStatus();
 
   async function importFile(file: File): Promise<void> {
+    const controller = new AbortController();
+    let stopTranscoding: (() => void) | undefined;
+    const importId = registerUpload({
+      abort: () => {
+        controller.abort();
+        try {
+          stopTranscoding?.();
+        } catch {
+          // ffmpeg may not be loaded yet
+        }
+      },
+    });
+
+    try {
+      await runImport(file, controller.signal, (stop) => {
+        stopTranscoding = stop;
+      });
+    } finally {
+      unregisterUpload(importId);
+    }
+  }
+
+  async function runImport(
+    file: File,
+    signal: AbortSignal,
+    onTranscodeStart: (stop: () => void) => void,
+  ): Promise<void> {
     const extension = getFileExtension(file)?.toLowerCase();
     if (!extension || !ALLOWED_IMPORT_EXTENSIONS.includes(extension)) {
       toaster.addErrorMessage(
@@ -37,6 +66,7 @@ export function useImportMeeting() {
     }
 
     const duration = await readAudioDurationSeconds(file);
+    if (signal.aborted) return;
     if (duration !== null && duration > MAX_IMPORT_DURATION_SECONDS) {
       toaster.addErrorMessage(
         t('meeting.import.errors.file-too-long', {
@@ -49,9 +79,13 @@ export function useImportMeeting() {
     let audioFile = file;
     if (VIDEO_IMPORT_EXTENSIONS.includes(extension)) {
       try {
-        const { transcodeToMp3 } = useVideo2audioConverter();
-        audioFile = await transcodeToMp3(file);
+        const converter = useVideo2audioConverter();
+        onTranscodeStart(converter.stopTranscoding);
+        audioFile = await converter.transcodeToMp3(file);
       } catch (error) {
+        // ffmpeg is not signal-cancellable: an intentional abort terminates the
+        // worker, which rejects here — stay silent, it is not a failure
+        if (signal.aborted) return;
         reportError(error, {
           feature: 'meeting.import',
           tags: { 'import.phase': 'transcode' },
@@ -67,6 +101,7 @@ export function useImportMeeting() {
         toaster.addErrorMessage(t('meeting.import.errors.file-invalid')!);
         return;
       }
+      if (signal.aborted) return;
     }
 
     const dto: AddImportMeetingDto = {
@@ -76,10 +111,14 @@ export function useImportMeeting() {
     };
 
     applyDurationToDates(dto, duration);
-    await uploadFileWithMultipart(dto, renameWithTimestamp(audioFile));
+    await uploadFileWithMultipart(dto, renameWithTimestamp(audioFile), signal);
   }
 
-  async function uploadFileWithMultipart(dto: AddImportMeetingDto, file: File): Promise<void> {
+  async function uploadFileWithMultipart(
+    dto: AddImportMeetingDto,
+    file: File,
+    signal: AbortSignal,
+  ): Promise<void> {
     let meeting;
 
     try {
@@ -89,9 +128,12 @@ export function useImportMeeting() {
       return;
     }
 
+    if (signal.aborted) return;
+
     try {
-      await uploadFile({ meetingId: meeting.id, file });
+      await uploadFile({ meetingId: meeting.id, file, signal });
     } catch (error) {
+      if (error instanceof UploadAbortedError) return;
       const messageKey =
         classifyUploadFailure(error, navigator.onLine) === 'blocked'
           ? 'error.file-upload-blocked'

@@ -21,6 +21,7 @@ const props = defineProps<BaseModalProps & Partial<DsfrModalProps>>();
 
 const emit = defineEmits<{
   (e: 'success'): void;
+  (e: 'closed'): void;
 }>();
 
 const slots = useSlots();
@@ -73,6 +74,7 @@ const onClickDsfrModal = (e: MouseEvent) => {
   <VueFinalModal
     :modal-id="id"
     overlay-class="vfm__overlay--mcr"
+    @closed="emit('closed')"
   >
     <DsfrModal
       v-bind="props"

@@ -7,6 +7,8 @@ import AppFooter from './components/core/AppFooter.vue';
 import { useAuth } from './components/sign-in/use-auth';
 import { ModalsContainer } from 'vue-final-modal';
 import { useAudioChunkCleanup } from './composables/use-audio-chunk-cleanup';
+import { useUnloadWarning } from './composables/use-unload-warning';
+import { useUploadStatus } from './composables/use-upload-status';
 
 useScheme({ scheme: 'light' });
 
@@ -16,6 +18,8 @@ const auth = useAuth();
 provide('auth', auth);
 
 const { cleanupStaleChunks } = useAudioChunkCleanup();
+
+useUnloadWarning(useUploadStatus().hasActiveUploads);
 
 onMounted(async () => {
   await auth.currentUserQuery.refetch();

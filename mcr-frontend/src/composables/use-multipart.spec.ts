@@ -26,13 +26,22 @@ vi.mock('@/services/meetings/meetings.service', () => ({
   setFileHeaders: (_blob: Blob, headers: Record<string, unknown>) => headers,
 }));
 // run the mutationFn directly so we exercise the real orchestration
+const { mutationConfigs } = vi.hoisted(() => ({
+  mutationConfigs: [] as { retry: (failureCount: number, error: unknown) => boolean }[],
+}));
 vi.mock('@tanstack/vue-query', () => ({
-  useMutation: (config: { mutationFn: (vars: unknown) => unknown }) => ({
-    mutateAsync: (vars: unknown) => Promise.resolve().then(() => config.mutationFn(vars)),
-  }),
+  useMutation: (config: {
+    mutationFn: (vars: unknown) => unknown;
+    retry: (failureCount: number, error: unknown) => boolean;
+  }) => {
+    mutationConfigs.push(config);
+    return {
+      mutateAsync: (vars: unknown) => Promise.resolve().then(() => config.mutationFn(vars)),
+    };
+  },
 }));
 
-import { useMultipart, UploadError } from './use-multipart';
+import { useMultipart, UploadError, UploadAbortedError } from './use-multipart';
 
 function makeFile() {
   return new File([new Uint8Array(10)], 'rec.m4a', { type: 'audio/m4a' });
@@ -109,6 +118,46 @@ describe('useMultipart.uploadFile', () => {
     const { uploadFile } = useMultipart();
     await expect(uploadFile({ meetingId: 1, file: makeFile() })).rejects.toThrow('Network Error');
     expect(reportError).toHaveBeenCalledTimes(1);
+  });
+
+  it('throws UploadAbortedError without reporting when the signal is aborted (protects #777)', async () => {
+    const controller = new AbortController();
+    put.mockImplementation(() => {
+      controller.abort();
+      return Promise.reject(
+        Object.assign(new Error('canceled'), { code: 'ERR_CANCELED', __CANCEL__: true }),
+      );
+    });
+
+    const { uploadFile } = useMultipart();
+    await expect(
+      uploadFile({ meetingId: 1, file: makeFile(), signal: controller.signal }),
+    ).rejects.toBeInstanceOf(UploadAbortedError);
+
+    expect(abortMultipartUploadService).toHaveBeenCalledTimes(1); // S3 cleanup still runs
+    expect(reportError).not.toHaveBeenCalled();
+    expect(isStorageReachable).not.toHaveBeenCalled();
+  });
+
+  it('still reports a real failure when a signal is provided but not aborted (non-regression #777)', async () => {
+    put.mockRejectedValue(networkError());
+
+    const { uploadFile } = useMultipart();
+    await expect(
+      uploadFile({ meetingId: 1, file: makeFile(), signal: new AbortController().signal }),
+    ).rejects.toThrow('Network Error');
+    expect(reportError).toHaveBeenCalledTimes(1);
+  });
+
+  it('never retries a canceled request but keeps retrying real failures', () => {
+    useMultipart();
+    const canceled = Object.assign(new Error('canceled'), { __CANCEL__: true });
+
+    for (const config of mutationConfigs) {
+      expect(config.retry(1, canceled)).toBe(false);
+      expect(config.retry(1, networkError())).toBe(true);
+      expect(config.retry(5, networkError())).toBe(false);
+    }
   });
 
   it('does not produce an unhandled promise rejection on failure (regression: issue 2028)', async () => {
