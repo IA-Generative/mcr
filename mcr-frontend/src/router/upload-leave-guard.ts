@@ -1,22 +1,11 @@
-import { confirmLeave } from '@/composables/use-confirm-leave';
-import { useUploadStatus } from '@/composables/use-upload-status';
+import { confirmLeaveIfUploading } from '@/composables/use-confirm-leave';
+import type { RouteLocationNormalized } from 'vue-router';
 
-export function createUploadLeaveGuard() {
-  let isConfirming = false;
-
-  return async (): Promise<boolean | undefined> => {
-    const { hasActiveUploads, abortActiveUploads } = useUploadStatus();
-    if (isConfirming) return false;
-    if (!hasActiveUploads.value) return undefined;
-
-    isConfirming = true;
-    try {
-      if (!(await confirmLeave())) return false;
-    } finally {
-      isConfirming = false;
-    }
-
-    abortActiveUploads();
-    return undefined;
-  };
+export async function uploadLeaveGuard(
+  to: RouteLocationNormalized,
+  from: RouteLocationNormalized,
+): Promise<boolean | undefined> {
+  // a query/hash-only change does not unload the page, so it cannot lose the upload
+  if (to.path === from.path) return undefined;
+  return (await confirmLeaveIfUploading()) ? undefined : false;
 }

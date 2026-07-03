@@ -1,18 +1,26 @@
 <template>
   <div class="flex flex-col gap-[18px] min-[1040px]:flex-row">
     <div :class="[tileClasses, 'relative']">
-      <DsfrTile
-        class="h-full w-full"
-        :horizontal="true"
-        :small="true"
-        :img-src="videoSvgPath"
-        :title="t('meetings_v2.tile-import.title')"
-        :description="
-          t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL })
-        "
+      <DsfrButton
+        secondary
+        class="action-tile h-full w-full"
         :disabled="hasActiveUploads"
         @click="openFilePicker"
-      />
+      >
+        <span class="flex h-full w-full items-center justify-between gap-4">
+          <span class="flex flex-col gap-2 text-left">
+            <span class="text-lg font-bold">{{ t('meetings_v2.tile-import.title') }}</span>
+            <span class="text-sm font-normal">
+              {{ t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL }) }}
+            </span>
+          </span>
+          <img
+            :src="videoSvgPath"
+            alt=""
+            class="h-20 w-20 shrink-0"
+          />
+        </span>
+      </DsfrButton>
       <div
         v-if="hasActiveUploads"
         class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -31,28 +39,46 @@
         @change="onFileSelected"
       />
     </div>
-    <DsfrTile
-      :class="tileClasses"
-      :horizontal="true"
-      :small="true"
-      :img-src="podcastSvgPath"
-      :title="t('meetings_v2.tile-record.title')"
-      :description="t('meetings_v2.tile-record.subtitle')"
+    <DsfrButton
+      secondary
+      :class="[tileClasses, 'action-tile']"
       @click="openRecordModal"
-    />
-    <DsfrTile
-      :class="tileClasses"
-      :horizontal="true"
-      :small="true"
-      :img-src="selfTrainingSvgPath"
-      :title="t('meetings_v2.tile-visio.title')"
-      :description="
-        isWebexEnabled
-          ? t('meetings_v2.tile-visio.subtitle-with-webex')
-          : t('meetings_v2.tile-visio.subtitle-without-webex')
-      "
+    >
+      <span class="flex h-full w-full items-center justify-between gap-4">
+        <span class="flex flex-col gap-2 text-left">
+          <span class="text-lg font-bold">{{ t('meetings_v2.tile-record.title') }}</span>
+          <span class="text-sm font-normal">{{ t('meetings_v2.tile-record.subtitle') }}</span>
+        </span>
+        <img
+          :src="podcastSvgPath"
+          alt=""
+          class="h-20 w-20 shrink-0"
+        />
+      </span>
+    </DsfrButton>
+    <DsfrButton
+      secondary
+      :class="[tileClasses, 'action-tile']"
       @click="openVisioMeetingModal"
-    />
+    >
+      <span class="flex h-full w-full items-center justify-between gap-4">
+        <span class="flex flex-col gap-2 text-left">
+          <span class="text-lg font-bold">{{ t('meetings_v2.tile-visio.title') }}</span>
+          <span class="text-sm font-normal">
+            {{
+              isWebexEnabled
+                ? t('meetings_v2.tile-visio.subtitle-with-webex')
+                : t('meetings_v2.tile-visio.subtitle-without-webex')
+            }}
+          </span>
+        </span>
+        <img
+          :src="selfTrainingSvgPath"
+          alt=""
+          class="h-20 w-20 shrink-0"
+        />
+      </span>
+    </DsfrButton>
   </div>
 </template>
 
@@ -92,7 +118,6 @@ const { mutateAsync: startCaptureAsync } = startCaptureMutation();
 const { importFile } = useImportMeeting();
 
 function openFilePicker() {
-  if (hasActiveUploads.value) return;
   fileInput.value?.click();
 }
 
@@ -147,3 +172,17 @@ function redirectToMeetingPage(meetingId: number) {
   router.push(`${ROUTES.MEETINGS.path}/${meetingId}`);
 }
 </script>
+
+<style scoped>
+.action-tile {
+  padding: 1rem 1.5rem;
+}
+
+/* DsfrButton wraps its slot in a plain <span>; make it fill the button so the
+   card layout (text left, pictogram right) can spread */
+.action-tile > :deep(span) {
+  display: flex;
+  height: 100%;
+  width: 100%;
+}
+</style>

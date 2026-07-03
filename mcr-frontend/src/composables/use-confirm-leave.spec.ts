@@ -8,15 +8,29 @@ const { useModal, open, destroy } = vi.hoisted(() => {
   const useModal = vi.fn(() => ({ open, destroy }));
   return { useModal, open, destroy };
 });
+const { uploadState, abortActiveUploads } = vi.hoisted(() => ({
+  uploadState: { active: false },
+  abortActiveUploads: vi.fn(),
+}));
 
 vi.mock('vue-final-modal', () => ({ useModal }));
 vi.mock('@/plugins/i18n', () => ({ t: (key: string) => key }));
 vi.mock('@/components/core/BaseModal.vue', () => ({ default: {} }));
+vi.mock('@/composables/use-upload-status', () => ({
+  useUploadStatus: () => ({
+    hasActiveUploads: {
+      get value() {
+        return uploadState.active;
+      },
+    },
+    abortActiveUploads,
+  }),
+}));
 
-import { confirmLeave } from './use-confirm-leave';
+import { confirmLeave, confirmLeaveIfUploading } from './use-confirm-leave';
 
-function getModalAttrs(): ModalAttrs {
-  return useModal.mock.calls[0][0].attrs as ModalAttrs;
+function getModalAttrs(call = 0): ModalAttrs {
+  return (useModal.mock.calls[call] as [{ attrs: ModalAttrs }])[0].attrs;
 }
 
 describe('confirmLeave', () => {
@@ -50,5 +64,66 @@ describe('confirmLeave', () => {
     await result;
 
     expect(destroy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('confirmLeaveIfUploading', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    uploadState.active = false;
+  });
+
+  it('lets the caller proceed without prompting when nothing is uploading', async () => {
+    await expect(confirmLeaveIfUploading()).resolves.toBe(true);
+    expect(useModal).not.toHaveBeenCalled();
+    expect(abortActiveUploads).not.toHaveBeenCalled();
+  });
+
+  it('denies the leave without aborting when the user refuses', async () => {
+    uploadState.active = true;
+
+    const result = confirmLeaveIfUploading();
+    getModalAttrs().onClosed();
+
+    await expect(result).resolves.toBe(false);
+    expect(abortActiveUploads).not.toHaveBeenCalled();
+  });
+
+  it('aborts the uploads and lets the caller proceed when the user confirms', async () => {
+    uploadState.active = true;
+
+    const result = confirmLeaveIfUploading();
+    const attrs = getModalAttrs();
+    attrs.onSuccess();
+    attrs.onClosed();
+
+    await expect(result).resolves.toBe(true);
+    expect(abortActiveUploads).toHaveBeenCalledTimes(1);
+  });
+
+  it('denies a concurrent caller while a confirmation is pending (single modal)', async () => {
+    uploadState.active = true;
+
+    const first = confirmLeaveIfUploading();
+    await expect(confirmLeaveIfUploading()).resolves.toBe(false);
+    expect(useModal).toHaveBeenCalledTimes(1);
+
+    const attrs = getModalAttrs();
+    attrs.onSuccess();
+    attrs.onClosed();
+    await expect(first).resolves.toBe(true);
+  });
+
+  it('prompts again once the previous confirmation settled', async () => {
+    uploadState.active = true;
+
+    const first = confirmLeaveIfUploading();
+    getModalAttrs().onClosed();
+    await first;
+
+    const second = confirmLeaveIfUploading();
+    expect(useModal).toHaveBeenCalledTimes(2);
+    getModalAttrs(1).onClosed();
+    await expect(second).resolves.toBe(false);
   });
 });
