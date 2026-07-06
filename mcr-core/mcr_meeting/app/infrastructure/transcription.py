@@ -95,7 +95,13 @@ class TranscriptionProcessor:
         with ThreadPoolExecutor(max_workers=api_settings.MAX_CONCURRENT_CHUNKS) as pool:
             results = list(pool.map(transcribe_one, enumerate(transcription_inputs)))
 
-        return [segment for _, chunk_segments in results for segment in chunk_segments]
+        # explicit sort by chunk index: byte-identical output to the sequential
+        # baseline, without relying on pool.map preserving input order
+        return [
+            segment
+            for _, chunk_segments in sorted(results, key=lambda result: result[0])
+            for segment in chunk_segments
+        ]
 
     def _transcribe_audio_chunk(
         self,
