@@ -520,6 +520,11 @@ class TranscriptionApiSettings(BaseSettings):
         This was set as the goal on 27/02/26
         """,
     )
+    MAX_CONCURRENT_CHUNKS: int = Field(
+        default=4,
+        description="Maximum number of chunk transcription API calls "
+        "executed concurrently (API mode only)",
+    )
 
     DIARIZATION_POLL_FAST_INTERVAL_SECONDS: float = Field(
         default=10,
