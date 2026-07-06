@@ -1,39 +1,73 @@
-name: "Bug/Défaut"
-description: Créer un ticket de bug
-title: "🐛 "
+name: "Bug / Retour utilisateur"
+description: Signaler un bug ou remonter un retour utilisateur
+title: "Titre court à remplir"
 type: bug
 body:
-  - type: textarea
-    id: error
+  - type: dropdown
+    id: request_type
     attributes:
-      label: Problème fonctionnel
-      description: Screenshot, erreur, etc.
+      label: Type de demande
+      description: S'agit-il d'un bug ou d'un retour utilisateur ?
+      options:
+        - Bug
+        - Retour utilisateur
+    validations:
+      required: true
+
+  - type: dropdown
+    id: product
+    attributes:
+      label: Produit concerné
+      description: Quel produit est concerné par cette demande ?
+      options:
+        - MCR
+        - OCR
+        - Résumer
     validations:
       required: true
 
   - type: textarea
-    id: pre_analyse
+    id: description
     attributes:
-      label: Pre analyse
-      description: description du problème rencontré
-      placeholder: |
-        Meeting ID: 
-        Meeting type:
-        Meeting status:
+      label: Description
+      description: |
+        Fournissez une description claire et complète du BUG et/ou de vos échanges avec l'utilisateur.
+        Ne pas mentionner d'informations personnelles (nom, prénom, email, numéro de téléphone) des utilisateurs.
+        Utiliser Grafana pour récupérer l'ID Keycloak de l'utilisateur.
+    validations:
+      required: true
+
+  - type: textarea
+    id: business_need
+    attributes:
+      label: Besoin métier
+      description: Pourquoi cette demande est-elle nécessaire ? Quel problème résout-elle ?
     validations:
       required: false
 
   - type: textarea
-    id: analyse
+    id: expected_outcome
     attributes:
-      label: Analyse
-      description: Reproduction / Logs erreurs (sentry, langfuse)
+      label: Résultat attendu
+      description: Quels sont les critères qui permettront de valider que cette demande a été correctement traitée ?
     validations:
       required: false
 
   - type: textarea
-    id: resolution
+    id: actions_taken
     attributes:
-      label: Piste de resolution
+      label: Actions testées
+      description: |
+        Quelles actions avez-vous déjà entreprises pour résoudre ce besoin / répondre à l'utilisateur ?
+        (ex : FAQ, éléments de langage, reproduction de l'erreur, etc.)
+    validations:
+      required: true
+
+  - type: input
+    id: due_date
+    attributes:
+      label: Date limite souhaitée
+      description: Date à laquelle la demande doit idéalement être traitée.
+      placeholder: "JJ/MM/AAAA"
     validations:
       required: false

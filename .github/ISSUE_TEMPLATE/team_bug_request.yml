@@ -1,0 +1,35 @@
+name: "Bug équipe"
+description: Signaler un bug détecté en interne par l'équipe technique
+title: "Titre court à remplir"
+type: bug
+body:
+  - type: dropdown
+    id: product
+    attributes:
+      label: Produit concerné
+      description: Quel produit est concerné par cette demande ?
+      options:
+        - MCR
+        - OCR
+        - Résumer
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Description du bug, étapes de reproduction, logs d'erreur (Sentry, Langfuse), etc.
+      placeholder: |
+        Meeting ID:
+        Meeting type:
+        Meeting status:
+    validations:
+      required: true
+
+  - type: textarea
+    id: resolution
+    attributes:
+      label: Piste de résolution
+    validations:
+      required: false
