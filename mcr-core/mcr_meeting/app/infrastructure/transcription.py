@@ -92,7 +92,13 @@ class TranscriptionProcessor:
                 for segment in chunk_transcription_segments
             ]
 
-        with ThreadPoolExecutor(max_workers=api_settings.MAX_CONCURRENT_CHUNKS) as pool:
+        max_workers = (
+            api_settings.MAX_CONCURRENT_CHUNKS
+            if self._is_api_transcription_enabled()
+            else 1
+        )
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
             results = list(pool.map(transcribe_one, enumerate(transcription_inputs)))
 
         # explicit sort by chunk index: byte-identical output to the sequential
