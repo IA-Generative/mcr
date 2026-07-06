@@ -54,9 +54,10 @@ Toute Pull Request qui échoue à la CI sera automatiquement bloquée.
 
 ## 🔐 Sécurité
 
-- ❌ Ne committez jamais de secrets (`.env`, clés API, tokens, credentials…)
+- ❌ Ne committez jamais de secrets (`.env`, clés API, tokens, credentials…) — `.env` (secrets résolus) est git-ignoré
 - ❌ Ne committez pas de données sensibles ou personnelles
-- Utilisez et maintenez à jour le fichier `.env.local.docker`
+- Valeurs non secrètes : maintenez `.env.local.docker` (committé)
+- Secrets : leurs valeurs vivent dans 1Password (`MCR/mcr-local-secrets`) ; le manifeste `.env.template` (références `op://`, édité à la main) est committé et résolu dans `.env` par `op inject`
 
 Toute PR contenant des secrets sera refusée.
 
