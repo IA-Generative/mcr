@@ -122,6 +122,27 @@ def _is_relationship(call: ast.Call) -> bool:
     return _name_of(call.func) == "relationship"
 
 
+def _indexed_columns_from_table_args(node: ast.ClassDef) -> set[str]:
+    """Collect column names covered by Index(...) declarations in __table_args__.
+
+    Index("name", "col_a", "col_b", ...) — first positional arg is the index name,
+    the rest are column names. Composite indexes live here rather than on mapped_column.
+    """
+    indexed: set[str] = set()
+    for item in node.body:
+        if not isinstance(item, ast.Assign):
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == "__table_args__" for t in item.targets):
+            continue
+        elements = item.value.elts if isinstance(item.value, ast.Tuple) else [item.value]
+        for element in elements:
+            if isinstance(element, ast.Call) and _name_of(element.func) == "Index":
+                for col_arg in element.args[1:]:
+                    if isinstance(col_arg, ast.Constant) and isinstance(col_arg.value, str):
+                        indexed.add(col_arg.value)
+    return indexed
+
+
 def extract_from_file(filepath: Path) -> tuple[list[Table], list[Enum]]:
     """Parse a single model file and return tables and enums."""
     source = filepath.read_text()
@@ -151,6 +172,7 @@ def extract_from_file(filepath: Path) -> tuple[list[Table], list[Enum]]:
 
         tablename = ""
         columns: list[Column] = []
+        table_args_indexed = _indexed_columns_from_table_args(node)
 
         for item in node.body:
             if isinstance(item, ast.Assign):
@@ -191,6 +213,9 @@ def extract_from_file(filepath: Path) -> tuple[list[Table], list[Enum]]:
                 if nul is False and col.nullable:
                     col.nullable = False
                 col.fk = _get_fk_target(call)
+
+            if col_name in table_args_indexed:
+                col.indexed = True
 
             columns.append(col)
 
