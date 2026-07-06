@@ -11,9 +11,9 @@
           <img
             :src="videoSvgPath"
             alt=""
-            class="h-20 w-20 shrink-0"
+            class="h-16 w-16 shrink-0"
           />
-          <span class="flex flex-col gap-2 text-left">
+          <span class="flex flex-col gap-1 text-left">
             <span class="action-tile-title">{{ t('meetings_v2.tile-import.title') }}</span>
             <span class="action-tile-desc">
               {{ t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL }) }}
@@ -48,9 +48,9 @@
         <img
           :src="podcastSvgPath"
           alt=""
-          class="h-20 w-20 shrink-0"
+          class="h-16 w-16 shrink-0"
         />
-        <span class="flex flex-col gap-2 text-left">
+        <span class="flex flex-col gap-1 text-left">
           <span class="action-tile-title">{{ t('meetings_v2.tile-record.title') }}</span>
           <span class="action-tile-desc">{{ t('meetings_v2.tile-record.subtitle') }}</span>
         </span>
@@ -65,9 +65,9 @@
         <img
           :src="selfTrainingSvgPath"
           alt=""
-          class="h-20 w-20 shrink-0"
+          class="h-16 w-16 shrink-0"
         />
-        <span class="flex flex-col gap-2 text-left">
+        <span class="flex flex-col gap-1 text-left">
           <span class="action-tile-title">{{ t('meetings_v2.tile-visio.title') }}</span>
           <span class="action-tile-desc">
             {{
@@ -174,8 +174,13 @@ function redirectToMeetingPage(meetingId: number) {
 </script>
 
 <style scoped>
+/* chrome of the former small DsfrTile: 1px grey border + 4px blue line at the
+   bottom, instead of the secondary button's blue outline */
 .action-tile {
-  padding: 1rem 1.5rem;
+  padding: 1.5rem 1.5rem 1.75rem;
+  box-shadow:
+    inset 0 -0.25rem 0 0 var(--border-active-blue-france),
+    inset 0 0 0 1px var(--border-default-grey);
 }
 
 /* DsfrButton wraps its slot in a plain <span>; make it fill the button so the
@@ -186,16 +191,17 @@ function redirectToMeetingPage(meetingId: number) {
   width: 100%;
 }
 
-/* same text colors as the former DsfrTile (title/desc), instead of the
-   secondary button's action blue */
+/* same text styles as the former small DsfrTile (title/desc) */
 .action-tile-title {
-  color: var(--text-title-grey);
-  font-size: 1.125rem;
+  color: var(--text-action-high-blue-france);
+  font-size: 1rem;
   font-weight: 700;
+  line-height: 1.5rem;
 }
 
 .action-tile-desc {
   color: var(--text-default-grey);
   font-size: 0.875rem;
+  line-height: 1.5rem;
 }
 </style>
