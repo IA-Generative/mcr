@@ -5,13 +5,16 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from celery import Task, chain
+from celery import chain
 from celery.signals import worker_process_init
 from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.infrastructure import s3
-from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
+from mcr_meeting.app.infrastructure.celery_consumer import (
+    MeetingPipelineTask,
+    celery_worker,
+)
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
@@ -119,27 +122,18 @@ def _mark_success(
     logger.info("Meeting {} updated to TRANSCRIPTION_DONE", meeting_id)
 
 
-class TranscriptionPipelineTask(Task[Any, Any]):  # type: ignore[explicit-any]
-    def before_start(  # type: ignore[explicit-any]
-        self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> None:
-        meeting_id, owner_keycloak_uuid = args[0], args[1]
+class TranscriptionPipelineTask(MeetingPipelineTask):
+    def set_task_context(self, meeting_id: int, owner_keycloak_uuid: str) -> None:
         client = MeetingApiClient(owner_keycloak_uuid)
         meeting_context = gather_meeting_context(
             meeting_id, owner_keycloak_uuid, client
         )
         set_sentry_meeting_context(meeting_context)
 
-    def on_failure(  # type: ignore[explicit-any]
-        self,
-        exc: Exception,
-        task_id: str,
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
-        einfo: object,
+    def handle_failure(
+        self, meeting_id: int, owner_keycloak_uuid: str, error_code: str
     ) -> None:
-        meeting_id, owner_keycloak_uuid = args[0], args[1]
-        on_pipeline_failure(meeting_id, owner_keycloak_uuid, error_code=self.name)
+        on_pipeline_failure(meeting_id, owner_keycloak_uuid, error_code=error_code)
 
 
 @celery_worker.task(
