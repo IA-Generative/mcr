@@ -17,6 +17,7 @@ def init_sentry() -> None:
             environment=settings.ENV_MODE,
             ignore_errors=[],
             integrations=[CeleryIntegration()],
+            include_local_variables=False,
         )
     except Exception as e:
         logger.warning("Sentry initialization failed, continuing without it: {}", e)
