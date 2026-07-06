@@ -14,20 +14,16 @@ from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
 )
-from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
-    DiarizationArtifact,
-)
 
 
 def run_diarization(
     meeting_id: int, diarization_processor: DiarizationProcessor
-) -> DiarizationArtifact:
+) -> None:
     audio_bytes = s3.fetch_audio_bytes(meeting_id)
     preprocessed_audio = _preprocess_audio(audio_bytes)
     diarization = diarization_processor.diarize(audio_bytes=preprocessed_audio)
-    return DiarizationArtifact(
-        preprocessed_audio=preprocessed_audio, diarization=diarization
-    )
+    s3.write_preprocessed_audio(meeting_id, preprocessed_audio)
+    s3.write_diarization(meeting_id, diarization)
 
 
 def _preprocess_audio(audio_bytes: BytesIO) -> BytesIO:

@@ -22,6 +22,7 @@ from mcr_meeting.app.domain.transcription.text_chunking import (
     format_segments_for_llm,
     reassemble_corrected_segments,
 )
+from mcr_meeting.app.infrastructure import s3
 from mcr_meeting.app.infrastructure.llm.acronyms import correct_acronyms
 from mcr_meeting.app.infrastructure.llm.participants import (
     extract_participants,
@@ -42,9 +43,8 @@ from mcr_meeting.app.utils.langfuse_observability import (
 )
 
 
-def run_finalize_transcription(
-    meeting_id: int, segments: list[DiarizedTranscriptionSegment]
-) -> list[SpeakerTranscription]:
+def run_finalize_transcription(meeting_id: int) -> list[SpeakerTranscription]:
+    segments = s3.read_transcription_raw(meeting_id)
     cleaned_segments = _post_process(segments)
     _enrich_with_participants(cleaned_segments)
     return build_speaker_transcriptions(meeting_id, cleaned_segments)

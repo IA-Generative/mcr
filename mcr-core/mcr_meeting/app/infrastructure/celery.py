@@ -1,4 +1,4 @@
-from celery import Celery
+from celery import Celery, chain
 from loguru import logger
 
 from mcr_meeting.app.configs.base import CelerySettings
@@ -33,6 +33,30 @@ def enqueue_transcription_task(meeting_id: int, owner_keycloak_uuid: str) -> Non
     except Exception as e:
         raise TaskCreationException(
             f"Failed to enqueue transcription task for meeting {meeting_id}"
+        ) from e
+
+
+def enqueue_transcription_pipeline(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    args = [meeting_id, owner_keycloak_uuid]
+    try:
+        # immutable: sans ça le worker préfixe le retour du maillon précédent
+        # aux args du suivant (équivalent name-based du .si()).
+        chain(
+            celery_producer_app.signature(
+                MCRTranscriptionTasks.DIARIZE.value, args=args, immutable=True
+            ),
+            celery_producer_app.signature(
+                MCRTranscriptionTasks.TRANSCRIBE_CHUNKS.value, args=args, immutable=True
+            ),
+            celery_producer_app.signature(
+                MCRTranscriptionTasks.FINALIZE_TRANSCRIPTION.value,
+                args=args,
+                immutable=True,
+            ),
+        ).apply_async()
+    except Exception as e:
+        raise TaskCreationException(
+            f"Failed to enqueue transcription pipeline for meeting {meeting_id}"
         ) from e
 
 

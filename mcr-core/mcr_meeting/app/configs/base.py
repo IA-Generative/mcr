@@ -305,6 +305,10 @@ class S3Settings(BaseSettings):
         default="audio",
         description="The folder in the S3 bucket where audio files are stored.",
     )
+    S3_ARTIFACTS_FOLDER: str = Field(
+        default="artifacts",
+        description="The folder in the S3 bucket where intermediate transcription pipeline artifacts are stored.",
+    )
 
 
 class ApiSettings(BaseSettings):

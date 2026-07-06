@@ -23,6 +23,7 @@ class FeatureFlag(StrEnum):
     API_BASED_DIARIZATION = "api_based_diarization"
     API_BASED_TRANSCRIPTION = "api_based_transcription"
     SPELLING_CORRECTION = "spelling_correction"
+    STRUCTURAL_SPLIT_ENABLED = "structural_split_enabled"
 
 
 class FeatureFlagClient(ABC):
