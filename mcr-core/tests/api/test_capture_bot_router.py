@@ -2,9 +2,8 @@ from fastapi import status
 
 from mcr_meeting.app.models import MeetingStatus, User
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
+from tests.api.conftest import PrefixedTestClient
 from tests.factories.meeting_factory import MeetingFactory
-
-from .conftest import PrefixedTestClient
 
 
 def _auth_header(user: User) -> dict[str, str]:

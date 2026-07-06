@@ -5,9 +5,8 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
 )
-
-from .base import BaseFactory
-from .meeting_factory import MeetingFactory
+from tests.factories.base import BaseFactory
+from tests.factories.meeting_factory import MeetingFactory
 
 
 class DeliverableFactory(BaseFactory[Deliverable]):

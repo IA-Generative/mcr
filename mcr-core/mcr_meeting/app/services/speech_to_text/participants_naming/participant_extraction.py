@@ -2,41 +2,19 @@ import json
 
 from langfuse import observe
 from loguru import logger
-from pydantic import BaseModel, Field
 
-from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.app.services.llm_post_processing import Chunk, LLMPostProcessing
-from mcr_meeting.app.services.speech_to_text.participants_naming.prompts import (
+from mcr_meeting.app.infrastructure.llm.prompts.participants import (
     INITIAL_PROMPT_TEMPLATE,
     REFINE_PROMPT_TEMPLATE,
 )
+from mcr_meeting.app.schemas.transcription_schema import (
+    DiarizedTranscriptionSegment,
+    Participant,
+)
+from mcr_meeting.app.services.llm_post_processing import Chunk, LLMPostProcessing
 from mcr_meeting.app.utils.langfuse_observability import (
     record_participant_name_lost_event,
 )
-
-
-class Participant(BaseModel):
-    speaker_id: str = Field(
-        description="Identifiant unique du locuteur dans la transcription ex: LOCUTEUR_03.",
-    )
-    name: str | None = Field(
-        None,
-        description="Prenom et/ou nom déduit pour le locuteur à partir des interactions dans la transcription. Ex: 'Jean' ou 'Jean Dupont'.",
-    )
-    role: str | None = Field(
-        None,
-        description="Fonction/rôle si mentionné ou déduit (ex. PO, Tech Lead, Directeur financier).",
-    )
-    confidence: float | None = Field(
-        ge=0.0,
-        le=1.0,
-        description="Niveau de confiance (entre 0 et 1) indiquant à quel point tu es certain du nom associé locuteur.",
-    )
-    association_justification: str | None = Field(
-        description=(
-            "Identification explicite ou déduction par contexte ayant permis d'associer ce nom/rôle au locuteur avec l'id."
-        ),
-    )
 
 
 class ParticipantExtraction(LLMPostProcessing):

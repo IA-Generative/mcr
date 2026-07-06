@@ -5,9 +5,8 @@ from factory import LazyAttribute, LazyFunction
 
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
-
-from .base import BaseFactory
-from .meeting_factory import MeetingFactory
+from tests.factories.base import BaseFactory
+from tests.factories.meeting_factory import MeetingFactory
 
 
 def _get_or_create_meeting_id() -> int:

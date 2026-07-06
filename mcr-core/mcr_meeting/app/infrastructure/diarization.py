@@ -1,14 +1,19 @@
 import tempfile
 import time
+from collections.abc import Callable
 from io import BytesIO
 
 import httpx
 from loguru import logger
+from pyannote.audio import Pipeline
 
 from mcr_meeting.app.configs.base import (
     CelerySettings,
     PyannoteDiarizationParameters,
     TranscriptionApiSettings,
+)
+from mcr_meeting.app.domain.transcription.speaker_segments import (
+    convert_to_french_speaker,
 )
 from mcr_meeting.app.exceptions.exceptions import DiarizationError
 from mcr_meeting.app.infrastructure.unleash import (
@@ -19,12 +24,6 @@ from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationJobResponse,
     DiarizationJobStatus,
     DiarizationSegment,
-)
-from mcr_meeting.app.services.speech_to_text.utils import (
-    convert_to_french_speaker,
-)
-from mcr_meeting.app.services.speech_to_text.utils.models import (
-    get_diarization_pipeline,
 )
 
 api_settings = TranscriptionApiSettings()
@@ -57,7 +56,8 @@ class _PollCadence:
 
 
 class DiarizationProcessor:
-    def __init__(self) -> None:
+    def __init__(self, pipeline_provider: Callable[[], Pipeline] | None = None) -> None:
+        self._pipeline_provider = pipeline_provider
         self._http_client: httpx.Client | None = None
 
     def _get_http_client(self) -> httpx.Client:
@@ -100,7 +100,11 @@ class DiarizationProcessor:
             return self._diarize_local(audio_bytes)
 
     def _diarize_local(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
-        diarization_pipeline = get_diarization_pipeline()
+        if self._pipeline_provider is None:
+            raise DiarizationError(
+                "Local diarization requested but no pipeline provider was injected"
+            )
+        diarization_pipeline = self._pipeline_provider()
 
         with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
             tmp_audio.write(audio_bytes.getvalue())

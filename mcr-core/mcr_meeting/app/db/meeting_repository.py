@@ -7,9 +7,8 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus, Transcription
+from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, PaginatedMeetings
 from mcr_meeting.app.utils.db_utils import update_model
-
-from ..schemas.meeting_schema import MeetingCreate, PaginatedMeetings
 
 
 def save_meeting(user_id: int, meeting_data: MeetingCreate) -> Meeting:

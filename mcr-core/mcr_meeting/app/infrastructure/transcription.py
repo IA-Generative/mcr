@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from io import BytesIO
 
 import numpy as np
@@ -10,28 +11,24 @@ from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
     WhisperTranscriptionSettings,
 )
+from mcr_meeting.app.domain.audio import split_audio_on_timestamps
 from mcr_meeting.app.exceptions.exceptions import TranscriptionError
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
+    TimeSpan,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.speech_to_text.utils.audio import (
-    split_audio_on_timestamps,
-)
-from mcr_meeting.app.services.speech_to_text.utils.models import (
-    get_transcription_model,
-)
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 transcription_settings = WhisperTranscriptionSettings()
 api_settings = TranscriptionApiSettings()
 
 
 class TranscriptionProcessor:
-    def __init__(self) -> None:
+    def __init__(self, model_provider: Callable[[], WhisperModel]) -> None:
+        self._model_provider = model_provider
         self._openai_client: OpenAI | None = None
 
     def _get_openai_client(self) -> OpenAI:
@@ -66,7 +63,7 @@ class TranscriptionProcessor:
             "Starting transcription of {} input audio chunks", len(transcription_inputs)
         )
 
-        transcription_model = get_transcription_model()
+        transcription_model = self._model_provider()
         transcription_segments: list[TranscriptionSegment] = []
 
         for idx, chunk in enumerate(transcription_inputs):

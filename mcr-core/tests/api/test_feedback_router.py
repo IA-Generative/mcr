@@ -7,8 +7,7 @@ from mcr_meeting.app.models.feedback_model import (
     FEEDBACK_COMMENT_MAX_LENGTH,
     Feedback,
 )
-
-from .conftest import PrefixedTestClient
+from tests.api.conftest import PrefixedTestClient
 
 
 def _auth_header(user: User) -> dict[str, str]:

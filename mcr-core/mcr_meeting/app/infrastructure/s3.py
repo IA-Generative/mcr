@@ -1,8 +1,14 @@
 from collections.abc import Generator, Iterator
 from io import BytesIO
 
+from loguru import logger
+
 from mcr_meeting.app.configs.base import S3Settings
-from mcr_meeting.app.exceptions.exceptions import MeetingMultipartException
+from mcr_meeting.app.exceptions.exceptions import (
+    InvalidAudioFileError,
+    MeetingMultipartException,
+    NoAudioFoundError,
+)
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.S3_types import (
     MultipartAbortRequest,
@@ -144,6 +150,51 @@ def abort_multipart_upload(
     abort_multipart_upload_in_s3(
         object_key=abort_request.object_key, upload_id=abort_request.upload_id
     )
+
+
+def fetch_audio_bytes(meeting_id: int) -> BytesIO:
+    logger.info("Fetching audio bytes for meeting ID: {}", meeting_id)
+
+    try:
+        s3_chunk_iterator = get_objects_list_from_prefix(prefix=f"{meeting_id}/")
+
+        audio_bytes = download_and_concatenate_s3_audio_chunks_into_bytes(
+            s3_chunk_iterator
+        )
+        return audio_bytes
+
+    except NoAudioFoundError as no_files_error:
+        raise NoAudioFoundError(
+            f"No audio files found for meeting {meeting_id}"
+        ) from no_files_error
+
+    except Exception as fetch_error:
+        raise InvalidAudioFileError(
+            f"Failed to fetch audio bytes for meeting {meeting_id}: {fetch_error}"
+        ) from fetch_error
+
+
+def download_and_concatenate_s3_audio_chunks_into_bytes(
+    obj_iterator: Iterator[S3Object],
+) -> BytesIO:
+    audio_buffer = BytesIO()
+    chunk_count = 0
+
+    for obj_info in obj_iterator:
+        chunk_count += 1
+        try:
+            audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
+            audio_buffer.write(audio_chunk_data.read())
+        except Exception as chunk_error:
+            raise InvalidAudioFileError(
+                f"Failed to download audio chunk {obj_info.object_name}: {chunk_error}"
+            ) from chunk_error
+
+    if chunk_count == 0:
+        raise NoAudioFoundError("No audio chunks found in iterator")
+
+    audio_buffer.seek(0)
+    return audio_buffer
 
 
 def stream_meeting_audio(meeting_id: int) -> tuple[Iterator[bytes], str]:

@@ -3,7 +3,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any
 
 from celery import Task
 from celery.signals import (
@@ -12,33 +12,42 @@ from celery.signals import (
     task_success,
     worker_process_init,
 )
-from faster_whisper import WhisperModel
 from loguru import logger
-from pyannote.audio import Pipeline
 
-from mcr_meeting.app.client.meeting_client import MeetingApiClient
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure.celery_consumer import celery_worker
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
+from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 from mcr_meeting.app.infrastructure.sentry import init_sentry
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    context,
+    get_diarization_pipeline,
+    get_transcription_model,
+    load_diarization_pipeline,
+    load_whisper_model,
+)
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import (
     MCRTranscriptionTasks,
     extract_transcription_task_args,
 )
-from mcr_meeting.app.services.meeting_to_transcription_service import transcribe_meeting
 from mcr_meeting.app.services.s3_service import (
     get_evaluation_dataset_object_name,
     get_file_from_s3,
+)
+from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
+from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
+    run_finalize_transcription,
+)
+from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
+    run_transcribe_chunks,
 )
 from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
     get_gpu_name,
     is_gpu_available,
-)
-from mcr_meeting.app.utils.load_speech_to_text_model import (
-    load_diarization_pipeline,
-    load_whisper_model,
 )
 from mcr_meeting.app.utils.sentry_context import (
     gather_meeting_context,
@@ -53,21 +62,8 @@ init_langfuse()
 SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
 
 
-class WorkerContext(TypedDict):
-    device: ComputeDevice
-    model: WhisperModel | None
-    diarization_pipeline: Pipeline | None
-
-
-context: WorkerContext = {
-    "device": ComputeDevice.CPU,
-    "model": None,
-    "diarization_pipeline": None,
-}
-
-
 @worker_process_init.connect
-def initialize_worker(**kwarg: Any) -> None:  # type: ignore[explicit-any]
+def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
     """
     Initialize worker processes with model and device setup.
     This worker consume both `transcribe` and `evaluate` tasks.
@@ -96,7 +92,13 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> list[dict[str, obje
     client = MeetingApiClient(owner_keycloak_uuid)
     asyncio.run(client.start_transcription(meeting_id))
 
-    transcription_data = transcribe_meeting(meeting_id=meeting_id)
+    artifact = run_diarization(
+        meeting_id, DiarizationProcessor(get_diarization_pipeline)
+    )
+    segments = run_transcribe_chunks(
+        artifact, TranscriptionProcessor(get_transcription_model)
+    )
+    transcription_data = run_finalize_transcription(meeting_id, segments)
 
     result = [item.model_dump() for item in transcription_data]
     logger.info("Transcription completed for meeting {}", meeting_id)

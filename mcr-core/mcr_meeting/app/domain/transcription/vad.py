@@ -1,26 +1,19 @@
-"""Utility functions for processing audio and transcription segments during Speech To Text pipeline."""
-
-import re
+"""Align VAD transcription segments with diarization results to assign speakers."""
 
 from loguru import logger
 
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
+    TimeSpan,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
 
 
 def find_best_matching_diarization(
     transcription_span: TimeSpan,
     diarization_spans: list[tuple[TimeSpan, DiarizationSegment]],
 ) -> tuple[DiarizationSegment | None, float]:
-    """Find the diarization segment with the maximum overlap (seconds) with
-    a given transcription span.
-
-    Returns a tuple of (best_matching_diarization_segment|None, overlap_seconds).
-    """
     best: DiarizationSegment | None = None
     max_overlap_seconds = 0.0
     for span, diarization_segment in diarization_spans:
@@ -34,9 +27,6 @@ def find_best_matching_diarization(
 def transcription_span_outside_diarization_range(
     transcription_span: TimeSpan, diarization_range: TimeSpan
 ) -> bool:
-    """Return True when the transcription span is completely outside the
-    diarization range (no possible overlap).
-    """
     outside = (
         transcription_span.end < diarization_range.start
         or transcription_span.start > diarization_range.end
@@ -54,11 +44,6 @@ def diarize_vad_transcription_segments(
     vad_transcription_segments: list[TranscriptionSegment],
     diarization_result: list[DiarizationSegment],
 ) -> list[DiarizedTranscriptionSegment]:
-    """Align VAD transcription segments with diarization results to assign speaker labels.
-
-    This implementation uses the TimeSpan helper to make overlap/containment
-    reasoning concise and self-documenting.
-    """
     aligned_segments: list[DiarizedTranscriptionSegment] = []
 
     if not diarization_result:
@@ -122,8 +107,3 @@ def diarize_vad_transcription_segments(
             )
 
     return aligned_segments
-
-
-def convert_to_french_speaker(speaker_label: str) -> str:
-    """Convert speaker labels to French format"""
-    return re.sub(r"SPEAKER_(\d+)", r"LOCUTEUR_\1", speaker_label)

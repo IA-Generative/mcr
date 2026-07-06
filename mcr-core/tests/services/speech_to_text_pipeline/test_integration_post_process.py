@@ -19,7 +19,8 @@ def mock_post_process_external_calls(monkeypatch: pytest.MonkeyPatch) -> None:
     """Mock external calls made by post_process.
 
     - get_feature_flag_client(): avoid real Unleash initialization/calls
-    - SpellingCorrector.correct(): return input segments unchanged
+    - _apply_text_correction(): return input segments unchanged (skip the LLM
+      chunk/reassemble round-trip so this test isolates the merge behavior)
     """
 
     feature_flag_client = MagicMock()
@@ -30,12 +31,8 @@ def mock_post_process_external_calls(monkeypatch: pytest.MonkeyPatch) -> None:
         lambda: feature_flag_client,
     )
     monkeypatch.setattr(
-        "mcr_meeting.app.services.speech_to_text.speech_to_text.AcronymCorrector.correct",
-        lambda _self, segments: segments,
-    )
-    monkeypatch.setattr(
-        "mcr_meeting.app.services.speech_to_text.speech_to_text.SpellingCorrector.correct",
-        lambda _self, segments: segments,
+        "mcr_meeting.app.services.speech_to_text.speech_to_text._apply_text_correction",
+        lambda segments, correct_chunk: segments,
     )
 
 

@@ -4,7 +4,7 @@ from enum import StrEnum
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..db.db import Base
+from mcr_meeting.app.db.db import Base
 
 # Drives BOTH the Pydantic validation (FeedbackRequest.comment) and the VARCHAR
 # length of the `comment` column below. Changing this value requires an Alembic

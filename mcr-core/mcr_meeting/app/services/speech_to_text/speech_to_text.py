@@ -1,10 +1,38 @@
 """Speech to text service with speaker diarization using pyannote and faster-whisper"""
 
+from collections.abc import Callable
 from io import BytesIO
 
 from loguru import logger
 
+from mcr_meeting.app.domain.audio import (
+    audio_bytes_to_wav_bytes,
+    check_audio_is_not_silent,
+    filter_noise_from_audio_bytes,
+    is_audio_noisy,
+)
+from mcr_meeting.app.domain.transcription.chunking import compute_transcription_chunks
+from mcr_meeting.app.domain.transcription.post_process import (
+    merge_consecutive_segments_per_speaker,
+    remove_hallucinations,
+)
+from mcr_meeting.app.domain.transcription.text_chunking import (
+    chunk_text,
+    format_segments_for_llm,
+    reassemble_corrected_segments,
+)
+from mcr_meeting.app.domain.transcription.vad import (
+    diarize_vad_transcription_segments,
+)
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.llm.acronyms import correct_acronyms
+from mcr_meeting.app.infrastructure.llm.spelling import correct_spelling
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    get_diarization_pipeline,
+    get_transcription_model,
+)
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -12,43 +40,35 @@ from mcr_meeting.app.infrastructure.unleash import (
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
+    TimeSpan,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.audio_pre_transcription_processing_service import (
-    audio_bytes_to_wav_bytes,
-    check_audio_is_not_silent,
-    filter_noise_from_audio_bytes,
-    is_audio_noisy,
-)
-from mcr_meeting.app.services.correct_acronyms.acronym_corrector import (
-    AcronymCorrector,
-)
-from mcr_meeting.app.services.correct_spelling_mistakes.spelling_corrector import (
-    SpellingCorrector,
-)
-from mcr_meeting.app.services.speech_to_text.diarization_processor import (
-    DiarizationProcessor,
-)
-from mcr_meeting.app.services.speech_to_text.transcription_post_process import (
-    merge_consecutive_segments_per_speaker,
-    remove_hallucinations,
-)
-from mcr_meeting.app.services.speech_to_text.transcription_processor import (
-    TranscriptionProcessor,
-)
-from mcr_meeting.app.services.speech_to_text.utils import (
-    compute_transcription_chunks,
-    diarize_vad_transcription_segments,
-)
-from mcr_meeting.app.services.speech_to_text.utils.types import TimeSpan
+
+
+def _apply_text_correction(
+    segments: list[DiarizedTranscriptionSegment],
+    correct_chunk: Callable[[str], str],
+) -> list[DiarizedTranscriptionSegment]:
+    if not segments:
+        return []
+    text = format_segments_for_llm(segments)
+    chunks = chunk_text(text, chunk_overlap=0)
+    corrected_chunks = [correct_chunk(chunk) for chunk in chunks]
+    return reassemble_corrected_segments(corrected_chunks, segments)
 
 
 class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        self.transcription_processor = TranscriptionProcessor()
-        self.diarization_processor = DiarizationProcessor()
+        # Late-bound lambdas so the models resolve at call time, after the
+        # worker context is populated (and after test patches are installed).
+        self.transcription_processor = TranscriptionProcessor(
+            lambda: get_transcription_model()
+        )
+        self.diarization_processor = DiarizationProcessor(
+            lambda: get_diarization_pipeline()
+        )
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
@@ -108,13 +128,13 @@ class SpeechToTextPipeline:
         cleaned_segments = remove_hallucinations(merged_segments)
 
         logger.debug("Acronym correction: correcting segments")
-        acronym_corrector = AcronymCorrector()
-        cleaned_segments = acronym_corrector.correct(cleaned_segments)
+        cleaned_segments = _apply_text_correction(cleaned_segments, correct_acronyms)
 
         if feature_flag_client.is_enabled(FeatureFlag.SPELLING_CORRECTION):
             logger.debug("Spelling correction enabled, correcting segments")
-            corrector = SpellingCorrector()
-            cleaned_segments = corrector.correct(cleaned_segments)
+            cleaned_segments = _apply_text_correction(
+                cleaned_segments, correct_spelling
+            )
         else:
             logger.debug("Spelling correction disabled, skipping correction")
         return cleaned_segments

@@ -8,8 +8,7 @@ from pytest_mock import MockerFixture
 
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.main import app
-
-from .conftest import PrefixedTestClient
+from tests.api.conftest import PrefixedTestClient
 
 api_settings = ApiSettings()
 

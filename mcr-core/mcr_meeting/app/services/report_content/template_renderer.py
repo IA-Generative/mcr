@@ -26,7 +26,9 @@ def render_to_docx(
     styles_names: dict[str, str] | None = None,
 ) -> BytesIO:
     """Full pipeline: .jinja.md template file -> markdown -> DOCX."""
-    from .markdown_to_docx import markdown_to_docx
+    from mcr_meeting.app.services.report_content.markdown_to_docx import (
+        markdown_to_docx,
+    )
 
     md = render_markdown_template(template_name, data)
     return markdown_to_docx(md, style_template_path, styles_names)

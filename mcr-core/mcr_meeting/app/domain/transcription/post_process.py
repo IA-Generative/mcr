@@ -1,6 +1,4 @@
-"""
-Utility functions for transcription processing.
-"""
+"""Pure post-processing of diarized transcription segments."""
 
 import re
 from itertools import groupby
@@ -14,17 +12,6 @@ from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSe
 def merge_consecutive_segments_per_speaker(
     transcriptions: list[DiarizedTranscriptionSegment],
 ) -> list[DiarizedTranscriptionSegment]:
-    """
-    Merge consecutive speaker segments into a single segment for each speaker.
-
-    Args:
-        transcriptions (List[DiarizedTranscriptionSegment]): A list of DiarizedTranscriptionSegment objects
-            representing the transcriptions to be merged.
-
-    Returns:
-        List[DiarizedTranscriptionSegment]: A new list of DiarizedTranscriptionSegment objects with merged
-            transcriptions for consecutive speakers.
-    """
     logger.debug("Merging consecutive speaker segments...")
     merged_transcriptions: list[DiarizedTranscriptionSegment] = []
 
@@ -48,17 +35,6 @@ def merge_consecutive_segments_per_speaker(
 def remove_hallucinations(
     segments: list[DiarizedTranscriptionSegment],
 ) -> list[DiarizedTranscriptionSegment]:
-    """
-    Remove hallucinations from the transcription.
-
-    Args:
-        segments (list[DiarizedTranscriptionSegment]): A list of DiarizedTranscriptionSegment objects
-            representing the transcription's segments to be cleaned.
-
-    Returns:
-        list[DiarizedTranscriptionSegment]: A new list of DiarizedTranscriptionSegment objects with hallucinations
-            removed.
-    """
     forbidden_sentences = TranscriptionForbiddenSentences()
     pattern = re.compile(
         "|".join(re.escape(s) for s in forbidden_sentences.FORBIDDEN_SENTENCES)
@@ -67,13 +43,10 @@ def remove_hallucinations(
     cleaned_segments = []
 
     for segment in segments:
-        # Remove forbidden strings
         segment.text = pattern.sub("", segment.text)
 
-        # Clean whitespace
         segment.text = " ".join(segment.text.split())
 
-        # Keep only non-empty segments
         if segment.text:
             cleaned_segments.append(segment)
 

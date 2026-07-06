@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:  # Avoid circular imports but allow proper typing
-    from .deliverable_model import Deliverable
-    from .transcription_model import Transcription
-    from .user_model import User
+    from mcr_meeting.app.models.deliverable_model import Deliverable
+    from mcr_meeting.app.models.transcription_model import Transcription
+    from mcr_meeting.app.models.user_model import User
 
 from datetime import datetime
 from enum import StrEnum
@@ -11,7 +11,7 @@ from enum import StrEnum
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from ..db.db import Base
+from mcr_meeting.app.db.db import Base
 
 
 class MeetingPlatforms(StrEnum):

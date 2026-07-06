@@ -7,8 +7,7 @@ import pytest
 from fastapi import status
 
 from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
-
-from .conftest import PrefixedTestClient
+from tests.api.conftest import PrefixedTestClient
 
 
 class TestCreateTranscriptionTask:
