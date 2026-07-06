@@ -62,17 +62,23 @@ export function useImportMeeting() {
           formats: ALLOWED_IMPORT_FORMATS_LABEL,
         })!,
       );
+
       return;
     }
 
     const duration = await readAudioDurationSeconds(file);
-    if (signal.aborted) return;
+
+    if (signal.aborted) {
+      return;
+    }
+
     if (duration !== null && duration > MAX_IMPORT_DURATION_SECONDS) {
       toaster.addErrorMessage(
         t('meeting.import.errors.file-too-long', {
           maxDuration: formatDurationLabel(MAX_IMPORT_DURATION_SECONDS),
         })!,
       );
+
       return;
     }
 
@@ -83,9 +89,10 @@ export function useImportMeeting() {
         onTranscodeStart(converter.stopTranscoding);
         audioFile = await converter.transcodeToMp3(file);
       } catch (error) {
-        // ffmpeg is not signal-cancellable: an intentional abort terminates the
-        // worker, which rejects here — stay silent, it is not a failure
-        if (signal.aborted) return;
+        if (signal.aborted) {
+          return;
+        }
+
         reportError(error, {
           feature: 'meeting.import',
           tags: { 'import.phase': 'transcode' },
@@ -98,10 +105,15 @@ export function useImportMeeting() {
             },
           },
         });
+
         toaster.addErrorMessage(t('meeting.import.errors.file-invalid')!);
+
         return;
       }
-      if (signal.aborted) return;
+
+      if (signal.aborted) {
+        return;
+      }
     }
 
     const dto: AddImportMeetingDto = {
@@ -128,17 +140,24 @@ export function useImportMeeting() {
       return;
     }
 
-    if (signal.aborted) return;
+    if (signal.aborted) {
+      return;
+    }
 
     try {
       await uploadFile({ meetingId: meeting.id, file, signal });
     } catch (error) {
-      if (error instanceof UploadAbortedError) return;
+      if (error instanceof UploadAbortedError) {
+        return;
+      }
+
       const messageKey =
         classifyUploadFailure(error, navigator.onLine) === 'blocked'
           ? 'error.file-upload-blocked'
           : 'error.file-upload';
+
       toaster.addErrorMessage(t(messageKey)!);
+
       return;
     }
 

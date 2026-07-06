@@ -5,7 +5,7 @@ type ModalAttrs = { onSuccess: () => void; onClosed: () => void };
 const { useModal, open, destroy } = vi.hoisted(() => {
   const open = vi.fn();
   const destroy = vi.fn();
-  const useModal = vi.fn(() => ({ open, destroy }));
+  const useModal = vi.fn((_options: { attrs: ModalAttrs }) => ({ open, destroy }));
   return { useModal, open, destroy };
 });
 const { uploadState, abortActiveUploads } = vi.hoisted(() => ({
@@ -30,7 +30,7 @@ vi.mock('@/composables/use-upload-status', () => ({
 import { confirmLeave, confirmLeaveIfUploading } from './use-confirm-leave';
 
 function getModalAttrs(call = 0): ModalAttrs {
-  return (useModal.mock.calls[call] as [{ attrs: ModalAttrs }])[0].attrs;
+  return useModal.mock.calls[call][0].attrs;
 }
 
 describe('confirmLeave', () => {

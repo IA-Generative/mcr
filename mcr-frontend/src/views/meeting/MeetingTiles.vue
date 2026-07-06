@@ -1,26 +1,17 @@
 <template>
   <div class="flex flex-col gap-[18px] min-[1040px]:flex-row">
     <div :class="[tileClasses, 'relative']">
-      <DsfrButton
-        secondary
-        class="action-tile h-full w-full"
+      <ActionTile
+        class="size-full"
+        :img-src="videoSvgPath"
+        :title="t('meetings_v2.tile-import.title')!"
+        :description="
+          t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL })!
+        "
         :disabled="hasActiveUploads"
         @click="openFilePicker"
-      >
-        <span class="flex h-full w-full items-center gap-4">
-          <img
-            :src="videoSvgPath"
-            alt=""
-            class="h-16 w-16 shrink-0"
-          />
-          <span class="flex flex-col gap-1 text-left">
-            <span class="action-tile-title">{{ t('meetings_v2.tile-import.title') }}</span>
-            <span class="action-tile-desc">
-              {{ t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL }) }}
-            </span>
-          </span>
-        </span>
-      </DsfrButton>
+      />
+
       <div
         v-if="hasActiveUploads"
         class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -31,6 +22,7 @@
           :scale="2"
         />
       </div>
+
       <input
         ref="fileInput"
         type="file"
@@ -39,50 +31,31 @@
         @change="onFileSelected"
       />
     </div>
-    <DsfrButton
-      secondary
-      :class="[tileClasses, 'action-tile']"
+
+    <ActionTile
+      :class="tileClasses"
+      :img-src="podcastSvgPath"
+      :title="t('meetings_v2.tile-record.title')!"
+      :description="t('meetings_v2.tile-record.subtitle')!"
       @click="openRecordModal"
-    >
-      <span class="flex h-full w-full items-center gap-4">
-        <img
-          :src="podcastSvgPath"
-          alt=""
-          class="h-16 w-16 shrink-0"
-        />
-        <span class="flex flex-col gap-1 text-left">
-          <span class="action-tile-title">{{ t('meetings_v2.tile-record.title') }}</span>
-          <span class="action-tile-desc">{{ t('meetings_v2.tile-record.subtitle') }}</span>
-        </span>
-      </span>
-    </DsfrButton>
-    <DsfrButton
-      secondary
-      :class="[tileClasses, 'action-tile']"
+    />
+
+    <ActionTile
+      :class="tileClasses"
+      :img-src="selfTrainingSvgPath"
+      :title="t('meetings_v2.tile-visio.title')!"
+      :description="
+        isWebexEnabled
+          ? t('meetings_v2.tile-visio.subtitle-with-webex')!
+          : t('meetings_v2.tile-visio.subtitle-without-webex')!
+      "
       @click="openVisioMeetingModal"
-    >
-      <span class="flex h-full w-full items-center gap-4">
-        <img
-          :src="selfTrainingSvgPath"
-          alt=""
-          class="h-16 w-16 shrink-0"
-        />
-        <span class="flex flex-col gap-1 text-left">
-          <span class="action-tile-title">{{ t('meetings_v2.tile-visio.title') }}</span>
-          <span class="action-tile-desc">
-            {{
-              isWebexEnabled
-                ? t('meetings_v2.tile-visio.subtitle-with-webex')
-                : t('meetings_v2.tile-visio.subtitle-without-webex')
-            }}
-          </span>
-        </span>
-      </span>
-    </DsfrButton>
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
+import ActionTile from '@/components/meeting/ActionTile.vue';
 import CreateVisioMeetingModal from '@/components/meeting/modals/CreateVisioMeetingModal.vue';
 import RecordMeetingModal from '@/components/meeting/modals/RecordMeetingModal.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
@@ -172,36 +145,3 @@ function redirectToMeetingPage(meetingId: number) {
   router.push(`${ROUTES.MEETINGS.path}/${meetingId}`);
 }
 </script>
-
-<style scoped>
-/* chrome of the former small DsfrTile: 1px grey border + 4px blue line at the
-   bottom, instead of the secondary button's blue outline */
-.action-tile {
-  padding: 1.5rem 1.5rem 1.75rem;
-  box-shadow:
-    inset 0 -0.25rem 0 0 var(--border-active-blue-france),
-    inset 0 0 0 1px var(--border-default-grey);
-}
-
-/* DsfrButton wraps its slot in a plain <span>; make it fill the button so the
-   card layout (pictogram left, text right) can spread */
-.action-tile > :deep(span) {
-  display: flex;
-  height: 100%;
-  width: 100%;
-}
-
-/* same text styles as the former small DsfrTile (title/desc) */
-.action-tile-title {
-  color: var(--text-action-high-blue-france);
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.5rem;
-}
-
-.action-tile-desc {
-  color: var(--text-default-grey);
-  font-size: 0.875rem;
-  line-height: 1.5rem;
-}
-</style>

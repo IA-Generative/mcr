@@ -7,6 +7,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    ActionTile: typeof import('./components/meeting/ActionTile.vue')['default']
     AddMeetingForm: typeof import('./components/meeting/AddMeetingForm.vue')['default']
     AppFooter: typeof import('./components/core/AppFooter.vue')['default']
     AppHeader: typeof import('./components/core/AppHeader.vue')['default']

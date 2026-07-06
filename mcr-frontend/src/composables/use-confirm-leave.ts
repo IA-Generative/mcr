@@ -5,33 +5,30 @@ import { useModal } from 'vue-final-modal';
 
 let isConfirming = false;
 
-/**
- * Single entry point shared by the router guard and the sign-out button: lets the
- * caller proceed when nothing is uploading, otherwise asks for confirmation and
- * aborts the uploads on an accepted leave. While the modal is open, any concurrent
- * caller (e.g. browser back/forward, which the modal overlay cannot block) is
- * denied instead of stacking a second modal.
- */
 export async function confirmLeaveIfUploading(): Promise<boolean> {
   const { hasActiveUploads, abortActiveUploads } = useUploadStatus();
-  if (!hasActiveUploads.value) return true;
-  if (isConfirming) return false;
+
+  if (!hasActiveUploads.value) {
+    return true;
+  }
+
+  if (isConfirming) {
+    return false;
+  }
 
   isConfirming = true;
   try {
     const leave = await confirmLeave();
-    if (leave) abortActiveUploads();
+    if (leave) {
+      abortActiveUploads();
+    }
+
     return leave;
   } finally {
     isConfirming = false;
   }
 }
 
-/**
- * Opens the DSFR confirm-leave modal and resolves on EVERY close path (cancel,
- * ESC, outside click) — a pending promise here would deadlock the router guard
- * awaiting it.
- */
 export function confirmLeave(): Promise<boolean> {
   return new Promise((resolve) => {
     let confirmed = false;

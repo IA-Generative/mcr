@@ -40,8 +40,6 @@ export class UploadAbortedError extends Error {
 }
 
 const uploadMutationConfig = {
-  // retrying a canceled request only burns the backoff delays and keeps the
-  // aborted import alive for the navigation guard
   retry: (failureCount: number, error: unknown) =>
     !axios.isCancel(error) && failureCount < MAX_RETRIES,
   retryDelay: getRetryDelay,
@@ -118,8 +116,6 @@ export function useMultipart() {
       }
 
       if (signal?.aborted) {
-        // intentional abort (confirmed leave): a Sentry report here would pollute
-        // the upload-failure signal of #777 with false 'unknown' failures
         throw new UploadAbortedError();
       }
 

@@ -2,7 +2,10 @@ import type { ComputedRef } from 'vue';
 
 export function useUnloadWarning(isActive: ComputedRef<boolean>) {
   function beforeUnloadHandler(e: BeforeUnloadEvent) {
-    if (!isActive.value) return;
+    if (!isActive.value) {
+      return;
+    }
+
     e.preventDefault();
     e.returnValue = true;
   }
