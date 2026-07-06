@@ -41,8 +41,8 @@ AUDIO_MEDIA_TYPE = "audio/webm"
 _JSON_CONTENT_TYPE = "application/json"
 _WAV_CONTENT_TYPE = "audio/wav"
 
-_DIARIZATION_ADAPTER = TypeAdapter(list[DiarizationSegment])
-_TRANSCRIPTION_RAW_ADAPTER = TypeAdapter(list[DiarizedTranscriptionSegment])
+_DIARIZATION_LIST_SERIALIZER = TypeAdapter(list[DiarizationSegment])
+_TRANSCRIPTION_RAW_LIST_SERIALIZER = TypeAdapter(list[DiarizedTranscriptionSegment])
 
 
 def get_transcription_object_name(meeting_id: int, filename: str) -> str:
@@ -257,14 +257,14 @@ def read_preprocessed_audio(meeting_id: int) -> BytesIO:
 
 def write_diarization(meeting_id: int, diarization: list[DiarizationSegment]) -> None:
     put_file_to_s3(
-        BytesIO(_DIARIZATION_ADAPTER.dump_json(diarization)),
+        BytesIO(_DIARIZATION_LIST_SERIALIZER.dump_json(diarization)),
         get_diarization_object_name(meeting_id),
         _JSON_CONTENT_TYPE,
     )
 
 
 def read_diarization(meeting_id: int) -> list[DiarizationSegment]:
-    return _DIARIZATION_ADAPTER.validate_json(
+    return _DIARIZATION_LIST_SERIALIZER.validate_json(
         get_file_from_s3(get_diarization_object_name(meeting_id)).getvalue()
     )
 
@@ -273,7 +273,7 @@ def write_transcription_raw(
     meeting_id: int, segments: list[DiarizedTranscriptionSegment]
 ) -> None:
     put_file_to_s3(
-        BytesIO(_TRANSCRIPTION_RAW_ADAPTER.dump_json(segments)),
+        BytesIO(_TRANSCRIPTION_RAW_LIST_SERIALIZER.dump_json(segments)),
         get_transcription_raw_object_name(meeting_id),
         _JSON_CONTENT_TYPE,
     )
@@ -282,7 +282,7 @@ def write_transcription_raw(
 def read_transcription_raw(
     meeting_id: int,
 ) -> list[DiarizedTranscriptionSegment]:
-    return _TRANSCRIPTION_RAW_ADAPTER.validate_json(
+    return _TRANSCRIPTION_RAW_LIST_SERIALIZER.validate_json(
         get_file_from_s3(get_transcription_raw_object_name(meeting_id)).getvalue()
     )
 
