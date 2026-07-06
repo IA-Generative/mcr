@@ -226,16 +226,20 @@ def _stream_audio_chunks(
         yield audio_chunk_data.read()
 
 
+def get_artifact_object_name(meeting_id: int, filename: str) -> str:
+    return f"{s3_settings.S3_ARTIFACTS_FOLDER}/{meeting_id}/{filename}"
+
+
 def get_preprocessed_audio_object_name(meeting_id: int) -> str:
-    return get_audio_object_name(meeting_id, "preprocessed_audio.wav")
+    return get_artifact_object_name(meeting_id, "preprocessed_audio.wav")
 
 
 def get_diarization_object_name(meeting_id: int) -> str:
-    return get_audio_object_name(meeting_id, "diarization.json")
+    return get_artifact_object_name(meeting_id, "diarization.json")
 
 
 def get_transcription_raw_object_name(meeting_id: int) -> str:
-    return get_audio_object_name(meeting_id, "transcription_raw.json")
+    return get_artifact_object_name(meeting_id, "transcription_raw.json")
 
 
 def write_preprocessed_audio(meeting_id: int, preprocessed_audio: BytesIO) -> None:
