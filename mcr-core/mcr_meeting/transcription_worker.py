@@ -28,9 +28,6 @@ from mcr_meeting.app.infrastructure.speech_to_text_models import (
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
-from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
-    DiarizationArtifact,
-)
 from mcr_meeting.app.use_cases.transcription._shared.on_pipeline_failure import (
     on_pipeline_failure,
 )
@@ -85,13 +82,9 @@ def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
 
 
 def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    artifact = run_diarization(
-        meeting_id, DiarizationProcessor(get_diarization_pipeline)
-    )
-    segments = run_transcribe_chunks(
-        artifact, TranscriptionProcessor(get_transcription_model)
-    )
-    speaker_transcriptions = run_finalize_transcription(meeting_id, segments)
+    run_diarization(meeting_id, DiarizationProcessor(get_diarization_pipeline))
+    run_transcribe_chunks(meeting_id, TranscriptionProcessor(get_transcription_model))
+    speaker_transcriptions = run_finalize_transcription(meeting_id)
     _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
     logger.info("Transcription completed for meeting {}", meeting_id)
 
@@ -145,11 +138,7 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
 )
 def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
     asyncio.run(MeetingApiClient(owner_keycloak_uuid).start_transcription(meeting_id))
-    artifact = run_diarization(
-        meeting_id, DiarizationProcessor(get_diarization_pipeline)
-    )
-    s3.write_preprocessed_audio(meeting_id, artifact.preprocessed_audio)
-    s3.write_diarization(meeting_id, artifact.diarization)
+    run_diarization(meeting_id, DiarizationProcessor(get_diarization_pipeline))
     logger.info("Diarization completed for meeting {}", meeting_id)
 
 
@@ -159,14 +148,7 @@ def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
     max_retries=3,
 )
 def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    artifact = DiarizationArtifact(
-        preprocessed_audio=s3.read_preprocessed_audio(meeting_id),
-        diarization=s3.read_diarization(meeting_id),
-    )
-    segments = run_transcribe_chunks(
-        artifact, TranscriptionProcessor(get_transcription_model)
-    )
-    s3.write_transcription_raw(meeting_id, segments)
+    run_transcribe_chunks(meeting_id, TranscriptionProcessor(get_transcription_model))
     logger.info("Chunk transcription completed for meeting {}", meeting_id)
 
 
@@ -176,8 +158,7 @@ def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
     max_retries=3,
 )
 def finalize_transcription(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    segments = s3.read_transcription_raw(meeting_id)
-    speaker_transcriptions = run_finalize_transcription(meeting_id, segments)
+    speaker_transcriptions = run_finalize_transcription(meeting_id)
     _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
 
 

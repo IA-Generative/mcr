@@ -13,6 +13,8 @@ LLM text splitting/reassembly, participant reconciliation) run for real.
 from collections.abc import Callable
 from io import BytesIO
 
+import pytest
+
 from mcr_meeting.app.infrastructure import speech_to_text_models
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
@@ -35,18 +37,21 @@ from tests.services.speech_to_text_pipeline.seams import (
 
 MEETING_ID = 123
 
+# Les use-cases se passent maintenant les artefacts via S3.
+pytestmark = pytest.mark.usefixtures("in_memory_s3")
+
 
 def _transcribe(meeting_id: int) -> list[SpeakerTranscription]:
     # Providers are read off the module at call time, after the seams patched it.
-    artifact = run_diarization(
+    run_diarization(
         meeting_id,
         DiarizationProcessor(speech_to_text_models.get_diarization_pipeline),
     )
-    segments = run_transcribe_chunks(
-        artifact,
+    run_transcribe_chunks(
+        meeting_id,
         TranscriptionProcessor(speech_to_text_models.get_transcription_model),
     )
-    return run_finalize_transcription(meeting_id, segments)
+    return run_finalize_transcription(meeting_id)
 
 
 _LOCAL_MODEL_FLAGS = dict(

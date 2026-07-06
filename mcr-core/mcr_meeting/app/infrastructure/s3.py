@@ -243,6 +243,7 @@ def get_transcription_raw_object_name(meeting_id: int) -> str:
 
 
 def write_preprocessed_audio(meeting_id: int, preprocessed_audio: BytesIO) -> None:
+    preprocessed_audio.seek(0)
     put_file_to_s3(
         preprocessed_audio,
         get_preprocessed_audio_object_name(meeting_id),
