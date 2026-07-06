@@ -23,6 +23,30 @@ repos:
 
   - repo: local
     hooks:
+      - id: core-type-check
+        name: mypy (mcr-core)
+        language: system
+        files: ^mcr-core/(.*\.py|pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+        entry: make -C mcr-core type-check
+      - id: gateway-type-check
+        name: mypy (mcr-gateway)
+        language: system
+        files: ^mcr-gateway/(.*\.py|pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+        entry: make -C mcr-gateway type-check
+      - id: generation-type-check
+        name: mypy (mcr-generation)
+        language: system
+        files: ^mcr-generation/(.*\.py|pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+        entry: make -C mcr-generation type-check
+      - id: capture-worker-type-check
+        name: mypy (mcr-capture-worker)
+        language: system
+        files: ^mcr-capture-worker/(.*\.py|pyproject\.toml|uv\.lock)$
+        pass_filenames: false
+        entry: make -C mcr-capture-worker type-check
       - id: frontend-eslint
         name: eslint (mcr-frontend)
         language: system
@@ -35,3 +59,9 @@ repos:
         files: ^mcr-frontend/.*\.(vue|ts|tsx|js|jsx|cjs|mjs|cts|mts|css|scss|json|md)$
         pass_filenames: false
         entry: pnpm -C mcr-frontend run format
+      - id: frontend-type-check
+        name: vue-tsc (mcr-frontend)
+        language: system
+        files: ^mcr-frontend/.*\.(vue|ts|tsx|js|jsx|cjs|mjs|cts|mts|json)$
+        pass_filenames: false
+        entry: pnpm -C mcr-frontend run type-check
