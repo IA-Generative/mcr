@@ -97,7 +97,7 @@ class ParticipantExtraction(LLMPostProcessing):
         Returns:
             str: Dialogue string.
         """
-        return "\n".join([str(seg) for seg in segments])
+        return "\n".join([f"{seg.speaker}: {seg.text}" for seg in segments])
 
     def _initial_extract(self, chunk: Chunk) -> list[Participant]:
         # Use INITIAL_PROMPT_TEMPLATE
