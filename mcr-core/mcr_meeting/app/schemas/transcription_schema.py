@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from io import BytesIO
@@ -78,12 +79,16 @@ class TranscriptionSegment(BaseModel):
     end: float
     text: str
 
+    def __repr_args__(self) -> Iterable[tuple[str | None, object]]:
+        for key, value in super().__repr_args__():
+            if key == "text":
+                yield key, f"<{len(self.text)} chars>"
+            else:
+                yield key, value
+
 
 class DiarizedTranscriptionSegment(TranscriptionSegment):
     speaker: str
-
-    def __str__(self) -> str:
-        return f"{self.speaker}: {self.text}"
 
 
 class TranscriptionDocxResult(BaseModel):

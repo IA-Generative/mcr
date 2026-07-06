@@ -19,7 +19,7 @@ class ParticipantNameLoss:
 def format_participants_input(
     segments: list[DiarizedTranscriptionSegment],
 ) -> str:
-    return "\n".join(str(seg) for seg in segments)
+    return "\n".join(f"{seg.speaker}: {seg.text}" for seg in segments)
 
 
 def detect_name_losses(
