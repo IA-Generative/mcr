@@ -10,7 +10,6 @@ import mcr_meeting.app.use_cases.transcription._shared.on_pipeline_failure as op
 import mcr_meeting.transcription_worker as tw
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure import s3
-from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
@@ -35,11 +34,18 @@ _RAW_SEGMENTS = [
 ]
 
 
+def _patch_start_transcription(mocker: MockerFixture) -> Mock:
+    client_cls = mocker.patch.object(tw, "MeetingApiClient")
+    client_cls.return_value.start_transcription = mocker.AsyncMock()
+    return client_cls.return_value.start_transcription
+
+
 # Each task reads the right S3 objects and writes its own.
 class TestS3HandOff:
     def test_diarize_writes_preprocessed_wav_and_diarization(
         self, in_memory_s3: InMemoryS3, mocker: MockerFixture
     ) -> None:
+        _patch_start_transcription(mocker)
         mocker.patch.object(
             tw,
             "run_diarization",
@@ -118,42 +124,39 @@ class TestRetryPerPhase:
         rediarize.assert_not_called()
 
 
-# The transcribe shim routes on STRUCTURAL_SPLIT_ENABLED.
-class TestShimRouting:
-    def _patch_start_transcription(self, mocker: MockerFixture) -> None:
-        client_cls = mocker.patch.object(tw, "MeetingApiClient")
-        client_cls.return_value.start_transcription = mocker.AsyncMock()
-
-    def test_flag_off_runs_in_memory_no_chain(
-        self, mocker: MockerFixture, create_mock_feature_flag_client: Mock
+# The transcribe shim is the legacy monolithic path; the chain is built
+# core-side (see tests/use_cases/test_init_transcription.py).
+class TestLegacyShim:
+    def test_transcribe_marks_started_then_runs_in_memory(
+        self, mocker: MockerFixture
     ) -> None:
-        create_mock_feature_flag_client(
-            FeatureFlag.STRUCTURAL_SPLIT_ENABLED, enabled=False
-        )
-        self._patch_start_transcription(mocker)
+        start = _patch_start_transcription(mocker)
         in_memory = mocker.patch.object(tw, "run_transcription_in_task")
-        chain_mock = mocker.patch.object(tw, "chain")
 
         tw.transcribe(MEETING_ID, OWNER)
 
+        start.assert_called_once_with(MEETING_ID)
         in_memory.assert_called_once_with(MEETING_ID, OWNER)
-        chain_mock.assert_not_called()
 
-    def test_flag_on_enqueues_chain_no_in_memory(
-        self, mocker: MockerFixture, create_mock_feature_flag_client: Mock
+
+# The status flip to TRANSCRIPTION_IN_PROGRESS happens when a worker picks up
+# the first phase, not at enqueue time — queue-wait estimation depends on it.
+class TestStartTransition:
+    def test_diarize_marks_transcription_started(
+        self, in_memory_s3: InMemoryS3, mocker: MockerFixture
     ) -> None:
-        create_mock_feature_flag_client(
-            FeatureFlag.STRUCTURAL_SPLIT_ENABLED, enabled=True
+        start = _patch_start_transcription(mocker)
+        mocker.patch.object(
+            tw,
+            "run_diarization",
+            return_value=DiarizationArtifact(
+                preprocessed_audio=BytesIO(b"wav-data"), diarization=_DIARIZATION
+            ),
         )
-        self._patch_start_transcription(mocker)
-        in_memory = mocker.patch.object(tw, "run_transcription_in_task")
-        chain_mock = mocker.patch.object(tw, "chain")
 
-        tw.transcribe(MEETING_ID, OWNER)
+        tw.diarize(MEETING_ID, OWNER)
 
-        chain_mock.assert_called_once()
-        chain_mock.return_value.apply_async.assert_called_once()
-        in_memory.assert_not_called()
+        start.assert_called_once_with(MEETING_ID)
 
 
 # Explicit success/failure transitions instead of Celery signals.
@@ -164,6 +167,7 @@ class TestStateHandling:
         # Failure marking is the base Task's on_failure hook, not the body — a
         # bare exception must propagate untouched so Celery records FAILURE and
         # stops the chain.
+        _patch_start_transcription(mocker)
         mocker.patch.object(tw, "run_diarization", side_effect=RuntimeError("boom"))
         on_fail = mocker.patch.object(tw, "on_pipeline_failure")
 

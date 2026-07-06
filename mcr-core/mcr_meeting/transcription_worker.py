@@ -5,7 +5,6 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any
 
-from celery import chain
 from celery.signals import worker_process_init
 from loguru import logger
 
@@ -27,7 +26,6 @@ from mcr_meeting.app.infrastructure.speech_to_text_models import (
     load_whisper_model,
 )
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
-from mcr_meeting.app.infrastructure.unleash import FeatureFlag, is_enabled
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.use_cases.transcription._shared.artifacts import (
@@ -86,16 +84,6 @@ def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
     logger.info("======== Celery worker processes initialization done =========")
 
 
-def structural_split_enabled() -> bool:
-    try:
-        return is_enabled(FeatureFlag.STRUCTURAL_SPLIT_ENABLED)
-    except Exception as e:
-        logger.warning(
-            "Failed to read STRUCTURAL_SPLIT_ENABLED, defaulting to legacy: {}", e
-        )
-        return False
-
-
 def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
     artifact = run_diarization(
         meeting_id, DiarizationProcessor(get_diarization_pipeline)
@@ -142,16 +130,11 @@ class TranscriptionPipelineTask(MeetingPipelineTask):
     max_retries=3,
 )
 def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    """Legacy monolithic task, kept while STRUCTURAL_SPLIT_ENABLED is off and
+    already-queued messages may still arrive. New enqueues go through the
+    diarize → transcribe_chunks → finalize_transcription chain built core-side.
+    """
     asyncio.run(MeetingApiClient(owner_keycloak_uuid).start_transcription(meeting_id))
-
-    if structural_split_enabled():
-        chain(
-            diarize.si(meeting_id, owner_keycloak_uuid),
-            transcribe_chunks.si(meeting_id, owner_keycloak_uuid),
-            finalize_transcription.si(meeting_id, owner_keycloak_uuid),
-        ).apply_async()
-        return
-
     run_transcription_in_task(meeting_id, owner_keycloak_uuid)
 
 
@@ -161,6 +144,7 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
     max_retries=3,
 )
 def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    asyncio.run(MeetingApiClient(owner_keycloak_uuid).start_transcription(meeting_id))
     artifact = run_diarization(
         meeting_id, DiarizationProcessor(get_diarization_pipeline)
     )
