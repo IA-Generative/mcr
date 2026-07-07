@@ -46,7 +46,11 @@ class TestTaskDelegation:
         run.assert_called_once()
         assert run.call_args.args[0] == MEETING_ID
 
-    def test_finalize_delegates_and_marks_success(self, mocker: MockerFixture) -> None:
+    def test_finalize_delegates_and_marks_success_without_payload(
+        self, mocker: MockerFixture
+    ) -> None:
+        # La pipeline split poste le statut seul ; core relit le
+        # full_transcript.json que finalize vient d'écrire en S3.
         run = mocker.patch.object(tw, "run_finalize_transcription", return_value=[])
         client_cls = mocker.patch.object(tw, "MeetingApiClient")
         client_cls.return_value.mark_transcription_as_success = mocker.AsyncMock()
@@ -54,7 +58,9 @@ class TestTaskDelegation:
         tw.finalize_transcription(MEETING_ID, OWNER)
 
         run.assert_called_once_with(MEETING_ID)
-        client_cls.return_value.mark_transcription_as_success.assert_called_once()
+        client_cls.return_value.mark_transcription_as_success.assert_called_once_with(
+            MEETING_ID, transcription_data=None
+        )
 
 
 # The transcribe shim is the legacy monolithic path; the chain is built
@@ -70,6 +76,27 @@ class TestLegacyShim:
 
         start.assert_called_once_with(MEETING_ID)
         in_memory.assert_called_once_with(MEETING_ID, OWNER)
+
+    def test_legacy_pipeline_still_posts_the_payload(
+        self, mocker: MockerFixture
+    ) -> None:
+        # Contrat legacy : /transcription/success exige le payload tant que le
+        # shim vit — il meurt avec lui.
+        mocker.patch.object(tw, "run_diarization")
+        mocker.patch.object(tw, "run_transcribe_chunks")
+        transcription = Mock()
+        transcription.model_dump.return_value = {"speaker": "A"}
+        mocker.patch.object(
+            tw, "run_finalize_transcription", return_value=[transcription]
+        )
+        client_cls = mocker.patch.object(tw, "MeetingApiClient")
+        client_cls.return_value.mark_transcription_as_success = mocker.AsyncMock()
+
+        tw.run_transcription_in_task(MEETING_ID, OWNER)
+
+        client_cls.return_value.mark_transcription_as_success.assert_called_once_with(
+            MEETING_ID, transcription_data=[{"speaker": "A"}]
+        )
 
 
 # Explicit success/failure transitions instead of Celery signals.

@@ -75,9 +75,13 @@ def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None
 def _mark_success(
     meeting_id: int,
     owner_keycloak_uuid: str,
-    speaker_transcriptions: list[SpeakerTranscription],
+    speaker_transcriptions: list[SpeakerTranscription] | None = None,
 ) -> None:
-    result = [item.model_dump() for item in speaker_transcriptions]
+    result = (
+        [item.model_dump() for item in speaker_transcriptions]
+        if speaker_transcriptions is not None
+        else None
+    )
     asyncio.run(
         MeetingApiClient(owner_keycloak_uuid).mark_transcription_as_success(
             meeting_id, transcription_data=result
@@ -141,8 +145,8 @@ def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
     max_retries=3,
 )
 def finalize_transcription(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    speaker_transcriptions = run_finalize_transcription(meeting_id)
-    _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
+    run_finalize_transcription(meeting_id)
+    _mark_success(meeting_id, owner_keycloak_uuid)
 
 
 def _run_evaluation(zip_data: bytes) -> None:
