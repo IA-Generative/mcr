@@ -15,6 +15,8 @@ declare module 'vue' {
     AudioLevelMeter: typeof import('./components/core/AudioLevelMeter.vue')['default']
     BaseModal: typeof import('./components/core/BaseModal.vue')['default']
     ComuMeetingForm: typeof import('./components/meeting/visio-modal/ComuMeetingForm.vue')['default']
+    CreateVideoConferenceForm: typeof import('./components/meeting/CreateVideoConferenceForm.vue')['default']
+    CreateVideoConferenceModal: typeof import('./components/meeting/modals/CreateVideoConferenceModal.vue')['default']
     CreateVisioMeetingForm: typeof import('./components/meeting/CreateVisioMeetingForm.vue')['default']
     CreateVisioMeetingModal: typeof import('./components/meeting/modals/CreateVisioMeetingModal.vue')['default']
     CustomReportModal: typeof import('./components/meeting/modals/CustomReportModal.vue')['default']

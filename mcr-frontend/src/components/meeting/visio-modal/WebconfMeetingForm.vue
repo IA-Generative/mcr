@@ -1,4 +1,5 @@
 <template>
+  <div class="pb-4">
   <DsfrInputGroup
     v-model="webconfUrl"
     class="m-0"
@@ -7,6 +8,7 @@
     :error-message="webconfUrlError"
     label-visible
   />
+  </div>
 </template>
 
 <script setup lang="ts">
