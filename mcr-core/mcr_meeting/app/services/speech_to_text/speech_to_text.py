@@ -61,8 +61,8 @@ class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        # Late-bound lambdas so the models resolve at call time, after the
-        # worker context is populated (and after test patches are installed).
+        # Late-bound lambdas so the models resolve at call time, after test
+        # patches are installed.
         self.transcription_processor = TranscriptionProcessor(
             lambda: get_transcription_model()
         )

@@ -19,11 +19,8 @@ from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 from mcr_meeting.app.infrastructure.sentry import init_sentry
 from mcr_meeting.app.infrastructure.speech_to_text_models import (
-    context,
     get_diarization_pipeline,
     get_transcription_model,
-    load_diarization_pipeline,
-    load_whisper_model,
 )
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
@@ -39,7 +36,6 @@ from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
     run_transcribe_chunks,
 )
 from mcr_meeting.app.utils.compute_devices import (
-    ComputeDevice,
     get_gpu_name,
     is_gpu_available,
 )
@@ -58,25 +54,12 @@ SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FO
 
 @worker_process_init.connect
 def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
-    """
-    Initialize worker processes with model and device setup.
-    This worker consume both `transcribe` and `evaluate` tasks.
-    Both theses task require heavy computations with high CPU and GPU demands
-    """
-    global context
-
     logger.debug("======== Initializating Celery worker processes =========")
 
     if is_gpu_available():
-        logger.info("GPU is available")
-        logger.info("Using device: {}", get_gpu_name())
-        context["device"] = ComputeDevice.GPU
+        logger.info("GPU is available: {}", get_gpu_name())
     else:
         logger.trace("GPU not available — running on CPU")
-        context["device"] = ComputeDevice.CPU
-
-    context["model"] = load_whisper_model(context["device"])
-    context["diarization_pipeline"] = load_diarization_pipeline(context["device"])
 
     logger.info("======== Celery worker processes initialization done =========")
 
