@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from datetime import datetime, timezone
 
 from loguru import logger
@@ -15,9 +16,15 @@ from mcr_meeting.app.domain.email import (
     build_transcription_ready_email,
 )
 from mcr_meeting.app.domain.meeting_transitions import mark_transcription_done
-from mcr_meeting.app.domain.transcription_rendering import render_transcription_docx
+from mcr_meeting.app.domain.transcription_rendering import (
+    HasSpeakerTranscription,
+    render_transcription_docx,
+)
 from mcr_meeting.app.infrastructure import email as email_infra
-from mcr_meeting.app.infrastructure.s3 import upload_transcription_to_s3
+from mcr_meeting.app.infrastructure.s3 import (
+    read_full_transcript,
+    upload_transcription_to_s3,
+)
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
@@ -35,12 +42,17 @@ TRANSCRIPTION_FILENAME = "v0.docx"
 
 
 def complete_transcription(
-    meeting_id: int, transcriptions: list[SpeakerTranscription]
+    meeting_id: int, transcriptions: list[SpeakerTranscription] | None = None
 ) -> None:
     meeting = get_meeting_with_owner(meeting_id)
     mark_transcription_done(meeting)
 
-    docx_buffer = render_transcription_docx(meeting.name, transcriptions)
+    segments: Sequence[HasSpeakerTranscription] = (
+        transcriptions
+        if transcriptions is not None
+        else read_full_transcript(meeting_id).segments
+    )
+    docx_buffer = render_transcription_docx(meeting.name, segments)
     upload_transcription_to_s3(
         meeting_id=meeting.id,
         filename=TRANSCRIPTION_FILENAME,
