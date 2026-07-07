@@ -38,14 +38,14 @@
           ? t('meetings_v2.tile-visio.subtitle-with-webex')!
           : t('meetings_v2.tile-visio.subtitle-without-webex')!
       "
-      @click="openVisioMeetingModal"
+      @click="openVideoConferenceModal"
     />
   </div>
 </template>
 
 <script lang="ts" setup>
 import ActionTile from '@/components/meeting/ActionTile.vue';
-import CreateVisioMeetingModal from '@/components/meeting/modals/CreateVisioMeetingModal.vue';
+import CreateVideoConferenceModal from '@/components/meeting/modals/CreateVideoConferenceModal.vue';
 import RecordMeetingModal from '@/components/meeting/modals/RecordMeetingModal.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useImportMeeting } from '@/composables/use-import-meeting';
@@ -100,8 +100,8 @@ const { open: openRecordModal } = useModal({
   },
 });
 
-const { open: openVisioMeetingModal } = useModal({
-  component: CreateVisioMeetingModal,
+const { open: openVideoConferenceModal } = useModal({
+  component: CreateVideoConferenceModal,
   attrs: {
     onCreateMeeting: (values: AddOnlineMeetingDto) => createMeetingStartCaptureAndRedirect(values),
   },
