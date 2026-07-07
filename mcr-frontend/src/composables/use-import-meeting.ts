@@ -33,11 +33,7 @@ export function useImportMeeting() {
     const importId = registerUpload({
       abort: () => {
         controller.abort();
-        try {
-          stopTranscoding?.();
-        } catch {
-          // ffmpeg may not be loaded yet
-        }
+        stopTranscoding?.();
       },
     });
 

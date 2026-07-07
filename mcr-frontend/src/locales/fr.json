@@ -212,7 +212,7 @@
       },
       "confirm-leave": {
         "title": "Êtes-vous sûr de vouloir quitter la page ?",
-        "description": "Cela annulera l'importation en cours.",
+        "description": "Cela annulera l'import en cours.",
         "button": "Quitter"
       }
     },

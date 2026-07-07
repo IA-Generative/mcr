@@ -120,7 +120,7 @@ describe('useMultipart.uploadFile', () => {
     expect(reportError).toHaveBeenCalledTimes(1);
   });
 
-  it('throws UploadAbortedError without reporting when the signal is aborted (protects #777)', async () => {
+  it('throws UploadAbortedError without reporting when the signal is aborted (keeps the upload-failure monitoring signal clean)', async () => {
     const controller = new AbortController();
     put.mockImplementation(() => {
       controller.abort();
@@ -139,7 +139,7 @@ describe('useMultipart.uploadFile', () => {
     expect(isStorageReachable).not.toHaveBeenCalled();
   });
 
-  it('still reports a real failure when a signal is provided but not aborted (non-regression #777)', async () => {
+  it('still reports a real failure when a signal is provided but not aborted (monitoring non-regression)', async () => {
     put.mockRejectedValue(networkError());
 
     const { uploadFile } = useMultipart();
