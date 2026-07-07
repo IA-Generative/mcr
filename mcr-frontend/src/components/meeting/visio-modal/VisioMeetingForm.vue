@@ -1,12 +1,14 @@
 <template>
-  <DsfrInputGroup
-    v-model="visioUrl"
-    class="m-0"
-    :label="$t('meeting-v2.visio-form.visio.url')"
-    :hint="$t('meeting-v2.visio-form.visio.url_hint')"
-    :error-message="visioUrlError"
-    label-visible
-  />
+  <div class="pb-4">
+    <DsfrInputGroup
+      v-model="visioUrl"
+      class="m-0"
+      :label="$t('meeting-v2.visio-form.visio.url')"
+      :hint="$t('meeting-v2.visio-form.visio.url_hint')"
+      :error-message="visioUrlError"
+      label-visible
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
