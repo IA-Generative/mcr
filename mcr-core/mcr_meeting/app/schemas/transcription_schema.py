@@ -73,6 +73,41 @@ class SpeakerTranscription(BaseModel):
     )
 
 
+# Contrat S3 `transcription/{meeting_id}/full_transcript.json`, consommé par
+# mcr-generation via un schéma miroir — tout changement ici doit y être répliqué.
+class FullTranscriptSegment(BaseModel):
+    speaker: str
+    transcription_index: int
+    transcription: str
+    start: float
+    end: float
+
+
+class FullTranscript(BaseModel):
+    meeting_id: int
+    version: int = 0
+    segments: list[FullTranscriptSegment]
+
+    @classmethod
+    def from_speaker_transcriptions(
+        cls, meeting_id: int, transcriptions: list[SpeakerTranscription]
+    ) -> "FullTranscript":
+        return cls(
+            meeting_id=meeting_id,
+            version=transcriptions[0].version if transcriptions else 0,
+            segments=[
+                FullTranscriptSegment(
+                    speaker=t.speaker,
+                    transcription_index=t.transcription_index,
+                    transcription=t.transcription,
+                    start=t.start,
+                    end=t.end,
+                )
+                for t in transcriptions
+            ],
+        )
+
+
 class TranscriptionSegment(BaseModel):
     id: int
     start: float
