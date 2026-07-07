@@ -4,6 +4,7 @@ import pytest
 from celery.exceptions import Ignore
 from pytest_mock import MockerFixture
 
+import mcr_meeting.app.infrastructure.speech_to_text_models as stt
 import mcr_meeting.transcription_worker as tw
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
@@ -127,6 +128,19 @@ class TestPipelineTaskBase:
         # (404 -> MeetingDeletedException) aborts cleanly without being marked
         # FAILED — no special-casing needed in the base Task.
         assert issubclass(MeetingDeletedException, Ignore)
+
+
+class TestWorkerInit:
+    def test_initialize_worker_loads_no_model(self, mocker: MockerFixture) -> None:
+        mocker.patch.object(tw, "is_gpu_available", return_value=True)
+        mocker.patch.object(tw, "get_gpu_name", return_value="fake-gpu")
+        load_whisper = mocker.patch.object(stt, "load_whisper_model")
+        load_diarization = mocker.patch.object(stt, "load_diarization_pipeline")
+
+        tw.initialize_worker()
+
+        load_whisper.assert_not_called()
+        load_diarization.assert_not_called()
 
 
 def test_no_celery_signal_handlers_remain() -> None:
