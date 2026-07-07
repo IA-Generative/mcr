@@ -90,6 +90,6 @@ async def fail_transcription_task(meeting_id: int) -> None:
     "/{meeting_id}/transcription/success", status_code=status.HTTP_204_NO_CONTENT
 )
 async def success_transcription_task(
-    meeting_id: int, payload: list[SpeakerTranscription]
+    meeting_id: int, payload: list[SpeakerTranscription] | None = None
 ) -> None:
     complete_transcription(meeting_id=meeting_id, transcriptions=payload)

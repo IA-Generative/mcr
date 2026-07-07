@@ -300,6 +300,12 @@ def write_full_transcript(full_transcript: FullTranscript) -> None:
     )
 
 
+def read_full_transcript(meeting_id: int) -> FullTranscript:
+    return FullTranscript.model_validate_json(
+        get_file_from_s3(get_full_transcript_object_name(meeting_id)).getvalue()
+    )
+
+
 def get_file_from_s3(object_name: str) -> BytesIO:
     try:
         response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
