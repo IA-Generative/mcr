@@ -121,7 +121,7 @@ class Meeting(Base):
     )
     transcription_filename: Mapped[str | None] = mapped_column(String)
     report_filename: Mapped[str | None] = mapped_column(String)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
     meeting_platform_id: Mapped[str | None] = mapped_column(String)
     meeting_password: Mapped[str | None] = mapped_column(String)
     notes: Mapped[str | None] = mapped_column(Text)
