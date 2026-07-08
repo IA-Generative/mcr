@@ -3,9 +3,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any
 
-from celery.signals import worker_process_init
 from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
@@ -35,10 +33,6 @@ from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
 from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
     run_transcribe_chunks,
 )
-from mcr_meeting.app.utils.compute_devices import (
-    get_gpu_name,
-    is_gpu_available,
-)
 from mcr_meeting.app.utils.sentry_context import (
     gather_meeting_context,
     set_sentry_meeting_context,
@@ -50,18 +44,6 @@ init_sentry()
 init_langfuse()
 
 SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
-
-
-@worker_process_init.connect
-def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
-    logger.debug("======== Initializating Celery worker processes =========")
-
-    if is_gpu_available():
-        logger.info("GPU is available: {}", get_gpu_name())
-    else:
-        logger.trace("GPU not available — running on CPU")
-
-    logger.info("======== Celery worker processes initialization done =========")
 
 
 def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None:

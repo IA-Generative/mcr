@@ -61,14 +61,8 @@ class SpeechToTextPipeline:
     """Pipeline to convert speech in audio bytes to text with speaker diarization"""
 
     def __init__(self) -> None:
-        # Late-bound lambdas so the models resolve at call time, after test
-        # patches are installed.
-        self.transcription_processor = TranscriptionProcessor(
-            lambda: get_transcription_model()
-        )
-        self.diarization_processor = DiarizationProcessor(
-            lambda: get_diarization_pipeline()
-        )
+        self.transcription_processor = TranscriptionProcessor(get_transcription_model)
+        self.diarization_processor = DiarizationProcessor(get_diarization_pipeline)
 
     def pre_process(self, audio_bytes: BytesIO) -> BytesIO:
         """Pre-process audio bytes before transcription and diarization.
