@@ -209,6 +209,11 @@
         "file-format-unsupported": "Format non supporté. Formats acceptés : {formats}.",
         "file-too-long": "Fichier trop long. La durée maximum est de {maxDuration}.",
         "file-invalid": "Le fichier sélectionné n'a pas pu être converti."
+      },
+      "confirm-leave": {
+        "title": "Êtes-vous sûr de vouloir quitter la page ?",
+        "description": "Cela annulera l'import en cours.",
+        "button": "Quitter"
       }
     },
     "form": {

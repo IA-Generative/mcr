@@ -8,13 +8,21 @@ const {
   startTranscription,
   uploadFile,
   transcodeToMp3,
+  stopTranscoding,
   classifyUploadFailure,
+  registerUpload,
+  unregisterUpload,
+  registeredAborts,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
   startTranscription: vi.fn(),
   uploadFile: vi.fn(),
   transcodeToMp3: vi.fn(),
+  stopTranscoding: vi.fn(),
   classifyUploadFailure: vi.fn(),
+  registerUpload: vi.fn(),
+  unregisterUpload: vi.fn(),
+  registeredAborts: [] as (() => void)[],
 }));
 
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
@@ -23,9 +31,15 @@ vi.mock('@/services/http/http.utils', () => ({ classifyUploadFailure }));
 vi.mock('@/composables/use-toaster', () => ({ default: () => ({ addErrorMessage }) }));
 vi.mock('@/plugins/i18n', () => ({ t: (key: string) => key }));
 vi.mock('@/router/routes', () => ({ ROUTES: { MEETINGS: { path: '/meetings' } } }));
-vi.mock('@/composables/use-multipart', () => ({ useMultipart: () => ({ uploadFile }) }));
+vi.mock('@/composables/use-multipart', () => {
+  class UploadAbortedError extends Error {}
+  return { useMultipart: () => ({ uploadFile }), UploadAbortedError };
+});
+vi.mock('@/composables/use-upload-status', () => ({
+  useUploadStatus: () => ({ registerUpload, unregisterUpload }),
+}));
 vi.mock('@/utils/video2audioConverter', () => ({
-  useVideo2audioConverter: () => ({ transcodeToMp3 }),
+  useVideo2audioConverter: () => ({ transcodeToMp3, stopTranscoding }),
 }));
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
@@ -35,6 +49,7 @@ vi.mock('@/services/meetings/use-meeting', () => ({
 }));
 
 import { useImportMeeting } from './use-import-meeting';
+import { UploadAbortedError } from './use-multipart';
 
 const DURATION_SECONDS = 60;
 
@@ -45,6 +60,11 @@ function makeFile(name: string, type: string) {
 describe('useImportMeeting.importFile', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    registeredAborts.length = 0;
+    registerUpload.mockImplementation((upload: { abort: () => void }) => {
+      registeredAborts.push(upload.abort);
+      return registeredAborts.length;
+    });
     createMeetingAsync.mockResolvedValue({ id: 7 });
     uploadFile.mockResolvedValue(undefined);
     startTranscription.mockImplementation((_id: number, opts?: { onSuccess?: () => void }) =>
@@ -91,7 +111,11 @@ describe('useImportMeeting.importFile', () => {
     expect(transcodeToMp3).not.toHaveBeenCalled();
     expect(createMeetingAsync).toHaveBeenCalledTimes(1);
     expect(uploadFile).toHaveBeenCalledTimes(1);
-    expect(uploadFile).toHaveBeenCalledWith({ meetingId: 7, file: expect.any(File) });
+    expect(uploadFile).toHaveBeenCalledWith({
+      meetingId: 7,
+      file: expect.any(File),
+      signal: expect.any(AbortSignal),
+    });
     expect(startTranscription).toHaveBeenCalledWith(7, expect.any(Object));
     expect(push).toHaveBeenCalledWith('/meetings/7');
   });
@@ -237,5 +261,76 @@ describe('useImportMeeting.importFile', () => {
     const start = new Date(dto.start_date).getTime();
     const end = new Date(dto.end_date).getTime();
     expect(end - start).toBe(DURATION_SECONDS * 1000);
+  });
+
+  it.each([
+    ['success', () => {}],
+    ['upload failure', () => uploadFile.mockRejectedValue(new Error('boom'))],
+    ['invalid format', () => {}],
+  ])('registers the import then unregisters it in every case (%s)', async (kase, arrange) => {
+    arrange();
+    const fileName = kase === 'invalid format' ? 'notes.txt' : 'meeting.mp3';
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile(fileName, 'audio/mpeg'));
+
+    expect(registerUpload).toHaveBeenCalledTimes(1);
+    expect(unregisterUpload).toHaveBeenCalledTimes(1);
+    expect(unregisterUpload).toHaveBeenCalledWith(1);
+  });
+
+  it('aborts silently during transcode: stops ffmpeg, creates nothing, no toast, no report', async () => {
+    transcodeToMp3.mockImplementation(() => {
+      registeredAborts[0]();
+      return Promise.reject(new Error('Transcoding failed: called FFmpeg.terminate()'));
+    });
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('demo.mp4', 'video/mp4'));
+
+    expect(stopTranscoding).toHaveBeenCalledTimes(1);
+    expect(createMeetingAsync).not.toHaveBeenCalled();
+    expect(addErrorMessage).not.toHaveBeenCalled();
+    expect(reportError).not.toHaveBeenCalled();
+    expect(unregisterUpload).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not upload when the abort lands after meeting creation', async () => {
+    createMeetingAsync.mockImplementation(async () => {
+      registeredAborts[0]();
+      return { id: 7 };
+    });
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('meeting.mp3', 'audio/mpeg'));
+
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(addErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it('stays silent when the upload is intentionally aborted (no toast, no redirect)', async () => {
+    uploadFile.mockRejectedValue(new UploadAbortedError());
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('meeting.mp3', 'audio/mpeg'));
+
+    expect(addErrorMessage).not.toHaveBeenCalled();
+    expect(startTranscription).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('unregisters before the success redirect fires (no false confirmation on success nav)', async () => {
+    startTranscription.mockImplementation((_id: number, opts?: { onSuccess?: () => void }) => {
+      setTimeout(() => opts?.onSuccess?.(), 0);
+    });
+
+    const { importFile } = useImportMeeting();
+    await importFile(makeFile('meeting.mp3', 'audio/mpeg'));
+
+    expect(unregisterUpload).toHaveBeenCalledTimes(1);
+    expect(push).not.toHaveBeenCalled();
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(push).toHaveBeenCalledWith('/meetings/7');
   });
 });

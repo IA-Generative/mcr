@@ -1,20 +1,19 @@
 <template>
   <div class="flex flex-col gap-[18px] min-[1040px]:flex-row">
     <div :class="[tileClasses, 'relative']">
-      <DsfrTile
-        class="h-full w-full"
-        :horizontal="true"
-        :small="true"
+      <ActionTile
+        class="size-full"
         :img-src="videoSvgPath"
-        :title="t('meetings_v2.tile-import.title')"
+        :title="t('meetings_v2.tile-import.title')!"
         :description="
-          t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL })
+          t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL })!
         "
-        :disabled="isImporting"
+        :disabled="hasActiveUploads"
         @click="openFilePicker"
       />
+
       <div
-        v-if="isImporting"
+        v-if="hasActiveUploads"
         class="pointer-events-none absolute inset-0 flex items-center justify-center"
       >
         <VIcon
@@ -23,6 +22,7 @@
           :scale="2"
         />
       </div>
+
       <input
         ref="fileInput"
         type="file"
@@ -31,25 +31,23 @@
         @change="onFileSelected"
       />
     </div>
-    <DsfrTile
+
+    <ActionTile
       :class="tileClasses"
-      :horizontal="true"
-      :small="true"
       :img-src="podcastSvgPath"
-      :title="t('meetings_v2.tile-record.title')"
-      :description="t('meetings_v2.tile-record.subtitle')"
+      :title="t('meetings_v2.tile-record.title')!"
+      :description="t('meetings_v2.tile-record.subtitle')!"
       @click="openRecordModal"
     />
-    <DsfrTile
+
+    <ActionTile
       :class="tileClasses"
-      :horizontal="true"
-      :small="true"
       :img-src="selfTrainingSvgPath"
-      :title="t('meetings_v2.tile-visio.title')"
+      :title="t('meetings_v2.tile-visio.title')!"
       :description="
         isWebexEnabled
-          ? t('meetings_v2.tile-visio.subtitle-with-webex')
-          : t('meetings_v2.tile-visio.subtitle-without-webex')
+          ? t('meetings_v2.tile-visio.subtitle-with-webex')!
+          : t('meetings_v2.tile-visio.subtitle-without-webex')!
       "
       @click="openVisioMeetingModal"
     />
@@ -57,10 +55,12 @@
 </template>
 
 <script lang="ts" setup>
+import ActionTile from '@/components/meeting/ActionTile.vue';
 import CreateVisioMeetingModal from '@/components/meeting/modals/CreateVisioMeetingModal.vue';
 import RecordMeetingModal from '@/components/meeting/modals/RecordMeetingModal.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useImportMeeting } from '@/composables/use-import-meeting';
+import { useUploadStatus } from '@/composables/use-upload-status';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import videoSvgPath from '@dsfr-artwork/pictograms/leisure/video.svg?url';
@@ -80,7 +80,7 @@ const tileClasses =
   'w-[95vw] h-[20vh] min-[440px]:h-[15vh] min-[1040px]:w-[30vw] min-[1040px]:h-[20vh]';
 
 const isWebexEnabled = useFeatureFlag('webex');
-const isImporting = ref(false);
+const { hasActiveUploads } = useUploadStatus();
 const fileInput = ref<HTMLInputElement | null>(null);
 
 const router = useRouter();
@@ -91,7 +91,6 @@ const { mutateAsync: startCaptureAsync } = startCaptureMutation();
 const { importFile } = useImportMeeting();
 
 function openFilePicker() {
-  if (isImporting.value) return;
   fileInput.value?.click();
 }
 
@@ -101,10 +100,8 @@ async function onFileSelected(event: Event) {
   if (!file) return;
 
   try {
-    isImporting.value = true;
     await importFile(file);
   } finally {
-    isImporting.value = false;
     input.value = '';
   }
 }

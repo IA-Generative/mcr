@@ -17,6 +17,7 @@ import {
 import type { Part } from '@/services/meetings/meetings.types';
 import { reportError, type ReportOptions } from '@/services/observability/sentry';
 import { useMutation } from '@tanstack/vue-query';
+import axios from 'axios';
 
 export type UploadPhase = 'init' | 'sign' | 'put' | 'complete';
 
@@ -31,8 +32,16 @@ export class UploadError extends Error {
   }
 }
 
+export class UploadAbortedError extends Error {
+  constructor() {
+    super('upload aborted');
+    this.name = 'UploadAbortedError';
+  }
+}
+
 const uploadMutationConfig = {
-  retry: MAX_RETRIES,
+  retry: (failureCount: number, error: unknown) =>
+    !axios.isCancel(error) && failureCount < MAX_RETRIES,
   retryDelay: getRetryDelay,
   meta: { skipReport: true },
 } as const;
@@ -51,8 +60,12 @@ export function useMultipart() {
     }
   }
 
-  async function uploadFile(params: { meetingId: number; file: File }): Promise<void> {
-    const { meetingId, file } = params;
+  async function uploadFile(params: {
+    meetingId: number;
+    file: File;
+    signal?: AbortSignal;
+  }): Promise<void> {
+    const { meetingId, file, signal } = params;
     const startedAt = performance.now();
     const totalSize = file.size;
     const totalParts = Math.ceil(totalSize / PART_SIZE);
@@ -83,7 +96,7 @@ export function useMultipart() {
           partNumber,
         );
         lastPutUrl = url;
-        const etag = await step('put', () => putMultipartPart({ url, blob }), partNumber);
+        const etag = await step('put', () => putMultipartPart({ url, blob, signal }), partNumber);
         completedParts.push({ partNumber, etag });
         bytesSent += blob.size;
       }
@@ -100,6 +113,10 @@ export function useMultipart() {
       if (uploadId && objectKey) {
         // best-effort cleanup; its own failure must stay silent
         await abortMultipartUpload({ meetingId, uploadId, objectKey }).catch(() => {});
+      }
+
+      if (signal?.aborted) {
+        throw new UploadAbortedError();
       }
 
       const stepError = error instanceof UploadError ? error : new UploadError('init', error);
@@ -195,11 +212,12 @@ export function useMultipart() {
   });
 
   const { mutateAsync: putMultipartPart } = useMutation({
-    mutationFn: async (params: { url: string; blob: Blob }) => {
-      const { url, blob } = params;
+    mutationFn: async (params: { url: string; blob: Blob; signal?: AbortSignal }) => {
+      const { url, blob, signal } = params;
 
       const response = await HttpService.put(url, blob, {
         timeout: PUT_TIMEOUT_MS,
+        signal,
         transformRequest: (data, headers) => {
           setFileHeaders(blob, headers);
           return data;

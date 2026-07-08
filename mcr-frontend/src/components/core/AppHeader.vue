@@ -70,6 +70,7 @@
 import type { DsfrHeaderProps } from '@gouvminint/vue-dsfr';
 import { useI18n } from 'vue-i18n';
 import { useAuth } from '../sign-in/use-auth';
+import { confirmLeaveIfUploading } from '@/composables/use-confirm-leave';
 import { computed } from 'vue';
 
 const logoText = computed(() => [t('header.logo.text1'), t('header.logo.text2')]);
@@ -87,9 +88,11 @@ const whenLoggedLinks: DsfrHeaderProps['quickLinks'] = [
   {
     label: t('header.links.sign-out'),
     icon: 'fr-icon-logout-box-r-line',
-    to: '/',
-    onClick: () => {
-      signOut();
+    button: true,
+    onClick: async () => {
+      if (await confirmLeaveIfUploading()) {
+        signOut();
+      }
     },
   },
 ];

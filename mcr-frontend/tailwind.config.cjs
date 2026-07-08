@@ -7,6 +7,7 @@ module.exports = {
     extend: {
       colors: {
         grey: {
+          DEFAULT: 'var(--text-default-grey)',
           200:  'var(--grey-200-850)',
           625:  'var(--grey-625-425)',
           900:  'var(--grey-900-175)',

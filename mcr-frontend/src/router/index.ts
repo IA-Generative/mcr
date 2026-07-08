@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
 import { ROUTES } from '@/router/routes';
 import { useUnleash } from '@/composables/use-unleash';
+import { uploadLeaveGuard } from '@/router/upload-leave-guard';
 
 const routes: RouteRecordRaw[] = Object.values(ROUTES);
 
@@ -10,7 +11,7 @@ const router = () => {
     routes,
   });
 
-  instance.beforeEach((to) => {
+  instance.beforeEach((to, from) => {
     const isMaintenanceEnabled = useUnleash().isEnabled('maintenance');
     if (isMaintenanceEnabled && to.name !== 'Maintenance') {
       return { name: 'Maintenance' };
@@ -23,6 +24,8 @@ const router = () => {
     if (featureFlag && !useUnleash().isEnabled(featureFlag)) {
       return { name: 'NotFound' };
     }
+
+    return uploadLeaveGuard(to, from);
   });
 
   return instance;
