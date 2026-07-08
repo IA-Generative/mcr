@@ -16,7 +16,7 @@ class ParticipantNameLoss:
     reason: str
 
 
-def format_participants_input(
+def format_segments_as_dialogue(
     segments: list[DiarizedTranscriptionSegment],
 ) -> str:
     return "\n".join(f"{seg.speaker}: {seg.text}" for seg in segments)

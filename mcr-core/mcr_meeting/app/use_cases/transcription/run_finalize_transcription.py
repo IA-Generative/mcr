@@ -7,7 +7,7 @@ from mcr_meeting.app.configs.base import ChunkingConfig
 from mcr_meeting.app.domain.transcription.participant_reconciliation import (
     ParticipantNameLoss,
     detect_name_losses,
-    format_participants_input,
+    format_segments_as_dialogue,
 )
 from mcr_meeting.app.domain.transcription.post_process import (
     merge_consecutive_segments_per_speaker,
@@ -95,7 +95,7 @@ def _enrich_with_participants(
 def _extract_participants(
     segments: list[DiarizedTranscriptionSegment],
 ) -> list[Participant]:
-    text = format_participants_input(segments)
+    text = format_segments_as_dialogue(segments)
     chunks = chunk_text(text, chunk_overlap=ChunkingConfig().CHUNK_OVERLAP)
 
     if not chunks:
