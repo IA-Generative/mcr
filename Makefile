@@ -1,7 +1,21 @@
-.PHONY: clean help install install-hooks type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive
+.PHONY: clean help install install-hooks type-check lint format pre-commit start stop restart rebuild coverage eval-participants init-drive start-drive stop-drive ensure-secrets
 
 
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
+
+# -- Docker / local env --------------------------------------------------------
+# Secrets live in 1Password (item MCR/mcr-local-secrets) and are referenced by
+# .env.template (committed). `op inject` resolves them into .env; compose reads
+# .env + .env.local.docker via each service's env_file (no --env-file, no shell
+# interpolation, so a stale shell export can't shadow them).
+ENV_TEMPLATE := .env.template
+ENV_SECRETS  := .env
+COMPOSE      := docker compose
+
+# Regenerate .env from 1Password (core team); external contributors keep their own .env.
+ensure-secrets:
+	@if command -v op >/dev/null 2>&1; then op inject -f -i $(ENV_TEMPLATE) -o $(ENV_SECRETS); fi
+	@test -f $(ENV_SECRETS) || { echo "Missing $(ENV_SECRETS): run 'op signin' (core team) or 'cp $(ENV_TEMPLATE) $(ENV_SECRETS)' and fill in your values (external)."; exit 1; }
 
 help:
 	clear
@@ -37,21 +51,20 @@ install-hooks:
 	uvx pre-commit install
 
 # example: make start service=mcr-frontend
-start:
-	touch .env
-	docker compose --env-file .env.local.docker --env-file .env up $(service) --watch
+start: ensure-secrets
+	$(COMPOSE) up $(service) --watch
 
 stop:
-	docker compose down $(service)
+	$(COMPOSE) down $(service)
 
-restart:
-	docker compose down $(service)
-	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
+restart: ensure-secrets
+	$(COMPOSE) down $(service)
+	$(COMPOSE) up --watch $(service)
 
-rebuild:
-	docker compose down $(service)
-	docker compose build $(service)
-	docker compose --env-file .env.local.docker --env-file .env up --watch $(service)
+rebuild: ensure-secrets
+	$(COMPOSE) down $(service)
+	$(COMPOSE) build $(service)
+	$(COMPOSE) up --watch $(service)
 
 type-check:
 	$(call CALL_TARGET_CMD_ON_ALL_PKGS, type-check)
@@ -72,18 +85,18 @@ start-playwright-with-gui:
 	uv run -m mcr_capture_worker.worker
 
 eval-participants:
-	docker compose --env-file .env.local.docker --env-file .env exec transcription_worker python -m mcr_meeting.evaluation.participant_naming
+	$(COMPOSE) exec transcription_worker python -m mcr_meeting.evaluation.participant_naming
 
 init-drive:  ## One-time: copy config, build images
 	./docker/drive/setup-drive.sh
 
-start-drive:  ## Start MCR + Drive
+start-drive: ensure-secrets  ## Start MCR + Drive
 	@if [ ! -f ../drive/compose.override.yml ]; then \
 		echo "Drive is not set up. Run 'make init-drive' first."; \
 		exit 1; \
 	fi
 	docker network create shared-network 2>/dev/null || true
-	docker compose --env-file .env.local.docker --env-file .env up -d --wait keycloak
+	$(COMPOSE) up -d --wait keycloak
 	@echo "Keycloak ready — starting Drive..."
 	cd ../drive && docker compose up -d
 	cd ../drive && make migrate

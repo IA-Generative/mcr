@@ -110,7 +110,13 @@ git clone git@github.com:IA-Generative/mcr.git
 cd mcr
 ```
 
-2. Demander un .env à l'équipe
+2. Configurer les secrets
+
+Les valeurs non secrètes sont déjà dans `.env.local.docker` (committé). Les secrets sont documentés dans `.env.template` (références `op://`) et résolus dans `.env`.
+
+- **Équipe cœur (1Password)** : installez le [CLI `op`](https://developer.1password.com/docs/cli/get-started/),
+  faites `op signin`. Si vous avez un ancien `.env`, archivez-le d'abord : `mv .env .env.bak`. `make start` régénère `.env` depuis 1Password à chaque lancement.
+- **Contributeur externe (sans 1Password)** : `cp .env.template .env` puis remplacez chaque référence `op://…` par votre propre valeur.
 
 3. Lancer le projet à l’aide de la commande `make`
 

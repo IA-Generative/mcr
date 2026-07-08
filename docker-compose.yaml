@@ -1,3 +1,9 @@
+# Every app service reads its env from these files (container-side injection).
+# File-based env is immune to host-shell shadowing, unlike ${VAR} interpolation.
+x-env-files: &env-files
+  - .env.local.docker
+  - .env
+
 services:
   redis:
     image: redis:8.0.3-alpine3.21
@@ -19,9 +25,8 @@ services:
     restart: always
     ports:
       - "5555:5555"
+    env_file: *env-files
     environment:
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
       - FLOWER_UNAUTHENTICATED_API=true
     depends_on:
       - redis
@@ -40,50 +45,9 @@ services:
     # the in-flight task immediately; stop_grace_period is the docker analog of k8s
     # terminationGracePeriodSeconds and must stay above worker_soft_shutdown_timeout (60s).
     stop_grace_period: 120s
+    env_file: *env-files
     environment:
       - REMAP_SIGTERM=SIGQUIT
-      - STT_MODEL=${STT_MODEL}
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_EXTERNAL_ENDPOINT=${S3_EXTERNAL_ENDPOINT}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_BUCKET=${S3_BUCKET}
-      - S3_REGION=${S3_REGION}
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
-      - ENV_MODE=${ENV_MODE}
-      - MCR_FRONTEND_URL=${MCR_FRONTEND_URL}
-      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
-      - SENTRY_CORE_DSN=${SENTRY_CORE_DSN}
-      - SENTRY_TRANSCRIPTION_DSN=${SENTRY_TRANSCRIPTION_DSN}
-      - COLORIZE=${COLORIZE}
-      - LEVEL=${LEVEL}
-      - DISPLAY_REQUEST_ID=${DISPLAY_REQUEST_ID}
-      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
-      - UNLEASH_URL=${UNLEASH_URL}
-      - UNLEASH_INSTANCE_ID=${UNLEASH_INSTANCE_ID}
-      - LLM_HUB_API_URL=${LLM_HUB_API_URL}
-      - LLM_HUB_API_KEY=${LLM_HUB_API_KEY}
-      - TRANSCRIPTION_API_BASE_URL=${TRANSCRIPTION_API_BASE_URL}
-      - TRANSCRIPTION_API_KEY=${TRANSCRIPTION_API_KEY}
-      - DIARIZATION_API_BASE_URL=${DIARIZATION_API_BASE_URL}
-      - DIARIZATION_API_KEY=${DIARIZATION_API_KEY}
-      - KEYCLOAK_URL=${KEYCLOAK_URL}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - KEYCLOAK_CORE_CLIENT_ID=${KEYCLOAK_CORE_CLIENT_ID}
-      - KEYCLOAK_CORE_CLIENT_SECRET=${KEYCLOAK_CORE_CLIENT_SECRET}
-      - DRIVE_API_BASE_URL=${DRIVE_API_BASE_URL}
-      - DRIVE_FRONTEND_URL=${DRIVE_FRONTEND_URL}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
-
     ports:
       # Debugging port
       - "7002:7002"
@@ -100,10 +64,7 @@ services:
     image: postgres:17.6
     container_name: mcr-postgres
     restart: always
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+    env_file: *env-files
     ports:
       - "5433:5432"
     volumes:
@@ -127,12 +88,7 @@ services:
           path: ./mcr-gateway/pyproject.toml
     networks:
       - mcr-network
-    environment:
-      - KEYCLOAK_URL=${KEYCLOAK_URL}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - KEYCLOAK_CLIENT_ID=${KEYCLOAK_CLIENT_ID}
-      - ENV_MODE=${ENV_MODE}
-      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
+    env_file: *env-files
 
   meeting:
     build:
@@ -153,70 +109,14 @@ services:
       watch:
         - action: rebuild
           path: ./mcr-core/pyproject.toml
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_EXTERNAL_ENDPOINT=${S3_EXTERNAL_ENDPOINT}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_BUCKET=${S3_BUCKET}
-      - S3_REGION=${S3_REGION}
-      - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - ENV_MODE=${ENV_MODE}
-      - SMTP_USERNAME=${SMTP_USERNAME}
-      - SMTP_SENDER=${SMTP_SENDER}
-      - SMTP_ENDPOINT=${SMTP_ENDPOINT}
-      - SMTP_PORT=${SMTP_PORT}
-      - SMTP_SECRET=${SMTP_SECRET}
-      - SMTP_USE_SSL=${SMTP_USE_SSL}
-      - MCR_FRONTEND_URL=${MCR_FRONTEND_URL}
-      - PARALLEL_PODS_COUNT=${PARALLEL_PODS_COUNT}
-      - AVERAGE_TRANSCRIPTION_TIME_MINUTES=${AVERAGE_TRANSCRIPTION_TIME_MINUTES}
-      - AVERAGE_MEETING_DURATION_HOURS=${AVERAGE_MEETING_DURATION_HOURS}
-      - SENTRY_CORE_DSN=${SENTRY_CORE_DSN}
-      - UNLEASH_URL=${UNLEASH_URL}
-      - UNLEASH_INSTANCE_ID=${UNLEASH_INSTANCE_ID}
-      - SENTRY_TRANSCRIPTION_DSN=${SENTRY_TRANSCRIPTION_DSN}
-      - COLORIZE=${COLORIZE}
-      - LEVEL=${LEVEL}
-      - DISPLAY_REQUEST_ID=${DISPLAY_REQUEST_ID}
-      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
-      - KEYCLOAK_URL=${KEYCLOAK_URL}
-      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
-      - KEYCLOAK_CORE_CLIENT_ID=${KEYCLOAK_CORE_CLIENT_ID}
-      - KEYCLOAK_CORE_CLIENT_SECRET=${KEYCLOAK_CORE_CLIENT_SECRET}
-      - DRIVE_API_BASE_URL=${DRIVE_API_BASE_URL}
-      - DRIVE_FRONTEND_URL=${DRIVE_FRONTEND_URL}
+    env_file: *env-files
 
   generation:
     build:
       context: ./mcr-generation
       target: dev
     container_name: mcr-generation
-    environment:
-      - ENV_MODE=${ENV_MODE}
-      - LLM_HUB_API_URL=${LLM_HUB_API_URL}
-      - LLM_HUB_API_KEY=${LLM_HUB_API_KEY}
-      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
-      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
-      - LANGFUSE_HOST=${LANGFUSE_HOST}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_BUCKET=${S3_BUCKET}
-      - S3_REGION=${S3_REGION}
-      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
-      - SENTRY_GENERATION_DSN=${SENTRY_GENERATION_DSN}
-      - COLORIZE=${COLORIZE}
-      - LEVEL=${LEVEL}
-      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
+    env_file: *env-files
     ports:
       # Debugging port
       - "7003:7003"
@@ -240,17 +140,8 @@ services:
       watch:
         - action: rebuild
           path: ./mcr-frontend/package.json
+    env_file: *env-files
     environment:
-      - ENV_MODE=${ENV_MODE}
-      - VITE_API_BASE_URL=${VITE_API_BASE_URL}
-      - VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
-      - VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
-      - VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
-      - VITE_SENTRY_FRONTEND_DSN=${VITE_SENTRY_FRONTEND_DSN}
-      - VITE_UNLEASH_URL=${VITE_UNLEASH_URL}
-      - VITE_UNLEASH_CLIENT_KEY=${VITE_UNLEASH_CLIENT_KEY}
-      - VITE_DRIVE_URL=${VITE_DRIVE_URL}
-      # Behind the ingress the HMR websocket must point at the ingress origin.
       - VITE_HMR_CLIENT_PORT=8080
     networks:
       - mcr-network
@@ -287,25 +178,11 @@ services:
       watch:
         - action: rebuild
           path: ./mcr-capture-worker/pyproject.toml
+    env_file: *env-files
     environment:
       - HOME=/tmp
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
       - POSTGRES_PORT=5432
       - DEV=true
-      - ENV_MODE=${ENV_MODE}
-      - S3_ENDPOINT=${S3_ENDPOINT}
-      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
-      - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - S3_BUCKET=${S3_BUCKET}
-      - S3_REGION=${S3_REGION}
-      - CORE_SERVICE_BASE_URL=${CORE_SERVICE_BASE_URL}
-      - SENTRY_CAPTURE_DSN=${SENTRY_CAPTURE_DSN}
-      - COLORIZE=${COLORIZE}
-      - LEVEL=${LEVEL}
-      - DISPLAY_TIMESTAMP=${DISPLAY_TIMESTAMP}
     networks:
       - mcr-network
     depends_on:
@@ -325,15 +202,7 @@ services:
       - mcr-network
     volumes:
       - ./mcr-core/mcr_meeting:/app/mcr_meeting
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-      - POSTGRES_HOST=${POSTGRES_HOST}
-      - POSTGRES_PORT=${POSTGRES_PORT}
-      - DEV_POSTGRES_HOST=${DEV_POSTGRES_HOST}
-      - GENERATION_API=${GENERATION_API}
-      - ENV_MODE=${ENV_MODE}
+    env_file: *env-files
 
   mailpit:
     image: axllent/mailpit:latest
@@ -351,10 +220,9 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
-    environment:
-      ## No secret leak here: the docker compose file is used only for local development
-      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
-      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    # Reads MINIO_ROOT_USER / MINIO_ROOT_PASSWORD (mirrors of the S3 dev creds) from the file.
+    env_file:
+      - .env.local.docker
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
@@ -367,13 +235,16 @@ services:
     container_name: mcr-minio-setup
     depends_on:
       - minio
+    env_file:
+      - .env.local.docker
     # This script makes sure that all requested buckets are created at startup
     # It also sets up the event notification for the audio bucket to send messages to the transcription task webhook
+    # $$VAR (not ${VAR}) so the container shell expands from env_file, not compose interpolation.
     entrypoint: >
       /bin/sh -c "sleep 5;
-      /usr/bin/mc alias set miniodocker ${S3_ENDPOINT} ${S3_ACCESS_KEY} ${S3_SECRET_KEY};
-      /usr/bin/mc mb miniodocker/${S3_BUCKET} --ignore-existing;
-      /usr/bin/mc ilm rule add  --expire-days ${S3_ILM_EXPIRE_DAYS} miniodocker/${S3_BUCKET};
+      /usr/bin/mc alias set miniodocker $${S3_ENDPOINT} $${S3_ACCESS_KEY} $${S3_SECRET_KEY};
+      /usr/bin/mc mb miniodocker/$${S3_BUCKET} --ignore-existing;
+      /usr/bin/mc ilm rule add  --expire-days $${S3_ILM_EXPIRE_DAYS} miniodocker/$${S3_BUCKET};
       exit 0;"
     networks:
       - mcr-network
