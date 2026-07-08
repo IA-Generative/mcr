@@ -69,7 +69,7 @@ class TranscriptionProcessor:
 
         def transcribe_one(
             indexed_chunk: tuple[int, TranscriptionInput],
-        ) -> tuple[int, list[TranscriptionSegment]]:
+        ) -> list[TranscriptionSegment]:
             idx, chunk = indexed_chunk
             chunk_transcription_segments = self._transcribe_audio_chunk(
                 chunk.audio, transcription_model
@@ -80,9 +80,9 @@ class TranscriptionProcessor:
                     chunk.span.start,
                     chunk.span.end,
                 )
-                return idx, []
+                return []
 
-            return idx, [
+            return [
                 TranscriptionSegment(
                     id=idx,
                     start=segment.start + chunk.span.start,
@@ -99,15 +99,9 @@ class TranscriptionProcessor:
         )
 
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            results = list(pool.map(transcribe_one, enumerate(transcription_inputs)))
+            results = pool.map(transcribe_one, enumerate(transcription_inputs))
 
-        # explicit sort by chunk index: byte-identical output to the sequential
-        # baseline, without relying on pool.map preserving input order
-        return [
-            segment
-            for _, chunk_segments in sorted(results, key=lambda result: result[0])
-            for segment in chunk_segments
-        ]
+            return [segment for chunk_segments in results for segment in chunk_segments]
 
     def _transcribe_audio_chunk(
         self,
