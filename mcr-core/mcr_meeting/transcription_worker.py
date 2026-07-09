@@ -1,6 +1,7 @@
 import asyncio
 import tempfile
 import zipfile
+from functools import partial
 from io import BytesIO
 from pathlib import Path
 
@@ -29,6 +30,9 @@ from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
 )
 from mcr_meeting.app.use_cases.transcription.run_mark_transcription_failed import (
     run_mark_transcription_failed,
+)
+from mcr_meeting.app.use_cases.transcription.run_speech_to_text import (
+    run_speech_to_text,
 )
 from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
     run_transcribe_chunks,
@@ -205,7 +209,14 @@ def _run_evaluation(zip_data: bytes) -> None:
         if not evaluation_inputs:
             raise ValueError("No valid evaluation inputs found in the zip file.")
 
-        pipeline = ASREvaluationPipeline(inputs=evaluation_inputs)
+        pipeline = ASREvaluationPipeline(
+            inputs=evaluation_inputs,
+            transcribe_audio=partial(
+                run_speech_to_text,
+                diarization_processor=DiarizationProcessor(get_diarization_pipeline),
+                transcription_processor=TranscriptionProcessor(get_transcription_model),
+            ),
+        )
         output_dir = temp_path / "outputs"
         output_dir.mkdir()
 
