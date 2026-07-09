@@ -3,6 +3,9 @@ import json
 from langfuse import observe
 from loguru import logger
 
+from mcr_meeting.app.domain.transcription.participant_reconciliation import (
+    format_segments_as_dialogue,
+)
 from mcr_meeting.app.infrastructure.llm.prompts.participants import (
     INITIAL_PROMPT_TEMPLATE,
     REFINE_PROMPT_TEMPLATE,
@@ -88,16 +91,7 @@ class ParticipantExtraction(LLMPostProcessing):
     def _format_segments_for_llm(
         self, segments: list[DiarizedTranscriptionSegment]
     ) -> str:
-        """
-        Helper to convert segments into a dialogue string.
-
-        Args:
-            segments (list[DiarizedTranscriptionSegment]): List of speaker transcriptions.
-
-        Returns:
-            str: Dialogue string.
-        """
-        return "\n".join([str(seg) for seg in segments])
+        return format_segments_as_dialogue(segments)
 
     def _initial_extract(self, chunk: Chunk) -> list[Participant]:
         # Use INITIAL_PROMPT_TEMPLATE

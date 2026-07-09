@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 
 import numpy as np
@@ -19,6 +20,7 @@ from mcr_meeting.app.infrastructure.unleash import (
 )
 from mcr_meeting.app.schemas.transcription_schema import (
     TimeSpan,
+    TranscriptionInput,
     TranscriptionSegment,
 )
 
@@ -64,9 +66,11 @@ class TranscriptionProcessor:
         )
 
         transcription_model = self._model_provider()
-        transcription_segments: list[TranscriptionSegment] = []
 
-        for idx, chunk in enumerate(transcription_inputs):
+        def transcribe_one(
+            indexed_chunk: tuple[int, TranscriptionInput],
+        ) -> list[TranscriptionSegment]:
+            idx, chunk = indexed_chunk
             chunk_transcription_segments = self._transcribe_audio_chunk(
                 chunk.audio, transcription_model
             )
@@ -76,19 +80,28 @@ class TranscriptionProcessor:
                     chunk.span.start,
                     chunk.span.end,
                 )
-                continue
+                return []
 
-            for segment in chunk_transcription_segments:
-                transcription_segments.append(
-                    TranscriptionSegment(
-                        id=idx,
-                        start=segment.start + chunk.span.start,
-                        end=segment.end + chunk.span.start,
-                        text=segment.text,
-                    )
+            return [
+                TranscriptionSegment(
+                    id=idx,
+                    start=segment.start + chunk.span.start,
+                    end=segment.end + chunk.span.start,
+                    text=segment.text,
                 )
+                for segment in chunk_transcription_segments
+            ]
 
-        return transcription_segments
+        max_workers = (
+            api_settings.MAX_CONCURRENT_CHUNKS
+            if self._is_api_transcription_enabled()
+            else 1
+        )
+
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            results = pool.map(transcribe_one, enumerate(transcription_inputs))
+
+            return [segment for chunk_segments in results for segment in chunk_segments]
 
     def _transcribe_audio_chunk(
         self,

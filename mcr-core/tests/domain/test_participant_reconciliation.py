@@ -1,6 +1,6 @@
 from mcr_meeting.app.domain.transcription.participant_reconciliation import (
     detect_name_losses,
-    format_participants_input,
+    format_segments_as_dialogue,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
@@ -30,7 +30,7 @@ class TestFormatParticipantsInput:
         ]
 
         assert (
-            format_participants_input(segments)
+            format_segments_as_dialogue(segments)
             == "Speaker A: Hello\nSpeaker B: Hi there"
         )
 
