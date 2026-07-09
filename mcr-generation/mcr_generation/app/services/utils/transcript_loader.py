@@ -32,7 +32,6 @@ def _try_load_full_transcript(
     try:
         raw = get_file_from_s3(object_name)
     except TranscriptionFileNotFoundError:
-        # Meetings transcrits avant le rollout du dual-write : pas de JSON en S3
         logger.warning(
             "Full transcript not found at {}; falling back to the DOCX", object_name
         )

@@ -63,7 +63,6 @@ def test_falls_back_to_the_docx_when_json_is_missing(
     mock_chunk_docx: MagicMock,
 ) -> None:
     docx_bytes = BytesIO(b"docx content")
-    # Meetings transcrits avant le dual-write : le JSON n'existe pas en S3
     mock_get_file_from_s3.side_effect = [
         TranscriptionFileNotFoundError("no full_transcript.json"),
         docx_bytes,
@@ -85,8 +84,6 @@ def test_propagates_corrupt_json(
 ) -> None:
     mock_get_file_from_s3.return_value = BytesIO(b"not json")
 
-    # Un JSON présent mais invalide est une violation de contrat : on veut
-    # un échec bruyant, pas un repli silencieux sur le DOCX.
     with pytest.raises(ValueError):
         load_transcript_chunks(DOCX_KEY)
 
