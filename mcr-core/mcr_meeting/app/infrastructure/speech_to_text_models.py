@@ -1,12 +1,12 @@
 """Worker-held speech-to-text models (whisper + pyannote) and their accessors.
 
-The heavy models are loaded once per Celery worker process (see the transcription
-worker's worker_process_init) and stored in ``context``. The router reads the
-accessors and injects them into the infra processors — infra never reads the
-registry directly.
+The heavy models are lazy-loaded at first use and cached for the lifetime of
+the worker process. API-mode workers never call the accessors, so they boot
+fast and never reserve the GPU. The router injects the accessors into the
+infra processors — infra never loads models directly.
 """
 
-from typing import TypedDict
+from functools import lru_cache
 
 from faster_whisper import WhisperModel
 from loguru import logger
@@ -14,22 +14,16 @@ from pyannote.audio import Pipeline
 
 from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
-    Settings,
     Speech2TextSettings,
 )
 from mcr_meeting.app.utils.compute_devices import (
     ComputeDevice,
     get_default_gpu_device,
+    get_gpu_name,
+    is_gpu_available,
 )
 
-settings = Settings()
 speech2text_settings = Speech2TextSettings()
-
-
-class WorkerContext(TypedDict):
-    device: ComputeDevice
-    model: WhisperModel | None
-    diarization_pipeline: Pipeline | None
 
 
 def load_whisper_model(device: ComputeDevice) -> WhisperModel:
@@ -68,30 +62,19 @@ def load_diarization_pipeline(device: ComputeDevice) -> Pipeline:
     return diarization_pipeline
 
 
-context: WorkerContext = {
-    "device": ComputeDevice.CPU,
-    "model": None,
-    "diarization_pipeline": None,
-}
+def _resolve_device() -> ComputeDevice:
+    if is_gpu_available():
+        logger.info("Loading speech-to-text model on GPU: {}", get_gpu_name())
+        return ComputeDevice.GPU
+    logger.info("GPU not available — loading speech-to-text model on CPU")
+    return ComputeDevice.CPU
 
 
+@lru_cache(maxsize=1)
 def get_transcription_model() -> WhisperModel:
-    if settings.ENV_MODE == "DEV":
-        return WhisperModel(speech2text_settings.STT_MODEL)
-
-    transcription_model = context.get("model")
-    if transcription_model is None:
-        logger.error("Transcription model is None in celery context")
-        raise ValueError("Transcription model is None in context.")
-    return transcription_model
+    return load_whisper_model(_resolve_device())
 
 
+@lru_cache(maxsize=1)
 def get_diarization_pipeline() -> Pipeline:
-    if settings.ENV_MODE == "DEV":
-        return load_diarization_pipeline(ComputeDevice.CPU)
-
-    diarization_pipeline = context.get("diarization_pipeline")
-    if diarization_pipeline is None:
-        logger.error("Diarization pipeline is None in celery context")
-        raise ValueError("Diarization pipeline is None in context.")
-    return diarization_pipeline
+    return load_diarization_pipeline(_resolve_device())

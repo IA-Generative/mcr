@@ -33,7 +33,7 @@ class MeetingApiClient:
     async def mark_transcription_as_success(
         self,
         meeting_id: int,
-        transcription_data: list[dict[str, object]],
+        transcription_data: list[dict[str, object]] | None = None,
     ) -> None:
         await self._post_transition(meeting_id, "success", data=transcription_data)
 

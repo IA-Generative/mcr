@@ -1,12 +1,14 @@
 # type: ignore[explicit-any]
 
 from collections.abc import Callable
-from unittest.mock import Mock
+from typing import Any
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi import status
 
 from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
+from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from tests.api.conftest import PrefixedTestClient
 
 
@@ -61,4 +63,60 @@ class TestCreateTranscriptionTask:
         mock_celery_producer_app.send_task.assert_called_once_with(
             "transcription_worker.transcribe",
             args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        )
+
+
+@pytest.fixture
+def mock_complete_transcription(monkeypatch: Any) -> MagicMock:
+    uc = MagicMock()
+    monkeypatch.setattr(
+        "mcr_meeting.app.api.meeting.transcription_router.complete_transcription",
+        uc,
+    )
+    return uc
+
+
+class TestSuccessTranscriptionTask:
+    """Lock the /transcription/success body contract: optional payload.
+
+    The legacy monolithic pipeline still posts the transcription payload; the
+    split pipeline posts the status alone and core reads the transcript from
+    full_transcript.json in S3. The payload branch dies with the legacy shim.
+    """
+
+    def test_with_payload_forwards_it(
+        self,
+        meeting_client: PrefixedTestClient,
+        mock_complete_transcription: MagicMock,
+    ) -> None:
+        payload = [
+            {
+                "meeting_id": 123,
+                "speaker": "LOCUTEUR_00",
+                "transcription_index": 0,
+                "transcription": "Bonjour",
+                "start": 0.0,
+                "end": 1.0,
+                "version": 0,
+            }
+        ]
+
+        response = meeting_client.post("/123/transcription/success", json=payload)
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        mock_complete_transcription.assert_called_once_with(
+            meeting_id=123,
+            transcriptions=[SpeakerTranscription.model_validate(payload[0])],
+        )
+
+    def test_without_body_forwards_none(
+        self,
+        meeting_client: PrefixedTestClient,
+        mock_complete_transcription: MagicMock,
+    ) -> None:
+        response = meeting_client.post("/123/transcription/success")
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        mock_complete_transcription.assert_called_once_with(
+            meeting_id=123, transcriptions=None
         )

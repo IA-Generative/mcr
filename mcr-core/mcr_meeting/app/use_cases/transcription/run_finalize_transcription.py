@@ -35,6 +35,7 @@ from mcr_meeting.app.infrastructure.unleash import (
 )
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
+    FullTranscript,
     Participant,
     SpeakerTranscription,
 )
@@ -47,7 +48,11 @@ def run_finalize_transcription(meeting_id: int) -> list[SpeakerTranscription]:
     segments = s3.read_transcription_raw(meeting_id)
     cleaned_segments = _post_process(segments)
     _enrich_with_participants(cleaned_segments)
-    return build_speaker_transcriptions(meeting_id, cleaned_segments)
+    speaker_transcriptions = build_speaker_transcriptions(meeting_id, cleaned_segments)
+    s3.write_full_transcript(
+        FullTranscript.from_speaker_transcriptions(meeting_id, speaker_transcriptions)
+    )
+    return speaker_transcriptions
 
 
 def _post_process(

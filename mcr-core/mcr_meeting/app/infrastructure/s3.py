@@ -30,6 +30,7 @@ from mcr_meeting.app.schemas.S3_types import (
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
+    FullTranscript,
 )
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, guess_mime_type
 from mcr_meeting.app.utils.s3_client import s3_client, s3_external_client
@@ -284,6 +285,24 @@ def read_transcription_raw(
 ) -> list[DiarizedTranscriptionSegment]:
     return _TRANSCRIPTION_RAW_LIST_SERIALIZER.validate_json(
         get_file_from_s3(get_transcription_raw_object_name(meeting_id)).getvalue()
+    )
+
+
+def get_full_transcript_object_name(meeting_id: int) -> str:
+    return get_transcription_object_name(meeting_id, "full_transcript.json")
+
+
+def write_full_transcript(full_transcript: FullTranscript) -> None:
+    put_file_to_s3(
+        BytesIO(full_transcript.model_dump_json().encode()),
+        get_full_transcript_object_name(full_transcript.meeting_id),
+        _JSON_CONTENT_TYPE,
+    )
+
+
+def read_full_transcript(meeting_id: int) -> FullTranscript:
+    return FullTranscript.model_validate_json(
+        get_file_from_s3(get_full_transcript_object_name(meeting_id)).getvalue()
     )
 
 

@@ -1,3 +1,4 @@
+import json
 from io import BytesIO
 from typing import Any
 from unittest.mock import MagicMock
@@ -235,6 +236,60 @@ class TestCompleteTranscription:
         # exactly once.
         assert (
             len(_transcription_done_records(transcription_in_progress_meeting.id)) == 1
+        )
+
+    def test_renders_docx_from_s3_full_transcript_when_payload_is_absent(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        # Chemin de la route /transcription/complete (pipeline split) : la
+        # source de la transcription est le full_transcript.json écrit en S3.
+        meeting_id = transcription_in_progress_meeting.id
+        in_memory_s3.objects[f"transcription/{meeting_id}/full_transcript.json"] = (
+            json.dumps(
+                {
+                    "meeting_id": meeting_id,
+                    "version": 0,
+                    "segments": [
+                        {
+                            "speaker": "LOCUTEUR_00",
+                            "transcription_index": 0,
+                            "transcription": "Bonjour à tous.",
+                            "start": 0.0,
+                            "end": 1.5,
+                        }
+                    ],
+                }
+            ).encode()
+        )
+
+        complete_transcription(meeting_id=meeting_id)
+
+        (name, segments), _ = mock_generate_docx.call_args
+        assert name == transcription_in_progress_meeting.name
+        assert [(s.speaker, s.transcription) for s in segments] == [
+            ("LOCUTEUR_00", "Bonjour à tous.")
+        ]
+
+    def test_uses_the_payload_when_provided_even_empty(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        # Payload fourni (pipeline legacy) : pas de lecture S3 — un S3 vide
+        # ferait échouer ce test si le use-case tentait d'y lire le transcript.
+        complete_transcription(
+            meeting_id=transcription_in_progress_meeting.id,
+            transcriptions=[],
+        )
+
+        mock_generate_docx.assert_called_once_with(
+            transcription_in_progress_meeting.name, []
         )
 
     def test_rejects_completion_from_invalid_status(

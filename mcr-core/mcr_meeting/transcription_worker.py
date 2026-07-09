@@ -3,9 +3,7 @@ import tempfile
 import zipfile
 from io import BytesIO
 from pathlib import Path
-from typing import Any
 
-from celery.signals import worker_process_init
 from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
@@ -19,11 +17,8 @@ from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 from mcr_meeting.app.infrastructure.sentry import init_sentry
 from mcr_meeting.app.infrastructure.speech_to_text_models import (
-    context,
     get_diarization_pipeline,
     get_transcription_model,
-    load_diarization_pipeline,
-    load_whisper_model,
 )
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
@@ -38,11 +33,6 @@ from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
 from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
     run_transcribe_chunks,
 )
-from mcr_meeting.app.utils.compute_devices import (
-    ComputeDevice,
-    get_gpu_name,
-    is_gpu_available,
-)
 from mcr_meeting.app.utils.sentry_context import (
     gather_meeting_context,
     set_sentry_meeting_context,
@@ -56,31 +46,6 @@ init_langfuse()
 SUPPORTED_AUDIO_FORMATS_FOR_EVALUATION = EvaluationSettings().SUPPORTED_AUDIO_FORMATS
 
 
-@worker_process_init.connect
-def initialize_worker(**_kwargs: Any) -> None:  # type: ignore[explicit-any]
-    """
-    Initialize worker processes with model and device setup.
-    This worker consume both `transcribe` and `evaluate` tasks.
-    Both theses task require heavy computations with high CPU and GPU demands
-    """
-    global context
-
-    logger.debug("======== Initializating Celery worker processes =========")
-
-    if is_gpu_available():
-        logger.info("GPU is available")
-        logger.info("Using device: {}", get_gpu_name())
-        context["device"] = ComputeDevice.GPU
-    else:
-        logger.trace("GPU not available — running on CPU")
-        context["device"] = ComputeDevice.CPU
-
-    context["model"] = load_whisper_model(context["device"])
-    context["diarization_pipeline"] = load_diarization_pipeline(context["device"])
-
-    logger.info("======== Celery worker processes initialization done =========")
-
-
 def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
     run_diarization(meeting_id, DiarizationProcessor(get_diarization_pipeline))
     run_transcribe_chunks(meeting_id, TranscriptionProcessor(get_transcription_model))
@@ -92,9 +57,13 @@ def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None
 def _mark_success(
     meeting_id: int,
     owner_keycloak_uuid: str,
-    speaker_transcriptions: list[SpeakerTranscription],
+    speaker_transcriptions: list[SpeakerTranscription] | None = None,
 ) -> None:
-    result = [item.model_dump() for item in speaker_transcriptions]
+    result = (
+        [item.model_dump() for item in speaker_transcriptions]
+        if speaker_transcriptions is not None
+        else None
+    )
     asyncio.run(
         MeetingApiClient(owner_keycloak_uuid).mark_transcription_as_success(
             meeting_id, transcription_data=result
@@ -158,8 +127,8 @@ def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
     max_retries=3,
 )
 def finalize_transcription(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    speaker_transcriptions = run_finalize_transcription(meeting_id)
-    _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
+    run_finalize_transcription(meeting_id)
+    _mark_success(meeting_id, owner_keycloak_uuid)
 
 
 def _run_evaluation(zip_data: bytes) -> None:

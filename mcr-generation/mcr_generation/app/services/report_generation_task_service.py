@@ -14,8 +14,7 @@ from mcr_generation.app.schemas.celery_types import (
     extract_report_task_args,
 )
 from mcr_generation.app.services.report_generator import create_report_generator
-from mcr_generation.app.services.utils.input_chunker import chunk_docx_to_document_list
-from mcr_generation.app.services.utils.s3_service import get_file_from_s3
+from mcr_generation.app.services.utils.transcript_loader import load_transcript_chunks
 from mcr_generation.app.utils.celery_worker import celery_app
 from mcr_generation.app.utils.langfuse_observability import (
     record_chunking_metadata,
@@ -47,8 +46,7 @@ def generate_report_from_docx(
         env_mode=langfuse_settings.ENV_MODE,
     )
 
-    docx_bytes = get_file_from_s3(transcription_object_filename)
-    chunks = chunk_docx_to_document_list(docx_bytes)
+    chunks = load_transcript_chunks(transcription_object_filename)
 
     record_chunking_metadata(
         chunk_count=len(chunks),

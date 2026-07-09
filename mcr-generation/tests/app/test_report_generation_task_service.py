@@ -102,15 +102,11 @@ class TestGenerateReportFromDocxSignature:
     def test_accepts_celery_dispatch_shape(
         self,
         decision_record: DecisionRecord,
-        mock_get_file_from_s3: MagicMock,
-        mock_chunk_docx_to_document_list: MagicMock,
+        mock_load_transcript_chunks: MagicMock,
         mock_create_report_generator: MagicMock,
     ) -> None:
         """Replicates exactly what request_deliverable.py sends via send_task."""
-        mock_get_file_from_s3.return_value = b"docx content"
-        mock_chunk_docx_to_document_list.return_value = [
-            SimpleNamespace(id=0, text="chunk")
-        ]
+        mock_load_transcript_chunks.return_value = [SimpleNamespace(id=0, text="chunk")]
         mock_create_report_generator.return_value.generate.return_value = (
             decision_record
         )
@@ -123,7 +119,7 @@ class TestGenerateReportFromDocxSignature:
 
         generate_report_from_docx(*args, **kwargs)
 
-        mock_get_file_from_s3.assert_called_once_with("transcription.docx")
+        mock_load_transcript_chunks.assert_called_once_with("transcription.docx")
         _, factory_kwargs = mock_create_report_generator.call_args
         assert factory_kwargs == {"custom_prompt": "résume"}
 
@@ -132,47 +128,40 @@ class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
         self,
         decision_record: DecisionRecord,
-        mock_get_file_from_s3: MagicMock,
-        mock_chunk_docx_to_document_list: MagicMock,
+        mock_load_transcript_chunks: MagicMock,
         mock_create_report_generator: MagicMock,
     ) -> None:
         """Happy path: get_generator is mocked and its generate() return value is
         forwarded as-is by the task."""
         chunk1 = SimpleNamespace(id=0, text="chunk1")
         chunk2 = SimpleNamespace(id=1, text="chunk2")
-        mock_get_file_from_s3.return_value = b"docx content"
-        mock_chunk_docx_to_document_list.return_value = [chunk1, chunk2]
+        mock_load_transcript_chunks.return_value = [chunk1, chunk2]
         mock_create_report_generator.return_value.generate.return_value = (
             decision_record
         )
 
         generate_report_from_docx(1, "transcription.docx", notes_content="raw notes")
 
-        mock_get_file_from_s3.assert_called_once_with("transcription.docx")
-        mock_chunk_docx_to_document_list.assert_called_once_with(b"docx content")
+        mock_load_transcript_chunks.assert_called_once_with("transcription.docx")
         mock_create_report_generator.assert_called_once()
         mock_create_report_generator.return_value.generate.assert_called_once_with(
             [chunk1, chunk2], notes_content="raw notes"
         )
 
-    def test_propagates_s3_error(self, mock_get_file_from_s3: MagicMock) -> None:
-        """An exception raised by get_file_from_s3 must propagate."""
-        mock_get_file_from_s3.side_effect = RuntimeError("S3 unavailable")
+    def test_propagates_s3_error(self, mock_load_transcript_chunks: MagicMock) -> None:
+        """An exception raised while loading the transcript must propagate."""
+        mock_load_transcript_chunks.side_effect = RuntimeError("S3 unavailable")
 
         with pytest.raises(RuntimeError, match="S3 unavailable"):
             generate_report_from_docx(1, "transcription.docx")
 
     def test_returns_custom_markdown_report_built_from_generator(
         self,
-        mock_get_file_from_s3: MagicMock,
-        mock_chunk_docx_to_document_list: MagicMock,
+        mock_load_transcript_chunks: MagicMock,
         mock_create_report_generator: MagicMock,
     ) -> None:
         """CUSTOM_REPORT: the generator's CustomMarkdownReport is forwarded as-is."""
-        mock_get_file_from_s3.return_value = b"docx content"
-        mock_chunk_docx_to_document_list.return_value = [
-            SimpleNamespace(id=0, text="x")
-        ]
+        mock_load_transcript_chunks.return_value = [SimpleNamespace(id=0, text="x")]
         custom_report = CustomMarkdownReport(markdown_content="## Risques\n- R1")
         mock_create_report_generator.return_value.generate.return_value = custom_report
 

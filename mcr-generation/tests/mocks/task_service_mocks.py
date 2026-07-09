@@ -7,18 +7,9 @@ MODULE = "mcr_generation.app.services.report_generation_task_service"
 
 
 @pytest.fixture
-def mock_get_file_from_s3(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
+def mock_load_transcript_chunks(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-any]
     fn = MagicMock()
-    monkeypatch.setattr(f"{MODULE}.get_file_from_s3", fn)
-    return fn
-
-
-@pytest.fixture
-def mock_chunk_docx_to_document_list(
-    monkeypatch: Any,  # type: ignore[explicit-any]
-) -> MagicMock:
-    fn = MagicMock()
-    monkeypatch.setattr(f"{MODULE}.chunk_docx_to_document_list", fn)
+    monkeypatch.setattr(f"{MODULE}.load_transcript_chunks", fn)
     return fn
 
 
