@@ -26,17 +26,32 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter-out-unmodified-services
         with:
+          # Each service also depends on root env files loaded by its pytest
+          # (env_files in its pyproject.toml) and on this workflow's env: blocks —
+          # changing those must re-run the service's CI, not skip it.
           filters: |
             mcr-gateway:
               - 'mcr-gateway/**'
+              - '.env.local.docker'
+              - '.env.local.testing'
+              - '.github/workflows/mcr-ci.yml'
             mcr-generation:
               - 'mcr-generation/**'
+              - '.env.local.docker'
+              - '.env.local.host'
+              - '.env.local.testing'
+              - '.github/workflows/mcr-ci.yml'
             mcr-core:
               - 'mcr-core/**'
+              - '.env.local.docker'
+              - '.env.local.testing'
+              - '.github/workflows/mcr-ci.yml'
             mcr-frontend:
               - 'mcr-frontend/**'
+              - '.github/workflows/mcr-ci.yml'
             mcr-capture-worker:
               - 'mcr-capture-worker/**'
+              - '.github/workflows/mcr-ci.yml'
 
   gitleaks:
     name: Gitleaks scan
