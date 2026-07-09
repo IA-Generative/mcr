@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 from pytest_mock import MockerFixture
 
+import mcr_meeting.app.use_cases.transcription._shared.post_process_segments as pps
 import mcr_meeting.app.use_cases.transcription.run_finalize_transcription as rf
 from tests.mocks.in_memory_s3 import InMemoryS3
 
@@ -21,11 +22,11 @@ def _setup_pipeline(in_memory_s3: InMemoryS3, mocker: MockerFixture) -> None:
         b'[{"id": 0, "start": 0.0, "end": 1.0, "text": "hello", "speaker": "A"}]'
     )
     mocker.patch.object(
-        rf,
+        pps,
         "get_feature_flag_client",
         return_value=Mock(is_enabled=Mock(return_value=False)),
     )
-    mocker.patch.object(rf, "correct_acronyms", side_effect=lambda text: text)
+    mocker.patch.object(pps, "correct_acronyms", side_effect=lambda text: text)
     mocker.patch.object(rf, "extract_participants", return_value=[])
 
 

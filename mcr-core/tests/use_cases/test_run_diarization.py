@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 from pytest_mock import MockerFixture
 
+import mcr_meeting.app.use_cases.transcription._shared.preprocess_audio as pa
 import mcr_meeting.app.use_cases.transcription.run_diarization as rd
 from mcr_meeting.app.schemas.transcription_schema import DiarizationSegment
 from tests.mocks.in_memory_s3 import InMemoryS3
@@ -20,13 +21,13 @@ _DIARIZATION = [DiarizationSegment(start=0.0, end=1.0, speaker="A")]
 
 def _patch_preprocessing(mocker: MockerFixture, wav: BytesIO) -> None:
     mocker.patch.object(
-        rd,
+        pa,
         "get_feature_flag_client",
         return_value=Mock(is_enabled=Mock(return_value=False)),
     )
     mocker.patch.object(rd.s3, "fetch_audio_bytes", return_value=BytesIO(b"raw"))
-    mocker.patch.object(rd, "audio_bytes_to_wav_bytes", return_value=wav)
-    mocker.patch.object(rd, "check_audio_is_not_silent")
+    mocker.patch.object(pa, "audio_bytes_to_wav_bytes", return_value=wav)
+    mocker.patch.object(pa, "check_audio_is_not_silent")
 
 
 def test_writes_preprocessed_audio_and_diarization_to_s3(

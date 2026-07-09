@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 from langfuse import observe
 from loguru import logger
 
@@ -9,35 +7,24 @@ from mcr_meeting.app.domain.transcription.participant_reconciliation import (
     detect_name_losses,
     format_segments_as_dialogue,
 )
-from mcr_meeting.app.domain.transcription.post_process import (
-    merge_consecutive_segments_per_speaker,
-    remove_hallucinations,
-)
 from mcr_meeting.app.domain.transcription.speaker_segments import (
     build_speaker_transcriptions,
     replace_speaker_name_if_available,
 )
-from mcr_meeting.app.domain.transcription.text_chunking import (
-    chunk_text,
-    format_segments_for_llm,
-    reassemble_corrected_segments,
-)
+from mcr_meeting.app.domain.transcription.text_chunking import chunk_text
 from mcr_meeting.app.infrastructure import s3
-from mcr_meeting.app.infrastructure.llm.acronyms import correct_acronyms
 from mcr_meeting.app.infrastructure.llm.participants import (
     extract_participants,
     refine_participants,
-)
-from mcr_meeting.app.infrastructure.llm.spelling import correct_spelling
-from mcr_meeting.app.infrastructure.unleash import (
-    FeatureFlag,
-    get_feature_flag_client,
 )
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     FullTranscript,
     Participant,
     SpeakerTranscription,
+)
+from mcr_meeting.app.use_cases.transcription._shared.post_process_segments import (
+    post_process_segments,
 )
 from mcr_meeting.app.utils.langfuse_observability import (
     record_participant_name_lost_event,
@@ -46,43 +33,13 @@ from mcr_meeting.app.utils.langfuse_observability import (
 
 def run_finalize_transcription(meeting_id: int) -> list[SpeakerTranscription]:
     segments = s3.read_transcription_raw(meeting_id)
-    cleaned_segments = _post_process(segments)
+    cleaned_segments = post_process_segments(segments)
     _enrich_with_participants(cleaned_segments)
     speaker_transcriptions = build_speaker_transcriptions(meeting_id, cleaned_segments)
     s3.write_full_transcript(
         FullTranscript.from_speaker_transcriptions(meeting_id, speaker_transcriptions)
     )
     return speaker_transcriptions
-
-
-def _post_process(
-    segments: list[DiarizedTranscriptionSegment],
-) -> list[DiarizedTranscriptionSegment]:
-    merged_segments = merge_consecutive_segments_per_speaker(segments)
-    cleaned_segments = remove_hallucinations(merged_segments)
-
-    logger.debug("Acronym correction: correcting segments")
-    cleaned_segments = _apply_text_correction(cleaned_segments, correct_acronyms)
-
-    if get_feature_flag_client().is_enabled(FeatureFlag.SPELLING_CORRECTION):
-        logger.debug("Spelling correction enabled, correcting segments")
-        cleaned_segments = _apply_text_correction(cleaned_segments, correct_spelling)
-    else:
-        logger.debug("Spelling correction disabled, skipping correction")
-
-    return cleaned_segments
-
-
-def _apply_text_correction(
-    segments: list[DiarizedTranscriptionSegment],
-    correct_chunk: Callable[[str], str],
-) -> list[DiarizedTranscriptionSegment]:
-    if not segments:
-        return []
-    text = format_segments_for_llm(segments)
-    chunks = chunk_text(text, chunk_overlap=0)
-    corrected_chunks = [correct_chunk(chunk) for chunk in chunks]
-    return reassemble_corrected_segments(corrected_chunks, segments)
 
 
 def _enrich_with_participants(
