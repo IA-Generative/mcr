@@ -50,15 +50,6 @@ _SEAM_LLM_FROM_OPENAI = (
     "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
 )
 _SEAM_AUDIO_SOURCE = "mcr_meeting.app.infrastructure.s3.fetch_audio_bytes"
-_SEAM_LEGACY_PIPELINE_FF = (
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
-)
-_SEAM_LEGACY_PIPELINE_DIARIZATION = (
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
-)
-_SEAM_LEGACY_PIPELINE_TRANSCRIPTION = (
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model"
-)
 
 
 class _FakeFeatureFlagClient:
@@ -105,7 +96,6 @@ class TranscriptionSeams:
             _SEAM_POST_PROCESS_FF,
             _SEAM_DIARIZATION_FF,
             _SEAM_TRANSCRIPTION_FF,
-            _SEAM_LEGACY_PIPELINE_FF,
         ):
             self._mocker.patch(target, return_value=client)
 
@@ -117,8 +107,7 @@ class TranscriptionSeams:
                 for segment in segments
             ]
         )
-        for target in (_SEAM_DIARIZATION_PIPELINE, _SEAM_LEGACY_PIPELINE_DIARIZATION):
-            self._mocker.patch(target, return_value=pipeline)
+        self._mocker.patch(_SEAM_DIARIZATION_PIPELINE, return_value=pipeline)
 
     def install_transcription(
         self, segments_per_chunk: list[list[TranscriptionSegment]]
@@ -127,11 +116,7 @@ class TranscriptionSeams:
         model.transcribe.side_effect = [
             (iter(segments), MagicMock()) for segments in segments_per_chunk
         ]
-        for target in (
-            _SEAM_TRANSCRIPTION_MODEL,
-            _SEAM_LEGACY_PIPELINE_TRANSCRIPTION,
-        ):
-            self._mocker.patch(target, return_value=model)
+        self._mocker.patch(_SEAM_TRANSCRIPTION_MODEL, return_value=model)
 
     def install_llm(
         self,

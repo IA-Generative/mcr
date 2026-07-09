@@ -4,17 +4,26 @@ from io import BytesIO
 import pytest
 
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
+from mcr_meeting.app.infrastructure import speech_to_text_models
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
+from mcr_meeting.app.use_cases.transcription.run_speech_to_text import (
+    run_speech_to_text,
+)
 from tests.services.speech_to_text_pipeline.seams import TranscriptionSeams
 
 
 def _transcribe(audio_bytes: BytesIO) -> list[DiarizedTranscriptionSegment]:
-    return SpeechToTextPipeline().run(audio_bytes)
+    return run_speech_to_text(
+        audio_bytes,
+        DiarizationProcessor(speech_to_text_models.get_diarization_pipeline),
+        TranscriptionProcessor(speech_to_text_models.get_transcription_model),
+    )
 
 
 _LOCAL_MODEL_FLAGS = dict(
