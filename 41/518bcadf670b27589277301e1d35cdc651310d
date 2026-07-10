@@ -1,0 +1,46 @@
+out/declaration.json
+  s_ab67bd6c6f7fc7::t_a0a2b56a63b8d2 25-28
+  s_ab67bd6c6f7fc7::t_d216b1daa3b275 138-141
+  s_ab67bd6c6f7fc7::t_a2448b175d619a 391-393
+  s_ab67bd6c6f7fc7::t_f68ee6176ccdb7 46-49
+  s_ab67bd6c6f7fc7::t_d5623498f0a5a6 32-35
+  s_ab67bd6c6f7fc7::t_c2ab077e71108b 403-405
+  s_ab67bd6c6f7fc7::t_ed4e30df077e57 19-21
+  s_ab67bd6c6f7fc7::t_3af35ab804616b 397-399
+  s_ab67bd6c6f7fc7::t_33123e772e3386 409-411
+  s_ab67bd6c6f7fc7::t_8eb19f59dc0f0c 198-201
+  s_ab67bd6c6f7fc7::t_27a7d896730298 77-80
+  s_ab67bd6c6f7fc7::t_d8160440ee104c 97-100
+  s_ab67bd6c6f7fc7::t_1ffc6ff1236d01 435-437
+  s_ab67bd6c6f7fc7::t_76468a86731589 39-42
+  s_ab67bd6c6f7fc7::t_1e62468fbb9901 415-417
+  s_ab67bd6c6f7fc7::t_a1882e51f6a64c 421-424
+  s_ab67bd6c6f7fc7::t_ed12292cde1faa 12-15
+  s_ab67bd6c6f7fc7::t_5b1470dfe0e63e 124-127
+  s_ab67bd6c6f7fc7::t_ccbe81b854d934 181-184
+  s_ab67bd6c6f7fc7::t_acd0d5abf1799b 84-87
+  s_ab67bd6c6f7fc7::t_038a38992b5dd3 152-154
+  s_ab67bd6c6f7fc7::t_4475216662ac5f 117-120
+  s_ab67bd6c6f7fc7::t_afca78acd52b07 53-56
+  s_ab67bd6c6f7fc7::t_145ed081c34e41 131-134
+  s_ab67bd6c6f7fc7::t_3cd43fdf3b730d 158-160
+  s_ab67bd6c6f7fc7::t_7de4afb449c41a 91-93
+  s_ab67bd6c6f7fc7::t_ab8276903505c3 331-333
+  s_ab67bd6c6f7fc7::t_69d7fafeb9242f 385-387
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "41518bcadf670b27589277301e1d35cdc651310d",
+  "prompts": {},
+  "sessions": {
+    "s_ab67bd6c6f7fc7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf4b8cd2-f560-487f-a780-ddd263127f0e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
