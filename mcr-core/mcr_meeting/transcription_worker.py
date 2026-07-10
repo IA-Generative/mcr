@@ -23,12 +23,12 @@ from mcr_meeting.app.infrastructure.speech_to_text_models import (
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
-from mcr_meeting.app.use_cases.transcription._shared.on_pipeline_failure import (
-    on_pipeline_failure,
-)
 from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
 from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
     run_finalize_transcription,
+)
+from mcr_meeting.app.use_cases.transcription.run_mark_transcription_failed import (
+    run_mark_transcription_failed,
 )
 from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
     run_transcribe_chunks,
@@ -80,10 +80,15 @@ class TranscriptionPipelineTask(MeetingPipelineTask):
         )
         set_sentry_meeting_context(meeting_context)
 
-    def handle_failure(
-        self, meeting_id: int, owner_keycloak_uuid: str, error_code: str
-    ) -> None:
-        on_pipeline_failure(meeting_id, owner_keycloak_uuid, error_code=error_code)
+
+@celery_worker.task(name=MCRTranscriptionTasks.MARK_TRANSCRIPTION_FAILED)
+def mark_transcription_failed(meeting_id: int, owner_keycloak_uuid: str) -> None:
+    try:
+        run_mark_transcription_failed(meeting_id, owner_keycloak_uuid)
+    except Exception:
+        logger.exception(
+            "Failed to mark meeting {} as TRANSCRIPTION_FAILED", meeting_id
+        )
 
 
 @celery_worker.task(

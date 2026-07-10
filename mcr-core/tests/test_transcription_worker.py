@@ -6,7 +6,6 @@ from pytest_mock import MockerFixture
 
 import mcr_meeting.transcription_worker as tw
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
-from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 
 MEETING_ID = 123
 OWNER = "owner-uuid"
@@ -18,16 +17,10 @@ def _patch_start_transcription(mocker: MockerFixture) -> Mock:
     return client_cls.return_value.start_transcription
 
 
-# Les tasks sont de la glue : transitions d'état + délégation au use-case.
-# Le hand-off S3 entre phases est testé sur les use-cases
-# (tests/use_cases/test_run_*.py).
 class TestTaskDelegation:
     def test_diarize_marks_transcription_started_then_delegates(
         self, mocker: MockerFixture
     ) -> None:
-        # The status flip to TRANSCRIPTION_IN_PROGRESS happens when a worker
-        # picks up the first phase, not at enqueue time — queue-wait estimation
-        # depends on it.
         start = _patch_start_transcription(mocker)
         run = mocker.patch.object(tw, "run_diarization")
 
@@ -48,8 +41,6 @@ class TestTaskDelegation:
     def test_finalize_delegates_and_marks_success_without_payload(
         self, mocker: MockerFixture
     ) -> None:
-        # La pipeline split poste le statut seul ; core relit le
-        # full_transcript.json que finalize vient d'écrire en S3.
         run = mocker.patch.object(tw, "run_finalize_transcription", return_value=[])
         client_cls = mocker.patch.object(tw, "MeetingApiClient")
         client_cls.return_value.mark_transcription_as_success = mocker.AsyncMock()
@@ -62,8 +53,6 @@ class TestTaskDelegation:
         )
 
 
-# The transcribe shim is the legacy monolithic path; the chain is built
-# core-side (see tests/use_cases/test_init_transcription.py).
 class TestLegacyShim:
     def test_transcribe_marks_started_then_runs_in_memory(
         self, mocker: MockerFixture
@@ -79,8 +68,6 @@ class TestLegacyShim:
     def test_legacy_pipeline_still_posts_the_payload(
         self, mocker: MockerFixture
     ) -> None:
-        # Contrat legacy : /transcription/success exige le payload tant que le
-        # shim vit — il meurt avec lui.
         mocker.patch.object(tw, "run_diarization")
         mocker.patch.object(tw, "run_transcribe_chunks")
         transcription = Mock()
@@ -98,36 +85,43 @@ class TestLegacyShim:
         )
 
 
-# Explicit success/failure transitions instead of Celery signals.
 class TestStateHandling:
     def test_task_body_does_not_self_handle_failure(
         self, mocker: MockerFixture
     ) -> None:
-        # Failure marking is the base Task's on_failure hook, not the body — a
-        # bare exception must propagate untouched so Celery records FAILURE and
-        # stops the chain.
         _patch_start_transcription(mocker)
         mocker.patch.object(tw, "run_diarization", side_effect=RuntimeError("boom"))
-        on_fail = mocker.patch.object(tw, "on_pipeline_failure")
+        mark_failed = mocker.patch.object(tw, "run_mark_transcription_failed")
 
         with pytest.raises(RuntimeError):
             tw.diarize(MEETING_ID, OWNER)
 
-        on_fail.assert_not_called()
+        mark_failed.assert_not_called()
 
 
-# The base Task centralises Sentry context and failure marking.
-class TestPipelineTaskBase:
-    def test_on_failure_marks_meeting_failed(self, mocker: MockerFixture) -> None:
-        on_fail = mocker.patch.object(tw, "on_pipeline_failure")
-        task = tw.TranscriptionPipelineTask()
-        task.name = MCRTranscriptionTasks.DIARIZE
+class TestFailureErrback:
+    def test_errback_marks_meeting_failed(self, mocker: MockerFixture) -> None:
+        mark_failed = mocker.patch.object(tw, "run_mark_transcription_failed")
 
-        task.on_failure(RuntimeError("boom"), "task-id", (MEETING_ID, OWNER), {}, None)
+        tw.mark_transcription_failed(MEETING_ID, OWNER)
 
-        on_fail.assert_called_once_with(
-            MEETING_ID, OWNER, error_code=MCRTranscriptionTasks.DIARIZE
+        mark_failed.assert_called_once_with(MEETING_ID, OWNER)
+
+    def test_errback_never_raises_so_worker_is_not_killed(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(
+            tw, "run_mark_transcription_failed", side_effect=RuntimeError("core down")
         )
+
+        tw.mark_transcription_failed(MEETING_ID, OWNER)
+
+
+# The base Task centralises Sentry context.
+class TestPipelineTaskBase:
+    def test_base_task_does_not_override_on_failure(self) -> None:
+        assert "on_failure" not in tw.TranscriptionPipelineTask.__dict__
+        assert "on_failure" not in tw.MeetingPipelineTask.__dict__
 
     def test_before_start_sets_sentry_context(self, mocker: MockerFixture) -> None:
         mocker.patch.object(tw, "MeetingApiClient")
@@ -149,17 +143,11 @@ class TestPipelineTaskBase:
         ):
             assert isinstance(task, tw.TranscriptionPipelineTask)
 
-    def test_meeting_deleted_is_ignore_so_on_failure_is_skipped(self) -> None:
-        # Celery never calls on_failure for Ignore, so a deleted meeting
-        # (404 -> MeetingDeletedException) aborts cleanly without being marked
-        # FAILED — no special-casing needed in the base Task.
+    def test_meeting_deleted_is_ignore_so_errback_is_skipped(self) -> None:
         assert issubclass(MeetingDeletedException, Ignore)
 
 
 def test_no_celery_signal_handlers_remain() -> None:
-    # Guard: the signal-based state handlers are gone. The success handler in
-    # particular would mark a meeting DONE the instant the shim returned, before
-    # finalize_transcription runs.
     assert not hasattr(tw, "handle_transcription_success")
     assert not hasattr(tw, "handle_transcription_fail")
     assert not hasattr(tw, "set_sentry_context_before_transcription")
