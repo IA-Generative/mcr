@@ -9,7 +9,7 @@
 
       <div v-if="addWithUrl">
         <DsfrInputGroup
-          v-model="url"
+          :model-value="url ?? undefined"
           required
           :error-message="errors.url"
           :label="$t('meeting.form.fields.url.label')"
@@ -18,7 +18,7 @@
           v-bind="urlAttrs"
           wrapper-class="w-full"
           class="w-full"
-          @update:model-value="(value) => validateUrlAndLookup(value)"
+          @update:model-value="(value) => { url = value as string | undefined; validateUrlAndLookup(value as string | undefined) }"
         />
       </div>
 
@@ -27,7 +27,7 @@
         class="grid grid-cols-2 gap-5 max-sm:grid-cols-1"
       >
         <DsfrInputGroup
-          v-model="externalMeetingId"
+          :model-value="externalMeetingId ?? undefined"
           required
           :error-message="errors.meeting_platform_id"
           :label="$t('meeting.form.fields.external-id')"
@@ -36,9 +36,10 @@
           v-bind="externalMeetingIdAttrs"
           wrapper-class="w-full"
           class="w-full"
+          @update:model-value="(value) => (externalMeetingId = value as string | undefined)"
         />
         <DsfrInputGroup
-          v-model="externalMeetingPassword"
+          :model-value="externalMeetingPassword ?? undefined"
           required
           :error-message="errors.meeting_password"
           :label="$t('meeting.form.fields.external-password')"
@@ -47,6 +48,7 @@
           v-bind="externalMeetingPasswordAttrs"
           wrapper-class="w-full"
           class="w-full"
+          @update:model-value="(value) => (externalMeetingPassword = value as string | undefined)"
         />
       </div>
 
