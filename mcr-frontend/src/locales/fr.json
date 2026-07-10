@@ -53,8 +53,8 @@
     },
     "notice": {
       "title": "Contribuez au glossaire du MI !",
-      "desc": "400 acronymes {articleLink}. Pour en proposer d'autres, {formLink}.",
-      "article-link-text": "déjà intégrés",
+      "desc": "MCR est à la {articleLink}. Pour contribuer, {formLink}.",
+      "article-link-text": "v1.8.1 du glossaire",
       "form-link-text": "cliquez sur ce lien"
     }
   },
