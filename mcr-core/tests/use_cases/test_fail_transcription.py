@@ -1,6 +1,7 @@
 import pytest
 
 from mcr_meeting.app.db.db import get_db_session_ctx
+from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -92,7 +93,19 @@ def test_fail_transcription_creates_failed_deliverable_when_missing() -> None:
     assert deliverables[0].status == DeliverableStatus.FAILED
 
 
-def test_fail_transcription_rejects_illegal_transition() -> None:
+def test_fail_transcription_silent_conflicts_when_transcription_already_done() -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    with pytest.raises(MeetingStateConflictException):
+        fail_transcription(meeting_id=meeting.id)
+
+    assert _failed_records(meeting.id) == []
+
+
+def test_fail_transcription_conflicts_on_illegal_transition() -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.REPORT_DONE,
         name_platform=MeetingPlatforms.COMU,
@@ -103,9 +116,10 @@ def test_fail_transcription_rejects_illegal_transition() -> None:
         status=DeliverableStatus.AVAILABLE,
     )
 
-    with pytest.raises(ValueError):
+    with pytest.raises(MeetingStateConflictException):
         fail_transcription(meeting_id=meeting.id)
 
+    assert _failed_records(meeting.id) == []
     deliverables = _transcription_deliverables(meeting.id)
     assert len(deliverables) == 1
     assert deliverables[0].id == available_deliverable.id
