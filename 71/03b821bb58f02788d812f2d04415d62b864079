@@ -1,0 +1,19 @@
+out/declaration.json
+  s_ab67bd6c6f7fc7::t_cd3bc930d6d7c6 1-466
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7103b821bb58f02788d812f2d04415d62b864079",
+  "prompts": {},
+  "sessions": {
+    "s_ab67bd6c6f7fc7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cf4b8cd2-f560-487f-a780-ddd263127f0e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
