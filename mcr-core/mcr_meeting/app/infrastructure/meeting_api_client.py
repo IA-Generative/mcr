@@ -5,6 +5,8 @@ from mcr_meeting.app.configs.base import ApiSettings, ServiceSettings
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.schemas.meeting_schema import MeetingResponse
 
+_CORE_TIMEOUT = httpx.Timeout(30.0, connect=5.0)
+
 
 class MeetingApiClient:
     def __init__(self, user_uuid: str):
@@ -19,7 +21,9 @@ class MeetingApiClient:
         }
 
     async def get_meeting(self, meeting_id: int) -> MeetingResponse:
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
+        async with httpx.AsyncClient(
+            base_url=self.base_url, timeout=_CORE_TIMEOUT
+        ) as client:
             response = await client.get(f"/{meeting_id}", headers=self.headers)
         response.raise_for_status()
         return MeetingResponse.model_validate(response.json())
@@ -40,7 +44,9 @@ class MeetingApiClient:
     async def _post_transition(
         self, meeting_id: int, transition: str, data: object | None = None
     ) -> None:
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
+        async with httpx.AsyncClient(
+            base_url=self.base_url, timeout=_CORE_TIMEOUT
+        ) as client:
             response = await client.post(
                 f"/{meeting_id}/transcription/{transition}",
                 headers=self.headers,
