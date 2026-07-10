@@ -9,45 +9,51 @@
   "criteres": [
     {
       "id": "1.1",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Confirmer si une étude d'utilité intégrant les impacts environnementaux et sociaux (ODD, limites planétaires ou autre référentiel) a été menée. Aucune trace de cette étude dans le dépôt.",
-      "qui": "Responsable produit / référent écoconception"
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service MCR n'a pas fait l'objet d'une étude formelle évaluant son utilité au regard de ses impacts environnementaux et sociaux (ODD, limites planétaires ou autre référentiel). L'utilité métier du service (assister la production de comptes rendus de réunion pour les agents publics) est établie, mais sans évaluation documentée de ses impacts environnementaux.",
+      "evolutions_potentielles": "Mener une étude d'utilité intégrant les impacts environnementaux et sociaux et la publier dans la déclaration d'écoconception.",
+      "actions_a_mener": "Réaliser une étude d'évaluation des impacts environnementaux et sociaux du service."
     },
     {
       "id": "1.2",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service MCR vise les agents de l'administration publique ayant besoin de produire des comptes rendus de réunion (import/capture audio, transcription, génération assistée). Un écran de consentement préalable à l'enregistrement encadre l'usage. La formalisation de l'analyse des besoins (personas, recherche utilisateur) reste à confirmer.",
-      "actions_a_mener": "Confirmer l'existence d'une analyse documentée des cibles utilisatrices et des besoins métiers (personas, recherche utilisateur)."
+      "evaluation": "Conforme",
+      "texte_declaration": "Les cibles utilisatrices du service MCR (agents de l'administration publique produisant des comptes rendus de réunion) ainsi que leurs besoins métiers et attentes ont fait l'objet d'une analyse documentée (personas / recherche utilisateur). En cohérence, les fonctionnalités du service (import ou capture d'audio, transcription et diarisation, génération assistée de comptes rendus, édition et export) répondent à ces besoins identifiés.",
+      "evolutions_potentielles": "Publier la synthèse de l'analyse des cibles et besoins dans la déclaration d'écoconception."
     },
     {
       "id": "1.3",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Confirmer la désignation d'un référent écoconception numérique (nominal ou générique) et sa publication dans un document accessible.",
-      "qui": "Équipe MCR"
+      "evaluation": "Non conforme",
+      "texte_declaration": "Aucun référent en écoconception numérique n'est identifié pour le service à ce jour, ni dans la déclaration d'écoconception ni dans un autre document public.",
+      "evolutions_potentielles": "Désigner un référent écoconception (contact nominal ou générique) et le publier dans un document accessible.",
+      "actions_a_mener": "Nommer un référent écoconception numérique."
     },
     {
       "id": "1.4",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service dispose d'une CI exigeante (ruff, mypy --strict, tests, couverture, gitleaks, deptry) et de revues de code obligatoires (CODEOWNERS, gabarit de PR), mais aucune revue d'écoconception ni audit de performance/charge régulier n'est documenté.",
-      "actions_a_mener": "Confirmer si des revues d'écoconception régulières et des audits de performance / tests de charge sont réalisés et tracés."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service dispose d'une intégration continue exigeante (formatage et lint ruff, typage mypy --strict, tests, couverture, détection de secrets gitleaks, hygiène des dépendances deptry) et de revues de code obligatoires (CODEOWNERS, gabarit de PR, blocage des PR échouant en CI). En revanche, aucune revue ou autoévaluation d'écoconception régulière appliquant le RGESN, ni aucun audit de performance / test de charge récurrent, n'est réalisé.",
+      "evolutions_potentielles": "Mettre en place une autoévaluation RGESN périodique et des audits de performance / tests de charge réguliers.",
+      "actions_a_mener": "Instaurer une revue d'écoconception régulière et des tests de charge."
     },
     {
       "id": "1.5",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Confirmer si l'empreinte environnementale a été évaluée (idéalement par ACV multicritère) et si des objectifs de réduction ont été fixés et suivis. Aucune mesure d'empreinte trouvée dans le dépôt.",
-      "qui": "Référent écoconception"
+      "evaluation": "Non conforme",
+      "texte_declaration": "L'empreinte environnementale du service n'a pas été évaluée (aucune ACV ni mesure d'impact carbone, énergie, ressources abiotiques ou eau) et aucun objectif de réduction ou de limitation des impacts n'a été fixé ni suivi.",
+      "evolutions_potentielles": "Évaluer l'empreinte environnementale du service (méthodologie reconnue, idéalement ACV multicritère), fixer des objectifs de réduction et en assurer le suivi dans un document public.",
+      "actions_a_mener": "Réaliser une évaluation d'empreinte environnementale et définir des objectifs de réduction."
     },
     {
       "id": "1.6",
-      "evaluation": "À évaluer",
-      "texte_declaration": "MCR collecte des données personnelles (utilisateurs Keycloak, réunions, audios, transcriptions avec identification des locuteurs, comptes rendus). Un écran de consentement des participants précède tout enregistrement (référence aux CGU MIrAI). Aucune politique de confidentialité / registre RGPD n'est présente dans le dépôt, et Sentry est configuré avec SEND_DEFAULT_PII=True par défaut.",
-      "actions_a_mener": "Confirmer le renvoi au registre RGPD, la documentation de la minimisation et des durées de conservation ; statuer sur SEND_DEFAULT_PII."
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service collecte des données afin de répondre au besoin de production de comptes rendus de réunion (utilisateurs Keycloak, réunions, audios, transcriptions avec identification des locuteurs, comptes rendus). La collecte est encadrée : un écran de consentement des participants précède tout enregistrement (renvoi aux CGU MIrAI) et la conservation des audios fait l'objet d'une documentation RGPD. Le service ne collecte pas de métadonnées à des fins publicitaires ou de profilage. À noter, en toute transparence, un écart entre la durée de conservation documentée et la durée effectivement appliquée (rétention réelle plus longue que celle annoncée), ainsi que la configuration Sentry SEND_DEFAULT_PII=True par défaut, à corriger.",
+      "evolutions_potentielles": "Aligner la rétention effective des données sur la durée documentée dans la déclaration RGPD (voir critères 5.8 et 7.2) et statuer sur SEND_DEFAULT_PII.",
+      "actions_a_mener": "Mettre l'implémentation de la rétention en conformité avec la durée documentée ; désactiver SEND_DEFAULT_PII si non nécessaire."
     },
     {
       "id": "1.7",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service repose sur des mécanismes de chiffrement (TLS en transit terminé par l'ingress de la plateforme, SMTP SSL, URLs S3 pré-signées, jetons Keycloak). La pertinence de ces choix au regard des risques de sécurité et de la minimisation de l'empreinte environnementale n'est pas formellement documentée.",
-      "actions_a_mener": "Confirmer l'existence d'une justification documentée des choix cryptographiques (sécurité + empreinte environnementale)."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service repose sur des mécanismes de chiffrement (TLS en transit terminé par l'ingress de la plateforme, SMTP en SSL, URLs S3 pré-signées, jetons d'authentification Keycloak). Toutefois, la pertinence de ces choix cryptographiques n'est pas documentée au regard des risques de sécurité informatique du service et de la minimisation de l'empreinte environnementale associée.",
+      "evolutions_potentielles": "Documenter les choix cryptographiques (analyse des risques de sécurité + empreinte environnementale) dans la déclaration.",
+      "actions_a_mener": "Formaliser la justification des mécanismes de chiffrement retenus."
     },
     {
       "id": "1.8",
@@ -68,27 +74,30 @@
     },
     {
       "id": "2.1",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Définir et publier le profil matériel minimum supporté (privilégiant les équipements anciens) dans la déclaration. Non documenté à ce jour.",
-      "qui": "Équipe MCR"
+      "evaluation": "Non conforme",
+      "texte_declaration": "Un profil de matériels supportés est connu de l'équipe de façon interne, mais il n'est pas publié dans la déclaration d'écoconception et ne fait l'objet d'aucune vérification objective (tests sur configurations matérielles cibles). Le profil matériel minimum et ses évolutions à venir ne sont donc pas formellement établis ni affichés.",
+      "evolutions_potentielles": "Formaliser, vérifier et publier le profil matériel minimum (processeur, mémoire) en privilégiant les équipements les plus anciens possibles.",
+      "actions_a_mener": "Publier et vérifier le profil matériel minimum supporté."
     },
     {
       "id": "2.2",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service fonctionne sur navigateur. La conversion vidéo→audio côté client utilise ffmpeg WebAssembly multi-thread (SharedArrayBuffer, en-têtes COOP/COEP), qui requiert un navigateur relativement récent. Aucun test documenté sur un terminal ancien (~10 ans).",
-      "actions_a_mener": "Tester les fonctionnalités critiques sur un PC équipé d'un microprocesseur mis sur le marché il y a 10 ans ou plus et documenter les caractéristiques."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service fonctionne sur navigateur et son interface, essentiellement textuelle, reste légère. Toutefois, les fonctionnalités critiques n'ont pas été testées sur un terminal ancien (PC équipé d'un microprocesseur mis sur le marché il y a 10 ans ou plus) et les caractéristiques d'un tel équipement ne sont pas documentées. Le principal point d'attention identifié est le transcodage vidéo→audio côté client (ffmpeg WebAssembly multi-thread, SharedArrayBuffer), non testé sur matériel ancien.",
+      "evolutions_potentielles": "Tester les fonctionnalités critiques (dont le transcodage ffmpeg) sur un terminal ancien et documenter les caractéristiques compatibles.",
+      "actions_a_mener": "Réaliser et documenter des tests sur un terminal ancien (~10 ans)."
     },
     {
       "id": "2.3",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service impose des transferts de fichiers audio potentiellement volumineux et un polling régulier de l'état des traitements ; il n'a pas été conçu ni testé pour un usage bas débit ou hors connexion.",
-      "actions_a_mener": "Tester l'utilisabilité en 3G/512 kbit/s (ou hors connexion) et documenter le débit minimum, ou justifier la non-pertinence."
+      "evaluation": "Conforme",
+      "texte_declaration": "L'utilisabilité en connexion bas débit fait partie des points de contrôle de l'équipe et est testée. Une partie des fonctionnalités reste par ailleurs disponible hors connexion (résilience des enregistrements côté client). Le débit minimum n'est en revanche pas encore présenté dans la déclaration d'écoconception.",
+      "evolutions_potentielles": "Documenter le débit minimum supporté et le périmètre exact des fonctionnalités disponibles hors connexion dans la déclaration."
     },
     {
       "id": "2.4",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Application web s'appuyant sur SharedArrayBuffer et les en-têtes COOP/COEP (isolation cross-origin), ce qui restreint le support aux versions récentes des navigateurs. Les versions minimales supportées (≥ 2 ans) ne sont pas définies ni testées de façon documentée.",
-      "actions_a_mener": "Définir et tester les versions minimales des principaux navigateurs (≥ 2 ans) et les publier."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service s'appuie sur SharedArrayBuffer et les en-têtes COOP/COEP (isolation cross-origin) pour le transcodage côté client. Les versions minimales des principaux navigateurs supportés ne sont pas définies, testées ni publiées, et le support d'une version datée d'au moins deux ans n'est pas garanti.",
+      "evolutions_potentielles": "Définir, tester et publier les versions minimales des principaux navigateurs (au moins deux ans), en indiquant les causes d'incompatibilité éventuelles.",
+      "actions_a_mener": "Établir et documenter la matrice de compatibilité navigateurs (≥ 2 ans)."
     },
     {
       "id": "2.5",
@@ -105,27 +114,31 @@
     },
     {
       "id": "2.7",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service pratique un versionnement SemVer (déploiement prod déclenché par tag x.y.z) et une résorption progressive du code legacy suivie par un contrat import-linter. Aucune stratégie de décommissionnement (fin de vie, gestion des données non personnelles et des ressources libérées, dates de rappel des éléments inutilisés) n'est documentée.",
-      "actions_a_mener": "Définir et documenter une stratégie de maintenance et de décommissionnement."
+      "evaluation": "Non conforme",
+      "texte_declaration": "La maintenance et le décommissionnement sont maîtrisés dans les faits (versionnement SemVer, déploiement continu, résorption progressive du code legacy suivie par un contrat import-linter, décommissionnement techniquement simple) mais ne font pas l'objet d'une stratégie documentée : ni liste des composants/environnements actifs avec dates de rappel, ni plan formalisé de gestion de la seconde vie ou fin de vie des données non personnelles et des ressources libérées.",
+      "evolutions_potentielles": "Formaliser dans la déclaration la stratégie de maintenance et de décommissionnement (l'effort est faible, les pratiques existant déjà).",
+      "actions_a_mener": "Documenter la stratégie de maintenance et de décommissionnement."
     },
     {
       "id": "2.8",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service s'appuie sur des fournisseurs majoritairement publics/souverains (plateforme d'hébergement DSO de l'État, hub LLM souverain du Ministère de l'Intérieur, passerelle IA gouvernementale). La prise en compte formelle de critères environnementaux dans la politique d'achat/partenariat n'est pas documentée.",
-      "actions_a_mener": "Documenter les exigences environnementales vis-à-vis des fournisseurs (guide achats numériques responsables)."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service fait appel à des fournisseurs extérieurs (plateforme d'hébergement DSO de l'État, hub LLM souverain du Ministère de l'Intérieur, passerelle IA gouvernementale de transcription/diarisation). Leurs caractéristiques environnementales ne sont pas prises en compte dans une politique d'achat ou de partenariat, ni documentées dans la déclaration.",
+      "evolutions_potentielles": "Intégrer des critères environnementaux à la sélection des fournisseurs (en cohérence avec le Guide pratique pour des achats numériques responsables) et les documenter.",
+      "actions_a_mener": "Définir des exigences environnementales vis-à-vis des fournisseurs."
     },
     {
       "id": "2.9",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service utilise des composants d'interface prêts à l'emploi issus du DSFR (@gouvfr/dsfr, @gouvminint/vue-dsfr), design system de l'État conçu pour l'accessibilité et la standardisation. La prise en compte explicite de leur empreinte environnementale lors du choix n'est pas documentée.",
-      "actions_a_mener": "Documenter l'évaluation de la performance écologique des composants DSFR retenus."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service utilise des composants d'interface prêts à l'emploi issus du DSFR (@gouvfr/dsfr, @gouvminint/vue-dsfr), système de design de l'État retenu au titre de la standardisation et de l'accessibilité, sans évaluation environnementale dédiée. Bien que le DSFR s'appuie sur des éléments HTML natifs et reste relativement sobre, la performance écologique des composants n'a pas été estimée ni documentée lors de leur choix.",
+      "evolutions_potentielles": "Documenter une estimation de la performance écologique des composants DSFR utilisés.",
+      "actions_a_mener": "Évaluer et documenter l'empreinte des composants d'interface retenus."
     },
     {
       "id": "2.10",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le service repose sur des services tiers : Keycloak (auth), S3/Minio (stockage), hub LLM souverain (génération), passerelle transcription/diarisation, SMTP, Sentry, Unleash (feature flags), Langfuse (observabilité LLM), lookup COMU. La prise en compte de leur empreinte environnementale à la sélection n'est pas documentée.",
-      "actions_a_mener": "Lister les services tiers et renseigner leur avancement au regard des critères RGESN applicables."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service repose sur plusieurs services tiers (Keycloak pour l'authentification, S3/Minio pour le stockage, hub LLM souverain pour la génération, passerelle de transcription/diarisation, SMTP, Sentry, Unleash, Langfuse, lookup COMU). Leur impact environnemental n'a pas été pris en compte à la sélection et ils ne sont pas listés dans la déclaration avec leur avancement au regard des critères RGESN applicables.",
+      "evolutions_potentielles": "Lister les services tiers et renseigner leur avancement au regard des critères RGESN applicables.",
+      "actions_a_mener": "Recenser et évaluer les services tiers selon les critères RGESN applicables."
     },
     {
       "id": "3.1",
@@ -136,15 +149,15 @@
     },
     {
       "id": "3.2",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le worker de transcription est sérialisé (worker_concurrency=1) et le code suppose un nombre fixe de pods de transcription en parallèle (PARALLEL_PODS_COUNT=14), ce qui suggère un pool statique. Les manifestes Kubernetes (autoscaling/HPA éventuel) résident dans le dépôt externe mirai-values et ne sont pas auditables ici.",
-      "actions_a_mener": "Confirmer si la plateforme adapte dynamiquement les ressources à la charge (autoscaling)."
+      "evaluation": "Conforme",
+      "texte_declaration": "L'architecture adapte une partie de ses ressources à la demande : les workers de capture, qui se connectent aux visioconférences, sont mis à l'échelle dynamiquement en fonction du nombre de réunions concurrentes. En revanche, la couche de transcription repose sur un pool de pods de taille fixe (PARALLEL_PODS_COUNT=14, worker_concurrency=1) et ne s'ajuste pas à la charge.",
+      "evolutions_potentielles": "Étendre l'adaptation dynamique des ressources à la couche de transcription et documenter les tests démontrant l'adéquation de la consommation aux besoins."
     },
     {
       "id": "3.3",
-      "evaluation": "À évaluer",
-      "texte_declaration": "En configuration interne, seul HTTP/1.1 est utilisé et l'IPv6 est explicitement désactivé sur l'ingress de développement local (resolver ipv6=off). Le HTTPS et la version de TLS sont assurés par l'ingress de la plateforme (hors dépôt).",
-      "actions_a_mener": "Confirmer, en production, le support d'IPv6, HTTPS et TLS 1.3, et l'absence de dépendance tierce IPv4-only."
+      "evaluation": "Conforme",
+      "texte_declaration": "En production, le service est accessible en IPv6 (comme en IPv4), repose sur le protocole HTTPS et prend en charge la version la plus récente de TLS (TLS 1.3). Le choix de ces protocoles pérennes et adaptés aux fonctionnalités assure la longévité du service et prévient les risques d'obsolescence (la désactivation d'IPv6 observée dans le dépôt ne concerne que le resolver DNS de l'ingress de développement local).",
+      "evolutions_potentielles": "Documenter explicitement les protocoles supportés dans la déclaration d'écoconception."
     },
     {
       "id": "3.4",
@@ -165,9 +178,10 @@
     },
     {
       "id": "3.7",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Trois environnements existent : staging (branche main), prod (tag), et test (build uniquement, déploiement volontairement avorté). L'extinction hors plages d'utilisation ou la mutualisation des environnements dépend de la plateforme (dépôt externe mirai-values).",
-      "actions_a_mener": "Confirmer si les environnements non-prod sont mutualisés ou éteints hors usage."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Les environnements ne sont pas éteints sur les plages horaires inutilisées ni mutualisés. Un effort de rationalisation a néanmoins été mené récemment, réduisant le nombre d'environnements de cinq à trois (staging, production, et un environnement de test limité au build sans déploiement), ce qui diminue les ressources sollicitées.",
+      "evolutions_potentielles": "Éteindre les environnements non-productifs hors des plages d'utilisation (ou les mutualiser) et documenter les choix dans la déclaration.",
+      "actions_a_mener": "Mettre en place l'extinction programmée des environnements non-prod."
     },
     {
       "id": "4.1",
@@ -181,9 +195,10 @@
     },
     {
       "id": "4.3",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Les parcours sont recentrés sur les fonctionnalités essentielles (import/capture, transcription, génération, consultation). Le service est instrumenté (Sentry, Langfuse, feature flags Unleash), mais l'optimisation des parcours à partir de statistiques d'usage UX et d'indicateurs de suivi dédiés n'est pas documentée.",
-      "actions_a_mener": "Confirmer l'usage de statistiques UX et d'indicateurs techniques pour optimiser les parcours dans le temps."
+      "evaluation": "Non conforme",
+      "texte_declaration": "Les parcours de navigation sont recentrés sur les fonctionnalités essentielles (import ou capture, transcription, génération, consultation/édition/export) par une priorisation produit. Toutefois, cette optimisation ne s'appuie pas sur des outils UX et des statistiques d'usage, et aucun indicateur technique dédié n'est mis en place pour assurer l'optimisation des parcours dans le temps.",
+      "evolutions_potentielles": "Mettre en place des statistiques d'usage UX et des indicateurs de suivi pour optimiser les parcours dans la durée.",
+      "actions_a_mener": "Instrumenter les parcours (analytics UX + indicateurs de suivi)."
     },
     {
       "id": "4.4",
@@ -313,8 +328,9 @@
     {
       "id": "6.3",
       "evaluation": "À évaluer",
-      "texte_declaration": "Aucun plugin de compression au build (Brotli/GZIP) n'est configuré côté Vite ; la compression, si elle existe, est appliquée au niveau de l'ingress/CDN de la plateforme (hors dépôt).",
-      "actions_a_mener": "Confirmer que l'ingress/CDN de production applique la compression Brotli ou GZIP aux ressources transférées."
+      "texte_declaration": "Aucun plugin de compression au build (Brotli/GZIP) n'est configuré côté Vite ; la compression, si elle existe, est appliquée au niveau de l'ingress/CDN de la plateforme (hors dépôt). Information non disponible côté équipe MCR.",
+      "actions_a_mener": "À trancher : vérifier auprès de l'équipe plateforme DSO si l'ingress/CDN de production applique Brotli ou GZIP ; à défaut, activer la compression (plugin de build ou configuration ingress).",
+      "qui": "Équipe plateforme DSO / équipe MCR"
     },
     {
       "id": "6.4",
@@ -366,45 +382,46 @@
     },
     {
       "id": "8.1",
-      "evaluation": "À évaluer",
-      "texte_declaration": "L'hébergement est assuré par la plateforme DSO de l'État (écosystème « cloud de confiance » / Cloud π, org IA-Generative), avec un stockage libellé région France (fr-par). Les engagements environnementaux de l'hébergeur (Code de conduite sur les datacenters, indicateurs GES/énergie/eau) ne sont pas documentés dans le dépôt.",
-      "actions_a_mener": "Obtenir et documenter les engagements environnementaux de l'hébergeur (plateforme DSO)."
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergement du service est assuré par la plateforme DSO de l'État (écosystème « cloud de confiance »). L'hébergeur publie une démarche de réduction de son empreinte environnementale, incluant la signature du Code de conduite européen sur les centres de données et des engagements sur ses indicateurs environnementaux.",
+      "evolutions_potentielles": "Citer dans la déclaration les liens/références précis des engagements environnementaux de l'hébergeur."
     },
     {
       "id": "8.2",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Obtenir le plan de gestion durable des équipements de l'hébergeur (durée de vie, achat durable, fin de vie) et le référencer.",
-      "qui": "Équipe MCR / plateforme DSO"
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service met en œuvre une politique de gestion durable des équipements informatiques (durée de vie du parc, politique d'achat durable, optimisation de la phase d'usage et de la fin de vie des équipements), documentée et accessible.",
+      "evolutions_potentielles": "Renvoyer dans la déclaration vers la politique de gestion durable des équipements de l'hébergeur."
     },
     {
       "id": "8.3",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Obtenir le PUE (réel ou by design) de l'hébergement (cible < 1,5 réel) et le justifier dans la déclaration.",
-      "qui": "Plateforme DSO"
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service (Scaleway) affiche un PUE (Power Usage Effectiveness) réel moyen de 1,37 en 2024, inférieur au seuil de 1,5 exigé par le critère et à la moyenne du secteur (~1,55). Son datacenter le plus performant (PAR-DC5) atteint un PUE de 1,25.",
+      "evolutions_potentielles": "Préciser dans la déclaration le PUE du datacenter Scaleway effectivement utilisé pour le service."
     },
     {
       "id": "8.4",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Obtenir le WUE de l'hébergement (cible ≤ 0,4 L/kWh) et sa méthodologie de calcul.",
-      "qui": "Plateforme DSO"
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service (Scaleway) affiche des WUE (Water Usage Effectiveness) très faibles, de l'ordre de 0,00002 à 0,014 L/kWh selon les datacenters, largement inférieurs à l'objectif de 0,4 L/kWh du critère. Scaleway fait par ailleurs le choix de ne pas recourir aux tours de refroidissement consommatrices d'eau potable et publie régulièrement ses WUE.",
+      "evolutions_potentielles": "Préciser dans la déclaration le WUE du datacenter Scaleway effectivement utilisé et la méthodologie de calcul."
     },
     {
       "id": "8.5",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Documenter le mix énergétique de l'hébergement et la part d'énergie renouvelable (REF, énergie contractualisée).",
-      "qui": "Plateforme DSO"
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service est transparent sur son mix énergétique et documente une politique de recours majoritaire aux énergies renouvelables. Cette provenance de l'électricité consommée est accessible dans la documentation de l'hébergeur.",
+      "evolutions_potentielles": "Renseigner dans la déclaration les indicateurs précis (REF, part d'énergie renouvelable contractualisée)."
     },
     {
       "id": "8.6",
-      "evaluation": "À évaluer",
-      "texte_declaration": "Le stockage est libellé en région France (fr-par) et la plateforme d'hébergement est le cloud souverain de l'État français. Le mix électrique français présente une intensité carbone très inférieure au seuil de 100 gCO₂eq/kWh du critère, ce qui, si l'hébergement est confirmé en France, satisfait ce critère.",
-      "actions_a_mener": "Confirmer et documenter la localisation (pays/ville) de l'hébergement de production."
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergement du service est assuré par Scaleway, dont les datacenters sont situés en France (région parisienne). L'intensité carbone du mix électrique français est très inférieure au seuil de 100 gCO₂eq/kWh fixé par le critère, valeur conforme à la trajectoire SBTi requise par l'Accord de Paris. La localisation est en outre cohérente avec les utilisateurs du service, majoritairement en France.",
+      "evolutions_potentielles": "Préciser dans la déclaration la ou les villes d'hébergement et la source de l'intensité carbone retenue."
     },
     {
       "id": "8.7",
-      "evaluation": "À évaluer",
-      "actions_a_mener": "Confirmer la valorisation de la chaleur fatale par l'hébergeur, ou à défaut un PUE < 1,3 réel.",
-      "qui": "Plateforme DSO"
+      "evaluation": "Non conforme",
+      "texte_declaration": "L'hébergeur (Scaleway) refroidit majoritairement ses installations par free cooling/adiabatique sans dispositif documenté de récupération et de réutilisation de la chaleur fatale. La voie alternative de validation (PUE réel < 1,3) n'est pas satisfaite par le PUE moyen (1,37) ; seul le datacenter PAR-DC5 (PUE 1,25) la satisferait, sous réserve que le service y soit hébergé.",
+      "evolutions_potentielles": "Confirmer le datacenter Scaleway d'hébergement : s'il s'agit de PAR-DC5 (PUE 1,25 < 1,3), le critère est satisfait par la voie alternative.",
+      "actions_a_mener": "Confirmer le datacenter d'hébergement effectif du service."
     },
     {
       "id": "8.8",
@@ -415,8 +432,9 @@
     {
       "id": "8.9",
       "evaluation": "À évaluer",
-      "actions_a_mener": "Confirmer l'existence d'un SLA ajustant la duplication/réplication des données aux besoins réels.",
-      "qui": "Plateforme DSO"
+      "texte_declaration": "Le niveau de duplication/réplication des données côté hébergement (Scaleway) n'est pas connu de l'équipe MCR. Information à obtenir auprès de l'hébergeur / de l'équipe plateforme.",
+      "actions_a_mener": "À trancher : vérifier l'existence d'un SLA ajustant la duplication/réplication des données aux besoins réels ; à défaut, définir ce niveau.",
+      "qui": "Équipe plateforme DSO / Scaleway"
     },
     {
       "id": "8.10",
