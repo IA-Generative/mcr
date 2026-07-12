@@ -6,6 +6,11 @@ from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import TaskCreationException
+from mcr_meeting.app.models.deliverable_model import (
+    Deliverable,
+    DeliverableStatus,
+    DeliverableType,
+)
 from mcr_meeting.app.models.meeting_model import (
     Meeting,
     MeetingPlatforms,
@@ -15,6 +20,7 @@ from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRe
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.use_cases.init_transcription import init_transcription
 from tests.factories import MeetingFactory
+from tests.factories.deliverable_factory import DeliverableFactory
 
 
 @pytest.fixture(autouse=True)
@@ -24,6 +30,18 @@ def structural_split_flag_off(mocker: MockerFixture) -> Mock:
     return mocker.patch(
         "mcr_meeting.app.use_cases.init_transcription.is_enabled",
         return_value=False,
+    )
+
+
+def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
+    return list(
+        get_db_session_ctx()
+        .query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type == DeliverableType.TRANSCRIPTION,
+        )
+        .all()
     )
 
 
@@ -71,6 +89,43 @@ def test_init_transcription_records_predicted_pending_transition(
     assert records[0].predicted_date_of_next_transition is not None
 
 
+def test_init_transcription_creates_pending_transcription_deliverable(
+    mock_celery_producer_app: Mock,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.CAPTURE_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    init_transcription(meeting_id=meeting.id)
+
+    deliverables = _transcription_deliverables(meeting.id)
+    assert len(deliverables) == 1
+    assert deliverables[0].status == DeliverableStatus.PENDING
+
+
+def test_init_transcription_requeues_failed_deliverable_on_retry(
+    mock_celery_producer_app: Mock,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_FAILED,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    failed_deliverable = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.FAILED,
+        external_url=None,
+    )
+
+    init_transcription(meeting_id=meeting.id)
+
+    deliverables = _transcription_deliverables(meeting.id)
+    assert len(deliverables) == 1
+    assert deliverables[0].id == failed_deliverable.id
+    assert deliverables[0].status == DeliverableStatus.PENDING
+
+
 def test_init_transcription_stamps_end_date_for_record_meetings(
     mock_celery_producer_app: Mock,
 ) -> None:
@@ -98,6 +153,7 @@ def test_init_transcription_rolls_back_on_broker_failure(
         init_transcription(meeting_id=meeting.id)
 
     assert _pending_records(meeting.id) == []
+    assert _transcription_deliverables(meeting.id) == []
     db_session.refresh(meeting)
     assert meeting.status == MeetingStatus.TRANSCRIPTION_PENDING
 
@@ -185,3 +241,4 @@ def test_init_transcription_rejects_illegal_transition(
         init_transcription(meeting_id=meeting.id)
 
     mock_celery_producer_app.send_task.assert_not_called()
+    assert _transcription_deliverables(meeting.id) == []

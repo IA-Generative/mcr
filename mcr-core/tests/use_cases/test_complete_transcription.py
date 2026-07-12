@@ -22,6 +22,7 @@ from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRe
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.use_cases.complete_transcription import complete_transcription
 from tests.factories import MeetingFactory
+from tests.factories.deliverable_factory import DeliverableFactory
 from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_s3 import InMemoryS3
@@ -195,6 +196,37 @@ class TestCompleteTranscription:
         deliverables = _transcription_deliverables(transcription_in_progress_meeting.id)
         assert len(deliverables) == 1
         assert deliverables[0].status == DeliverableStatus.AVAILABLE
+
+    def test_updates_early_deliverable_instead_of_creating_a_second(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_drive: InMemoryDriveClient,
+    ) -> None:
+        early_deliverable = DeliverableFactory.create(
+            meeting=transcription_in_progress_meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.IN_PROGRESS,
+            external_url=None,
+        )
+        save_refresh_token(
+            str(transcription_in_progress_meeting.owner.keycloak_uuid),
+            "refresh-token",
+        )
+
+        complete_transcription(
+            meeting_id=transcription_in_progress_meeting.id,
+            transcriptions=sample_transcriptions,
+        )
+
+        deliverables = _transcription_deliverables(transcription_in_progress_meeting.id)
+        assert len(deliverables) == 1
+        assert deliverables[0].id == early_deliverable.id
+        assert deliverables[0].status == DeliverableStatus.AVAILABLE
+        assert deliverables[0].external_url == in_memory_drive.url
 
     def test_uploads_to_drive_and_persists_external_url(
         self,

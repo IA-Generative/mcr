@@ -3,6 +3,8 @@ import pytest
 from mcr_meeting.app.domain.deliverable_transitions import (
     mark_available,
     mark_failed,
+    mark_in_progress,
+    requeue,
     soft_delete,
 )
 from mcr_meeting.app.exceptions.exceptions import DeliverableStateConflictException
@@ -19,6 +21,64 @@ def _make_deliverable(status: DeliverableStatus) -> Deliverable:
         type=DeliverableType.DECISION_RECORD,
         status=status,
     )
+
+
+class TestMarkInProgress:
+    def test_flips_pending_to_in_progress(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.PENDING)
+
+        result = mark_in_progress(deliverable)
+
+        assert result is deliverable
+        assert deliverable.status == DeliverableStatus.IN_PROGRESS
+
+    @pytest.mark.parametrize(
+        "starting_status",
+        [
+            DeliverableStatus.IN_PROGRESS,
+            DeliverableStatus.AVAILABLE,
+            DeliverableStatus.FAILED,
+            DeliverableStatus.DELETED,
+        ],
+    )
+    def test_rejects_from_any_other_status(
+        self, starting_status: DeliverableStatus
+    ) -> None:
+        deliverable = _make_deliverable(starting_status)
+
+        with pytest.raises(DeliverableStateConflictException):
+            mark_in_progress(deliverable)
+
+        assert deliverable.status == starting_status
+
+
+class TestRequeue:
+    def test_flips_failed_back_to_pending(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.FAILED)
+
+        result = requeue(deliverable)
+
+        assert result is deliverable
+        assert deliverable.status == DeliverableStatus.PENDING
+
+    @pytest.mark.parametrize(
+        "starting_status",
+        [
+            DeliverableStatus.PENDING,
+            DeliverableStatus.IN_PROGRESS,
+            DeliverableStatus.AVAILABLE,
+            DeliverableStatus.DELETED,
+        ],
+    )
+    def test_rejects_from_any_other_status(
+        self, starting_status: DeliverableStatus
+    ) -> None:
+        deliverable = _make_deliverable(starting_status)
+
+        with pytest.raises(DeliverableStateConflictException):
+            requeue(deliverable)
+
+        assert deliverable.status == starting_status
 
 
 class TestMarkAvailable:
@@ -43,6 +103,13 @@ class TestMarkAvailable:
         mark_available(deliverable, external_url=None)
 
         assert deliverable.external_url is None
+
+    def test_flips_in_progress_to_available(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.IN_PROGRESS)
+
+        mark_available(deliverable, external_url=None)
+
+        assert deliverable.status == DeliverableStatus.AVAILABLE
 
     def test_rejects_already_available(self) -> None:
         deliverable = _make_deliverable(DeliverableStatus.AVAILABLE)
@@ -73,6 +140,13 @@ class TestMarkFailed:
 
         assert deliverable.status == DeliverableStatus.FAILED
 
+    def test_flips_in_progress_to_failed(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.IN_PROGRESS)
+
+        mark_failed(deliverable)
+
+        assert deliverable.status == DeliverableStatus.FAILED
+
     def test_rejects_from_available(self) -> None:
         deliverable = _make_deliverable(DeliverableStatus.AVAILABLE)
 
@@ -85,6 +159,7 @@ class TestSoftDelete:
         "starting_status",
         [
             DeliverableStatus.PENDING,
+            DeliverableStatus.IN_PROGRESS,
             DeliverableStatus.AVAILABLE,
             DeliverableStatus.FAILED,
         ],
