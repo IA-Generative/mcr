@@ -97,7 +97,7 @@ def _import_env() -> None:
     os.environ.setdefault("S3_ACCESS_KEY", "dummy")
     os.environ.setdefault("S3_SECRET_KEY", "localhost")
     os.environ.setdefault("S3_REGION", "dummy")
-    os.environ.setdefault("MCR_FRONTEND_URL", "http://localhost:8881")
+    os.environ.setdefault("MCR_FRONTEND_URL", "http://localhost:8080")
     os.environ.setdefault("ENV_MODE", "DEV")
     os.environ.setdefault("REDIS_HOST", "redis")
     os.environ.setdefault("REDIS_PORT", "1234")
