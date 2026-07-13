@@ -8,17 +8,19 @@ import pytest
 
 from mcr_meeting.app.configs.base import S3Settings
 from mcr_meeting.app.exceptions.exceptions import (
-    InvalidAudioFileError,
     NoAudioFoundError,
+    S3TransientError,
 )
 from mcr_meeting.app.infrastructure.s3 import (
     download_and_concatenate_s3_audio_chunks_into_bytes,
     fetch_audio_bytes,
 )
 from mcr_meeting.app.schemas.S3_types import S3Object
-from tests.mocks.in_memory_s3 import InMemoryS3
+from tests.mocks.in_memory_s3 import InMemoryS3, S3Op, transient_error
 
 _AUDIO_FOLDER = S3Settings().S3_AUDIO_FOLDER
+
+_PERSISTENT = 10
 
 
 def _put_chunk(fake: InMemoryS3, meeting_id: int, name: str, data: bytes) -> None:
@@ -51,16 +53,13 @@ class TestFetchAudioBytes:
 
         assert result.read() == b"mine"
 
-    def test_wraps_download_failure_in_invalid_audio_file_error(
+    def test_transient_download_failure_surfaces_as_s3_transient(
         self, in_memory_s3: InMemoryS3
     ) -> None:
         _put_chunk(in_memory_s3, 123, "chunk_001.weba", b"one")
-        in_memory_s3.should_fail_get = True
+        in_memory_s3.fail(S3Op.GET, transient_error(), times=_PERSISTENT)
 
-        with pytest.raises(
-            InvalidAudioFileError,
-            match="Failed to fetch audio bytes for meeting 123",
-        ):
+        with pytest.raises(S3TransientError):
             fetch_audio_bytes(meeting_id=123)
 
 
@@ -69,18 +68,16 @@ class TestDownloadAndConcatenateS3AudioChunks:
         with pytest.raises(NoAudioFoundError, match="No audio chunks found"):
             download_and_concatenate_s3_audio_chunks_into_bytes(iter([]))
 
-    def test_download_failure_names_the_failing_chunk(
+    def test_transient_download_failure_surfaces_as_s3_transient(
         self, in_memory_s3: InMemoryS3
     ) -> None:
         object_name = f"{_AUDIO_FOLDER}/123/chunk_001.weba"
         in_memory_s3.objects[object_name] = b"one"
-        in_memory_s3.should_fail_get = True
+        in_memory_s3.fail(S3Op.GET, transient_error(), times=_PERSISTENT)
 
         objects = iter(
             [S3Object.model_validate({"Key": object_name, "LastModified": None})]
         )
 
-        with pytest.raises(
-            InvalidAudioFileError, match=f"Failed to download audio chunk {object_name}"
-        ):
+        with pytest.raises(S3TransientError):
             download_and_concatenate_s3_audio_chunks_into_bytes(objects)

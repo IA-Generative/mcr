@@ -1,11 +1,15 @@
 from unittest.mock import Mock
 
 import pytest
-from celery.exceptions import Ignore
+from celery.exceptions import Ignore, Retry
 from pytest_mock import MockerFixture
 
 import mcr_meeting.transcription_worker as tw
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
+from mcr_meeting.app.exceptions.exceptions import (
+    InvalidAudioFileError,
+    S3TransientError,
+)
 
 MEETING_ID = 123
 OWNER = "owner-uuid"
@@ -145,6 +149,48 @@ class TestPipelineTaskBase:
 
     def test_meeting_deleted_is_ignore_so_errback_is_skipped(self) -> None:
         assert issubclass(MeetingDeletedException, Ignore)
+
+
+class TestTransientRetryNet:
+    def test_transient_error_drives_a_pipeline_task_into_retry(
+        self, mocker: MockerFixture
+    ) -> None:
+        start = _patch_start_transcription(mocker)
+        start.side_effect = S3TransientError("connection reset mid-body")
+        retry = mocker.patch.object(tw.diarize, "retry", side_effect=Retry())
+
+        with pytest.raises(Retry):
+            tw.diarize.run(MEETING_ID, OWNER)
+
+        retry.assert_called_once()
+
+    def test_permanent_error_propagates_without_retry(
+        self, mocker: MockerFixture
+    ) -> None:
+        start = _patch_start_transcription(mocker)
+        start.side_effect = InvalidAudioFileError("corrupt audio")
+        retry = mocker.patch.object(tw.diarize, "retry")
+
+        with pytest.raises(InvalidAudioFileError):
+            tw.diarize.run(MEETING_ID, OWNER)
+
+        retry.assert_not_called()
+
+    def test_transient_error_drives_an_eval_task_into_retry(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(
+            tw.s3, "get_evaluation_dataset_object_name", return_value="d"
+        )
+        mocker.patch.object(
+            tw.s3, "get_file_from_s3", side_effect=S3TransientError("connection reset")
+        )
+        retry = mocker.patch.object(tw.evaluate_from_s3, "retry", side_effect=Retry())
+
+        with pytest.raises(Retry):
+            tw.evaluate_from_s3.run("dataset.zip")
+
+        retry.assert_called_once()
 
 
 def test_no_celery_signal_handlers_remain() -> None:
