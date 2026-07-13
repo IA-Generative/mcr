@@ -214,10 +214,6 @@ forbidden_modules = [
     "mcr_meeting.app.services",
     "mcr_meeting.app.client",
 ]
-ignore_imports = [
-    # TODO(arch): render_report should not reach into the legacy docx service
-    "mcr_meeting.app.domain.report_rendering -> mcr_meeting.app.services.docx_report_generation_service",
-]
 
 [[tool.importlinter.contracts]]
 name = "Use-cases must not import each other"

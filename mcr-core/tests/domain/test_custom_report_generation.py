@@ -1,14 +1,14 @@
 from docx import Document
 
+from mcr_meeting.app.domain.report_rendering import (
+    generate_custom_report_docx,
+)
 from mcr_meeting.app.schemas.report_generation import (
     CustomReportResponse,
     DetailedSynthesisGenerationResponse,
     ReportGenerationResponse,
     ReportHeader,
     is_custom_report,
-)
-from mcr_meeting.app.services.docx_report_generation_service import (
-    generate_custom_report_docx,
 )
 
 
