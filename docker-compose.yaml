@@ -172,6 +172,9 @@ services:
       target: dev
     container_name: mcr-capture-worker
     user: "1000:1000"
+    ports:
+      # Debugging port
+      - "7004:7004"
     volumes:
       - ./mcr-capture-worker/mcr_capture_worker:/app/mcr_capture_worker
     develop:
