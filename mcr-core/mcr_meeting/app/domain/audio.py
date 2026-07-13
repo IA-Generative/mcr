@@ -3,6 +3,7 @@ import os
 import re
 import tempfile
 from io import BytesIO
+from typing import Any
 
 import ffmpeg
 import numpy as np
@@ -21,7 +22,16 @@ from mcr_meeting.app.exceptions.exceptions import (
     SilentAudioError,
 )
 from mcr_meeting.app.schemas.transcription_schema import TimeSpan, TranscriptionInput
-from mcr_meeting.setup.logger import log_ffmpeg_command
+
+
+def log_ffmpeg_command(stream: Any) -> None:  # type: ignore[explicit-any]
+    try:
+        cmd = stream.compile()
+        logger.debug("FFmpeg command: %s", " ".join(cmd))
+    except Exception:
+        logger.warning("Failed to compile FFmpeg command.")
+        pass  # Don't fail if compile fails
+
 
 s2t_settings = Speech2TextSettings()
 audio_settings = AudioSettings()

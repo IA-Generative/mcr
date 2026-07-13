@@ -6,8 +6,8 @@ from celery.signals import setup_logging as celery_setup_logging
 
 from mcr_meeting.app.configs.base import CelerySettings, RetrySettings
 from mcr_meeting.app.exceptions.exceptions import TransientInfraError
+from mcr_meeting.app.infrastructure.logger import setup_logging
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
-from mcr_meeting.setup.logger import setup_logging
 
 setup_logging()
 

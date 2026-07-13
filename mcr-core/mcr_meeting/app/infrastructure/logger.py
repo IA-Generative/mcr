@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import logging
+import logging  # noqa: TID251
 import re
 import sys
-from typing import Any
 
 import loguru
 from loguru import logger
@@ -129,12 +128,3 @@ def get_log_format() -> str:
     log_format += "<level>{message}</level> <level>{extra[extra_wo_request_id]}</level>"
 
     return log_format
-
-
-def log_ffmpeg_command(stream: Any) -> None:  # type: ignore[explicit-any]
-    try:
-        cmd = stream.compile()
-        logger.debug("FFmpeg command: %s", " ".join(cmd))
-    except Exception:
-        logger.warning("Failed to compile FFmpeg command.")
-        pass  # Don't fail if compile fails

@@ -138,9 +138,6 @@ ignore = ["UP017", "UP008", "UP028", "UP046"]
 
 exclude = ["scripts/**", "notebooks/**"]
 
-[tool.ruff.lint.per-file-ignores]
-"**/setup/logger.py" = ["TID251"]
-
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 

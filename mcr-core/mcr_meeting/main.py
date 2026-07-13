@@ -3,6 +3,7 @@ import uvicorn
 from fastapi import FastAPI
 from loguru import logger
 
+from mcr_meeting.app.api._shared.request_id_middleware import AddRequestIdMiddleware
 from mcr_meeting.app.api.evaluation_router import router as evaluation_router
 from mcr_meeting.app.api.feature_flag_router import router as feature_flag_router
 from mcr_meeting.app.api.feedback_router import router as feedback_router
@@ -29,8 +30,7 @@ from mcr_meeting.app.exceptions.exception_handler import (
     value_error_handler,
 )
 from mcr_meeting.app.exceptions.exceptions import MCRException
-from mcr_meeting.setup.logger import setup_logging
-from mcr_meeting.setup.request_id_middleware import AddRequestIdMiddleware
+from mcr_meeting.app.infrastructure.logger import setup_logging
 
 sentry_settings = SentrySettings()
 setting = Settings()
