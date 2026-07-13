@@ -1,7 +1,7 @@
 import pytest
 
+from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.models.deliverable_model import DeliverableType
-from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 
 
 @pytest.mark.parametrize(

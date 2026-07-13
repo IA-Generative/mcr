@@ -8,13 +8,13 @@ from mcr_meeting.app.domain.transcription.participant_reconciliation import (
     format_segments_as_dialogue,
 )
 from mcr_meeting.app.domain.transcription.text_chunking import chunk_text
+from mcr_meeting.app.infrastructure.langfuse import (
+    record_participant_name_lost_event,
+)
 from mcr_meeting.app.infrastructure.llm import participants as participants_llm
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     Participant,
-)
-from mcr_meeting.app.utils.langfuse_observability import (
-    record_participant_name_lost_event,
 )
 
 

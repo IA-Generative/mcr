@@ -16,7 +16,7 @@ from mcr_meeting.app.configs.base import (
     PyannoteDiarizationParameters,
     Speech2TextSettings,
 )
-from mcr_meeting.app.utils.compute_devices import (
+from mcr_meeting.app.infrastructure.compute_devices import (
     ComputeDevice,
     get_default_gpu_device,
     get_gpu_name,

@@ -7,7 +7,7 @@ import httpx
 from loguru import logger
 
 from mcr_meeting.app.configs.base import DriveSettings
-from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
+from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE
 
 _settings = DriveSettings()
 

@@ -2,8 +2,11 @@ from fastapi import APIRouter, Depends, Header, Response, status
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
+from mcr_meeting.app.api._shared.response_headers import create_safe_filename_header
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
+from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
+from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE
 from mcr_meeting.app.schemas.deliverable_schema import (
     CustomDeliverableCreateRequest,
     DeliverableCreateRequest,
@@ -24,9 +27,6 @@ from mcr_meeting.app.use_cases.request_deliverable import (
     request_deliverable as request_deliverable_use_case,
 )
 from mcr_meeting.app.use_cases.soft_delete_deliverable import soft_delete_deliverable
-from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
-from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
-from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
 api_settings = ApiSettings()
 

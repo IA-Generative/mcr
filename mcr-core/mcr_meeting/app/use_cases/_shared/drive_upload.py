@@ -1,5 +1,6 @@
 from loguru import logger
 
+from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.infrastructure.drive import upload_file
 from mcr_meeting.app.infrastructure.keycloak import (
     TokenRefreshResult,
@@ -12,7 +13,6 @@ from mcr_meeting.app.infrastructure.redis import (
 )
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import DeliverableType
-from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 
 
 def try_upload_deliverable_to_drive(

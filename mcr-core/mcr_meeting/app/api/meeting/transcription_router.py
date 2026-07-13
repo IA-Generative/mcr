@@ -7,10 +7,12 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
+from mcr_meeting.app.api._shared.response_headers import create_safe_filename_header
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import (
     router_db_session_context_manager,
 )
+from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE
 from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
@@ -22,8 +24,6 @@ from mcr_meeting.app.use_cases.get_or_create_transcription_docx import (
 )
 from mcr_meeting.app.use_cases.init_transcription import init_transcription
 from mcr_meeting.app.use_cases.start_transcription import start_transcription
-from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE
-from mcr_meeting.app.utils.filename_header import create_safe_filename_header
 
 api_settings = ApiSettings()
 

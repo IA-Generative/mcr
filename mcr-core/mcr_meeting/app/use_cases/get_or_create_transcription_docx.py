@@ -8,6 +8,7 @@ from mcr_meeting.app.db.meeting_repository import (
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.domain.authorize_meeting_access import authorize_meeting_access
+from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.domain.transcription_rendering import render_transcription_docx
 from mcr_meeting.app.infrastructure.s3 import (
     download_transcription_docx,
@@ -16,7 +17,6 @@ from mcr_meeting.app.infrastructure.s3 import (
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.transcription_schema import TranscriptionDocxResult
-from mcr_meeting.app.utils.deliverable_filename import build_deliverable_filename
 
 INITIAL_TRANSCRIPTION_FILENAME = "v0.docx"
 

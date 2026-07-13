@@ -4,7 +4,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 import mcr_meeting.app.infrastructure.speech_to_text_models as stt
-from mcr_meeting.app.utils.compute_devices import ComputeDevice
+from mcr_meeting.app.infrastructure.compute_devices import ComputeDevice
 
 
 @pytest.fixture(autouse=True)
