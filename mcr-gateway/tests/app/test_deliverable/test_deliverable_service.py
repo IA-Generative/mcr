@@ -57,6 +57,29 @@ async def test_list_deliverables_forwards_request_and_returns_rows(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("status", ["PENDING", "IN_PROGRESS", "AVAILABLE", "FAILED"])
+async def test_list_deliverables_passes_through_every_core_status(
+    httpx_mock: HTTPXMock, status: str
+) -> None:
+    meeting_id = 42
+    payload = _deliverable_payload(deliverable_id=1, meeting_id=meeting_id)
+    payload["type"] = "TRANSCRIPTION"
+    payload["status"] = status
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{settings.MEETING_SERVICE_URL}{meeting_id}/deliverables",
+        json={"deliverables": [payload]},
+        status_code=200,
+    )
+
+    result = await list_deliverables_for_meeting(
+        meeting_id=meeting_id, user_keycloak_uuid=uuid.uuid4()
+    )
+
+    assert result.deliverables[0].status == status
+
+
+@pytest.mark.asyncio
 async def test_create_deliverable_forwards_body_and_returns_202(
     httpx_mock: HTTPXMock,
 ) -> None:

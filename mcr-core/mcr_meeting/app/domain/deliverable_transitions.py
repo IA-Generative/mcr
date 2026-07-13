@@ -9,8 +9,10 @@ from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableSta
 
 
 class DeliverableEvent(StrEnum):
+    MARK_IN_PROGRESS = "MARK_IN_PROGRESS"
     MARK_AVAILABLE = "MARK_AVAILABLE"
     MARK_FAILED = "MARK_FAILED"
+    REQUEUE = "REQUEUE"
     SOFT_DELETE = "SOFT_DELETE"
 
 
@@ -22,13 +24,25 @@ class DeliverableStateMachine(StateMachine):
         use_enum_instance=True,
     )
 
-    MARK_AVAILABLE = _states.PENDING.to(_states.AVAILABLE)
-    MARK_FAILED = _states.PENDING.to(_states.FAILED)
+    MARK_IN_PROGRESS = _states.PENDING.to(_states.IN_PROGRESS)
+    MARK_AVAILABLE = _states.PENDING.to(_states.AVAILABLE) | _states.IN_PROGRESS.to(
+        _states.AVAILABLE
+    )
+    MARK_FAILED = _states.PENDING.to(_states.FAILED) | _states.IN_PROGRESS.to(
+        _states.FAILED
+    )
+    REQUEUE = _states.FAILED.to(_states.PENDING)
     SOFT_DELETE = (
         _states.PENDING.to(_states.DELETED)
+        | _states.IN_PROGRESS.to(_states.DELETED)
         | _states.AVAILABLE.to(_states.DELETED)
         | _states.FAILED.to(_states.DELETED)
     )
+
+
+def mark_in_progress(deliverable: Deliverable) -> Deliverable:
+    _send(deliverable, DeliverableEvent.MARK_IN_PROGRESS)
+    return deliverable
 
 
 def mark_available(deliverable: Deliverable, external_url: str | None) -> Deliverable:
@@ -39,6 +53,11 @@ def mark_available(deliverable: Deliverable, external_url: str | None) -> Delive
 
 def mark_failed(deliverable: Deliverable) -> Deliverable:
     _send(deliverable, DeliverableEvent.MARK_FAILED)
+    return deliverable
+
+
+def requeue(deliverable: Deliverable) -> Deliverable:
+    _send(deliverable, DeliverableEvent.REQUEUE)
     return deliverable
 
 

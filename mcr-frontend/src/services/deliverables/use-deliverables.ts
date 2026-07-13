@@ -9,9 +9,9 @@ import type { DeliverableCreateRequest, DeliverableDto } from './deliverables.ty
 
 const POLLING_INTERVAL = 10 * 1000;
 
-function shouldPollDeliverables(deliverables?: DeliverableDto[]): boolean {
+export function shouldPollDeliverables(deliverables?: DeliverableDto[]): boolean {
   if (!deliverables) return false;
-  return deliverables.some((d) => d.status === 'PENDING');
+  return deliverables.some((d) => d.status === 'PENDING' || d.status === 'IN_PROGRESS');
 }
 
 function getDeliverablesQuery(meetingId: number) {

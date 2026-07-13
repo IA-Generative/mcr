@@ -13,6 +13,9 @@ from mcr_meeting.app.domain.transcription_queue_estimation import (
 )
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
+from mcr_meeting.app.use_cases._shared.transcription_deliverable import (
+    start_transcription_deliverable,
+)
 
 
 def start_transcription(meeting_id: int) -> Meeting:
@@ -27,6 +30,7 @@ def start_transcription(meeting_id: int) -> Meeting:
     now = datetime.now(timezone.utc)
     with UnitOfWork():
         update_meeting(meeting)
+        start_transcription_deliverable(meeting.id)
         save_meeting_transition_record(
             MeetingTransitionRecord(
                 meeting_id=meeting.id,
