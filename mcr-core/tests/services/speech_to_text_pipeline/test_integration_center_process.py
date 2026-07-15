@@ -1,70 +1,49 @@
-"""Test integration of the speech-to-text pipeline center process."""
+"""Test integration of the shared transcribe_diarized_audio step."""
 
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pytest
-from loguru import logger
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
-from mcr_meeting.app.domain.transcription.chunking import compute_transcription_chunks
-from mcr_meeting.app.domain.transcription.vad import diarize_vad_transcription_segments
+from mcr_meeting.app.infrastructure import speech_to_text_models
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     DiarizedTranscriptionSegment,
-    TimeSpan,
     TranscriptionSegment,
 )
-from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
+from mcr_meeting.app.use_cases.transcription._shared.transcribe_diarized_audio import (
+    transcribe_diarized_audio,
+)
 
 transcription_settings = WhisperTranscriptionSettings()
 M = transcription_settings.MAX_CHUNK_DURATION
 
+_DIARIZATION_PIPELINE = (
+    "mcr_meeting.app.infrastructure.speech_to_text_models.get_diarization_pipeline"
+)
+_TRANSCRIPTION_MODEL = (
+    "mcr_meeting.app.infrastructure.speech_to_text_models.get_transcription_model"
+)
+
 
 def run_the_code_to_test(
-    pipeline: SpeechToTextPipeline,
     pre_processed_audio_bytes: BytesIO,
 ) -> list[DiarizedTranscriptionSegment]:
-    """Execute the center process flow that we want to test.
-
-    This function contains the exact code from SpeechToTextPipeline.run() that
-    processes diarization results and transcribes audio chunks.
-
-    Args:
-        pipeline: SpeechToTextPipeline instance to use for diarize() and transcribe()
-        pre_processed_audio_bytes: Pre-processed audio bytes
-
-    Returns:
-        List of diarized transcription segments with speaker assignments
-    """
-    ### ===== CENTER PROCESS FLOW ===== ###
-    diarization_result = pipeline.diarize_audio(
-        pre_processed_audio_bytes,
-    )
+    diarization_result = DiarizationProcessor(
+        speech_to_text_models.get_diarization_pipeline
+    ).diarize(audio_bytes=pre_processed_audio_bytes)
 
     if not diarization_result:
-        logger.debug("No diarization result. Returning empty transcription.")
         return []
 
-    transcription_chunks: list[TimeSpan] = compute_transcription_chunks(
-        diarization_result
+    return transcribe_diarized_audio(
+        pre_processed_audio_bytes,
+        diarization_result,
+        TranscriptionProcessor(speech_to_text_models.get_transcription_model),
     )
-
-    transcription_segments = pipeline.transcribe_audio(
-        pre_processed_audio_bytes, transcription_chunks
-    )
-
-    diarized_transcription_segments = diarize_vad_transcription_segments(
-        transcription_segments, diarization_result
-    )
-    ### ===== END CENTER PROCESS FLOW ===== ###
-
-    return diarized_transcription_segments
-
-
-# Note: Fixtures diarization_result_multiple_speakers, diarization_result_single_speaker,
-# diarization_result_empty, pre_processed_audio_bytes, mock_transcription_segments_normal,
-# and mock_transcription_segments_with_empty are automatically imported from conftest.py
 
 
 @pytest.mark.parametrize(
@@ -94,10 +73,8 @@ def run_the_code_to_test(
 )
 @patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
 @patch("mcr_meeting.app.infrastructure.transcription.get_feature_flag_client")
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
-@patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
-)
+@patch(_TRANSCRIPTION_MODEL)
+@patch(_DIARIZATION_PIPELINE)
 def test_integration_center_process_normal_flow(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_transcription_model: MagicMock,
@@ -111,35 +88,16 @@ def test_integration_center_process_normal_flow(
     create_mock_feature_flag_client,
     request: pytest.FixtureRequest,
 ) -> None:
-    """Test center process with normal flow and different speaker configurations.
-
-    This test verifies:
-    1. Transcription chunks computed from diarization
-    2. Audio splitting on timestamps
-    3. Transcription of each chunk
-    4. Timestamp adjustment relative to original audio
-    5. Speaker assignment to transcription segments
-    """
     diarization_result = request.getfixturevalue(diarization_fixture)
     transcription_segments_list = request.getfixturevalue(transcription_fixture)
 
-    # Mock feature flag to use local diarization (not API)
-    mock_feature_flag_client_diar = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
-    )
     mock_get_feature_flag_client_diarization.return_value = (
-        mock_feature_flag_client_diar
-    )
-
-    # Mock feature flag to use local transcription (not API)
-    mock_feature_flag_client_trans = create_mock_feature_flag_client(
-        "api_based_transcription", enabled=False
+        create_mock_feature_flag_client("api_based_diarization", enabled=False)
     )
     mock_get_feature_flag_client_transcription.return_value = (
-        mock_feature_flag_client_trans
+        create_mock_feature_flag_client("api_based_transcription", enabled=False)
     )
 
-    # Mock diarization_pipeline(tmp_audio_path) inside diarize()
     mock_diarization_pipeline = MagicMock()
     mock_diarization_pipeline.return_value = MagicMock(
         itertracks=lambda yield_label: [
@@ -149,35 +107,25 @@ def test_integration_center_process_normal_flow(
     )
     mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
-    # Mock model.transcribe(...) inside transcribe()
     mock_model = MagicMock()
     mock_model.transcribe.side_effect = [
         (iter(segments), MagicMock()) for segments in transcription_segments_list
     ]
     mock_get_transcription_model.return_value = mock_model
 
-    # Create pipeline instance
-    pipeline = SpeechToTextPipeline()
+    transcription_segments = run_the_code_to_test(pre_processed_audio_bytes)
 
-    # Run the code to test
-    transcription_segments = run_the_code_to_test(pipeline, pre_processed_audio_bytes)
-
-    # Verify results
     assert len(transcription_segments) == expected_segments_count
     assert all(
         isinstance(seg, DiarizedTranscriptionSegment) for seg in transcription_segments
     )
-    assert all(hasattr(seg, "speaker") for seg in transcription_segments)
 
-    # Verify speakers are from expected list
     speakers_succession = [seg.speaker for seg in transcription_segments]
     assert speakers_succession == expected_speakers
 
-    # Verify timestamps are adjusted correctly
     assert all(seg.start >= 0 for seg in transcription_segments)
     assert all(seg.end > seg.start for seg in transcription_segments)
 
-    # Verify content — chunk 0 (start=0) is common to both parametrizations
     assert transcription_segments[0].id == 0
     assert transcription_segments[1].id == 0
     assert transcription_segments[1].start == 1.51
@@ -186,14 +134,12 @@ def test_integration_center_process_normal_flow(
     assert transcription_segments[1].speaker == "Intervenant 1"
 
     if expected_segments_count >= 7:
-        # 4th segment comes from chunk 2 (idx=2, start=2*M)
         assert transcription_segments[3].id == 2
         assert transcription_segments[3].start == 2 * M
         assert transcription_segments[3].end == 2 * M + 2.0
         assert transcription_segments[3].text == "4th segment"
         assert transcription_segments[3].speaker == "Intervenant 2"
 
-        # 6th and 7th segments come from chunk 3 (idx=3, start=3*M)
         assert transcription_segments[5].id == 3
         assert transcription_segments[5].text == "6th segment"
         assert transcription_segments[5].speaker == "Intervenant 1"
@@ -204,51 +150,32 @@ def test_integration_center_process_normal_flow(
 
 
 @patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
-@patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
-)
+@patch(_DIARIZATION_PIPELINE)
 def test_integration_center_process_empty_diarization(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_feature_flag_client_diarization: MagicMock,
     pre_processed_audio_bytes: BytesIO,
     create_mock_feature_flag_client,
 ) -> None:
-    """Test center process when diarization returns empty result.
-
-    This test verifies that the flow correctly handles empty diarization
-    and returns an empty list of transcription segments.
-    """
-    # Mock feature flag to use local diarization (not API)
-    mock_feature_flag_client_diar = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
-    )
     mock_get_feature_flag_client_diarization.return_value = (
-        mock_feature_flag_client_diar
+        create_mock_feature_flag_client("api_based_diarization", enabled=False)
     )
 
-    # Mock diarization_pipeline(tmp_audio_path) to return empty result
     mock_diarization_pipeline = MagicMock()
     mock_diarization_pipeline.return_value = MagicMock(
-        itertracks=lambda yield_label: []  # Empty diarization
+        itertracks=lambda yield_label: []
     )
     mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
-    # Create pipeline instance
-    pipeline = SpeechToTextPipeline()
+    transcription_segments = run_the_code_to_test(pre_processed_audio_bytes)
 
-    # Run the code to test
-    transcription_segments = run_the_code_to_test(pipeline, pre_processed_audio_bytes)
-
-    # Verify empty result
     assert len(transcription_segments) == 0
 
 
 @patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
 @patch("mcr_meeting.app.infrastructure.transcription.get_feature_flag_client")
-@patch("mcr_meeting.app.services.speech_to_text.speech_to_text.get_transcription_model")
-@patch(
-    "mcr_meeting.app.services.speech_to_text.speech_to_text.get_diarization_pipeline"
-)
+@patch(_TRANSCRIPTION_MODEL)
+@patch(_DIARIZATION_PIPELINE)
 def test_integration_center_process_with_empty_chunks(
     mock_get_diarization_pipeline: MagicMock,
     mock_get_transcription_model: MagicMock,
@@ -259,30 +186,15 @@ def test_integration_center_process_with_empty_chunks(
     pre_processed_audio_bytes: BytesIO,
     create_mock_feature_flag_client,
 ) -> None:
-    """Test center process when some chunks produce no transcription.
-
-    This test verifies that the flow correctly handles empty transcription
-    chunks by skipping them (continue statement).
-    """
     diarization_result = diarization_result_multiple_speakers
 
-    # Mock feature flag to use local diarization (not API)
-    mock_feature_flag_client_diar = create_mock_feature_flag_client(
-        "api_based_diarization", enabled=False
-    )
     mock_get_feature_flag_client_diarization.return_value = (
-        mock_feature_flag_client_diar
-    )
-
-    # Mock feature flag to use local transcription (not API)
-    mock_feature_flag_client_trans = create_mock_feature_flag_client(
-        "api_based_transcription", enabled=False
+        create_mock_feature_flag_client("api_based_diarization", enabled=False)
     )
     mock_get_feature_flag_client_transcription.return_value = (
-        mock_feature_flag_client_trans
+        create_mock_feature_flag_client("api_based_transcription", enabled=False)
     )
 
-    # Mock diarization_pipeline(tmp_audio_path) inside diarize()
     mock_diarization_pipeline = MagicMock()
     mock_diarization_pipeline.return_value = MagicMock(
         itertracks=lambda yield_label: [
@@ -292,7 +204,6 @@ def test_integration_center_process_with_empty_chunks(
     )
     mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
 
-    # Mock model.transcribe(...) — some chunks return empty
     mock_model = MagicMock()
     mock_model.transcribe.side_effect = [
         (iter(segments), MagicMock())
@@ -300,13 +211,8 @@ def test_integration_center_process_with_empty_chunks(
     ]
     mock_get_transcription_model.return_value = mock_model
 
-    # Create pipeline instance
-    pipeline = SpeechToTextPipeline()
+    transcription_segments = run_the_code_to_test(pre_processed_audio_bytes)
 
-    # Run the code to test
-    transcription_segments = run_the_code_to_test(pipeline, pre_processed_audio_bytes)
-
-    # Verify only non-empty chunks were processed (first and third chunks)
     assert len(transcription_segments) == 2
     assert transcription_segments[0].text == "1st segment"
     assert transcription_segments[1].text == "3rd segment"

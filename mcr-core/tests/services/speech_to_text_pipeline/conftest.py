@@ -29,13 +29,13 @@ def transcription_seams(mocker: MockerFixture) -> TranscriptionSeams:
 def mock_noise_detection_dependencies():
     with (
         patch(
-            "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client"
+            "mcr_meeting.app.use_cases.transcription._shared.preprocess_audio.get_feature_flag_client"
         ) as mock_get_ff_client,
         patch(
-            "mcr_meeting.app.services.speech_to_text.speech_to_text.is_audio_noisy"
+            "mcr_meeting.app.use_cases.transcription._shared.preprocess_audio.is_audio_noisy"
         ) as mock_is_noisy,
         patch(
-            "mcr_meeting.app.services.speech_to_text.speech_to_text.filter_noise_from_audio_bytes"
+            "mcr_meeting.app.use_cases.transcription._shared.preprocess_audio.filter_noise_from_audio_bytes"
         ) as mock_filter_noise,
     ):
         mock_get_ff_client.return_value.is_enabled.return_value = True

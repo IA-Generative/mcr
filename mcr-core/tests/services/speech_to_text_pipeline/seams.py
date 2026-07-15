@@ -38,12 +38,13 @@ _SEAM_TRANSCRIPTION_MODEL = (
 _SEAM_TRANSCRIPTION_FF = (
     "mcr_meeting.app.infrastructure.transcription.get_feature_flag_client"
 )
-_SEAM_RUN_DIARIZATION_FF = (
-    "mcr_meeting.app.use_cases.transcription.run_diarization.get_feature_flag_client"
-)
-_SEAM_RUN_FINALIZE_FF = (
+_SEAM_PREPROCESS_FF = (
     "mcr_meeting.app.use_cases.transcription."
-    "run_finalize_transcription.get_feature_flag_client"
+    "_shared.preprocess_audio.get_feature_flag_client"
+)
+_SEAM_POST_PROCESS_FF = (
+    "mcr_meeting.app.use_cases.transcription."
+    "_shared.post_process_segments.get_feature_flag_client"
 )
 _SEAM_LLM_FROM_OPENAI = (
     "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
@@ -91,8 +92,8 @@ class TranscriptionSeams:
         self._flags = {str(name): value for name, value in flags.items()}
         client = _FakeFeatureFlagClient(self._flags)
         for target in (
-            _SEAM_RUN_DIARIZATION_FF,
-            _SEAM_RUN_FINALIZE_FF,
+            _SEAM_PREPROCESS_FF,
+            _SEAM_POST_PROCESS_FF,
             _SEAM_DIARIZATION_FF,
             _SEAM_TRANSCRIPTION_FF,
         ):

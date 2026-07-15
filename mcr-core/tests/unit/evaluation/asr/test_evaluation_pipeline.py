@@ -66,32 +66,27 @@ def mock_evaluation_output(mock_transcription, mock_metrics):
 
 
 class TestASREvaluationPipeline:
-    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
-    def test_init(
-        self, mock_metrics_pipeline, mock_stt_pipeline, mock_evaluation_input
-    ):
-        pipeline = ASREvaluationPipeline([mock_evaluation_input])
+    def test_init(self, mock_metrics_pipeline, mock_evaluation_input):
+        transcribe_audio = Mock()
+
+        pipeline = ASREvaluationPipeline([mock_evaluation_input], transcribe_audio)
 
         assert pipeline.inputs == [mock_evaluation_input]
         assert pipeline.timestamp is not None
-        mock_stt_pipeline.assert_called_once()
+        assert pipeline.transcribe_audio is transcribe_audio
         mock_metrics_pipeline.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     def test_process_single_sample_success(
         self,
         mock_metrics_pipeline,
-        mock_stt_pipeline,
         mock_evaluation_input,
         mock_segments,
     ):
-        mock_stt_instance = Mock()
-        mock_stt_instance.run.return_value = mock_segments
-        mock_stt_pipeline.return_value = mock_stt_instance
+        transcribe_audio = Mock(return_value=mock_segments)
 
-        pipeline = ASREvaluationPipeline([mock_evaluation_input])
+        pipeline = ASREvaluationPipeline([mock_evaluation_input], transcribe_audio)
         results_manager = Mock()
 
         result = pipeline.process_single_sample(mock_evaluation_input, results_manager)
@@ -101,39 +96,32 @@ class TestASREvaluationPipeline:
         assert result.generated_transcription == TranscriptionOutput(
             segments=mock_segments
         )
-        mock_stt_instance.run.assert_called_once()
+        transcribe_audio.assert_called_once_with(mock_evaluation_input.audio_bytes)
         results_manager.save_generated_transcription.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     def test_process_single_sample_exception(
-        self, mock_metrics_pipeline, mock_stt_pipeline, mock_evaluation_input
+        self, mock_metrics_pipeline, mock_evaluation_input
     ):
-        mock_stt_instance = Mock()
-        mock_stt_instance.run.side_effect = Exception("Processing error")
-        mock_stt_pipeline.return_value = mock_stt_instance
+        transcribe_audio = Mock(side_effect=Exception("Processing error"))
 
-        pipeline = ASREvaluationPipeline([mock_evaluation_input])
+        pipeline = ASREvaluationPipeline([mock_evaluation_input], transcribe_audio)
         results_manager = Mock()
 
         result = pipeline.process_single_sample(mock_evaluation_input, results_manager)
 
         assert result is None
 
-    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.ResultsManager")
     def test_run_evaluation_success(
         self,
         mock_results_manager,
         mock_metrics_pipeline_cls,
-        mock_stt_pipeline,
         mock_evaluation_input,
         mock_segments,
     ):
-        mock_stt_instance = Mock()
-        mock_stt_instance.run.return_value = mock_segments
-        mock_stt_pipeline.return_value = mock_stt_instance
+        transcribe_audio = Mock(return_value=mock_segments)
 
         mock_metrics_instance = Mock()
         expected_summary = EvaluationSummary(
@@ -150,27 +138,23 @@ class TestASREvaluationPipeline:
         mock_rm_instance = Mock()
         mock_results_manager.return_value = mock_rm_instance
 
-        pipeline = ASREvaluationPipeline([mock_evaluation_input])
+        pipeline = ASREvaluationPipeline([mock_evaluation_input], transcribe_audio)
         summary = pipeline.run_evaluation(Path("/output"))
 
         assert summary == expected_summary
         mock_metrics_instance.calculate_and_save_metrics.assert_called_once()
 
-    @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.SpeechToTextPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.MetricsPipeline")
     @patch("mcr_meeting.evaluation.asr.evaluation_pipeline.ResultsManager")
     def test_run_evaluation_no_successful_processing(
         self,
         mock_results_manager,
         mock_metrics_pipeline,
-        mock_stt_pipeline,
         mock_evaluation_input,
     ):
-        mock_stt_instance = Mock()
-        mock_stt_instance.run.side_effect = Exception("Processing error")
-        mock_stt_pipeline.return_value = mock_stt_instance
+        transcribe_audio = Mock(side_effect=Exception("Processing error"))
 
-        pipeline = ASREvaluationPipeline([mock_evaluation_input])
+        pipeline = ASREvaluationPipeline([mock_evaluation_input], transcribe_audio)
 
         with pytest.raises(ValueError, match="No files were successfully processed"):
             pipeline.run_evaluation(Path("/output"))

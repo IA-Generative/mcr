@@ -1,7 +1,7 @@
 """Evaluate the STT pipeline on acronym recognition.
 
 For each audio in the `data/acronyms/audio/` dataset, this script:
-1. generates a transcription via ``SpeechToTextPipeline``,
+1. generates a transcription via ``run_speech_to_text``,
 2. saves it as ``{timestamp}_{uid}.json`` (same convention as the existing
    evaluation pipeline, via ``ResultsManager``),
 3. normalizes the text with ``french_text_normalizer`` (same function used by
@@ -22,14 +22,25 @@ Usage::
 """
 
 import sys
+from collections.abc import Callable
 from datetime import datetime
+from functools import partial
 from io import BytesIO
 from pathlib import Path
 
 from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
-from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
+from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
+from mcr_meeting.app.infrastructure.speech_to_text_models import (
+    get_diarization_pipeline,
+    get_transcription_model,
+)
+from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
+from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
+from mcr_meeting.app.use_cases.transcription.run_speech_to_text import (
+    run_speech_to_text,
+)
 from mcr_meeting.evaluation.acronyms.loaders import (
     load_audio_reference,
     load_glossary,
@@ -72,7 +83,7 @@ def process_single_audio(
     audio_path: Path,
     reference_dir: Path,
     glossary: list[str],
-    pipeline: SpeechToTextPipeline,
+    transcribe_audio: Callable[[BytesIO], list[DiarizedTranscriptionSegment]],
     results_manager: ResultsManager,
     timestamp: str,
 ) -> tuple[str, dict[str, int], dict[str, int]] | None:
@@ -92,7 +103,7 @@ def process_single_audio(
         expected = load_audio_reference(reference_path)
 
         audio_bytes = BytesIO(audio_path.read_bytes())
-        segments = pipeline.run(audio_bytes)
+        segments = transcribe_audio(audio_bytes)
         transcription = TranscriptionOutput(segments=segments)
         logger.info(
             "Generated transcription for {}: {}...",
@@ -168,14 +179,23 @@ def main() -> None:
         sys.exit(1)
     logger.info("Discovered {} audio files.", len(audio_files))
 
-    pipeline = SpeechToTextPipeline()
+    transcribe_audio = partial(
+        run_speech_to_text,
+        diarization_processor=DiarizationProcessor(get_diarization_pipeline),
+        transcription_processor=TranscriptionProcessor(get_transcription_model),
+    )
     results_manager = ResultsManager(OUTPUT_DIR, dev=True)
 
     per_audio_expected: dict[str, dict[str, int]] = {}
     per_audio_predicted: dict[str, dict[str, int]] = {}
     for audio_file in audio_files:
         result = process_single_audio(
-            audio_file, REFERENCE_DIR, glossary, pipeline, results_manager, timestamp
+            audio_file,
+            REFERENCE_DIR,
+            glossary,
+            transcribe_audio,
+            results_manager,
+            timestamp,
         )
         if result is not None:
             uid, expected, predicted = result

@@ -1,44 +1,34 @@
-"""Test integration for the post process step."""
+"""Test integration for the shared post_process_segments step."""
 
 from unittest.mock import MagicMock
 
 import pytest
 
-from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
 )
-from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
-
-# Note: Fixtures mock_feature_flag_client and create_audio_buffer
-# are automatically imported from conftest.py in this directory
+from mcr_meeting.app.use_cases.transcription._shared.post_process_segments import (
+    post_process_segments,
+)
 
 
 @pytest.fixture(autouse=True)
 def mock_post_process_external_calls(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Mock external calls made by post_process.
-
-    - get_feature_flag_client(): avoid real Unleash initialization/calls
-    - _apply_text_correction(): return input segments unchanged (skip the LLM
-      chunk/reassemble round-trip so this test isolates the merge behavior)
-    """
-
     feature_flag_client = MagicMock()
     feature_flag_client.is_enabled.return_value = True
 
     monkeypatch.setattr(
-        "mcr_meeting.app.services.speech_to_text.speech_to_text.get_feature_flag_client",
+        "mcr_meeting.app.use_cases.transcription._shared.post_process_segments.get_feature_flag_client",
         lambda: feature_flag_client,
     )
     monkeypatch.setattr(
-        "mcr_meeting.app.services.speech_to_text.speech_to_text._apply_text_correction",
+        "mcr_meeting.app.use_cases.transcription._shared.post_process_segments._apply_text_correction",
         lambda segments, correct_chunk: segments,
     )
 
 
 @pytest.fixture
 def diarized_transcription_segments_simple() -> list[DiarizedTranscriptionSegment]:
-    """Simple case with 3 consecutive segments from different speakers."""
     return [
         DiarizedTranscriptionSegment(
             id=0,
@@ -66,7 +56,6 @@ def diarized_transcription_segments_simple() -> list[DiarizedTranscriptionSegmen
 
 @pytest.fixture
 def diarized_transcription_segments_consecutive():
-    """Case with consecutive segments from same speaker to test merging."""
     return [
         DiarizedTranscriptionSegment(
             id=0,
@@ -99,12 +88,6 @@ def diarized_transcription_segments_consecutive():
     ]
 
 
-@pytest.fixture
-def diarized_transcription_segments_empty():
-    """Empty case to test error handling."""
-    return []
-
-
 @pytest.mark.parametrize(
     "fixture_name,expected_count,expected_first_speaker,expected_merged_text",
     [
@@ -124,64 +107,28 @@ def test_integration_post_process(
     expected_merged_text: str,
     request,
 ):
-    """Test that post-processing works normally.
-
-    This test verifies the merge_consecutive_segments_per_speaker function:
-    1. Merges consecutive segments from the same speaker
-    2. Maintains speaker order
-    3. Correctly concatenates transcription text
-
-    This test runs multiple times with different combinations of:
-    - Simple case with no consecutive segments from same speaker
-    - Case with consecutive segments from same speaker that need merging
-    """
-
     transcription_with_speech = request.getfixturevalue(fixture_name)
-    speech_to_text_pipeline = SpeechToTextPipeline()
 
-    merged_segments = speech_to_text_pipeline.post_process(
-        transcription_with_speech,
-    )
+    merged_segments = post_process_segments(transcription_with_speech)
 
-    # Verify the result is a list
     assert isinstance(merged_segments, list)
 
-    # Verify the result contains the expected number of segments
     assert len(merged_segments) == expected_count, (
         f"Expected {expected_count} merged segments, got {len(merged_segments)}"
     )
 
-    # Verify all items are DiarizedTranscriptionSegment objects
     for segment in merged_segments:
         assert isinstance(segment, DiarizedTranscriptionSegment)
 
-    # Verify the first speaker is correct
     assert merged_segments[0].speaker == expected_first_speaker, (
         f"Expected first speaker to be {expected_first_speaker}, "
         f"got {merged_segments[0].speaker}"
     )
 
-    # Verify the first transcription text is correctly merged
     assert merged_segments[0].text == expected_merged_text, (
         f"Expected first transcription to be '{expected_merged_text}', "
         f"got '{merged_segments[0].text}'"
     )
 
-    # Verify transcription_index is sequential
     for i, segment in enumerate(merged_segments):
         assert segment.id == i, f"Expected transcription_index {i}, got {segment.id}"
-
-
-def test_integration_post_process_empty_segments():
-    """Test that post-processing raises an error with empty segments."""
-
-    transcription_with_speech = []
-    speech_to_text_pipeline = SpeechToTextPipeline()
-
-    with pytest.raises(InvalidAudioFileError) as exc_info:
-        _merged_segments = speech_to_text_pipeline.post_process(
-            transcription_with_speech,
-        )
-
-    # Verify the exception message
-    assert "No transcription segments found" in str(exc_info.value)
