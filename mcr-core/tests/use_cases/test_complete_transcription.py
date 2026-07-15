@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
+from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.infrastructure.redis import save_refresh_token
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
@@ -324,7 +325,7 @@ class TestCompleteTranscription:
             transcription_in_progress_meeting.name, []
         )
 
-    def test_rejects_completion_from_invalid_status(
+    def test_conflicts_on_completion_from_invalid_status(
         self,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
@@ -336,7 +337,7 @@ class TestCompleteTranscription:
             name_platform=MeetingPlatforms.COMU,
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(MeetingStateConflictException):
             complete_transcription(
                 meeting_id=meeting.id,
                 transcriptions=sample_transcriptions,
@@ -344,3 +345,25 @@ class TestCompleteTranscription:
 
         assert _transcription_deliverables(meeting.id) == []
         assert _transcription_done_records(meeting.id) == []
+
+    def test_replayed_completion_conflicts_without_duplicating_deliverables(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        meeting_id = transcription_in_progress_meeting.id
+        complete_transcription(
+            meeting_id=meeting_id, transcriptions=sample_transcriptions
+        )
+
+        with pytest.raises(MeetingStateConflictException):
+            complete_transcription(
+                meeting_id=meeting_id, transcriptions=sample_transcriptions
+            )
+
+        assert len(_transcription_deliverables(meeting_id)) == 1
+        assert len(_transcription_done_records(meeting_id)) == 1
+        assert len(in_memory_email.sent) == 1

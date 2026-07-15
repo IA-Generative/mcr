@@ -60,22 +60,7 @@ class MeetingPipelineTask(Task[Any, Any]):  # type: ignore[explicit-any]
     def set_task_context(self, meeting_id: int, owner_keycloak_uuid: str) -> None:
         raise NotImplementedError
 
-    def handle_failure(
-        self, meeting_id: int, owner_keycloak_uuid: str, error_code: str
-    ) -> None:
-        raise NotImplementedError
-
     def before_start(  # type: ignore[explicit-any]
         self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         self.set_task_context(args[0], args[1])
-
-    def on_failure(  # type: ignore[explicit-any]
-        self,
-        exc: Exception,
-        task_id: str,
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
-        einfo: object,
-    ) -> None:
-        self.handle_failure(args[0], args[1], error_code=self.name)

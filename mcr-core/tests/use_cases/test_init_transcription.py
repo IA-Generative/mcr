@@ -71,6 +71,7 @@ def test_init_transcription_queues_task_and_promotes_status(
     mock_celery_producer_app.send_task.assert_called_once_with(
         MCRTranscriptionTasks.TRANSCRIBE,
         args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        link_error=mock_celery_producer_app.signature.return_value,
     )
 
 
@@ -174,8 +175,6 @@ def test_init_transcription_enqueues_chain_when_split_enabled(
 
     assert result.status == MeetingStatus.TRANSCRIPTION_PENDING
     args = [meeting.id, str(meeting.owner.keycloak_uuid)]
-    # immutable=True obligatoire : en chain, un maillon mutable reçoit le
-    # retour du précédent préfixé à ses args → TypeError sur nos tasks à 2 args.
     mock_celery_producer_app.signature.assert_has_calls(
         [
             call(MCRTranscriptionTasks.DIARIZE, args=args, immutable=True),
@@ -185,9 +184,16 @@ def test_init_transcription_enqueues_chain_when_split_enabled(
                 args=args,
                 immutable=True,
             ),
+            call(
+                MCRTranscriptionTasks.MARK_TRANSCRIPTION_FAILED,
+                args=args,
+                immutable=True,
+            ),
         ]
     )
-    chain_mock.return_value.apply_async.assert_called_once()
+    chain_mock.return_value.apply_async.assert_called_once_with(
+        link_error=mock_celery_producer_app.signature.return_value
+    )
     mock_celery_producer_app.send_task.assert_not_called()
 
 
@@ -206,6 +212,7 @@ def test_init_transcription_falls_back_to_legacy_when_flag_unreadable(
     mock_celery_producer_app.send_task.assert_called_once_with(
         MCRTranscriptionTasks.TRANSCRIBE,
         args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        link_error=mock_celery_producer_app.signature.return_value,
     )
 
 

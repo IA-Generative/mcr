@@ -1,6 +1,10 @@
+import asyncio
+
 import httpx
 import pytest
+from pytest_mock import MockerFixture
 
+import mcr_meeting.app.infrastructure.meeting_api_client as mac
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.infrastructure.meeting_api_client import _raise_for_core_status
 
@@ -32,3 +36,15 @@ def test_not_found_raises_meeting_deleted() -> None:
 def test_server_error_raises_http_status_error() -> None:
     with pytest.raises(httpx.HTTPStatusError):
         _raise_for_core_status(_response(httpx.codes.INTERNAL_SERVER_ERROR), MEETING_ID)
+
+
+def test_transitions_wait_for_slow_core_responses(mocker: MockerFixture) -> None:
+    async_client = mocker.patch.object(mac.httpx, "AsyncClient")
+    instance = async_client.return_value.__aenter__.return_value
+    instance.post = mocker.AsyncMock(return_value=_response(httpx.codes.NO_CONTENT))
+
+    asyncio.run(mac.MeetingApiClient("uuid").mark_transcription_as_success(MEETING_ID))
+
+    timeout = async_client.call_args.kwargs["timeout"]
+    assert timeout.read == 30.0
+    assert timeout.connect == 5.0

@@ -22,6 +22,15 @@ class DBSettings(BaseSettings):
 
 class ServiceSettings(BaseSettings):
     CORE_SERVICE_BASE_URL: str
+    CORE_TIMEOUT_SECONDS: float = Field(
+        default=30.0,
+        description="Read/write timeout in seconds for calls to the core service. "
+        "Kept generous so slow success responses don't fail finalize.",
+    )
+    CORE_CONNECT_TIMEOUT_SECONDS: float = Field(
+        default=5.0,
+        description="Connection timeout in seconds for calls to the core service.",
+    )
 
 
 class Settings(BaseSettings):

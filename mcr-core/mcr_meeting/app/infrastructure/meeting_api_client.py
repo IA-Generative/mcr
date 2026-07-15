@@ -13,13 +13,19 @@ class MeetingApiClient:
         self.base_url = (
             f"{service_settings.CORE_SERVICE_BASE_URL}{api_settings.MEETING_API_PREFIX}"
         )
+        self.timeout = httpx.Timeout(
+            service_settings.CORE_TIMEOUT_SECONDS,
+            connect=service_settings.CORE_CONNECT_TIMEOUT_SECONDS,
+        )
         self.headers = {
             "Content-Type": "application/json",
             "X-User-Keycloak-UUID": user_uuid,
         }
 
     async def get_meeting(self, meeting_id: int) -> MeetingResponse:
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
+        async with httpx.AsyncClient(
+            base_url=self.base_url, timeout=self.timeout
+        ) as client:
             response = await client.get(f"/{meeting_id}", headers=self.headers)
         response.raise_for_status()
         return MeetingResponse.model_validate(response.json())
@@ -40,7 +46,9 @@ class MeetingApiClient:
     async def _post_transition(
         self, meeting_id: int, transition: str, data: object | None = None
     ) -> None:
-        async with httpx.AsyncClient(base_url=self.base_url) as client:
+        async with httpx.AsyncClient(
+            base_url=self.base_url, timeout=self.timeout
+        ) as client:
             response = await client.post(
                 f"/{meeting_id}/transcription/{transition}",
                 headers=self.headers,

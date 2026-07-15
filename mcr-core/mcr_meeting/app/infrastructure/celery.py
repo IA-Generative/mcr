@@ -1,4 +1,5 @@
 from celery import Celery, chain
+from celery.canvas import Signature
 from loguru import logger
 
 from mcr_meeting.app.configs.base import CelerySettings
@@ -24,11 +25,20 @@ celery_producer_app.conf.task_routes = {
 }
 
 
+def _mark_failed_errback(meeting_id: int, owner_keycloak_uuid: str) -> Signature[None]:
+    return celery_producer_app.signature(
+        MCRTranscriptionTasks.MARK_TRANSCRIPTION_FAILED.value,
+        args=[meeting_id, owner_keycloak_uuid],
+        immutable=True,
+    )
+
+
 def enqueue_transcription_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
     try:
         celery_producer_app.send_task(
             MCRTranscriptionTasks.TRANSCRIBE,
             args=[meeting_id, owner_keycloak_uuid],
+            link_error=_mark_failed_errback(meeting_id, owner_keycloak_uuid),
         )
     except Exception as e:
         raise TaskCreationException(
@@ -39,8 +49,6 @@ def enqueue_transcription_task(meeting_id: int, owner_keycloak_uuid: str) -> Non
 def enqueue_transcription_pipeline(meeting_id: int, owner_keycloak_uuid: str) -> None:
     args = [meeting_id, owner_keycloak_uuid]
     try:
-        # immutable: sans ça le worker préfixe le retour du maillon précédent
-        # aux args du suivant (équivalent name-based du .si()).
         chain(
             celery_producer_app.signature(
                 MCRTranscriptionTasks.DIARIZE.value, args=args, immutable=True
@@ -53,7 +61,7 @@ def enqueue_transcription_pipeline(meeting_id: int, owner_keycloak_uuid: str) ->
                 args=args,
                 immutable=True,
             ),
-        ).apply_async()
+        ).apply_async(link_error=_mark_failed_errback(meeting_id, owner_keycloak_uuid))
     except Exception as e:
         raise TaskCreationException(
             f"Failed to enqueue transcription pipeline for meeting {meeting_id}"
