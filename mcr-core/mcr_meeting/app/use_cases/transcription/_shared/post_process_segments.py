@@ -46,5 +46,15 @@ def _apply_text_correction(
         return []
     text = format_segments_for_llm(segments)
     chunks = chunk_text(text, chunk_overlap=0)
-    corrected_chunks = [correct_chunk(chunk) for chunk in chunks]
+    corrected_chunks = [
+        _correct_chunk_best_effort(correct_chunk, chunk) for chunk in chunks
+    ]
     return reassemble_corrected_segments(corrected_chunks, segments)
+
+
+def _correct_chunk_best_effort(correct_chunk: Callable[[str], str], chunk: str) -> str:
+    try:
+        return correct_chunk(chunk)
+    except Exception as e:
+        logger.warning("Chunk correction failed, keeping uncorrected chunk: {}", e)
+        return chunk
