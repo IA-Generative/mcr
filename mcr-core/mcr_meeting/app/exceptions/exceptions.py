@@ -15,6 +15,11 @@ class InvalidAudioFileError(MCRException):
     """Raised when an invalid audio file is provided."""
 
 
+class LLMCompletionError(MCRException):
+    """Raised when an LLM completion fails (e.g. the model returns a malformed
+    or invalid response after retries)."""
+
+
 class SilentAudioError(MCRException):
     """Raised when the audio is silent or contains no meaningful audio content."""
 

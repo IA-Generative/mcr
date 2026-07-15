@@ -1,15 +1,36 @@
+from collections.abc import Iterable
+
 import instructor
+from instructor.exceptions import InstructorError
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from pydantic import BaseModel
 
 from mcr_meeting.app.configs.base import LLMSettings
+from mcr_meeting.app.exceptions.exceptions import LLMCompletionError
 
 
 class CorrectedText(BaseModel):
     corrected_text: str
 
 
-def build_llm_client() -> instructor.Instructor:
+def complete[T: (BaseModel | Iterable[object])](
+    response_model: type[T], messages: list[ChatCompletionMessageParam]
+) -> T:
+    settings = LLMSettings()
+    try:
+        return _get_llm_client().chat.completions.create(
+            model=settings.LLM_MODEL_NAME,
+            response_model=response_model,
+            temperature=settings.TEMPERATURE,
+            max_retries=settings.LLM_MAX_RETRIES,
+            messages=messages,
+        )
+    except InstructorError as e:
+        raise LLMCompletionError(str(e)) from e
+
+
+def _build_llm_client() -> instructor.Instructor:
     settings = LLMSettings()
     return instructor.from_openai(
         OpenAI(
@@ -25,8 +46,8 @@ def build_llm_client() -> instructor.Instructor:
 _client: instructor.Instructor | None = None
 
 
-def get_llm_client() -> instructor.Instructor:
+def _get_llm_client() -> instructor.Instructor:
     global _client
     if _client is None:
-        _client = build_llm_client()
+        _client = _build_llm_client()
     return _client
