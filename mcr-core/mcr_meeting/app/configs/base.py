@@ -457,7 +457,8 @@ class LLMSettings(BaseSettings):
         description="LLM sampling temperature (0-1). Lower values (0) produce deterministic, focused outputs. Higher values (0.7-1) increase creativity and randomness.",
     )
     LLM_MAX_RETRIES: int = Field(
-        default=2, description="Maximum number of retry attempts for LLM API calls"
+        default=3,
+        description="Maximum retry attempts for LLM calls, unified across HTTP transport (429/5xx) and instructor validation retries",
     )
     LLM_API_TIMEOUT: float = Field(
         default=120.0, description="Maximum wait time in seconds for API timeout"
