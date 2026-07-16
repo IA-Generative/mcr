@@ -8,6 +8,7 @@ from loguru import logger
 from mcr_meeting.app.infrastructure import s3
 from mcr_meeting.app.infrastructure.celery_consumer import (
     MeetingPipelineTask,
+    RetryableInfraTask,
     celery_worker,
 )
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
@@ -95,7 +96,6 @@ def mark_transcription_failed(meeting_id: int, owner_keycloak_uuid: str) -> None
 @celery_worker.task(
     base=TranscriptionPipelineTask,
     name=MCRTranscriptionTasks.TRANSCRIBE,
-    max_retries=3,
 )
 def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
     """Legacy monolithic task, kept while STRUCTURAL_SPLIT_ENABLED is off and
@@ -109,7 +109,6 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
 @celery_worker.task(
     base=TranscriptionPipelineTask,
     name=MCRTranscriptionTasks.DIARIZE,
-    max_retries=3,
 )
 def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
     asyncio.run(MeetingApiClient(owner_keycloak_uuid).start_transcription(meeting_id))
@@ -120,7 +119,6 @@ def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
 @celery_worker.task(
     base=TranscriptionPipelineTask,
     name=MCRTranscriptionTasks.TRANSCRIBE_CHUNKS,
-    max_retries=3,
 )
 def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
     run_transcribe_chunks(meeting_id, TranscriptionProcessor(get_transcription_model))
@@ -130,7 +128,6 @@ def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
 @celery_worker.task(
     base=TranscriptionPipelineTask,
     name=MCRTranscriptionTasks.FINALIZE_TRANSCRIPTION,
-    max_retries=3,
 )
 def finalize_transcription(meeting_id: int, owner_keycloak_uuid: str) -> None:
     run_finalize_transcription(meeting_id)
@@ -147,12 +144,18 @@ def _evaluation_transcribe_audio() -> Callable[
     )
 
 
-@celery_worker.task(name=MCRTranscriptionTasks.EVALUATE, max_retries=3)
+@celery_worker.task(
+    base=RetryableInfraTask,
+    name=MCRTranscriptionTasks.EVALUATE,
+)
 def evaluate(zip_data: bytes) -> None:
     run_evaluation_from_zip(zip_data, _evaluation_transcribe_audio())
 
 
-@celery_worker.task(name=MCRTranscriptionTasks.EVALUATE_FROM_S3, max_retries=3)
+@celery_worker.task(
+    base=RetryableInfraTask,
+    name=MCRTranscriptionTasks.EVALUATE_FROM_S3,
+)
 def evaluate_from_s3(zip_name: str) -> None:
     object_name = s3.get_evaluation_dataset_object_name(zip_name)
     logger.info("Downloading evaluation zip from S3: {}", object_name)

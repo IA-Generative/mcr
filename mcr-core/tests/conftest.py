@@ -109,6 +109,16 @@ def in_memory_drive() -> Generator[InMemoryDriveClient, None, None]:
     drive_upload_module.upload_file = original
 
 
+@pytest.fixture(autouse=True)
+def _no_retry_sleep() -> None:
+    for fn in (
+        s3_module.get_file_from_s3,
+        s3_module.put_file_to_s3,
+        s3_module._list_objects_under_prefix,
+    ):
+        fn.retry.sleep = lambda _: None  # type: ignore[attr-defined]
+
+
 @pytest.fixture
 def in_memory_s3() -> Generator[InMemoryS3, None, None]:
     fake = InMemoryS3()

@@ -277,6 +277,21 @@ class TranscriptionWaitingTimeSettings(BaseSettings):
     )
 
 
+class RetrySettings(BaseSettings):
+    model_config = SettingsConfigDict(case_sensitive=True)
+
+    S3_RETRY_ATTEMPTS: int = 3
+    S3_RETRY_INITIAL_DELAY: float = 0.5
+    S3_RETRY_MAX_DELAY: float = 5.0
+
+    S3_CONNECT_TIMEOUT: float = 5.0
+    S3_READ_TIMEOUT: float = 30.0
+
+    TASK_RETRY_MAX_RETRIES: int = 6
+    TASK_RETRY_BACKOFF: int = 30
+    TASK_RETRY_BACKOFF_MAX: int = 600
+
+
 class S3Settings(BaseSettings):
     """
     Configuration settings for the S3 bucket

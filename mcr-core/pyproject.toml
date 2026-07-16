@@ -20,6 +20,9 @@ dependencies = [
     "jinja2>=3.1.6",
     "redis>=5.0.0",
     "python-keycloak==5.8.1",
+    "tenacity>=9.1.4",
+    "botocore>=1.40.59",
+    "urllib3>=2.5.0",
 ]
 
 [project.optional-dependencies]
@@ -148,6 +151,9 @@ ban-relative-imports = "all"
 [tool.pytest.ini_options]
 env_override_existing_values = 1
 env_files = ["../.env.local.docker", "../.env", "../.env.local.testing"]
+markers = [
+    "integration: exercises a live external dependency; skips when unreachable",
+]
 
 [tool.deptry]
 extend_exclude = ["scripts/**", "notebooks/**"]

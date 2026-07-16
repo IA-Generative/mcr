@@ -3,15 +3,24 @@ from collections.abc import Generator, Iterable, Iterator
 from io import BytesIO
 from typing import cast
 
+from botocore.exceptions import (
+    ConnectionError as BotoConnectionError,
+)
+from botocore.exceptions import (
+    ConnectTimeoutError,
+    ReadTimeoutError,
+    ResponseStreamingError,
+)
 from loguru import logger
-from mypy_boto3_s3.type_defs import CompletedPartTypeDef, ObjectIdentifierTypeDef
+from mypy_boto3_s3.type_defs import CompletedPartTypeDef
 from pydantic import TypeAdapter
+from urllib3.exceptions import IncompleteRead, ProtocolError
 
-from mcr_meeting.app.configs.base import S3Settings
+from mcr_meeting.app.configs.base import RetrySettings, S3Settings
 from mcr_meeting.app.exceptions.exceptions import (
-    InvalidAudioFileError,
     MeetingMultipartException,
     NoAudioFoundError,
+    S3TransientError,
 )
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.S3_types import (
@@ -33,9 +42,27 @@ from mcr_meeting.app.schemas.transcription_schema import (
     FullTranscript,
 )
 from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, guess_mime_type
+from mcr_meeting.app.utils.retry import retry_transient
 from mcr_meeting.app.utils.s3_client import s3_client, s3_external_client
 
 s3_settings = S3Settings()
+_retry_settings = RetrySettings()
+
+S3_TRANSIENT = (
+    ResponseStreamingError,
+    ReadTimeoutError,
+    ConnectTimeoutError,
+    BotoConnectionError,
+    ProtocolError,
+    IncompleteRead,
+)
+
+_with_retry_transient = retry_transient(
+    on=(S3TransientError,),
+    attempts=_retry_settings.S3_RETRY_ATTEMPTS,
+    initial_delay=_retry_settings.S3_RETRY_INITIAL_DELAY,
+    max_delay=_retry_settings.S3_RETRY_MAX_DELAY,
+)
 
 AUDIO_MEDIA_TYPE = "audio/webm"
 
@@ -156,39 +183,24 @@ def fetch_audio_bytes(meeting_id: int) -> BytesIO:
     logger.info("Fetching audio bytes for meeting ID: {}", meeting_id)
 
     try:
-        s3_chunk_iterator = get_objects_list_from_prefix(prefix=f"{meeting_id}/")
-
-        audio_bytes = download_and_concatenate_s3_audio_chunks_into_bytes(
-            s3_chunk_iterator
-        )
-        return audio_bytes
-
+        chunks = get_objects_list_from_prefix(prefix=f"{meeting_id}/")
+        return download_and_concatenate_s3_audio_chunks_into_bytes(chunks)
     except NoAudioFoundError as no_files_error:
         raise NoAudioFoundError(
             f"No audio files found for meeting {meeting_id}"
         ) from no_files_error
 
-    except Exception as fetch_error:
-        raise InvalidAudioFileError(
-            f"Failed to fetch audio bytes for meeting {meeting_id}: {fetch_error}"
-        ) from fetch_error
-
 
 def download_and_concatenate_s3_audio_chunks_into_bytes(
-    obj_iterator: Iterator[S3Object],
+    objects: Iterable[S3Object],
 ) -> BytesIO:
     audio_buffer = BytesIO()
     chunk_count = 0
 
-    for obj_info in obj_iterator:
+    for obj_info in objects:
         chunk_count += 1
-        try:
-            audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
-            audio_buffer.write(audio_chunk_data.read())
-        except Exception as chunk_error:
-            raise InvalidAudioFileError(
-                f"Failed to download audio chunk {obj_info.object_name}: {chunk_error}"
-            ) from chunk_error
+        audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
+        audio_buffer.write(audio_chunk_data.read())
 
     if chunk_count == 0:
         raise NoAudioFoundError("No audio chunks found in iterator")
@@ -220,9 +232,9 @@ def _object_name_for_deliverable(
 
 
 def _stream_audio_chunks(
-    obj_iterator: Iterator[S3Object],
+    objects: Iterable[S3Object],
 ) -> Generator[bytes, None, None]:
-    for obj_info in obj_iterator:
+    for obj_info in objects:
         audio_chunk_data = get_file_from_s3(object_name=obj_info.object_name)
         yield audio_chunk_data.read()
 
@@ -306,20 +318,18 @@ def read_full_transcript(meeting_id: int) -> FullTranscript:
     )
 
 
+@_with_retry_transient
 def get_file_from_s3(object_name: str) -> BytesIO:
     try:
         response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
-
         return BytesIO(response["Body"].read())
-    except Exception as e:
-        logger.error("Error while getting audio from S3 bucket: {}", e)
-        raise e
+    except S3_TRANSIENT as e:
+        raise S3TransientError(f"Transient error for s3 read: {object_name}") from e
 
 
 def get_file_from_s3_or_none(object_name: str) -> BytesIO | None:
     try:
-        response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
-        return BytesIO(response["Body"].read())
+        return get_file_from_s3(object_name)
     except s3_client.exceptions.NoSuchKey:
         return None
 
@@ -399,34 +409,27 @@ def abort_multipart_upload_in_s3(object_key: str, upload_id: str) -> None:
     )
 
 
-def get_objects_list_from_prefix(prefix: str) -> Iterator[S3Object]:
-    paginator = s3_client.get_paginator("list_objects_v2")
-    page_iterator = paginator.paginate(
-        Bucket=s3_settings.S3_BUCKET, Prefix=get_audio_object_prefix(prefix)
-    )
+@_with_retry_transient
+def _list_objects_under_prefix(prefix: str) -> list[S3Object]:
+    try:
+        paginator = s3_client.get_paginator("list_objects_v2")
+        page_iterator = paginator.paginate(
+            Bucket=s3_settings.S3_BUCKET, Prefix=get_audio_object_prefix(prefix)
+        )
+        objects: list[S3Object] = []
+        for page in page_iterator:
+            objects.extend(S3ListObjectsPage.model_validate(page).contents)
+        return objects
+    except S3_TRANSIENT as e:
+        raise S3TransientError(f"Transient error for s3 list: {prefix}") from e
 
-    all_objects: list[S3Object] = []
-    for page in page_iterator:
-        page_model = S3ListObjectsPage.model_validate(page)
-        all_objects.extend(page_model.contents)
 
-    for obj in sorted(all_objects, key=lambda o: o.object_name):
-        yield obj
+def get_objects_list_from_prefix(prefix: str) -> list[S3Object]:
+    return sorted(_list_objects_under_prefix(prefix), key=lambda o: o.object_name)
 
 
-def validate_object_list(it: Iterator[S3Object]) -> Iterator[S3Object]:
-    """
-    Validate that the S3 object iterator is not empty.
-
-    Args:
-        it: Iterator of S3Object instances
-
-    Returns:
-        Reconstructed iterator with all original elements
-
-    Raises:
-        ValueError: If no objects are found in the iterator
-    """
+def validate_object_list(objects: Iterable[S3Object]) -> Iterator[S3Object]:
+    it = iter(objects)
     try:
         first_object = next(it)
         return itertools.chain([first_object], it)
@@ -435,81 +438,22 @@ def validate_object_list(it: Iterator[S3Object]) -> Iterator[S3Object]:
         raise ValueError("No audio files found for the specified meeting")
 
 
-def get_extension_from_object_list(
-    it: Iterator[S3Object],
-) -> tuple[Iterator[S3Object], str]:
-    """
-    Extract file extension from the first S3 object in the iterator.
-
-    Args:
-        it: Iterator of S3Object instances
-
-    Returns:
-        Tuple containing the reconstructed iterator and file extension
-
-    Raises:
-        ValueError: If no objects are found in the iterator
-    """
-    validated_it = validate_object_list(it)
-    first_object = next(validated_it)
-    file_extension = first_object.object_name.split(".")[-1]
-    return (itertools.chain([first_object], validated_it), file_extension)
-
-
+@_with_retry_transient
 def put_file_to_s3(
     content: BytesIO,
     object_name: str,
     content_type: str = "application/octet-stream",
 ) -> None:
-    """
-    Upload file-like object to S3.
-
-    Args:
-        content: full file payload as BytesIO
-        object_name: destination key within the bucket
-        content_type: MIME type (defaults to binary)
-
-    Returns:
-        None
-    """
     try:
+        content.seek(0)
         s3_client.put_object(
             Bucket=s3_settings.S3_BUCKET,
             Key=object_name,
             Body=content,
             ContentType=content_type,
         )
-    except Exception as e:
-        logger.error("Error while uploading file to S3: {}", e)
-        raise
-
-
-def delete_objects(object_iterable: Iterable[S3Object]) -> bool:
-    valid_objects: list[ObjectIdentifierTypeDef] = []
-
-    for obj in list(object_iterable):
-        if obj.object_name:
-            valid_objects.append({"Key": obj.object_name})
-
-    if not valid_objects:
-        logger.warning("No valid S3 object keys to delete.")
-        return True
-
-    try:
-        response = s3_client.delete_objects(
-            Bucket=s3_settings.S3_BUCKET,
-            Delete={"Objects": valid_objects},
-        )
-
-        # Check if there were any errors
-        if "Errors" in response and response["Errors"]:
-            logger.error("Errors while deleting objects: {}", response["Errors"])
-            return False
-
-        return True
-    except Exception as e:
-        logger.error("Error while deleting objects: {}", e)
-        return False
+    except S3_TRANSIENT as e:
+        raise S3TransientError(f"Transient error for s3 upload: {object_name}") from e
 
 
 def get_report_object_name(meeting_id: int, filename: str) -> str:

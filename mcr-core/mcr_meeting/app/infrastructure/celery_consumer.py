@@ -4,7 +4,8 @@ import celery.app.trace  # type: ignore[import-untyped]
 from celery import Celery, Task
 from celery.signals import setup_logging as celery_setup_logging
 
-from mcr_meeting.app.configs.base import CelerySettings
+from mcr_meeting.app.configs.base import CelerySettings, RetrySettings
+from mcr_meeting.app.exceptions.exceptions import TransientInfraError
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.setup.logger import setup_logging
 
@@ -56,7 +57,18 @@ celery_worker.conf.broker_transport_options = {
 }
 
 
-class MeetingPipelineTask(Task[Any, Any]):  # type: ignore[explicit-any]
+_retry = RetrySettings()
+
+
+class RetryableInfraTask(Task[Any, Any]):  # type: ignore[explicit-any]
+    autoretry_for = (TransientInfraError,)
+    max_retries = _retry.TASK_RETRY_MAX_RETRIES
+    retry_backoff = _retry.TASK_RETRY_BACKOFF
+    retry_backoff_max = _retry.TASK_RETRY_BACKOFF_MAX
+    retry_jitter = True
+
+
+class MeetingPipelineTask(RetryableInfraTask):
     def set_task_context(self, meeting_id: int, owner_keycloak_uuid: str) -> None:
         raise NotImplementedError
 

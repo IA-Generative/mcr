@@ -96,3 +96,11 @@ class DeliverableStateConflictException(MCRException):
 class MeetingStateConflictException(MCRException):
     """Raised when a meeting transition is rejected because the meeting is not in
     an allowed source state (mapped to HTTP 409)."""
+
+
+class TransientInfraError(MCRException):
+    """Transient network/infra error — trigger local retry (tenacity) and task level retry."""
+
+
+class S3TransientError(TransientInfraError):
+    """Transient S3 error"""

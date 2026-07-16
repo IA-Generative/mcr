@@ -1,9 +1,17 @@
 import boto3
+from botocore.config import Config
 from mypy_boto3_s3 import S3Client
 
-from mcr_meeting.app.configs.base import S3Settings
+from mcr_meeting.app.configs.base import RetrySettings, S3Settings
 
 s3_settings = S3Settings()
+_retry_settings = RetrySettings()
+
+_boto_config = Config(
+    connect_timeout=_retry_settings.S3_CONNECT_TIMEOUT,
+    read_timeout=_retry_settings.S3_READ_TIMEOUT,
+    retries={"total_max_attempts": 1},
+)
 
 
 endpoint_url = s3_settings.S3_ENDPOINT
@@ -21,6 +29,7 @@ s3_client: S3Client = boto3.client(
     aws_access_key_id=s3_settings.S3_ACCESS_KEY,
     aws_secret_access_key=s3_settings.S3_SECRET_KEY,
     region_name=s3_settings.S3_REGION,
+    config=_boto_config,
 )
 
 
@@ -33,4 +42,5 @@ s3_external_client: S3Client = boto3.client(
     aws_access_key_id=s3_settings.S3_ACCESS_KEY,
     aws_secret_access_key=s3_settings.S3_SECRET_KEY,
     region_name=s3_settings.S3_REGION,
+    config=_boto_config,
 )
