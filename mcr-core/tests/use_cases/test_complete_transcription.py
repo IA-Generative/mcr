@@ -7,6 +7,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
+from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.infrastructure.redis import save_refresh_token
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
@@ -22,6 +23,7 @@ from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRe
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.use_cases.complete_transcription import complete_transcription
 from tests.factories import MeetingFactory
+from tests.factories.deliverable_factory import DeliverableFactory
 from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_s3 import InMemoryS3
@@ -196,6 +198,37 @@ class TestCompleteTranscription:
         assert len(deliverables) == 1
         assert deliverables[0].status == DeliverableStatus.AVAILABLE
 
+    def test_updates_early_deliverable_instead_of_creating_a_second(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        in_memory_drive: InMemoryDriveClient,
+    ) -> None:
+        early_deliverable = DeliverableFactory.create(
+            meeting=transcription_in_progress_meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.IN_PROGRESS,
+            external_url=None,
+        )
+        save_refresh_token(
+            str(transcription_in_progress_meeting.owner.keycloak_uuid),
+            "refresh-token",
+        )
+
+        complete_transcription(
+            meeting_id=transcription_in_progress_meeting.id,
+            transcriptions=sample_transcriptions,
+        )
+
+        deliverables = _transcription_deliverables(transcription_in_progress_meeting.id)
+        assert len(deliverables) == 1
+        assert deliverables[0].id == early_deliverable.id
+        assert deliverables[0].status == DeliverableStatus.AVAILABLE
+        assert deliverables[0].external_url == in_memory_drive.url
+
     def test_uploads_to_drive_and_persists_external_url(
         self,
         transcription_in_progress_meeting: Meeting,
@@ -292,7 +325,7 @@ class TestCompleteTranscription:
             transcription_in_progress_meeting.name, []
         )
 
-    def test_rejects_completion_from_invalid_status(
+    def test_conflicts_on_completion_from_invalid_status(
         self,
         sample_transcriptions: list[SpeakerTranscription],
         mock_generate_docx: MagicMock,
@@ -304,7 +337,7 @@ class TestCompleteTranscription:
             name_platform=MeetingPlatforms.COMU,
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(MeetingStateConflictException):
             complete_transcription(
                 meeting_id=meeting.id,
                 transcriptions=sample_transcriptions,
@@ -312,3 +345,25 @@ class TestCompleteTranscription:
 
         assert _transcription_deliverables(meeting.id) == []
         assert _transcription_done_records(meeting.id) == []
+
+    def test_replayed_completion_conflicts_without_duplicating_deliverables(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        meeting_id = transcription_in_progress_meeting.id
+        complete_transcription(
+            meeting_id=meeting_id, transcriptions=sample_transcriptions
+        )
+
+        with pytest.raises(MeetingStateConflictException):
+            complete_transcription(
+                meeting_id=meeting_id, transcriptions=sample_transcriptions
+            )
+
+        assert len(_transcription_deliverables(meeting_id)) == 1
+        assert len(_transcription_done_records(meeting_id)) == 1
+        assert len(in_memory_email.sent) == 1

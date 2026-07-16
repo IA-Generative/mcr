@@ -15,6 +15,11 @@ class InvalidAudioFileError(MCRException):
     """Raised when an invalid audio file is provided."""
 
 
+class LLMCompletionError(MCRException):
+    """Raised when an LLM completion fails (e.g. the model returns a malformed
+    or invalid response after retries)."""
+
+
 class SilentAudioError(MCRException):
     """Raised when the audio is silent or contains no meaningful audio content."""
 
@@ -91,3 +96,11 @@ class DeliverableStateConflictException(MCRException):
 class MeetingStateConflictException(MCRException):
     """Raised when a meeting transition is rejected because the meeting is not in
     an allowed source state (mapped to HTTP 409)."""
+
+
+class TransientInfraError(MCRException):
+    """Transient network/infra error — trigger local retry (tenacity) and task level retry."""
+
+
+class S3TransientError(TransientInfraError):
+    """Transient S3 error"""

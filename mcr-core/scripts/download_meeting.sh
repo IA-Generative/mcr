@@ -13,13 +13,15 @@ interactive (audio / tous les docs / types de docs choisis) :
      ./download_meeting.sh --id 12345 --dest ./out
      ./download_meeting.sh --id 12345 --select audio,docs        # non-interactif
      ./download_meeting.sh --id 12345 --select decision_record.docx,v0.docx
+     ./download_meeting.sh --id 12345 --select artifacts,diarization.json
 
 Options :
   --id            ID de la réunion (obligatoire)
   --select        Pré-sélection non-interactive (liste séparée par des virgules) :
                     "audio"        → les fichiers audio
                     "docs"         → tous les documents (transcription + rapports)
-                    "<nom.docx>"   → un type de document précis (match sur le nom de fichier)
+                    "artifacts"    → tous les artéfacts intermédiaires du pipeline
+                    "<nom.ext>"    → un fichier précis (match sur le nom, docs ou artéfacts)
   --bucket        Nom du bucket (par défaut : mirai-mcr-prod)
   --dest          Dossier local de destination (par défaut : ~/Downloads/<id>)
   --endpoint      Endpoint S3 Scaleway (par défaut : https://s3.fr-par.scw.cloud)
@@ -28,6 +30,7 @@ Options :
   --audio-folder  Dossier audio dans le bucket (par défaut : audio)
   --transcription-folder  Dossier transcriptions (par défaut : transcription)
   --report-folder Dossier rapports (par défaut : report)
+  --artifacts-folder      Dossier artéfacts du pipeline (par défaut : artifacts)
   --dry-run       N'exécute pas, affiche uniquement ce qui serait fait
   --quiet         Réduit la verbosité (n'affiche que les erreurs)
   --no-progress   Masque la barre de progression
@@ -46,6 +49,7 @@ PROFILE="scaleway"
 AUDIO_FOLDER="audio"
 TRANSCRIPTION_FOLDER="transcription"
 REPORT_FOLDER="report"
+ARTIFACTS_FOLDER="artifacts"
 DRY_RUN="false"
 QUIET="false"
 NO_PROGRESS="false"
@@ -64,6 +68,7 @@ while [[ $# -gt 0 ]]; do
     --audio-folder)         AUDIO_FOLDER="${2:?}"; shift 2 ;;
     --transcription-folder) TRANSCRIPTION_FOLDER="${2:?}"; shift 2 ;;
     --report-folder)        REPORT_FOLDER="${2:?}"; shift 2 ;;
+    --artifacts-folder)     ARTIFACTS_FOLDER="${2:?}"; shift 2 ;;
     --dry-run)              DRY_RUN="true"; shift 1 ;;
     --quiet)                QUIET="true"; shift 1 ;;
     --no-progress)          NO_PROGRESS="true"; shift 1 ;;
@@ -147,18 +152,20 @@ download_audio() {
 AUDIO_PREFIX="${AUDIO_FOLDER}/${MEETING_ID}/"
 TRANSCRIPTION_PREFIX="${TRANSCRIPTION_FOLDER}/${MEETING_ID}/"
 REPORT_PREFIX="${REPORT_FOLDER}/${MEETING_ID}/"
+ARTIFACTS_PREFIX="${ARTIFACTS_FOLDER}/${MEETING_ID}/"
 
 echo "→ Réunion ${MEETING_ID} — inspection de s3://${BUCKET}/ ..."
 echo "→ Endpoint : ${ENDPOINT} | Région : ${REGION} | Profil : ${PROFILE}"
 
 AUDIO_KEYS="$(list_keys "$AUDIO_PREFIX")"
 DOC_KEYS="$(printf '%s\n%s\n' "$(list_keys "$TRANSCRIPTION_PREFIX")" "$(list_keys "$REPORT_PREFIX")" | grep -v '^$' || true)"
+ARTIFACT_KEYS="$(list_keys "$ARTIFACTS_PREFIX")"
 
 AUDIO_COUNT=0
 [[ -n "$AUDIO_KEYS" ]] && AUDIO_COUNT=$(printf '%s\n' "$AUDIO_KEYS" | grep -c '^')
 
 # Construit la liste des éléments sélectionnables.
-# ITEM_KIND : "audio" | "doc"   ITEM_KEY : préfixe (audio) ou clé (doc)
+# ITEM_KIND : "audio" | "doc" | "artifact"   ITEM_KEY : préfixe (audio) ou clé
 ITEM_KIND=()
 ITEM_KEY=()
 ITEM_LABEL=()
@@ -176,18 +183,33 @@ if [[ -n "$DOC_KEYS" ]]; then
   done <<< "$DOC_KEYS"
 fi
 
+if [[ -n "$ARTIFACT_KEYS" ]]; then
+  while IFS= read -r k; do
+    [[ -z "$k" ]] && continue
+    ITEM_KIND+=("artifact"); ITEM_KEY+=("$k"); ITEM_LABEL+=("$k"); SELECTED+=("0")
+  done <<< "$ARTIFACT_KEYS"
+fi
+
 if [[ ${#ITEM_KIND[@]} -eq 0 ]]; then
-  echo "Aucun fichier trouvé pour la réunion ${MEETING_ID} (audio/transcription/report)." >&2
+  echo "Aucun fichier trouvé pour la réunion ${MEETING_ID} (audio/transcription/report/artifacts)." >&2
   exit 1
 fi
 
 N=${#ITEM_KIND[@]}
 
-# Indices des documents (tout sauf l'audio) — pour "tous les docs".
+# Indices des documents — pour "tous les docs".
 doc_indices() {
   local i
   for ((i=0; i<N; i++)); do
     [[ "${ITEM_KIND[$i]}" == "doc" ]] && echo "$i"
+  done
+}
+
+# Indices des artéfacts — pour "tous les artéfacts".
+artifact_indices() {
+  local i
+  for ((i=0; i<N; i++)); do
+    [[ "${ITEM_KIND[$i]}" == "artifact" ]] && echo "$i"
   done
 }
 
@@ -205,14 +227,17 @@ if [[ -n "$SELECT" ]]; then
       docs|all-docs|alldocs)
         for i in $(doc_indices); do SELECTED[$i]="1"; done
         ;;
+      artifacts|artefacts|all-artifacts)
+        for i in $(artifact_indices); do SELECTED[$i]="1"; done
+        ;;
       *)
         local_matched="false"
         for ((i=0; i<N; i++)); do
-          if [[ "${ITEM_KIND[$i]}" == "doc" && "${ITEM_KEY[$i]}" == *"$tok"* ]]; then
+          if [[ "${ITEM_KIND[$i]}" != "audio" && "${ITEM_KEY[$i]}" == *"$tok"* ]]; then
             SELECTED[$i]="1"; local_matched="true"
           fi
         done
-        [[ "$local_matched" == "false" ]] && echo "⚠ --select : aucun document ne correspond à « ${tok} »" >&2
+        [[ "$local_matched" == "false" ]] && echo "⚠ --select : aucun fichier ne correspond à « ${tok} »" >&2
         ;;
     esac
   done
@@ -223,6 +248,9 @@ else
     exit 1
   fi
 
+  # Un seul fichier : pré-sélectionné, Entrée le télécharge directement.
+  [[ "$N" -eq 1 ]] && SELECTED[0]="1"
+
   all_docs_selected() {
     local i has=0
     for i in $(doc_indices); do
@@ -232,13 +260,30 @@ else
     [[ "$has" -eq 1 ]]
   }
 
+  all_artifacts_selected() {
+    local i has=0
+    for i in $(artifact_indices); do
+      has=1
+      [[ "${SELECTED[$i]}" == "1" ]] || return 1
+    done
+    [[ "$has" -eq 1 ]]
+  }
+
   render() {
     echo ""
-    echo "Réunion ${MEETING_ID} — sélectionne ce qu'il faut télécharger :"
+    if [[ "$N" -eq 1 ]]; then
+      echo "Réunion ${MEETING_ID} — un seul fichier disponible :"
+    else
+      echo "Réunion ${MEETING_ID} — sélectionne ce qu'il faut télécharger :"
+    fi
     local i n=1
-    # Ligne "tous les docs" seulement s'il y a des docs.
-    if [[ -n "$(doc_indices)" ]]; then
+    # Lignes "tous les docs"/"tous les artéfacts" seulement s'il y en a,
+    # et uniquement quand il y a plus d'un fichier au total.
+    if [[ "$N" -gt 1 && -n "$(doc_indices)" ]]; then
       if all_docs_selected; then echo "   d) [x] Tous les documents"; else echo "   d) [ ] Tous les documents"; fi
+    fi
+    if [[ "$N" -gt 1 && -n "$(artifact_indices)" ]]; then
+      if all_artifacts_selected; then echo "   t) [x] Tous les artéfacts"; else echo "   t) [ ] Tous les artéfacts"; fi
     fi
     for ((i=0; i<N; i++)); do
       local mark="[ ]"
@@ -247,7 +292,11 @@ else
       n=$((n+1))
     done
     echo ""
-    echo "Commandes : <n°> bascule · a=tout · x=rien · d=tous les docs · Entrée=télécharger · q=quitter"
+    if [[ "$N" -eq 1 ]]; then
+      echo "Commandes : 1 bascule · Entrée=télécharger · q=quitter"
+    else
+      echo "Commandes : <n°> bascule · a=tout · x=rien · d=tous les docs · t=tous les artéfacts · Entrée=télécharger · q=quitter"
+    fi
   }
 
   while true; do
@@ -268,6 +317,12 @@ else
           for i in $(doc_indices); do SELECTED[$i]="0"; done
         else
           for i in $(doc_indices); do SELECTED[$i]="1"; done
+        fi ;;
+      t|artifacts|artefacts)
+        if all_artifacts_selected; then
+          for i in $(artifact_indices); do SELECTED[$i]="0"; done
+        else
+          for i in $(artifact_indices); do SELECTED[$i]="1"; done
         fi ;;
       *)
         if [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= N )); then

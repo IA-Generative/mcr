@@ -17,8 +17,8 @@ from unicodedata import normalize
 from loguru import logger
 
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
-from mcr_meeting.app.services.speech_to_text.participants_naming import (
-    ParticipantExtraction,
+from mcr_meeting.app.use_cases.transcription._shared.extract_participants import (
+    extract_participants,
 )
 from mcr_meeting.evaluation.utils.math_utils import safe_ratio
 
@@ -72,14 +72,12 @@ def normalize_name(name: str | None) -> str | None:
     return normalize("NFC", name.strip().lower())
 
 
-def evaluate_file(
-    txt_path: Path, expected_path: Path, extractor: ParticipantExtraction
-) -> EvalResult:
+def evaluate_file(txt_path: Path, expected_path: Path) -> EvalResult:
     segments = parse_txt_to_segments(txt_path)
     expected = load_expected(expected_path)
 
     logger.info("Running extraction on {} ({} segments)", txt_path.name, len(segments))
-    participants = extractor.extract(segments)
+    participants = extract_participants(segments)
 
     predicted = {p.speaker_id: p.name for p in participants}
 
@@ -177,12 +175,11 @@ def main() -> None:
         )
         sys.exit(1)
 
-    logger.info("Found {} test case(s). Initializing extractor...", len(pairs))
-    extractor = ParticipantExtraction()
+    logger.info("Found {} test case(s).", len(pairs))
 
     results = []
     for txt_path, expected_path in pairs:
-        result = evaluate_file(txt_path, expected_path, extractor)
+        result = evaluate_file(txt_path, expected_path)
         results.append(result)
 
     log_report(results)

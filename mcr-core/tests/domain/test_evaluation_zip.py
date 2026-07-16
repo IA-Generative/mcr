@@ -1,9 +1,11 @@
 import zipfile
 from io import BytesIO
+from pathlib import Path
 
 import pytest
 
 from mcr_meeting.app.domain.evaluation_zip import (
+    find_evaluation_dataset_root,
     is_zip_filename,
     validate_evaluation_zip_structure,
 )
@@ -74,3 +76,60 @@ class TestValidateEvaluationZipStructure:
     def test_corrupted_zip_raises(self) -> None:
         with pytest.raises(InvalidEvaluationZipError):
             validate_evaluation_zip_structure(b"not a zip", SUPPORTED_AUDIO_FORMATS)
+
+
+class TestFindEvaluationDatasetRoot:
+    def test_finds_dataset_at_zip_root(self) -> None:
+        root = Path("/tmp/extract")
+        extracted = [
+            root / "raw_audios",
+            root / "raw_audios" / "a.mp3",
+            root / "reference_transcripts",
+            root / "reference_transcripts" / "a.json",
+        ]
+
+        assert find_evaluation_dataset_root(root, extracted) == root
+
+    def test_finds_dataset_nested_one_level_down(self) -> None:
+        root = Path("/tmp/extract")
+        extracted = [
+            root / "dataset",
+            root / "dataset" / "raw_audios",
+            root / "dataset" / "raw_audios" / "a.mp3",
+            root / "dataset" / "reference_transcripts",
+            root / "dataset" / "reference_transcripts" / "a.json",
+        ]
+
+        assert find_evaluation_dataset_root(root, extracted) == root / "dataset"
+
+    def test_prefers_zip_root_over_nested_dataset(self) -> None:
+        root = Path("/tmp/extract")
+        extracted = [
+            root / "raw_audios",
+            root / "reference_transcripts",
+            root / "nested",
+            root / "nested" / "raw_audios",
+            root / "nested" / "reference_transcripts",
+        ]
+
+        assert find_evaluation_dataset_root(root, extracted) == root
+
+    def test_returns_none_when_one_directory_is_missing(self) -> None:
+        root = Path("/tmp/extract")
+        extracted = [
+            root / "raw_audios",
+            root / "raw_audios" / "a.mp3",
+        ]
+
+        assert find_evaluation_dataset_root(root, extracted) is None
+
+    def test_ignores_dataset_nested_deeper_than_one_level(self) -> None:
+        root = Path("/tmp/extract")
+        extracted = [
+            root / "a",
+            root / "a" / "b",
+            root / "a" / "b" / "raw_audios",
+            root / "a" / "b" / "reference_transcripts",
+        ]
+
+        assert find_evaluation_dataset_root(root, extracted) is None

@@ -32,15 +32,13 @@
 import MeetingDeliverableList from './MeetingDeliverableList.vue';
 import CustomReportModal from './modals/CustomReportModal.vue';
 import { useDeliverables } from '@/services/deliverables/use-deliverables';
-import { DeliverableType, type DeliverableDto } from '@/services/deliverables/deliverables.types';
-import { getTranscriptionStatus } from '@/services/deliverables/deliverables.service';
-import type { MeetingStatus } from '@/services/meetings/meetings.types';
+import { DeliverableType } from '@/services/deliverables/deliverables.types';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 
-const props = defineProps<{ meetingId: number; meetingStatus: MeetingStatus }>();
+const props = defineProps<{ meetingId: number }>();
 
 const { getDeliverablesQuery, createDeliverableMutation } = useDeliverables();
 const { data: deliverables } = getDeliverablesQuery(props.meetingId);
@@ -52,22 +50,11 @@ const isCustomReportEnabled = useFeatureFlag('custom_cr');
 const selectedType = ref<DeliverableType | undefined>(undefined);
 const customPrompt = ref('');
 
-const activeDeliverables = computed(() => {
-  const DEFAULT_STATUS = 'PENDING';
-
-  const PENDING_TRANSCRIPTION_DELIVERABLE = {
-    type: 'TRANSCRIPTION',
-    status: getTranscriptionStatus(props.meetingStatus) ?? DEFAULT_STATUS,
-  } as DeliverableDto;
-
-  if (deliverables.value && deliverables.value.length > 0) {
-    return deliverables.value.filter(
-      (d) => d.type !== 'CUSTOM_REPORT' || isCustomReportEnabled.value,
-    );
-  } else {
-    return [PENDING_TRANSCRIPTION_DELIVERABLE];
-  }
-});
+const activeDeliverables = computed(
+  () =>
+    deliverables.value?.filter((d) => d.type !== 'CUSTOM_REPORT' || isCustomReportEnabled.value) ??
+    [],
+);
 
 const successfullyGeneratedTypes = computed(
   () => new Set(activeDeliverables.value.map((d) => d.type)),

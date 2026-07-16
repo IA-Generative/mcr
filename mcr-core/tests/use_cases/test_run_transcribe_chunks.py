@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 from pytest_mock import MockerFixture
 
+import mcr_meeting.app.use_cases.transcription._shared.transcribe_diarized_audio as tda
 import mcr_meeting.app.use_cases.transcription.run_transcribe_chunks as rtc
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
@@ -35,7 +36,7 @@ def test_reads_diarization_artifacts_and_writes_raw_segments(
     _seed_diarization_artifacts(in_memory_s3)
     processor = Mock()
     mocker.patch.object(
-        rtc, "diarize_vad_transcription_segments", return_value=_RAW_SEGMENTS
+        tda, "diarize_vad_transcription_segments", return_value=_RAW_SEGMENTS
     )
 
     rtc.run_transcribe_chunks(MEETING_ID, processor)
@@ -63,7 +64,7 @@ def test_raises_and_writes_nothing_when_no_diarized_segments(
     in_memory_s3: InMemoryS3, mocker: MockerFixture
 ) -> None:
     _seed_diarization_artifacts(in_memory_s3)
-    mocker.patch.object(rtc, "diarize_vad_transcription_segments", return_value=[])
+    mocker.patch.object(tda, "diarize_vad_transcription_segments", return_value=[])
 
     with pytest.raises(InvalidAudioFileError):
         rtc.run_transcribe_chunks(MEETING_ID, Mock())

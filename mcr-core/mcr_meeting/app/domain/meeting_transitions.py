@@ -29,7 +29,7 @@ def reset_and_start_report(meeting: Meeting) -> Meeting:
 
 
 def mark_transcription_done(meeting: Meeting) -> Meeting:
-    _apply(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
+    _apply_or_conflict(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
     return meeting
 
 
@@ -54,7 +54,7 @@ def start_transcription(meeting: Meeting) -> Meeting:
 
 
 def fail_transcription(meeting: Meeting) -> Meeting:
-    _apply(meeting, MeetingEvent.FAIL_TRANSCRIPTION)
+    _apply_or_conflict(meeting, MeetingEvent.FAIL_TRANSCRIPTION)
     return meeting
 
 

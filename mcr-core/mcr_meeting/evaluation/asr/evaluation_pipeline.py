@@ -1,11 +1,13 @@
 import os
+from collections.abc import Callable
 from datetime import datetime
+from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
 from loguru import logger
 
-from mcr_meeting.app.services.speech_to_text.speech_to_text import SpeechToTextPipeline
+from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.evaluation.asr.types import (
     EvaluationInput,
     EvaluationOutput,
@@ -22,11 +24,15 @@ from mcr_meeting.evaluation.utils import (
 class ASREvaluationPipeline:
     """Main pipeline orchestrator for Automatic Speech Recognition (ASR) evaluation"""
 
-    def __init__(self, inputs: list[EvaluationInput]):
+    def __init__(
+        self,
+        inputs: list[EvaluationInput],
+        transcribe_audio: Callable[[BytesIO], list[DiarizedTranscriptionSegment]],
+    ):
         self.inputs = inputs
         self.dev = os.environ.get("ENV_MODE") == "DEV"
         self.timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.speech_to_text_pipeline = SpeechToTextPipeline()
+        self.transcribe_audio = transcribe_audio
         self.metrics_manager = MetricsPipeline()
 
     def process_single_sample(
@@ -36,9 +42,7 @@ class ASREvaluationPipeline:
         try:
             logger.info("Processing sample {}...", sample.uid)
 
-            generated_transcription_segments = self.speech_to_text_pipeline.run(
-                sample.audio_bytes
-            )
+            generated_transcription_segments = self.transcribe_audio(sample.audio_bytes)
             generated_transcription = TranscriptionOutput(
                 segments=generated_transcription_segments
             )

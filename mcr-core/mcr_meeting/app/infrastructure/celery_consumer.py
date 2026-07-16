@@ -4,7 +4,8 @@ import celery.app.trace  # type: ignore[import-untyped]
 from celery import Celery, Task
 from celery.signals import setup_logging as celery_setup_logging
 
-from mcr_meeting.app.configs.base import CelerySettings
+from mcr_meeting.app.configs.base import CelerySettings, RetrySettings
+from mcr_meeting.app.exceptions.exceptions import TransientInfraError
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.setup.logger import setup_logging
 
@@ -56,26 +57,22 @@ celery_worker.conf.broker_transport_options = {
 }
 
 
-class MeetingPipelineTask(Task[Any, Any]):  # type: ignore[explicit-any]
-    def set_task_context(self, meeting_id: int, owner_keycloak_uuid: str) -> None:
-        raise NotImplementedError
+_retry = RetrySettings()
 
-    def handle_failure(
-        self, meeting_id: int, owner_keycloak_uuid: str, error_code: str
-    ) -> None:
+
+class RetryableInfraTask(Task[Any, Any]):  # type: ignore[explicit-any]
+    autoretry_for = (TransientInfraError,)
+    max_retries = _retry.TASK_RETRY_MAX_RETRIES
+    retry_backoff = _retry.TASK_RETRY_BACKOFF
+    retry_backoff_max = _retry.TASK_RETRY_BACKOFF_MAX
+    retry_jitter = True
+
+
+class MeetingPipelineTask(RetryableInfraTask):
+    def set_task_context(self, meeting_id: int, owner_keycloak_uuid: str) -> None:
         raise NotImplementedError
 
     def before_start(  # type: ignore[explicit-any]
         self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         self.set_task_context(args[0], args[1])
-
-    def on_failure(  # type: ignore[explicit-any]
-        self,
-        exc: Exception,
-        task_id: str,
-        args: tuple[Any, ...],
-        kwargs: dict[str, Any],
-        einfo: object,
-    ) -> None:
-        self.handle_failure(args[0], args[1], error_code=self.name)

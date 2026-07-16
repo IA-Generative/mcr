@@ -11,6 +11,9 @@ from mcr_meeting.app.domain.meeting_transitions import (
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
+from mcr_meeting.app.use_cases._shared.transcription_deliverable import (
+    fail_transcription_deliverable,
+)
 
 
 def fail_transcription(meeting_id: int) -> Meeting:
@@ -26,6 +29,7 @@ def fail_transcription(meeting_id: int) -> Meeting:
 
     with UnitOfWork():
         update_meeting(meeting)
+        fail_transcription_deliverable(meeting.id)
         save_meeting_transition_record(
             MeetingTransitionRecord(
                 meeting_id=meeting.id,

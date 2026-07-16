@@ -3,11 +3,15 @@
 import zipfile
 from collections.abc import Sequence
 from io import BytesIO
+from pathlib import Path
 
 from mcr_meeting.app.exceptions.exceptions import InvalidEvaluationZipError
 
 RAW_AUDIOS_DIR = "raw_audios/"
 REFERENCE_TRANSCRIPTS_DIR = "reference_transcripts/"
+
+_RAW_AUDIOS_DIRNAME = RAW_AUDIOS_DIR.rstrip("/")
+_REFERENCE_TRANSCRIPTS_DIRNAME = REFERENCE_TRANSCRIPTS_DIR.rstrip("/")
 
 
 def is_zip_filename(filename: str | None) -> bool:
@@ -40,3 +44,17 @@ def validate_evaluation_zip_structure(
             f"Zip file must contain '{RAW_AUDIOS_DIR}' with {supported} files and "
             f"'{REFERENCE_TRANSCRIPTS_DIR}' with .json files at the root level."
         )
+
+
+def find_evaluation_dataset_root(
+    root: Path, extracted_paths: Sequence[Path]
+) -> Path | None:
+    paths = set(extracted_paths)
+    candidates = [root, *(path for path in extracted_paths if path.parent == root)]
+    for candidate in candidates:
+        if (
+            candidate / _RAW_AUDIOS_DIRNAME in paths
+            and candidate / _REFERENCE_TRANSCRIPTS_DIRNAME in paths
+        ):
+            return candidate
+    return None

@@ -25,6 +25,9 @@ from mcr_meeting.app.infrastructure.unleash import FeatureFlag, is_enabled
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
+from mcr_meeting.app.use_cases._shared.transcription_deliverable import (
+    queue_transcription_deliverable,
+)
 
 
 def _structural_split_enabled() -> bool:
@@ -56,6 +59,7 @@ def init_transcription(meeting_id: int) -> Meeting:
     )
     with UnitOfWork():
         update_meeting(meeting)
+        queue_transcription_deliverable(meeting.id)
         enqueue(meeting.id, str(meeting.owner.keycloak_uuid))
 
     waiting_time_minutes = estimate_wait_time_minutes(count_pending_meetings())

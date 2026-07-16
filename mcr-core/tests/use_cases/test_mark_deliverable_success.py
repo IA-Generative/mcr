@@ -25,7 +25,7 @@ from tests.factories.deliverable_factory import DeliverableFactory
 from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
 from tests.mocks.in_memory_keycloak import InMemoryKeycloak
-from tests.mocks.in_memory_s3 import InMemoryS3
+from tests.mocks.in_memory_s3 import InMemoryS3, S3Op
 
 
 def _decision_record_response() -> ReportGenerationResponse:
@@ -232,7 +232,7 @@ class TestFailureRollback:
         in_memory_s3: InMemoryS3,
         in_memory_email: InMemoryEmailClient,
     ) -> None:
-        in_memory_s3.should_fail_put = True
+        in_memory_s3.fail(S3Op.PUT, RuntimeError("S3 put failed"))
         meeting = MeetingFactory.create(
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
@@ -306,14 +306,13 @@ class TestFailureRollback:
             status=DeliverableStatus.PENDING,
         )
 
-        in_memory_s3.should_fail_put = True
+        in_memory_s3.fail(S3Op.PUT, RuntimeError("S3 put failed"), times=1)
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
                 deliverable_id=pending.id,
                 report_response=_decision_record_response(),
             )
 
-        in_memory_s3.should_fail_put = False
         with pytest.raises(DeliverableStateConflictException):
             mark_deliverable_success(
                 deliverable_id=pending.id,

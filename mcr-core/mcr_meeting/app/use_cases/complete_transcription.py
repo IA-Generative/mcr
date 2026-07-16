@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 from loguru import logger
 
-from mcr_meeting.app.db.deliverable_repository import save_deliverable
 from mcr_meeting.app.db.meeting_repository import (
     get_meeting_with_owner,
     update_meeting,
@@ -26,16 +25,15 @@ from mcr_meeting.app.infrastructure.s3 import (
     upload_transcription_to_s3,
 )
 from mcr_meeting.app.models import Meeting
-from mcr_meeting.app.models.deliverable_model import (
-    Deliverable,
-    DeliverableStatus,
-    DeliverableType,
-)
+from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.use_cases._shared.drive_upload import (
     try_upload_deliverable_to_drive,
+)
+from mcr_meeting.app.use_cases._shared.transcription_deliverable import (
+    complete_transcription_deliverable,
 )
 
 TRANSCRIPTION_FILENAME = "v0.docx"
@@ -73,14 +71,7 @@ def complete_transcription(
                 status=MeetingStatus.TRANSCRIPTION_DONE,
             )
         )
-        save_deliverable(
-            Deliverable(
-                meeting_id=meeting.id,
-                type=DeliverableType.TRANSCRIPTION,
-                status=DeliverableStatus.AVAILABLE,
-                external_url=external_url,
-            )
-        )
+        complete_transcription_deliverable(meeting.id, external_url)
 
     _notify_transcription_ready_best_effort(meeting)
 

@@ -22,6 +22,15 @@ class DBSettings(BaseSettings):
 
 class ServiceSettings(BaseSettings):
     CORE_SERVICE_BASE_URL: str
+    CORE_TIMEOUT_SECONDS: float = Field(
+        default=30.0,
+        description="Read/write timeout in seconds for calls to the core service. "
+        "Kept generous so slow success responses don't fail finalize.",
+    )
+    CORE_CONNECT_TIMEOUT_SECONDS: float = Field(
+        default=5.0,
+        description="Connection timeout in seconds for calls to the core service.",
+    )
 
 
 class Settings(BaseSettings):
@@ -268,6 +277,21 @@ class TranscriptionWaitingTimeSettings(BaseSettings):
     )
 
 
+class RetrySettings(BaseSettings):
+    model_config = SettingsConfigDict(case_sensitive=True)
+
+    S3_RETRY_ATTEMPTS: int = 3
+    S3_RETRY_INITIAL_DELAY: float = 0.5
+    S3_RETRY_MAX_DELAY: float = 5.0
+
+    S3_CONNECT_TIMEOUT: float = 5.0
+    S3_READ_TIMEOUT: float = 30.0
+
+    TASK_RETRY_MAX_RETRIES: int = 6
+    TASK_RETRY_BACKOFF: int = 30
+    TASK_RETRY_BACKOFF_MAX: int = 600
+
+
 class S3Settings(BaseSettings):
     """
     Configuration settings for the S3 bucket
@@ -448,7 +472,8 @@ class LLMSettings(BaseSettings):
         description="LLM sampling temperature (0-1). Lower values (0) produce deterministic, focused outputs. Higher values (0.7-1) increase creativity and randomness.",
     )
     LLM_MAX_RETRIES: int = Field(
-        default=2, description="Maximum number of retry attempts for LLM API calls"
+        default=3,
+        description="Maximum retry attempts for LLM calls, unified across HTTP transport (429/5xx) and instructor validation retries",
     )
     LLM_API_TIMEOUT: float = Field(
         default=120.0, description="Maximum wait time in seconds for API timeout"
