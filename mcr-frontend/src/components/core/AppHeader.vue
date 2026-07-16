@@ -47,7 +47,7 @@
       >
         <template #articleLink>
           <a
-            href="https://mirai.interieur.gouv.fr/actualites/mcr-apprend-a-parler-le-mi-glossaire/"
+            href="https://grist.numerique.gouv.fr/o/docs/rVja5acFwanx/Glossaire-MI/p/2"
             target="_blank"
             rel="noopener noreferrer"
             >{{ $t('header.notice.article-link-text') }}</a
