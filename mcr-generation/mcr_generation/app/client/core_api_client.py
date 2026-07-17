@@ -2,12 +2,6 @@ from typing import Any
 
 import httpx
 from loguru import logger
-from tenacity import (
-    Retrying,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
 
 from mcr_generation.app.client.http_client import HttpClient
 from mcr_generation.app.configs.settings import ApiSettings, InProgressCallbackSettings
@@ -16,6 +10,7 @@ from mcr_generation.app.exceptions.exceptions import (
     ReportCallbackError,
 )
 from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
+from mcr_generation.app.utils.retry import retry_transient
 
 
 class CoreApiClient:
@@ -25,23 +20,16 @@ class CoreApiClient:
         self.client = HttpClient(base_url=self.api_settings.MCR_CORE_API_URL)
 
     def mark_deliverable_in_progress(self, deliverable_id: int) -> None:
-        for attempt in Retrying(
-            stop=stop_after_attempt(
-                self.in_progress_settings.IN_PROGRESS_RETRY_MAX_ATTEMPTS
-            ),
-            wait=wait_exponential(
-                multiplier=self.in_progress_settings.IN_PROGRESS_RETRY_WAIT_MULTIPLIER,
-                min=self.in_progress_settings.IN_PROGRESS_RETRY_MIN_WAIT,
-                max=self.in_progress_settings.IN_PROGRESS_RETRY_MAX_WAIT,
-            ),
-            retry=retry_if_exception_type(DeliverableNotYetVisibleError),
-            reraise=True,
-        ):
-            with attempt:
-                self._post(
-                    f"/deliverables/{deliverable_id}/in_progress",
-                    swallow_409=True,
-                )
+        @retry_transient(
+            on=(DeliverableNotYetVisibleError,),
+            attempts=self.in_progress_settings.IN_PROGRESS_RETRY_MAX_ATTEMPTS,
+            initial_delay=self.in_progress_settings.IN_PROGRESS_RETRY_MIN_WAIT,
+            max_delay=self.in_progress_settings.IN_PROGRESS_RETRY_MAX_WAIT,
+        )
+        def _call() -> None:
+            self._post(f"/deliverables/{deliverable_id}/start", swallow_409=True)
+
+        _call()
 
     def mark_deliverable_success(
         self,
@@ -55,7 +43,7 @@ class CoreApiClient:
         )
 
     def mark_deliverable_failure(self, deliverable_id: int) -> None:
-        self._post(f"/deliverables/{deliverable_id}/failure", swallow_404=True)
+        self._post(f"/deliverables/{deliverable_id}/fail", swallow_404=True)
 
     def _post(
         self,
