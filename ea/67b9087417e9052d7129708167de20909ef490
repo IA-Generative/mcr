@@ -1,0 +1,24 @@
+mcr-core/docs/remove_meeting_filename_columns.md
+  s_2ac9799bd897c3::t_901975d8a2ff38 1-113
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "ea67b9087417e9052d7129708167de20909ef490",
+  "prompts": {},
+  "humans": {
+    "h_fbb4d0b2de0c1b": {
+      "author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  },
+  "sessions": {
+    "s_2ac9799bd897c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d1b98d59-4f16-47b3-a949-07f21e14557c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
