@@ -49,7 +49,7 @@ class TestHappyPath:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
@@ -57,14 +57,14 @@ class TestHappyPath:
         )
 
         result = mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
         assert result.status == DeliverableStatus.AVAILABLE
-        assert in_progress.status == DeliverableStatus.AVAILABLE
+        assert in_progress_deliverable.status == DeliverableStatus.AVAILABLE
         assert meeting.status == MeetingStatus.REPORT_DONE
         assert len(in_memory_s3.objects) == 1
         uploaded_key = next(iter(in_memory_s3.objects))
@@ -94,20 +94,20 @@ class TestDriveUpload:
             name_platform=MeetingPlatforms.COMU,
         )
         save_refresh_token(str(meeting.owner.keycloak_uuid), "refresh-token")
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         result = mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         assert result.status == DeliverableStatus.AVAILABLE
-        assert in_progress.external_url == in_memory_drive.url
+        assert in_progress_deliverable.external_url == in_memory_drive.url
 
     def test_drive_upload_failure_is_best_effort(
         self,
@@ -122,21 +122,21 @@ class TestDriveUpload:
             name_platform=MeetingPlatforms.COMU,
         )
         save_refresh_token(str(meeting.owner.keycloak_uuid), "refresh-token")
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         result = mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
         assert result.status == DeliverableStatus.AVAILABLE
-        assert in_progress.external_url is None
+        assert in_progress_deliverable.external_url is None
         assert meeting.status == MeetingStatus.REPORT_DONE
         assert len(in_memory_email.sent) == 1
 
@@ -151,20 +151,20 @@ class TestDriveUpload:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         result = mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         assert result.status == DeliverableStatus.AVAILABLE
-        assert in_progress.external_url is None
+        assert in_progress_deliverable.external_url is None
 
     def test_drops_refresh_token_when_refresh_fails(
         self,
@@ -180,20 +180,20 @@ class TestDriveUpload:
         )
         user_sub = str(meeting.owner.keycloak_uuid)
         save_refresh_token(user_sub, "refresh-token")
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         result = mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         assert result.status == DeliverableStatus.AVAILABLE
-        assert in_progress.external_url is None
+        assert in_progress_deliverable.external_url is None
         assert get_refresh_token(user_sub) is None
 
     def test_persists_rotated_refresh_token(
@@ -211,14 +211,14 @@ class TestDriveUpload:
         )
         user_sub = str(meeting.owner.keycloak_uuid)
         save_refresh_token(user_sub, "refresh-token")
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
@@ -237,7 +237,7 @@ class TestFailureRollback:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
@@ -245,13 +245,13 @@ class TestFailureRollback:
 
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
-                deliverable_id=in_progress.id,
+                deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
-        assert in_progress.status == DeliverableStatus.FAILED
+        assert in_progress_deliverable.status == DeliverableStatus.FAILED
         assert meeting.status == MeetingStatus.REPORT_PENDING
         assert in_memory_s3.objects == {}
         assert in_memory_email.sent == []
@@ -271,7 +271,7 @@ class TestFailureRollback:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
@@ -279,13 +279,13 @@ class TestFailureRollback:
 
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
-                deliverable_id=in_progress.id,
+                deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
-        assert in_progress.status == DeliverableStatus.FAILED
+        assert in_progress_deliverable.status == DeliverableStatus.FAILED
         assert meeting.status == MeetingStatus.REPORT_PENDING
         assert in_memory_s3.objects == {}
         assert in_memory_email.sent == []
@@ -300,7 +300,7 @@ class TestFailureRollback:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
@@ -309,13 +309,13 @@ class TestFailureRollback:
         in_memory_s3.fail(S3Op.PUT, RuntimeError("S3 put failed"), times=1)
         with pytest.raises(RuntimeError):
             mark_deliverable_success(
-                deliverable_id=in_progress.id,
+                deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
 
         with pytest.raises(DeliverableStateConflictException):
             mark_deliverable_success(
-                deliverable_id=in_progress.id,
+                deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
 
@@ -332,21 +332,21 @@ class TestPostCommitFailures:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         result = mark_deliverable_success(
-            deliverable_id=in_progress.id,
+            deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
 
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
         assert result.status == DeliverableStatus.AVAILABLE
-        assert in_progress.status == DeliverableStatus.AVAILABLE
+        assert in_progress_deliverable.status == DeliverableStatus.AVAILABLE
         assert meeting.status == MeetingStatus.REPORT_DONE
 
 
@@ -361,7 +361,7 @@ class TestConflict:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        pending = DeliverableFactory.create(
+        pending_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.PENDING,
@@ -369,12 +369,12 @@ class TestConflict:
 
         with pytest.raises(DeliverableStateConflictException):
             mark_deliverable_success(
-                deliverable_id=pending.id,
+                deliverable_id=pending_deliverable.id,
                 report_response=_decision_record_response(),
             )
 
-        db_session.refresh(pending)
-        assert pending.status == DeliverableStatus.PENDING
+        db_session.refresh(pending_deliverable)
+        assert pending_deliverable.status == DeliverableStatus.PENDING
         assert in_memory_email.sent == []
 
     def test_raises_when_already_available(

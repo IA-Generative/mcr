@@ -132,7 +132,6 @@ class TestMarkDeliverableInProgress:
     @pytest.fixture(autouse=True)
     def _fast_retries(self, monkeypatch: Any) -> None:
         monkeypatch.setenv("IN_PROGRESS_RETRY_MAX_ATTEMPTS", "3")
-        monkeypatch.setenv("IN_PROGRESS_RETRY_WAIT_MULTIPLIER", "0")
         monkeypatch.setenv("IN_PROGRESS_RETRY_MIN_WAIT", "0")
         monkeypatch.setenv("IN_PROGRESS_RETRY_MAX_WAIT", "0")
 
@@ -144,17 +143,20 @@ class TestMarkDeliverableInProgress:
         core_client.mark_deliverable_in_progress(deliverable_id=7)
 
         mock_httpx_client.post.assert_called_once()
-        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/in_progress"
+        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/start"
 
     def test_retries_on_404_then_succeeds(
         self,
         core_client: CoreApiClient,
         mock_httpx_client: MagicMock,
     ) -> None:
-        ok = MagicMock()
-        first = MagicMock()
-        first.raise_for_status.side_effect = _http_error(404)
-        mock_httpx_client.post.side_effect = [first, ok]
+        deliverable_not_visible_yet = MagicMock()
+        deliverable_not_visible_yet.raise_for_status.side_effect = _http_error(404)
+        successful_response = MagicMock()
+        mock_httpx_client.post.side_effect = [
+            deliverable_not_visible_yet,
+            successful_response,
+        ]
 
         core_client.mark_deliverable_in_progress(deliverable_id=7)
 
@@ -197,7 +199,7 @@ class TestMarkDeliverableFailure:
         core_client.mark_deliverable_failure(deliverable_id=7)
 
         mock_httpx_client.post.assert_called_once()
-        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/failure"
+        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/fail"
 
     def test_swallows_404(
         self,

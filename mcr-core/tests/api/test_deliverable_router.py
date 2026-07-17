@@ -398,19 +398,19 @@ class TestInProgressCallbackRoute:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        pending = DeliverableFactory.create(
+        pending_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.PENDING,
         )
 
-        response = deliverables_client.post(f"/{pending.id}/in_progress")
+        response = deliverables_client.post(f"/{pending_deliverable.id}/start")
 
         assert response.status_code == 200
         assert response.json()["status"] == "IN_PROGRESS"
-        db_session.refresh(pending)
+        db_session.refresh(pending_deliverable)
         db_session.refresh(meeting)
-        assert pending.status == DeliverableStatus.IN_PROGRESS
+        assert pending_deliverable.status == DeliverableStatus.IN_PROGRESS
         assert meeting.status == MeetingStatus.REPORT_PENDING
 
     def test_409_when_already_in_progress(
@@ -423,13 +423,13 @@ class TestInProgressCallbackRoute:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        deliverable = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        response = deliverables_client.post(f"/{deliverable.id}/in_progress")
+        response = deliverables_client.post(f"/{in_progress_deliverable.id}/start")
 
         assert response.status_code == 409
 
@@ -437,7 +437,7 @@ class TestInProgressCallbackRoute:
         self,
         deliverables_client: PrefixedTestClient,
     ) -> None:
-        response = deliverables_client.post("/999999/in_progress")
+        response = deliverables_client.post("/999999/start")
 
         assert response.status_code == 404
 
@@ -458,22 +458,22 @@ class TestSuccessCallbackRoute:
             name_platform=MeetingPlatforms.COMU,
         )
         save_refresh_token(str(user_fixture.keycloak_uuid), "refresh-token")
-        in_progress = DeliverableFactory.create(
+        in_progress_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.IN_PROGRESS,
         )
 
         response = deliverables_client.post(
-            f"/{in_progress.id}/success",
+            f"/{in_progress_deliverable.id}/success",
             json={"report_response": _decision_record_body()},
         )
 
         assert response.status_code == 200
-        db_session.refresh(in_progress)
+        db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
-        assert in_progress.status == DeliverableStatus.AVAILABLE
-        assert in_progress.external_url == in_memory_drive.url
+        assert in_progress_deliverable.status == DeliverableStatus.AVAILABLE
+        assert in_progress_deliverable.external_url == in_memory_drive.url
         assert meeting.status == MeetingStatus.REPORT_DONE
         assert len(in_memory_s3.objects) == 1
         assert len(in_memory_email.sent) == 1
@@ -492,20 +492,20 @@ class TestSuccessCallbackRoute:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        pending = DeliverableFactory.create(
+        pending_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.PENDING,
         )
 
         response = deliverables_client.post(
-            f"/{pending.id}/success",
+            f"/{pending_deliverable.id}/success",
             json={"report_response": _decision_record_body()},
         )
 
         assert response.status_code == 409
-        db_session.refresh(pending)
-        assert pending.status == DeliverableStatus.PENDING
+        db_session.refresh(pending_deliverable)
+        assert pending_deliverable.status == DeliverableStatus.PENDING
 
 
 class TestFailureCallbackRoute:
@@ -520,18 +520,18 @@ class TestFailureCallbackRoute:
             status=MeetingStatus.REPORT_PENDING,
             name_platform=MeetingPlatforms.COMU,
         )
-        pending = DeliverableFactory.create(
+        pending_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.PENDING,
         )
 
-        response = deliverables_client.post(f"/{pending.id}/failure")
+        response = deliverables_client.post(f"/{pending_deliverable.id}/fail")
 
         assert response.status_code == 200
-        db_session.refresh(pending)
+        db_session.refresh(pending_deliverable)
         db_session.refresh(meeting)
-        assert pending.status == DeliverableStatus.FAILED
+        assert pending_deliverable.status == DeliverableStatus.FAILED
         assert meeting.status == MeetingStatus.REPORT_FAILED
 
 
