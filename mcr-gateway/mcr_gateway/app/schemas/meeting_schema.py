@@ -4,6 +4,11 @@ from enum import Enum
 from pydantic import BaseModel, field_serializer
 from pydantic_settings import SettingsConfigDict
 
+from mcr_gateway.app.schemas.deliverable_schema import (
+    DeliverableStatus,
+    DeliverableType,
+)
+
 
 class MeetingStatus(str, Enum):
     NONE = "NONE"
@@ -99,18 +104,19 @@ class MeetingUpdate(MeetingBase):
     creation_date: datetime | None = None  # type: ignore[assignment]
 
 
-class PaginatedMeetingsResponse(BaseModel):
-    total_items: int
-    total_pages: int
-    page: int
-    data: list[Meeting]
-
-
 class DeliverableResponse(BaseModel):
-    file_type: str
+    type: DeliverableType
+    status: DeliverableStatus
     external_url: str | None = None
     updated_at: datetime | None = None
 
 
 class MeetingWithDetails(Meeting):
     deliverables: list[DeliverableResponse] = []
+
+
+class PaginatedMeetingsResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    page: int
+    data: list[MeetingWithDetails]
