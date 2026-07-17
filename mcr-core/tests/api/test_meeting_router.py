@@ -68,6 +68,42 @@ def test_get_meetings_success(
         assert_json_equal_meeting_model(meeting_json, fixture)
 
 
+def test_get_meetings_returns_active_deliverables(
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    user_fixture: User,
+    db_session: Any,
+) -> None:
+    from mcr_meeting.app.models import Deliverable, DeliverableStatus, DeliverableType
+
+    db_session.add(
+        Deliverable(
+            meeting_id=meeting_fixture.id,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
+    )
+    db_session.add(
+        Deliverable(
+            meeting_id=meeting_fixture.id,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.DELETED,
+        )
+    )
+    db_session.commit()
+
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+    response = meeting_client.get("/", headers=headers)
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()["data"]
+    target = next(m for m in data if m["id"] == meeting_fixture.id)
+    deliverables = target["deliverables"]
+    assert len(deliverables) == 1
+    assert deliverables[0]["type"] == DeliverableType.TRANSCRIPTION
+    assert deliverables[0]["status"] == DeliverableStatus.AVAILABLE
+
+
 def test_get_meetings_invalid_user(
     meeting_client: PrefixedTestClient,
 ) -> None:

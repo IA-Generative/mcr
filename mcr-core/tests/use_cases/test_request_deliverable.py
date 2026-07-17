@@ -10,7 +10,6 @@ from mcr_meeting.app.db.deliverable_repository import (
 from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
     ForbiddenAccessException,
-    MeetingStateConflictException,
     NotFoundException,
     TaskCreationException,
 )
@@ -62,7 +61,7 @@ class TestRequestDeliverableHappyPath:
         assert deliverable.meeting_id == meeting.id
 
         db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.REPORT_PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
         mock_use_case_celery.send_task.assert_called_once()
         call = mock_use_case_celery.send_task.call_args
@@ -190,7 +189,7 @@ class TestRequestDeliverableExistingActive:
         db_session: Session,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_DONE,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
             report_filename="decision.docx",
@@ -212,7 +211,7 @@ class TestRequestDeliverableExistingActive:
         assert previous.status == DeliverableStatus.DELETED
         assert new_deliverable.id != previous.id
         assert new_deliverable.status == DeliverableStatus.PENDING
-        assert meeting.status == MeetingStatus.REPORT_PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         mock_use_case_celery.send_task.assert_called_once()
 
     def test_failed_same_type_soft_deletes_and_creates_new(
@@ -221,7 +220,7 @@ class TestRequestDeliverableExistingActive:
         db_session: Session,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_FAILED,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
         )
@@ -241,76 +240,38 @@ class TestRequestDeliverableExistingActive:
         db_session.refresh(meeting)
         assert previous.status == DeliverableStatus.DELETED
         assert new_deliverable.status == DeliverableStatus.PENDING
-        assert meeting.status == MeetingStatus.REPORT_PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
 
-class TestRequestDeliverableMeetingInTerminalReportState:
-    def test_report_done_validates_reset_then_starts(
+class TestRequestDeliverableMultipleTypes:
+    def test_second_report_type_does_not_conflict(
         self,
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_DONE,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
-            report_filename="report.docx",
         )
 
-        deliverable = request_deliverable_use_case(
+        first = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+        second = request_deliverable_use_case(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
             deliverable_type=DeliverableType.DETAILED_SYNTHESIS,
         )
 
         db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.REPORT_PENDING
-        assert deliverable.type == DeliverableType.DETAILED_SYNTHESIS
-        mock_use_case_celery.send_task.assert_called_once()
-
-    def test_report_failed_validates_reset_then_starts(
-        self,
-        mock_use_case_celery: MagicMock,
-        db_session: Session,
-    ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_FAILED,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
-
-        request_deliverable_use_case(
-            meeting_id=meeting.id,
-            user_keycloak_uuid=meeting.owner.keycloak_uuid,
-            deliverable_type=DeliverableType.DECISION_RECORD,
-        )
-
-        db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.REPORT_PENDING
-
-
-class TestRequestDeliverableIllegalTransition:
-    def test_capture_in_progress_blocks_start_report(
-        self,
-        mock_use_case_celery: MagicMock,
-        db_session: Session,
-    ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.CAPTURE_IN_PROGRESS,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
-
-        with pytest.raises(MeetingStateConflictException):
-            request_deliverable_use_case(
-                meeting_id=meeting.id,
-                user_keycloak_uuid=meeting.owner.keycloak_uuid,
-                deliverable_type=DeliverableType.DECISION_RECORD,
-            )
-
-        db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.CAPTURE_IN_PROGRESS
-        mock_use_case_celery.send_task.assert_not_called()
+        assert first.status == DeliverableStatus.PENDING
+        assert second.status == DeliverableStatus.PENDING
+        assert first.id != second.id
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
+        assert mock_use_case_celery.send_task.call_count == 2
 
 
 class TestRequestDeliverableAuth:
@@ -432,6 +393,6 @@ class TestRequestDeliverableCeleryDispatchFailure:
         )
 
         db_session.refresh(meeting)
-        assert meeting.status == MeetingStatus.REPORT_PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert new_deliverable.status == DeliverableStatus.PENDING
         mock_use_case_celery.send_task.assert_called_once()

@@ -454,7 +454,7 @@ class TestSuccessCallbackRoute:
     ) -> None:
         meeting = MeetingFactory.create(
             owner=user_fixture,
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         save_refresh_token(str(user_fixture.keycloak_uuid), "refresh-token")
@@ -474,7 +474,7 @@ class TestSuccessCallbackRoute:
         db_session.refresh(meeting)
         assert in_progress_deliverable.status == DeliverableStatus.AVAILABLE
         assert in_progress_deliverable.external_url == in_memory_drive.url
-        assert meeting.status == MeetingStatus.REPORT_DONE
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert len(in_memory_s3.objects) == 1
         assert len(in_memory_email.sent) == 1
 
@@ -517,7 +517,7 @@ class TestFailureCallbackRoute:
     ) -> None:
         meeting = MeetingFactory.create(
             owner=user_fixture,
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         pending_deliverable = DeliverableFactory.create(
@@ -532,7 +532,7 @@ class TestFailureCallbackRoute:
         db_session.refresh(pending_deliverable)
         db_session.refresh(meeting)
         assert pending_deliverable.status == DeliverableStatus.FAILED
-        assert meeting.status == MeetingStatus.REPORT_FAILED
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
     def test_legacy_failure_alias_still_flips_to_failed(
         self,

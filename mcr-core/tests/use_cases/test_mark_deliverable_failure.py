@@ -14,12 +14,12 @@ from tests.factories.deliverable_factory import DeliverableFactory
 
 
 class TestMarkDeliverableFailure:
-    def test_flips_deliverable_and_meeting_status(
+    def test_flips_deliverable_and_leaves_meeting_status(
         self,
         db_session: Session,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         pending = DeliverableFactory.create(
@@ -33,4 +33,4 @@ class TestMarkDeliverableFailure:
         db_session.refresh(pending)
         db_session.refresh(meeting)
         assert pending.status == DeliverableStatus.FAILED
-        assert meeting.status == MeetingStatus.REPORT_FAILED
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
