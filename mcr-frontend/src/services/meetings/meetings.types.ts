@@ -1,4 +1,5 @@
 import type { Nullable } from '@/utils/types';
+import type { DeliverableStatus, DeliverableType } from '../deliverables/deliverables.types';
 
 export const MeetingStatus = [
   'NONE',
@@ -41,6 +42,7 @@ type MeetingDtoBase = {
   start_date?: string;
   end_date?: string;
   notes?: string | null;
+  deliverables: DeliverableDto[];
 };
 
 export interface OnlineMeetingDto extends MeetingDtoBase {
@@ -63,15 +65,15 @@ export type DeliverableFileType = (typeof DeliverableFileType)[number];
 
 export interface DeliverableDto {
   file_type: DeliverableFileType;
+  type: DeliverableType;
+  status: DeliverableStatus;
   external_url: string | null;
   updated_at: string;
 }
 
 export type MeetingDto = OnlineMeetingDto | ImportMeetingDto | RecordMeetingDto;
 
-export type MeetingDetailDto = MeetingDto & {
-  deliverables: DeliverableDto[];
-};
+export type MeetingDetailDto = MeetingDto;
 
 export type AddOnlineMeetingDto = Pick<
   OnlineMeetingDto,

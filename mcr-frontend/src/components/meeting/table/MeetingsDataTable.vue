@@ -104,8 +104,8 @@ const rows = computed(() =>
       id: meeting.id,
       creation_date: meeting.creation_date,
     },
-    transcription: meeting.status,
-    report: meeting.status,
+    transcription: meeting.deliverables,
+    report: meeting.deliverables,
     actions: meeting,
   })),
 );

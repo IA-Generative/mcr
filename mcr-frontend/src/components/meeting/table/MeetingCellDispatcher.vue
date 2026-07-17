@@ -5,7 +5,7 @@
   />
   <DataCellDeliverable
     v-else-if="colKey === 'transcription' || colKey === 'report'"
-    :status="cell as MeetingStatus"
+    :deliverables="cell as DeliverableDto[]"
     :deliverable-type="colKey.toUpperCase() as DeliverableFileType"
   />
   <DataCellAction
@@ -18,7 +18,7 @@
 
 <script setup lang="ts">
 import type { ColKey, CellMap, MeetingTitleCell } from './types';
-import type { MeetingDto, MeetingStatus } from '@/services/meetings/meetings.types';
+import type { DeliverableDto, MeetingDto } from '@/services/meetings/meetings.types';
 import DataCellMeetingTitle from './cells/DataCellMeetingTitle.vue';
 import DataCellAction from './cells/DataCellAction.vue';
 import type { DeliverableFileType } from '@/services/deliverables/deliverables.types';

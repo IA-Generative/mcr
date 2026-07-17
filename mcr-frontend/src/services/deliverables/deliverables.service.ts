@@ -1,19 +1,15 @@
 import type { AxiosResponse } from 'axios';
 import HttpService, { API_PATHS } from '../http/http.service';
-import type { MeetingStatus } from '../meetings/meetings.types';
 import {
-  meetingStatusForReportDone,
-  meetingStatusForReportFailed,
-  meetingStatusForReportInProgress,
-  meetingStatusForReportPending,
-  meetingStatusForTranscriptionDone,
-  meetingStatusForTranscriptionFailed,
-  meetingStatusForTranscriptionInProgress,
-  meetingStatusForTranscriptionPending,
   type DeliverableCreateRequest,
   type DeliverableListResponse,
   type DeliverableStatus,
+  type DeliverableType,
 } from './deliverables.types';
+
+type DeliverableTag = { type: DeliverableType; status: DeliverableStatus };
+
+const REPORT_TYPES: DeliverableType[] = ['DECISION_RECORD', 'DETAILED_SYNTHESIS', 'CUSTOM_REPORT'];
 
 export async function getMeetingDeliverables(meetingId: number): Promise<DeliverableListResponse> {
   const { data } = await HttpService.get<DeliverableListResponse>(
@@ -36,34 +32,24 @@ export async function downloadDeliverableFile(deliverableId: number): Promise<Ax
   });
 }
 
-export function getTranscriptionStatus(status: MeetingStatus): DeliverableStatus | null {
-  if (meetingStatusForTranscriptionPending.includes(status)) {
-    return 'PENDING';
-  }
-  if (meetingStatusForTranscriptionInProgress.includes(status)) {
-    return 'IN_PROGRESS';
-  }
-  if (meetingStatusForTranscriptionDone.includes(status)) {
-    return 'AVAILABLE';
-  }
-  if (meetingStatusForTranscriptionFailed.includes(status)) {
-    return 'FAILED';
-  }
-  return null;
+export function transcriptionTag(deliverables: DeliverableTag[]): DeliverableStatus | null {
+  const transcription = deliverables.find((d) => d.type === 'TRANSCRIPTION');
+  return transcription ? transcription.status : 'PENDING';
 }
 
-export function getReportStatus(status: MeetingStatus): DeliverableStatus | null {
-  if (meetingStatusForReportPending.includes(status)) {
+export function reportTag(deliverables: DeliverableTag[]): DeliverableStatus | null {
+  const statuses = deliverables.filter((d) => REPORT_TYPES.includes(d.type)).map((d) => d.status);
+  if (statuses.length === 0) {
     return 'PENDING';
   }
-  if (meetingStatusForReportInProgress.includes(status)) {
-    return 'IN_PROGRESS';
-  }
-  if (meetingStatusForReportDone.includes(status)) {
+  if (statuses.includes('AVAILABLE')) {
     return 'AVAILABLE';
   }
-  if (meetingStatusForReportFailed.includes(status)) {
+  if (statuses.includes('FAILED')) {
     return 'FAILED';
   }
-  return null;
+  if (statuses.includes('IN_PROGRESS')) {
+    return 'IN_PROGRESS';
+  }
+  return 'PENDING';
 }
