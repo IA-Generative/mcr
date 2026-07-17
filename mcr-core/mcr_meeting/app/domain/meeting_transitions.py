@@ -22,24 +22,8 @@ def fail_capture_bot(meeting: Meeting) -> None:
     _apply_or_conflict(meeting, MeetingEvent.FAIL_CAPTURE_BOT)
 
 
-def reset_and_start_report(meeting: Meeting) -> Meeting:
-    _try_apply(meeting, MeetingEvent.RESET_REPORT)
-    _apply_or_conflict(meeting, MeetingEvent.START_REPORT)
-    return meeting
-
-
 def mark_transcription_done(meeting: Meeting) -> Meeting:
     _apply_or_conflict(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
-    return meeting
-
-
-def complete_report(meeting: Meeting) -> Meeting:
-    _apply_or_conflict(meeting, MeetingEvent.COMPLETE_REPORT)
-    return meeting
-
-
-def fail_report(meeting: Meeting) -> Meeting:
-    _apply_or_conflict(meeting, MeetingEvent.FAIL_REPORT)
     return meeting
 
 
@@ -63,11 +47,6 @@ def fail_transcription(meeting: Meeting) -> Meeting:
     return meeting
 
 
-def update_transcription(meeting: Meeting) -> Meeting:
-    _apply(meeting, MeetingEvent.UPDATE_TRANSCRIPTION)
-    return meeting
-
-
 def _apply(meeting: Meeting, event: MeetingEvent) -> None:
     sm = get_state_machine_for_meeting(meeting)
     try:
@@ -82,10 +61,3 @@ def _apply_or_conflict(meeting: Meeting, event: MeetingEvent) -> None:
         _apply(meeting, event)
     except ValueError as exc:
         raise MeetingStateConflictException(str(exc)) from exc
-
-
-def _try_apply(meeting: Meeting, event: MeetingEvent) -> None:
-    try:
-        _apply(meeting, event)
-    except ValueError:
-        pass

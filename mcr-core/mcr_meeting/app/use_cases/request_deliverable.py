@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from pydantic import UUID4
 
 from mcr_meeting.app.db.deliverable_repository import (
@@ -7,13 +5,9 @@ from mcr_meeting.app.db.deliverable_repository import (
     save_deliverable,
     soft_delete_by_id,
 )
-from mcr_meeting.app.db.meeting_repository import get_meeting_by_id, update_meeting
-from mcr_meeting.app.db.meeting_transition_record_repository import (
-    save_meeting_transition_record,
-)
+from mcr_meeting.app.db.meeting_repository import get_meeting_by_id
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.domain.authorize_meeting_access import authorize_meeting_access
-from mcr_meeting.app.domain.meeting_transitions import reset_and_start_report
 from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
     MeetingStateConflictException,
@@ -28,8 +22,6 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
 )
-from mcr_meeting.app.models.meeting_model import MeetingStatus
-from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.celery_types import MCRReportGenerationTasks
 from mcr_meeting.app.schemas.report_generation import ReportType
 
@@ -89,18 +81,12 @@ def _persist_and_dispatch(
 ) -> Deliverable:
     try:
         with UnitOfWork():
-            reset_and_start_report(meeting)
-            update_meeting(meeting)
             deliverable = save_deliverable(
                 Deliverable(
                     meeting_id=meeting.id,
                     type=deliverable_type,
                     status=DeliverableStatus.PENDING,
                 )
-            )
-
-            save_meeting_transition_record(
-                _build_transition_record(meeting.id, meeting.status)
             )
 
             transcription_object_name = _resolve_transcription_object_name(meeting)
@@ -120,16 +106,6 @@ def _persist_and_dispatch(
         raise
     except Exception as exc:
         raise TaskCreationException(str(exc)) from exc
-
-
-def _build_transition_record(
-    meeting_id: int, next_status: MeetingStatus
-) -> MeetingTransitionRecord:
-    return MeetingTransitionRecord(
-        meeting_id=meeting_id,
-        timestamp=datetime.now(timezone.utc),
-        status=next_status,
-    )
 
 
 def _resolve_transcription_object_name(meeting: Meeting) -> str:

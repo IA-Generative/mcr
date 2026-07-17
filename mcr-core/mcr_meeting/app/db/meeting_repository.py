@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy.orm import Query, joinedload
+from sqlalchemy.orm import Query, joinedload, selectinload
 
 from mcr_meeting.app.db.apply_dto import apply_dto
 from mcr_meeting.app.db.db import get_db_session_ctx
@@ -76,8 +76,10 @@ def update_meeting(updated_meeting: Meeting) -> Meeting:
 
 def _build_meetings_query(user_id: int, search: str | None) -> Query[Meeting]:
     db = get_db_session_ctx()
-    query = db.query(Meeting).filter(
-        Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED
+    query = (
+        db.query(Meeting)
+        .options(selectinload(Meeting.deliverables))
+        .filter(Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED)
     )
     if search:
         search_pattern = f"%{search}%"
