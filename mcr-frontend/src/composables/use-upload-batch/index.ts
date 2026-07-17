@@ -52,16 +52,19 @@ function getItem(id: number): store.UploadItem | undefined {
   return selectors.getItem(state.value, id);
 }
 
+const derived = {
+  isOpen: computed(() => selectors.isOpen(state.value)),
+  items: computed(() => selectors.getDisplayOrder(state.value)),
+  batchTitle: computed(() => selectors.getBatchTitle(state.value)),
+  batchEtaSeconds: computed(() => selectors.getBatchEtaSeconds(state.value)),
+  hasActiveWork: computed(() => selectors.hasActiveWork(state.value)),
+  isSettled: computed(() => selectors.isSettled(state.value)),
+  getProgressRatio: selectors.getProgressRatio,
+  getFailureMessageKey: selectors.getFailureMessageKey,
+};
+
 export function useUploadBatch() {
-  return {
-    items: computed(() => selectors.getDisplayOrder(state.value)),
-    batchTitle: computed(() => selectors.getBatchTitle(state.value)),
-    batchEtaSeconds: computed(() => selectors.getBatchEtaSeconds(state.value)),
-    hasActiveWork: computed(() => selectors.hasActiveWork(state.value)),
-    isSettled: computed(() => selectors.isSettled(state.value)),
-    getProgressRatio: selectors.getProgressRatio,
-    getFailureMessageKey: selectors.getFailureMessageKey,
-  };
+  return derived;
 }
 
 export function useUploadBatchWriter() {

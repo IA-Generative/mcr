@@ -19,7 +19,9 @@ provide('auth', auth);
 
 const { cleanupStaleChunks } = useAudioChunkCleanup();
 
-useUnloadWarning(useUploadBatch().hasActiveWork);
+const uploadBatch = useUploadBatch();
+
+useUnloadWarning(uploadBatch.hasActiveWork);
 
 onMounted(async () => {
   await auth.currentUserQuery.refetch();
@@ -35,11 +37,15 @@ onMounted(async () => {
     </main>
     <AppFooter></AppFooter>
   </div>
-  <FeedbackButton v-if="auth.isLogged" />
+  <FeedbackButton
+    v-if="auth.isLogged"
+    :compact="uploadBatch.isOpen.value"
+  />
+  <ImportSticky />
   <ModalsContainer />
   <AppToaster
     :messages="toaster.messages"
     @close-message="toaster.removeMessage($event)"
   />
-  <VueQueryDevtools />
+  <VueQueryDevtools button-position="bottom-left" />
 </template>
