@@ -30,9 +30,13 @@ sys.modules["mcr_generation.app.utils.celery_worker"] = _mock_celery_worker
 sys.modules["mcr_generation.app.services.utils.input_chunker"] = MagicMock()
 sys.modules["mcr_generation.app.services.report_generator"] = MagicMock()
 
+from mcr_generation.app.exceptions.exceptions import (  # noqa: E402
+    ReportCallbackError,
+)
 from mcr_generation.app.services.report_generation_task_service import (  # noqa: E402
     generate_report_from_docx,
     generate_report_from_docx_success,
+    mark_deliverable_in_progress_before_generation,
     set_meeting_failed_status_on_error,
 )
 
@@ -209,6 +213,41 @@ class TestExtractReportTaskArgs:
                     "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
                 }
             )
+
+
+class TestMarkDeliverableInProgressBeforeGeneration:
+    @fixture(autouse=True)
+    def _no_sleep(self, monkeypatch: MagicMock) -> None:
+        monkeypatch.setattr(
+            "mcr_generation.app.services.report_generation_task_service.time.sleep",
+            lambda _: None,
+        )
+
+    def test_calls_in_progress_with_deliverable_id(
+        self,
+        mock_core_api_client: MagicMock,
+    ) -> None:
+        mark_deliverable_in_progress_before_generation(
+            args=[42],
+            kwargs={"owner_keycloak_uuid": "abc", "deliverable_id": 7},
+        )
+
+        mock_core_api_client.mark_deliverable_in_progress.assert_called_once_with(
+            deliverable_id=7
+        )
+
+    def test_callback_failure_does_not_raise(
+        self,
+        mock_core_api_client: MagicMock,
+    ) -> None:
+        mock_core_api_client.mark_deliverable_in_progress.side_effect = (
+            ReportCallbackError("boom")
+        )
+
+        mark_deliverable_in_progress_before_generation(
+            args=[42],
+            kwargs={"owner_keycloak_uuid": "abc", "deliverable_id": 7},
+        )
 
 
 class TestGenerateReportFromDocxSuccess:

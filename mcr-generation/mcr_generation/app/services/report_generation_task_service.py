@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from celery.signals import task_failure, task_prerun, task_success
@@ -6,7 +7,11 @@ from loguru import logger
 
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
-from mcr_generation.app.configs.settings import LangfuseSettings
+from mcr_generation.app.configs.settings import (
+    InProgressCallbackSettings,
+    LangfuseSettings,
+)
+from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -26,6 +31,7 @@ from mcr_generation.app.utils.sentry_context import (
 )
 
 langfuse_settings = LangfuseSettings()
+in_progress_settings = InProgressCallbackSettings()
 
 
 @celery_app.task(name=MCRReportGenerationTasks.REPORT)
@@ -59,6 +65,24 @@ def generate_report_from_docx(
     report = generator.generate(chunks, notes_content=notes_content)
 
     return report
+
+
+@task_prerun.connect(sender=generate_report_from_docx)
+def mark_deliverable_in_progress_before_generation(**kwargs: Any) -> None:
+    task_args = extract_report_task_args(kwargs)
+
+    time.sleep(in_progress_settings.IN_PROGRESS_PRERUN_DELAY_SECONDS)
+
+    try:
+        CoreApiClient().mark_deliverable_in_progress(
+            deliverable_id=task_args.deliverable_id
+        )
+    except ReportCallbackError:
+        logger.warning(
+            "in_progress callback failed after retries for deliverable {}; "
+            "continuing generation",
+            task_args.deliverable_id,
+        )
 
 
 @task_prerun.connect(sender=generate_report_from_docx)

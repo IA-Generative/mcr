@@ -128,6 +128,66 @@ class TestMarkDeliverableSuccess:
             )
 
 
+class TestMarkDeliverableInProgress:
+    @pytest.fixture(autouse=True)
+    def _fast_retries(self, monkeypatch: Any) -> None:
+        monkeypatch.setenv("IN_PROGRESS_RETRY_MAX_ATTEMPTS", "3")
+        monkeypatch.setenv("IN_PROGRESS_RETRY_WAIT_MULTIPLIER", "0")
+        monkeypatch.setenv("IN_PROGRESS_RETRY_MIN_WAIT", "0")
+        monkeypatch.setenv("IN_PROGRESS_RETRY_MAX_WAIT", "0")
+
+    def test_posts_to_in_progress_endpoint(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        mock_httpx_client.post.assert_called_once()
+        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/in_progress"
+
+    def test_retries_on_404_then_succeeds(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        ok = MagicMock()
+        first = MagicMock()
+        first.raise_for_status.side_effect = _http_error(404)
+        mock_httpx_client.post.side_effect = [first, ok]
+
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 2
+
+    def test_swallows_409(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            409
+        )
+
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        mock_httpx_client.post.assert_called_once()
+
+    def test_raises_after_exhausting_retries_on_404(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            404
+        )
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 3
+
+
 class TestMarkDeliverableFailure:
     def test_posts_to_deliverable_failure_endpoint(
         self,

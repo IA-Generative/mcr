@@ -23,6 +23,11 @@ class ReportCallbackError(MCRGenerationException):
     """Raised when posting the generated report back to mcr-core fails."""
 
 
+class DeliverableNotYetVisibleError(ReportCallbackError):
+    """Raised when mcr-core returns 404 on in_progress: the deliverable row is
+    not committed yet (send_task ran inside the transaction). Triggers a retry."""
+
+
 class UnsupportedReportTypeError(MCRGenerationException):
     """Raised when an unknown report type is requested."""
 
