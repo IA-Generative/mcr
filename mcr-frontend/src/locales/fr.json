@@ -208,7 +208,15 @@
       "errors": {
         "file-format-unsupported": "Format non supporté. Formats acceptés : {formats}.",
         "file-too-long": "Fichier trop long. La durée maximum est de {maxDuration}.",
-        "file-invalid": "Le fichier sélectionné n'a pas pu être converti."
+        "file-invalid": "Le fichier sélectionné n'a pas pu être converti.",
+        "connection": "Importation échouée. Vérifiez votre connexion et réessayez.",
+        "server": "Le serveur ne répond pas. Réessayez dans quelques minutes.",
+        "file-unprocessable": "Nous ne pouvons pas traiter ce fichier."
+      },
+      "batch": {
+        "title-active": "Importation de {count} élément(s)",
+        "title-settled": "{success} importation(s) réussie(s)",
+        "title-settled-with-errors": "{success} importation(s) réussie(s), {failed} en erreur"
       },
       "confirm-leave": {
         "title": "Êtes-vous sûr de vouloir quitter la page ?",
