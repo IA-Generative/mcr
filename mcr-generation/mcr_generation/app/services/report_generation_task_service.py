@@ -11,7 +11,6 @@ from mcr_generation.app.configs.settings import (
     InProgressCallbackSettings,
     LangfuseSettings,
 )
-from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -40,11 +39,15 @@ def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
     report_type: str = ReportTypes.DECISION_RECORD.value,
-    deliverable_id: int | None = None,
+    *,
+    deliverable_id: int,
     owner_keycloak_uuid: str | None = None,
     notes_content: str | None = None,
     custom_prompt: str | None = None,
 ) -> BaseReport | CustomMarkdownReport:
+    time.sleep(in_progress_settings.IN_PROGRESS_START_DELAY_SECONDS)
+    CoreApiClient().mark_deliverable_in_progress(deliverable_id=deliverable_id)
+
     record_report_trace_context(
         meeting_id=meeting_id,
         transcription_object_filename=transcription_object_filename,
@@ -65,24 +68,6 @@ def generate_report_from_docx(
     report = generator.generate(chunks, notes_content=notes_content)
 
     return report
-
-
-@task_prerun.connect(sender=generate_report_from_docx)
-def mark_deliverable_in_progress_before_generation(**kwargs: Any) -> None:
-    task_args = extract_report_task_args(kwargs)
-
-    time.sleep(in_progress_settings.IN_PROGRESS_PRERUN_DELAY_SECONDS)
-
-    try:
-        CoreApiClient().mark_deliverable_in_progress(
-            deliverable_id=task_args.deliverable_id
-        )
-    except ReportCallbackError:
-        logger.warning(
-            "in_progress callback failed after retries for deliverable {}; "
-            "continuing generation",
-            task_args.deliverable_id,
-        )
 
 
 @task_prerun.connect(sender=generate_report_from_docx)

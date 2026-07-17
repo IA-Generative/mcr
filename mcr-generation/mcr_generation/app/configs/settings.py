@@ -134,19 +134,15 @@ class ApiSettings(BaseSettings):
 
 
 class InProgressCallbackSettings(BaseSettings):
-    IN_PROGRESS_PRERUN_DELAY_SECONDS: float = Field(
+    IN_PROGRESS_START_DELAY_SECONDS: float = Field(
         default=5.0,
         ge=0.0,
-        description="Delay before the in_progress callback, letting mcr-core commit the deliverable row dispatched in the same transaction as send_task.",
+        description="Delay before the start callback, letting mcr-core commit the deliverable row dispatched in the same transaction as send_task.",
     )
     IN_PROGRESS_RETRY_MAX_ATTEMPTS: int = Field(
         default=6,
         ge=1,
         description="Max attempts for the in_progress callback while the deliverable row is not yet visible (404).",
-    )
-    IN_PROGRESS_RETRY_WAIT_MULTIPLIER: float = Field(
-        default=0.5,
-        description="Exponential backoff multiplier between in_progress retries",
     )
     IN_PROGRESS_RETRY_MIN_WAIT: float = Field(
         default=0.5, description="Minimum wait in seconds between in_progress retries"
