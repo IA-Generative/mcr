@@ -106,8 +106,8 @@ async def get_deliverable_file_route(
     return StreamingResponse(result.buffer, media_type=DOCX_MIME_TYPE, headers=headers)
 
 
-@deliverables_router.post("/{deliverable_id}/in_progress")
-async def deliverable_in_progress_callback(
+@deliverables_router.post("/{deliverable_id}/start")
+async def deliverable_start_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_deliverable_in_progress(deliverable_id=deliverable_id)
@@ -126,8 +126,8 @@ async def deliverable_success_callback(
     return DeliverableResponse.model_validate(deliverable)
 
 
-@deliverables_router.post("/{deliverable_id}/failure")
-async def deliverable_failure_callback(
+@deliverables_router.post("/{deliverable_id}/fail")
+async def deliverable_fail_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_deliverable_failure(deliverable_id=deliverable_id)
