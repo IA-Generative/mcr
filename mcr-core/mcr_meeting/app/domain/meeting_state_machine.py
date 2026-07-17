@@ -1,4 +1,5 @@
 from statemachine import State, StateMachine
+from statemachine.exceptions import InvalidStateValue
 
 from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.models import Meeting, MeetingStatus
@@ -142,13 +143,9 @@ def _from_status(
     ],
     meeting: Meeting,
 ) -> VisioMeetingStateMachine | RecordMeetingStateMachine | ImportMeetingStateMachine:
-    sm = cls(meeting)
-
-    for st in sm.states:
-        if isinstance(st.value, str) and st.value == meeting.status:
-            sm.current_state = st
-            break
-    else:
-        raise MeetingStateConflictException(f"Not state found for {meeting.status}")
-
-    return sm
+    try:
+        return cls(meeting)
+    except InvalidStateValue as exc:
+        raise MeetingStateConflictException(
+            f"No state found for {meeting.status}"
+        ) from exc

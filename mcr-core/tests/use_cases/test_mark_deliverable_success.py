@@ -12,7 +12,6 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingPlatforms,
     MeetingStatus,
 )
-from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.report_generation import (
     ReportGenerationResponse,
     ReportHeader,
@@ -46,7 +45,7 @@ class TestHappyPath:
         in_memory_email: InMemoryEmailClient,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         in_progress_deliverable = DeliverableFactory.create(
@@ -65,20 +64,11 @@ class TestHappyPath:
         db_session.refresh(meeting)
         assert result.status == DeliverableStatus.AVAILABLE
         assert in_progress_deliverable.status == DeliverableStatus.AVAILABLE
-        assert meeting.status == MeetingStatus.REPORT_DONE
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert len(in_memory_s3.objects) == 1
         uploaded_key = next(iter(in_memory_s3.objects))
         assert uploaded_key.endswith("decision_record.docx")
         assert len(in_memory_email.sent) == 1
-        records = (
-            db_session.query(MeetingTransitionRecord)
-            .filter(
-                MeetingTransitionRecord.meeting_id == meeting.id,
-                MeetingTransitionRecord.status == MeetingStatus.REPORT_DONE,
-            )
-            .all()
-        )
-        assert len(records) == 1
 
 
 class TestDriveUpload:
@@ -90,7 +80,7 @@ class TestDriveUpload:
         in_memory_drive: InMemoryDriveClient,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         save_refresh_token(str(meeting.owner.keycloak_uuid), "refresh-token")
@@ -118,7 +108,7 @@ class TestDriveUpload:
     ) -> None:
         in_memory_drive.should_fail = True
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         save_refresh_token(str(meeting.owner.keycloak_uuid), "refresh-token")
@@ -137,7 +127,7 @@ class TestDriveUpload:
         db_session.refresh(meeting)
         assert result.status == DeliverableStatus.AVAILABLE
         assert in_progress_deliverable.external_url is None
-        assert meeting.status == MeetingStatus.REPORT_DONE
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert len(in_memory_email.sent) == 1
 
     def test_skips_drive_when_no_refresh_token(
@@ -148,7 +138,7 @@ class TestDriveUpload:
         in_memory_drive: InMemoryDriveClient,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         in_progress_deliverable = DeliverableFactory.create(
@@ -175,7 +165,7 @@ class TestDriveUpload:
     ) -> None:
         in_memory_keycloak.should_fail_refresh = True
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         user_sub = str(meeting.owner.keycloak_uuid)
@@ -206,7 +196,7 @@ class TestDriveUpload:
     ) -> None:
         in_memory_keycloak.rotated_refresh_token = "rotated-token"
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         user_sub = str(meeting.owner.keycloak_uuid)
@@ -234,7 +224,7 @@ class TestFailureRollback:
     ) -> None:
         in_memory_s3.fail(S3Op.PUT, RuntimeError("S3 put failed"))
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         in_progress_deliverable = DeliverableFactory.create(
@@ -252,7 +242,7 @@ class TestFailureRollback:
         db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
         assert in_progress_deliverable.status == DeliverableStatus.FAILED
-        assert meeting.status == MeetingStatus.REPORT_PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert in_memory_s3.objects == {}
         assert in_memory_email.sent == []
 
@@ -268,7 +258,7 @@ class TestFailureRollback:
             side_effect=RuntimeError("render boom"),
         )
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         in_progress_deliverable = DeliverableFactory.create(
@@ -286,7 +276,7 @@ class TestFailureRollback:
         db_session.refresh(in_progress_deliverable)
         db_session.refresh(meeting)
         assert in_progress_deliverable.status == DeliverableStatus.FAILED
-        assert meeting.status == MeetingStatus.REPORT_PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert in_memory_s3.objects == {}
         assert in_memory_email.sent == []
 
@@ -297,7 +287,7 @@ class TestFailureRollback:
         in_memory_email: InMemoryEmailClient,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         in_progress_deliverable = DeliverableFactory.create(
@@ -329,7 +319,7 @@ class TestPostCommitFailures:
     ) -> None:
         in_memory_email.should_fail = True
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         in_progress_deliverable = DeliverableFactory.create(
@@ -347,7 +337,7 @@ class TestPostCommitFailures:
         db_session.refresh(meeting)
         assert result.status == DeliverableStatus.AVAILABLE
         assert in_progress_deliverable.status == DeliverableStatus.AVAILABLE
-        assert meeting.status == MeetingStatus.REPORT_DONE
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
 
 class TestConflict:
@@ -358,7 +348,7 @@ class TestConflict:
         in_memory_email: InMemoryEmailClient,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         pending_deliverable = DeliverableFactory.create(
@@ -384,7 +374,7 @@ class TestConflict:
         in_memory_email: InMemoryEmailClient,
     ) -> None:
         meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_DONE,
+            status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
         existing = DeliverableFactory.create(
