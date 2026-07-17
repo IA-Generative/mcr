@@ -1,5 +1,6 @@
 from statemachine import State, StateMachine
 
+from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
 from mcr_meeting.app.models import Meeting, MeetingStatus
 from mcr_meeting.app.models.meeting_model import MeetingPlatforms
 
@@ -23,9 +24,6 @@ class VisioMeetingStateMachine(StateMachine):
     TRANSCRIPTION_IN_PROGRESS = State(MeetingStatus.TRANSCRIPTION_IN_PROGRESS)
     TRANSCRIPTION_DONE = State(MeetingStatus.TRANSCRIPTION_DONE)
     TRANSCRIPTION_FAILED = State(MeetingStatus.TRANSCRIPTION_FAILED)
-    REPORT_PENDING = State(MeetingStatus.REPORT_PENDING)
-    REPORT_DONE = State(MeetingStatus.REPORT_DONE)
-    REPORT_FAILED = State(MeetingStatus.REPORT_FAILED)
     DELETED = State(MeetingStatus.DELETED, final=True)
 
     # transitions / events
@@ -49,18 +47,9 @@ class VisioMeetingStateMachine(StateMachine):
     )
     START_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(TRANSCRIPTION_IN_PROGRESS)
     COMPLETE_TRANSCRIPTION = TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_DONE)
-    UPDATE_TRANSCRIPTION = TRANSCRIPTION_DONE.to.itself() | REPORT_DONE.to(  # type: ignore[no-untyped-call]
-        TRANSCRIPTION_DONE
-    )
     FAIL_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(
         TRANSCRIPTION_FAILED
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
-    START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
-    COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
-    FAIL_REPORT = REPORT_PENDING.to(REPORT_FAILED)
-    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE) | REPORT_FAILED.to(
-        TRANSCRIPTION_DONE
-    )
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
 
@@ -79,9 +68,6 @@ class RecordMeetingStateMachine(StateMachine):
     TRANSCRIPTION_IN_PROGRESS = State(MeetingStatus.TRANSCRIPTION_IN_PROGRESS)
     TRANSCRIPTION_DONE = State(MeetingStatus.TRANSCRIPTION_DONE)
     TRANSCRIPTION_FAILED = State(MeetingStatus.TRANSCRIPTION_FAILED)
-    REPORT_PENDING = State(MeetingStatus.REPORT_PENDING)
-    REPORT_DONE = State(MeetingStatus.REPORT_DONE)
-    REPORT_FAILED = State(MeetingStatus.REPORT_FAILED)
     DELETED = State(MeetingStatus.DELETED, final=True)
 
     # transitions / events
@@ -98,18 +84,9 @@ class RecordMeetingStateMachine(StateMachine):
     )
     START_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(TRANSCRIPTION_IN_PROGRESS)
     COMPLETE_TRANSCRIPTION = TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_DONE)
-    UPDATE_TRANSCRIPTION = TRANSCRIPTION_DONE.to.itself() | REPORT_DONE.to(  # type: ignore[no-untyped-call]
-        TRANSCRIPTION_DONE
-    )
     FAIL_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(
         TRANSCRIPTION_FAILED
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
-    START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
-    COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
-    FAIL_REPORT = REPORT_PENDING.to(REPORT_FAILED)
-    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE) | REPORT_FAILED.to(
-        TRANSCRIPTION_DONE
-    )
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
 
@@ -127,9 +104,6 @@ class ImportMeetingStateMachine(StateMachine):
     TRANSCRIPTION_IN_PROGRESS = State(MeetingStatus.TRANSCRIPTION_IN_PROGRESS)
     TRANSCRIPTION_DONE = State(MeetingStatus.TRANSCRIPTION_DONE)
     TRANSCRIPTION_FAILED = State(MeetingStatus.TRANSCRIPTION_FAILED)
-    REPORT_PENDING = State(MeetingStatus.REPORT_PENDING)
-    REPORT_DONE = State(MeetingStatus.REPORT_DONE)
-    REPORT_FAILED = State(MeetingStatus.REPORT_FAILED)
     DELETED = State(MeetingStatus.DELETED, final=True)
 
     # transitions / events
@@ -143,18 +117,9 @@ class ImportMeetingStateMachine(StateMachine):
     )
     START_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(TRANSCRIPTION_IN_PROGRESS)
     COMPLETE_TRANSCRIPTION = TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_DONE)
-    UPDATE_TRANSCRIPTION = TRANSCRIPTION_DONE.to.itself() | REPORT_DONE.to(  # type: ignore[no-untyped-call]
-        TRANSCRIPTION_DONE
-    )
     FAIL_TRANSCRIPTION = TRANSCRIPTION_PENDING.to(
         TRANSCRIPTION_FAILED
     ) | TRANSCRIPTION_IN_PROGRESS.to(TRANSCRIPTION_FAILED)
-    START_REPORT = TRANSCRIPTION_DONE.to(REPORT_PENDING)
-    COMPLETE_REPORT = REPORT_PENDING.to(REPORT_DONE)
-    FAIL_REPORT = REPORT_PENDING.to(REPORT_FAILED)
-    RESET_REPORT = REPORT_DONE.to(TRANSCRIPTION_DONE) | REPORT_FAILED.to(
-        TRANSCRIPTION_DONE
-    )
     # Ignore mypy warning: from_.any() is dynamic DSL, not typed
     DELETE = DELETED.from_.any()  # type: ignore
 
@@ -184,6 +149,6 @@ def _from_status(
             sm.current_state = st
             break
     else:
-        raise ValueError(f"Not state found for {meeting.status}")
+        raise MeetingStateConflictException(f"Not state found for {meeting.status}")
 
     return sm

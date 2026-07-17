@@ -126,6 +126,21 @@ class PaginatedMeetingsResponse(BaseModel):
     data: list["MeetingResponse"]
 
 
+class DeliverableResponse(BaseModel):
+    type: DeliverableType
+    status: DeliverableStatus
+    external_url: str | None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def file_type(self) -> DeliverableType:
+        # Legacy alias kept until the v2 frontend (Step 4) replaces the old one.
+        return self.type
+
+
 class MeetingResponse(MeetingBase):
     """
     Full model for meeting details.
@@ -145,6 +160,16 @@ class MeetingResponse(MeetingBase):
 
     id: int
     status: MeetingStatus
+    deliverables: list[DeliverableResponse] = []
+
+    @field_validator("deliverables", mode="before")
+    @classmethod
+    def drop_deleted_deliverables(cls, value: object) -> object:
+        if not isinstance(value, list):
+            return value
+        return [
+            d for d in value if getattr(d, "status", None) != DeliverableStatus.DELETED
+        ]
 
     @field_validator("creation_date")
     @classmethod
@@ -218,20 +243,5 @@ def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
     return meeting
 
 
-class DeliverableResponse(BaseModel):
-    type: DeliverableType
-    status: DeliverableStatus
-    external_url: str | None
-    updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def file_type(self) -> DeliverableType:
-        # Legacy alias kept until the v2 frontend (Step 4) replaces the old one.
-        return self.type
-
-
 class MeetingDetailResponse(MeetingResponse):
-    deliverables: list[DeliverableResponse] = []
+    pass
