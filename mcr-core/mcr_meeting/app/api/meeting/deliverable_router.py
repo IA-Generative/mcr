@@ -20,6 +20,9 @@ from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
 )
 from mcr_meeting.app.use_cases.mark_deliverable_failure import mark_deliverable_failure
+from mcr_meeting.app.use_cases.mark_deliverable_in_progress import (
+    mark_deliverable_in_progress,
+)
 from mcr_meeting.app.use_cases.mark_deliverable_success import (
     mark_deliverable_success,
 )
@@ -101,6 +104,14 @@ async def get_deliverable_file_route(
     )
     headers = create_safe_filename_header(filename)
     return StreamingResponse(result.buffer, media_type=DOCX_MIME_TYPE, headers=headers)
+
+
+@deliverables_router.post("/{deliverable_id}/in_progress")
+async def deliverable_in_progress_callback(
+    deliverable_id: int,
+) -> DeliverableResponse:
+    deliverable = mark_deliverable_in_progress(deliverable_id=deliverable_id)
+    return DeliverableResponse.model_validate(deliverable)
 
 
 @deliverables_router.post("/{deliverable_id}/success")
