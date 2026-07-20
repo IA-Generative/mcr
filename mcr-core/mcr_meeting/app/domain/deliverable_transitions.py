@@ -9,6 +9,7 @@ from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableSta
 
 
 class DeliverableEvent(StrEnum):
+    DISPATCH = "DISPATCH"
     MARK_IN_PROGRESS = "MARK_IN_PROGRESS"
     MARK_AVAILABLE = "MARK_AVAILABLE"
     MARK_FAILED = "MARK_FAILED"
@@ -19,15 +20,18 @@ class DeliverableEvent(StrEnum):
 class DeliverableStateMachine(StateMachine):
     _states = States.from_enum(
         DeliverableStatus,
-        initial=DeliverableStatus.PENDING,
+        initial=DeliverableStatus.REQUESTED,
         final=DeliverableStatus.DELETED,
         use_enum_instance=True,
     )
 
+    DISPATCH = _states.REQUESTED.to(_states.PENDING)
     MARK_IN_PROGRESS = _states.PENDING.to(_states.IN_PROGRESS)
     MARK_AVAILABLE = _states.IN_PROGRESS.to(_states.AVAILABLE)
-    MARK_FAILED = _states.PENDING.to(_states.FAILED) | _states.IN_PROGRESS.to(
-        _states.FAILED
+    MARK_FAILED = (
+        _states.REQUESTED.to(_states.FAILED)
+        | _states.PENDING.to(_states.FAILED)
+        | _states.IN_PROGRESS.to(_states.FAILED)
     )
     FORCED_REQUEUE = (
         _states.IN_PROGRESS.to(_states.PENDING)
@@ -35,11 +39,17 @@ class DeliverableStateMachine(StateMachine):
         | _states.PENDING.to.itself()
     )
     SOFT_DELETE = (
-        _states.PENDING.to(_states.DELETED)
+        _states.REQUESTED.to(_states.DELETED)
+        | _states.PENDING.to(_states.DELETED)
         | _states.IN_PROGRESS.to(_states.DELETED)
         | _states.AVAILABLE.to(_states.DELETED)
         | _states.FAILED.to(_states.DELETED)
     )
+
+
+def dispatch(deliverable: Deliverable) -> Deliverable:
+    _send(deliverable, DeliverableEvent.DISPATCH)
+    return deliverable
 
 
 def mark_in_progress(deliverable: Deliverable) -> Deliverable:

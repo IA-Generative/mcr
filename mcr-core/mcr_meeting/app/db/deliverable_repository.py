@@ -73,6 +73,20 @@ def get_active_by_meeting_and_type(
     return deliverable
 
 
+def find_requested_reports_by_meeting(meeting_id: int) -> list[Deliverable]:
+    db = get_db_session_ctx()
+    return list(
+        db.query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type != DeliverableType.TRANSCRIPTION,
+            Deliverable.status == DeliverableStatus.REQUESTED,
+        )
+        .order_by(Deliverable.created_at.asc())
+        .all()
+    )
+
+
 def set_status(deliverable_id: int, status: DeliverableStatus) -> None:
     db = get_db_session_ctx()
     db.query(Deliverable).filter(Deliverable.id == deliverable_id).update(

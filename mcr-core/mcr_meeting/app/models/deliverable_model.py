@@ -16,6 +16,7 @@ class DeliverableType(StrEnum):
 
 
 class DeliverableStatus(StrEnum):
+    REQUESTED = "REQUESTED"
     PENDING = "PENDING"
     IN_PROGRESS = "IN_PROGRESS"
     AVAILABLE = "AVAILABLE"

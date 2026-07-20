@@ -1,6 +1,7 @@
 import pytest
 
 from mcr_meeting.app.domain.deliverable_transitions import (
+    dispatch,
     forced_requeue,
     mark_available,
     mark_failed,
@@ -23,6 +24,36 @@ def _make_deliverable(status: DeliverableStatus) -> Deliverable:
     )
 
 
+class TestDispatch:
+    def test_flips_requested_to_pending(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.REQUESTED)
+
+        result = dispatch(deliverable)
+
+        assert result is deliverable
+        assert deliverable.status == DeliverableStatus.PENDING
+
+    @pytest.mark.parametrize(
+        "starting_status",
+        [
+            DeliverableStatus.PENDING,
+            DeliverableStatus.IN_PROGRESS,
+            DeliverableStatus.AVAILABLE,
+            DeliverableStatus.FAILED,
+            DeliverableStatus.DELETED,
+        ],
+    )
+    def test_rejects_from_any_other_status(
+        self, starting_status: DeliverableStatus
+    ) -> None:
+        deliverable = _make_deliverable(starting_status)
+
+        with pytest.raises(DeliverableStateConflictException):
+            dispatch(deliverable)
+
+        assert deliverable.status == starting_status
+
+
 class TestMarkInProgress:
     def test_flips_pending_to_in_progress(self) -> None:
         deliverable = _make_deliverable(DeliverableStatus.PENDING)
@@ -35,6 +66,7 @@ class TestMarkInProgress:
     @pytest.mark.parametrize(
         "starting_status",
         [
+            DeliverableStatus.REQUESTED,
             DeliverableStatus.IN_PROGRESS,
             DeliverableStatus.AVAILABLE,
             DeliverableStatus.FAILED,
@@ -76,7 +108,11 @@ class TestForcedRequeue:
 
     @pytest.mark.parametrize(
         "starting_status",
-        [DeliverableStatus.AVAILABLE, DeliverableStatus.DELETED],
+        [
+            DeliverableStatus.REQUESTED,
+            DeliverableStatus.AVAILABLE,
+            DeliverableStatus.DELETED,
+        ],
     )
     def test_rejects_from_non_requeueable_status(
         self, starting_status: DeliverableStatus
@@ -141,6 +177,13 @@ class TestMarkAvailable:
 
 
 class TestMarkFailed:
+    def test_flips_requested_to_failed(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.REQUESTED)
+
+        mark_failed(deliverable)
+
+        assert deliverable.status == DeliverableStatus.FAILED
+
     def test_flips_pending_to_failed(self) -> None:
         deliverable = _make_deliverable(DeliverableStatus.PENDING)
 
@@ -166,6 +209,7 @@ class TestSoftDelete:
     @pytest.mark.parametrize(
         "starting_status",
         [
+            DeliverableStatus.REQUESTED,
             DeliverableStatus.PENDING,
             DeliverableStatus.IN_PROGRESS,
             DeliverableStatus.AVAILABLE,
