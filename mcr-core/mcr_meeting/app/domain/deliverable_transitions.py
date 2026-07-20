@@ -12,7 +12,7 @@ class DeliverableEvent(StrEnum):
     MARK_IN_PROGRESS = "MARK_IN_PROGRESS"
     MARK_AVAILABLE = "MARK_AVAILABLE"
     MARK_FAILED = "MARK_FAILED"
-    REQUEUE = "REQUEUE"
+    FORCED_REQUEUE = "FORCED_REQUEUE"
     SOFT_DELETE = "SOFT_DELETE"
 
 
@@ -29,7 +29,11 @@ class DeliverableStateMachine(StateMachine):
     MARK_FAILED = _states.PENDING.to(_states.FAILED) | _states.IN_PROGRESS.to(
         _states.FAILED
     )
-    REQUEUE = _states.FAILED.to(_states.PENDING)
+    FORCED_REQUEUE = (
+        _states.IN_PROGRESS.to(_states.PENDING)
+        | _states.FAILED.to(_states.PENDING)
+        | _states.PENDING.to.itself()
+    )
     SOFT_DELETE = (
         _states.PENDING.to(_states.DELETED)
         | _states.IN_PROGRESS.to(_states.DELETED)
@@ -54,8 +58,8 @@ def mark_failed(deliverable: Deliverable) -> Deliverable:
     return deliverable
 
 
-def requeue(deliverable: Deliverable) -> Deliverable:
-    _send(deliverable, DeliverableEvent.REQUEUE)
+def forced_requeue(deliverable: Deliverable) -> Deliverable:
+    _send(deliverable, DeliverableEvent.FORCED_REQUEUE)
     return deliverable
 
 

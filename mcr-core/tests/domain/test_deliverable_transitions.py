@@ -1,10 +1,10 @@
 import pytest
 
 from mcr_meeting.app.domain.deliverable_transitions import (
+    forced_requeue,
     mark_available,
     mark_failed,
     mark_in_progress,
-    requeue,
     soft_delete,
 )
 from mcr_meeting.app.exceptions.exceptions import DeliverableStateConflictException
@@ -52,31 +52,39 @@ class TestMarkInProgress:
         assert deliverable.status == starting_status
 
 
-class TestRequeue:
-    def test_flips_failed_back_to_pending(self) -> None:
-        deliverable = _make_deliverable(DeliverableStatus.FAILED)
+class TestForcedRequeue:
+    @pytest.mark.parametrize(
+        "starting_status",
+        [DeliverableStatus.IN_PROGRESS, DeliverableStatus.FAILED],
+    )
+    def test_flips_requeueable_back_to_pending(
+        self, starting_status: DeliverableStatus
+    ) -> None:
+        deliverable = _make_deliverable(starting_status)
 
-        result = requeue(deliverable)
+        result = forced_requeue(deliverable)
 
         assert result is deliverable
         assert deliverable.status == DeliverableStatus.PENDING
 
+    def test_pending_self_loop_is_a_noop(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.PENDING)
+
+        forced_requeue(deliverable)
+
+        assert deliverable.status == DeliverableStatus.PENDING
+
     @pytest.mark.parametrize(
         "starting_status",
-        [
-            DeliverableStatus.PENDING,
-            DeliverableStatus.IN_PROGRESS,
-            DeliverableStatus.AVAILABLE,
-            DeliverableStatus.DELETED,
-        ],
+        [DeliverableStatus.AVAILABLE, DeliverableStatus.DELETED],
     )
-    def test_rejects_from_any_other_status(
+    def test_rejects_from_non_requeueable_status(
         self, starting_status: DeliverableStatus
     ) -> None:
         deliverable = _make_deliverable(starting_status)
 
         with pytest.raises(DeliverableStateConflictException):
-            requeue(deliverable)
+            forced_requeue(deliverable)
 
         assert deliverable.status == starting_status
 

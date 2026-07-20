@@ -53,6 +53,11 @@ def start_transcription(meeting: Meeting) -> Meeting:
     return meeting
 
 
+def forced_requeue(meeting: Meeting) -> Meeting:
+    _apply_or_conflict(meeting, MeetingEvent.FORCED_REQUEUE)
+    return meeting
+
+
 def fail_transcription(meeting: Meeting) -> Meeting:
     _apply_or_conflict(meeting, MeetingEvent.FAIL_TRANSCRIPTION)
     return meeting
