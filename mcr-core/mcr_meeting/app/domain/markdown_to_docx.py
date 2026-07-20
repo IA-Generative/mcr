@@ -1,3 +1,4 @@
+import os
 import tempfile
 from io import BytesIO
 from pathlib import Path
@@ -5,8 +6,19 @@ from pathlib import Path
 from docx import Document
 from docx.document import Document as DocxDocument
 from docx.enum.style import WD_STYLE_TYPE
+from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from markdowntodocx.markdownconverter import (  # type: ignore[import-untyped]
     convertMarkdownInFile,
+)
+
+TEMPLATES_DIR = os.path.join(os.path.dirname(__file__), "report_templates")
+
+_ENV = Environment(
+    loader=FileSystemLoader(TEMPLATES_DIR),
+    undefined=StrictUndefined,
+    keep_trailing_newline=True,
+    trim_blocks=True,
+    lstrip_blocks=True,
 )
 
 # Styles required by markdowntodocx even if unused in the markdown content.
@@ -63,3 +75,19 @@ def markdown_to_docx(
             raise RuntimeError(f"markdowntodocx conversion failed: {result}")
 
         return BytesIO(tmp_path.read_bytes())
+
+
+def render_markdown_template(template_name: str, data: dict) -> str:  # type: ignore[type-arg]
+    """Load a .jinja.md template and render it with data."""
+    return _ENV.get_template(template_name).render(**data)
+
+
+def render_to_docx(
+    template_name: str,
+    data: dict,  # type: ignore[type-arg]
+    style_template_path: str,
+    styles_names: dict[str, str] | None = None,
+) -> BytesIO:
+    """Full pipeline: .jinja.md template file -> markdown -> DOCX."""
+    md = render_markdown_template(template_name, data)
+    return markdown_to_docx(md, style_template_path, styles_names)

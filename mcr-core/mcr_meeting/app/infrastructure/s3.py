@@ -3,6 +3,8 @@ from collections.abc import Generator, Iterable, Iterator
 from io import BytesIO
 from typing import cast
 
+import boto3
+from botocore.config import Config
 from botocore.exceptions import (
     ConnectionError as BotoConnectionError,
 )
@@ -12,16 +14,19 @@ from botocore.exceptions import (
     ResponseStreamingError,
 )
 from loguru import logger
+from mypy_boto3_s3 import S3Client
 from mypy_boto3_s3.type_defs import CompletedPartTypeDef
 from pydantic import TypeAdapter
 from urllib3.exceptions import IncompleteRead, ProtocolError
 
 from mcr_meeting.app.configs.base import RetrySettings, S3Settings
+from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE, guess_mime_type
 from mcr_meeting.app.exceptions.exceptions import (
     MeetingMultipartException,
     NoAudioFoundError,
     S3TransientError,
 )
+from mcr_meeting.app.infrastructure.retry import retry_transient
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.S3_types import (
     MultipartAbortRequest,
@@ -41,12 +46,43 @@ from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
     FullTranscript,
 )
-from mcr_meeting.app.utils.file_validation import DOCX_MIME_TYPE, guess_mime_type
-from mcr_meeting.app.utils.retry import retry_transient
-from mcr_meeting.app.utils.s3_client import s3_client, s3_external_client
 
 s3_settings = S3Settings()
 _retry_settings = RetrySettings()
+
+_boto_config = Config(
+    connect_timeout=_retry_settings.S3_CONNECT_TIMEOUT,
+    read_timeout=_retry_settings.S3_READ_TIMEOUT,
+    retries={"total_max_attempts": 1},
+)
+
+_endpoint_url = s3_settings.S3_ENDPOINT
+if not _endpoint_url.startswith(("http://", "https://")):
+    _endpoint_url = f"http://{_endpoint_url}"
+
+_use_ssl = _endpoint_url.startswith("https://")
+
+s3_client: S3Client = boto3.client(
+    service_name="s3",
+    use_ssl=_use_ssl,
+    endpoint_url=_endpoint_url,
+    aws_access_key_id=s3_settings.S3_ACCESS_KEY,
+    aws_secret_access_key=s3_settings.S3_SECRET_KEY,
+    region_name=s3_settings.S3_REGION,
+    config=_boto_config,
+)
+
+# Create an "external" client to generate the presigned URL
+# This client cannot reach the server from inside the cluster, as it is using the S3_EXTERNAL_ENDPOINT
+s3_external_client: S3Client = boto3.client(
+    service_name="s3",
+    use_ssl=_use_ssl,
+    endpoint_url=s3_settings.S3_EXTERNAL_ENDPOINT,
+    aws_access_key_id=s3_settings.S3_ACCESS_KEY,
+    aws_secret_access_key=s3_settings.S3_SECRET_KEY,
+    region_name=s3_settings.S3_REGION,
+    config=_boto_config,
+)
 
 S3_TRANSIENT = (
     ResponseStreamingError,

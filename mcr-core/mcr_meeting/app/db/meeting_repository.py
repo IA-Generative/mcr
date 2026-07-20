@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Query, joinedload
 
+from mcr_meeting.app.db.apply_dto import apply_dto
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
 )
 from mcr_meeting.app.models import Meeting, MeetingStatus, Transcription
 from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, PaginatedMeetings
-from mcr_meeting.app.utils.db_utils import update_model
 
 
 def save_meeting(user_id: int, meeting_data: MeetingCreate) -> Meeting:
@@ -24,7 +24,7 @@ def save_meeting(user_id: int, meeting_data: MeetingCreate) -> Meeting:
     """
     db = get_db_session_ctx()
     meeting = Meeting(user_id=user_id)
-    update_model(meeting, meeting_data)
+    apply_dto(meeting, meeting_data)
 
     db.add(meeting)
     return meeting

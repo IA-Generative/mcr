@@ -4,10 +4,10 @@ from typing import TypedDict
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from mcr_meeting.app.configs.base import S3Settings
+from mcr_meeting.app.domain.mime_types import guess_mime_type
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
 )
-from mcr_meeting.app.utils.file_validation import guess_mime_type
 
 s3_settings = S3Settings()
 

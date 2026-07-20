@@ -138,9 +138,6 @@ ignore = ["UP017", "UP008", "UP028", "UP046"]
 
 exclude = ["scripts/**", "notebooks/**"]
 
-[tool.ruff.lint.per-file-ignores]
-"**/setup/logger.py" = ["TID251"]
-
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"
 
@@ -213,10 +210,6 @@ forbidden_modules = [
     "mcr_meeting.app.infrastructure",
     "mcr_meeting.app.services",
     "mcr_meeting.app.client",
-]
-ignore_imports = [
-    # TODO(arch): render_report should not reach into the legacy docx service
-    "mcr_meeting.app.domain.report_rendering -> mcr_meeting.app.services.docx_report_generation_service",
 ]
 
 [[tool.importlinter.contracts]]

@@ -4,14 +4,13 @@ import os
 from collections import defaultdict
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List
 
 import ffmpeg
 from loguru import logger
 
 from mcr_meeting.app.configs.base import AudioSettings
+from mcr_meeting.app.domain.audio import log_ffmpeg_command
 from mcr_meeting.app.exceptions.exceptions import InvalidAudioFileError
-from mcr_meeting.setup.logger import log_ffmpeg_command
 
 # Load audio settings
 audio_settings = AudioSettings()
@@ -19,7 +18,7 @@ sample_rate = audio_settings.SAMPLE_RATE
 nb_channels = audio_settings.NB_AUDIO_CHANNELS
 
 
-def mix_audio_files(audio_paths: List[str]) -> BytesIO:
+def mix_audio_files(audio_paths: list[str]) -> BytesIO:
     """
     Mix multiple WAV audio files into a single mono WAV file.
 
@@ -128,7 +127,7 @@ def mix_audio_files(audio_paths: List[str]) -> BytesIO:
 
 def group_audio_files_by_prefix(
     directory: Path, prefix_length: int = 9
-) -> Dict[str, List[str]]:
+) -> dict[str, list[str]]:
     """
     Group WAV audio files by their filename prefix.
 
@@ -144,7 +143,7 @@ def group_audio_files_by_prefix(
         >>> groups = group_audio_files_by_prefix(Path("audio/"), 4)
         >>> # {'0001': ['0001_speaker1.wav', '0001_speaker2.wav'], ...}
     """
-    groups: Dict[str, List[str]] = defaultdict(list)
+    groups: dict[str, list[str]] = defaultdict(list)
 
     logger.info("Scanning directory: {}", directory)
 
@@ -174,7 +173,7 @@ def group_audio_files_by_prefix(
 
 
 def process_audio_group(
-    group_key: str, file_paths: List[str], output_directory: Path
+    group_key: str, file_paths: list[str], output_directory: Path
 ) -> bool:
     """
     Mix audio files in a group and save the result.

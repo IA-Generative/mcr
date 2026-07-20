@@ -14,7 +14,11 @@ from mcr_meeting.app.infrastructure.celery_consumer import (
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.langfuse import init_langfuse
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
-from mcr_meeting.app.infrastructure.sentry import init_sentry
+from mcr_meeting.app.infrastructure.sentry import (
+    gather_meeting_context,
+    init_sentry,
+    set_sentry_meeting_context,
+)
 from mcr_meeting.app.infrastructure.speech_to_text_models import (
     get_diarization_pipeline,
     get_transcription_model,
@@ -38,10 +42,6 @@ from mcr_meeting.app.use_cases.transcription.run_speech_to_text import (
 )
 from mcr_meeting.app.use_cases.transcription.run_transcribe_chunks import (
     run_transcribe_chunks,
-)
-from mcr_meeting.app.utils.sentry_context import (
-    gather_meeting_context,
-    set_sentry_meeting_context,
 )
 
 init_sentry()

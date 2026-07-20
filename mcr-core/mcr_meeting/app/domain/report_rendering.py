@@ -1,16 +1,22 @@
+import os
+from abc import ABC, abstractmethod
 from io import BytesIO
+from typing import Any
 
+from docxtpl import DocxTemplate, RichText
+
+from mcr_meeting.app.domain.markdown_to_docx import markdown_to_docx, render_to_docx
 from mcr_meeting.app.exceptions.exceptions import MCRException
 from mcr_meeting.app.schemas.report_generation import (
+    CustomReportResponse,
+    DetailedSynthesisGenerationResponse,
+    ReportGenerationResponse,
+    ReportHeader,
+    ReportParticipant,
     ReportResponse,
     is_custom_report,
     is_decision_report_synthesis,
     is_detailed_synthesis,
-)
-from mcr_meeting.app.services.docx_report_generation_service import (
-    generate_custom_report_docx,
-    generate_detailed_synthesis_docx,
-    generate_docx_decisions_reports_from_template,
 )
 
 
@@ -24,3 +30,210 @@ def render_report(report_response: ReportResponse, meeting_name: str) -> BytesIO
     if is_custom_report(report_response):
         return generate_custom_report_docx(report_response)
     raise MCRException("Invalid report_response type")
+
+
+class TemplatedDocxGenerator(ABC):
+    def __init__(self, filename: str):
+        template_path = os.path.join(
+            os.getcwd(), "mcr_meeting", "app", "cr-templates", filename
+        )
+        if not os.path.exists(template_path):
+            raise FileNotFoundError(f"Template file not found at {template_path}")
+
+        self.doc = DocxTemplate(template_path)
+
+    @abstractmethod
+    def build_context(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # type: ignore[explicit-any]
+        """
+        Must return a dict with all placeholders needed by the template.
+        """
+        ...
+
+    @abstractmethod
+    def fill_templated_doc(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[explicit-any]
+        ...
+
+    def save_and_return_docx(self) -> BytesIO:
+        docx_io = BytesIO()
+        self.doc.save(docx_io)
+        docx_io.seek(0)  # Reset the buffer position to the beginning
+        return docx_io
+
+
+def generate_docx_decisions_reports_from_template(
+    response: ReportGenerationResponse, meeting_name: str | None
+) -> BytesIO:
+    """
+    Generates a DOCX decision report from a predefined template and replaces placeholders with meeting data.
+
+    Args:
+        participants (list): A list of participants in the meeting.
+        decisions_json (ReportGenerationResponse): The decisions data in JSON format.
+        meeting_name (str): The name of the meeting.
+
+    Returns:
+        BytesIO: A BytesIO object containing the generated DOCX document.
+
+    Raises:
+        FileNotFoundError: If the DOCX template file is not found.
+    """
+    doc_generator = ReportDocxGenerator("FCR_report_template.docx")
+
+    header = response.header
+    title = format_title_for_report(header, meeting_name)
+    participants = header.participants if header is not None else []
+
+    doc_generator.fill_templated_doc(
+        decisions_json=response,
+        meeting_name=title,
+        participants=participants,
+        objective=header.objective if header else None,
+        next_meeting=header.next_meeting if header else None,
+    )
+    return doc_generator.save_and_return_docx()
+
+
+class ReportDocxGenerator(TemplatedDocxGenerator):
+    """
+    Renders the MCR report template using docxtpl.
+    Template placeholders:
+      - {{meeting_name}}
+      - {{objective}}
+      - {{participants}}
+      - {{decisions}}
+      - {{next_steps}}
+    """
+
+    def __init__(self, filename: str):
+        super().__init__(filename)
+
+    def fill_templated_doc(self, *args: Any, **kwargs: Any) -> None:  # type: ignore[explicit-any]
+        """
+        High-level API: build context, render, and return BytesIO.
+        """
+        context = self.build_context(*args, **kwargs)
+        self.doc.render(context)
+
+    def build_context(
+        self,
+        meeting_name: str,
+        objective: str | None,
+        next_meeting: str | None,
+        decisions_json: ReportGenerationResponse,
+        participants: list[ReportParticipant],
+    ) -> dict[str, str | RichText]:
+        objective_text = objective if objective else "Non spécifié."
+
+        return {
+            "meeting_name": meeting_name,
+            "objective": objective_text,
+            "next_meeting": next_meeting if next_meeting else "",
+            "participants": self.build_participants_context_text(participants),
+            "decisions": self.build_decisions_context_richtext(decisions_json),
+            "next_steps": decisions_json.next_steps,
+        }
+
+    def build_participants_context_text(
+        self,
+        participants: list[ReportParticipant],
+    ) -> str:
+        sorted_participants = sorted(
+            participants or [], key=lambda p: p.confidence or 0, reverse=True
+        )
+
+        participants_lines: list[str] = []
+        for p in sorted_participants:
+            naming = p.name if p.name else p.speaker_id
+            if p.role:
+                participants_lines.append(f"    - {naming} ({p.role})")
+            else:
+                participants_lines.append(f"    - {naming}")
+
+        participants_text = "\n".join(participants_lines) if participants_lines else ""
+
+        return participants_text
+
+    def build_decisions_context_richtext(
+        self,
+        decisions_json: ReportGenerationResponse,
+    ) -> RichText:
+        """
+        Build decisions context as RichText for DOCX report.
+        """
+        rt = RichText()
+        for index, topic in enumerate(decisions_json.topics_with_decision):
+            is_last_topic = index == len(decisions_json.topics_with_decision) - 1
+            rt.add(topic.title, bold=True)
+            rt.add("\n")
+            if topic.introduction_text:
+                rt.add(topic.introduction_text)
+                rt.add("\n")
+            if topic.details:
+                for detail in topic.details:
+                    rt.add("    - " + detail)
+                    rt.add("\n")
+
+            if topic.main_decision:
+                rt.add("=> " + topic.main_decision, italic=True)
+                if is_last_topic:
+                    continue
+                rt.add("\n")
+
+            # Add an extra line break between topics but not after the last one
+            if is_last_topic:
+                continue
+
+            rt.add("\n")
+
+        return rt
+
+
+def format_title_for_report(
+    header: ReportHeader | None, meeting_name: str | None
+) -> str:
+    return "Compte-rendu " + (
+        header.title
+        if header is not None and header.title is not None
+        else meeting_name
+        if meeting_name is not None
+        else ""
+    )
+
+
+def generate_detailed_synthesis_docx(
+    response: DetailedSynthesisGenerationResponse,
+    meeting_name: str | None,
+) -> BytesIO:
+    title = _format_title_detailed_synthesis(response.header, meeting_name)
+    data = {
+        "title": title,
+        **response.model_dump(exclude={"header"}),
+    }
+    return render_to_docx(
+        "detailed_synthesis.md.jinja", data, _get_style_template_path()
+    )
+
+
+def _get_style_template_path() -> str:
+    path = os.path.join(
+        os.getcwd(),
+        "mcr_meeting",
+        "app",
+        "cr-templates",
+        "detailed_synthesis_template.docx",
+    )
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Style template not found at {path}")
+    return path
+
+
+def generate_custom_report_docx(response: CustomReportResponse) -> BytesIO:
+    return markdown_to_docx(response.markdown_content, _get_style_template_path())
+
+
+def _format_title_detailed_synthesis(
+    header: ReportHeader | None, meeting_name: str | None
+) -> str:
+    if header is not None and header.title is not None:
+        return header.title
+    return meeting_name or ""
