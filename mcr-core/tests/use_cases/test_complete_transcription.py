@@ -7,7 +7,10 @@ import pytest
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
+from mcr_meeting.app.exceptions.exceptions import (
+    MeetingStateConflictException,
+    NotFoundException,
+)
 from mcr_meeting.app.infrastructure.redis import save_refresh_token
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
@@ -41,10 +44,17 @@ def mock_generate_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-
 
 @pytest.fixture
 def transcription_in_progress_meeting() -> Meeting:
-    return MeetingFactory.create(
+    meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         name_platform=MeetingPlatforms.COMU,
     )
+    DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.IN_PROGRESS,
+        external_url=None,
+    )
+    return meeting
 
 
 @pytest.fixture
@@ -207,12 +217,9 @@ class TestCompleteTranscription:
         in_memory_email: InMemoryEmailClient,
         in_memory_drive: InMemoryDriveClient,
     ) -> None:
-        early_deliverable = DeliverableFactory.create(
-            meeting=transcription_in_progress_meeting,
-            type=DeliverableType.TRANSCRIPTION,
-            status=DeliverableStatus.IN_PROGRESS,
-            external_url=None,
-        )
+        early_deliverable = _transcription_deliverables(
+            transcription_in_progress_meeting.id
+        )[0]
         save_refresh_token(
             str(transcription_in_progress_meeting.owner.keycloak_uuid),
             "refresh-token",
@@ -345,6 +352,27 @@ class TestCompleteTranscription:
 
         assert _transcription_deliverables(meeting.id) == []
         assert _transcription_done_records(meeting.id) == []
+
+    def test_raises_when_deliverable_missing(
+        self,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+            name_platform=MeetingPlatforms.COMU,
+        )
+
+        with pytest.raises(NotFoundException):
+            complete_transcription(
+                meeting_id=meeting.id,
+                transcriptions=sample_transcriptions,
+            )
+
+        assert _transcription_deliverables(meeting.id) == []
+        assert len(in_memory_email.sent) == 0
 
     def test_replayed_completion_conflicts_without_duplicating_deliverables(
         self,

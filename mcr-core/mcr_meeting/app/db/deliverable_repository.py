@@ -53,11 +53,11 @@ def get_by_id(deliverable_id: int) -> Deliverable:
     return deliverable
 
 
-def find_active_by_meeting_and_type(
+def get_active_by_meeting_and_type(
     meeting_id: int, deliverable_type: DeliverableType
-) -> Deliverable | None:
+) -> Deliverable:
     db = get_db_session_ctx()
-    return (
+    deliverable: Deliverable | None = (
         db.query(Deliverable)
         .filter(
             Deliverable.meeting_id == meeting_id,
@@ -66,6 +66,11 @@ def find_active_by_meeting_and_type(
         )
         .first()
     )
+    if deliverable is None:
+        raise NotFoundException(
+            f"No active {deliverable_type} deliverable for meeting {meeting_id}"
+        )
+    return deliverable
 
 
 def set_status(deliverable_id: int, status: DeliverableStatus) -> None:

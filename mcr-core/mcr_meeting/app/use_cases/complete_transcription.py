@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from loguru import logger
 
+from mcr_meeting.app.db.deliverable_repository import get_active_by_meeting_and_type
 from mcr_meeting.app.db.meeting_repository import (
     get_meeting_with_owner,
     update_meeting,
@@ -11,6 +12,7 @@ from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
+from mcr_meeting.app.domain.deliverable_transitions import mark_available
 from mcr_meeting.app.domain.email import (
     build_transcription_ready_email,
 )
@@ -32,9 +34,6 @@ from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.use_cases._shared.drive_upload import (
     try_upload_deliverable_to_drive,
 )
-from mcr_meeting.app.use_cases._shared.transcription_deliverable import (
-    complete_transcription_deliverable,
-)
 
 TRANSCRIPTION_FILENAME = "v0.docx"
 
@@ -44,6 +43,10 @@ def complete_transcription(
 ) -> None:
     meeting = get_meeting_with_owner(meeting_id)
     mark_transcription_done(meeting)
+
+    deliverable = get_active_by_meeting_and_type(
+        meeting_id=meeting.id, deliverable_type=DeliverableType.TRANSCRIPTION
+    )
 
     segments: Sequence[HasSpeakerTranscription] = (
         transcriptions
@@ -71,7 +74,7 @@ def complete_transcription(
                 status=MeetingStatus.TRANSCRIPTION_DONE,
             )
         )
-        complete_transcription_deliverable(meeting.id, external_url)
+        mark_available(deliverable, external_url)
 
     _notify_transcription_ready_best_effort(meeting)
 

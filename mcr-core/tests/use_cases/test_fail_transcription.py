@@ -1,7 +1,10 @@
 import pytest
 
 from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
+from mcr_meeting.app.exceptions.exceptions import (
+    MeetingStateConflictException,
+    NotFoundException,
+)
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -38,11 +41,23 @@ def _failed_records(meeting_id: int) -> list[MeetingTransitionRecord]:
     )
 
 
+def _active_transcription_deliverable(
+    meeting: object, status: DeliverableStatus
+) -> Deliverable:
+    return DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=status,
+        external_url=None,
+    )
+
+
 def test_fail_transcription_marks_status_failed() -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         name_platform=MeetingPlatforms.COMU,
     )
+    _active_transcription_deliverable(meeting, DeliverableStatus.IN_PROGRESS)
 
     result = fail_transcription(meeting_id=meeting.id)
 
@@ -54,6 +69,7 @@ def test_fail_transcription_records_transition() -> None:
         status=MeetingStatus.TRANSCRIPTION_PENDING,
         name_platform=MeetingPlatforms.COMU,
     )
+    _active_transcription_deliverable(meeting, DeliverableStatus.PENDING)
 
     fail_transcription(meeting_id=meeting.id)
 
@@ -80,17 +96,17 @@ def test_fail_transcription_marks_deliverable_failed() -> None:
     assert deliverables[0].status == DeliverableStatus.FAILED
 
 
-def test_fail_transcription_creates_failed_deliverable_when_missing() -> None:
+def test_fail_transcription_raises_when_deliverable_missing() -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
         name_platform=MeetingPlatforms.COMU,
     )
 
-    fail_transcription(meeting_id=meeting.id)
+    with pytest.raises(NotFoundException):
+        fail_transcription(meeting_id=meeting.id)
 
-    deliverables = _transcription_deliverables(meeting.id)
-    assert len(deliverables) == 1
-    assert deliverables[0].status == DeliverableStatus.FAILED
+    assert _transcription_deliverables(meeting.id) == []
+    assert _failed_records(meeting.id) == []
 
 
 def test_fail_transcription_silent_conflicts_when_transcription_already_done() -> None:
