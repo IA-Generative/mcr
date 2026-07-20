@@ -24,12 +24,10 @@ from mcr_meeting.app.models.deliverable_model import (
 )
 from mcr_meeting.app.schemas.celery_types import MCRReportGenerationTasks
 from mcr_meeting.app.schemas.report_generation import ReportType
-
-_REPORT_TYPE_BY_DELIVERABLE = {
-    DeliverableType.DECISION_RECORD: ReportType.DECISION_RECORD,
-    DeliverableType.DETAILED_SYNTHESIS: ReportType.DETAILED_SYNTHESIS,
-    DeliverableType.CUSTOM_REPORT: ReportType.CUSTOM_REPORT,
-}
+from mcr_meeting.app.use_cases._shared.report_dispatch import (
+    REPORT_TYPE_BY_DELIVERABLE,
+    build_report_task_kwargs,
+)
 
 
 def request_deliverable(
@@ -38,7 +36,7 @@ def request_deliverable(
     deliverable_type: DeliverableType,
     custom_prompt: str | None = None,
 ) -> Deliverable:
-    report_type = _REPORT_TYPE_BY_DELIVERABLE[deliverable_type]
+    report_type = REPORT_TYPE_BY_DELIVERABLE[deliverable_type]
 
     meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
     authorize_meeting_access(meeting, user_keycloak_uuid)
@@ -90,7 +88,7 @@ def _persist_and_dispatch(
             )
 
             transcription_object_name = _resolve_transcription_object_name(meeting)
-            kwargs = _build_report_task_kwargs(meeting, deliverable, custom_prompt)
+            kwargs = build_report_task_kwargs(meeting, deliverable, custom_prompt)
             celery_producer_app.send_task(
                 MCRReportGenerationTasks.REPORT,
                 args=[meeting.id, transcription_object_name, report_type],
@@ -116,19 +114,3 @@ def _resolve_transcription_object_name(meeting: Meeting) -> str:
     return get_transcription_object_name(
         meeting_id=meeting.id, filename=meeting.transcription_filename
     )
-
-
-def _build_report_task_kwargs(
-    meeting: Meeting,
-    deliverable: Deliverable,
-    custom_prompt: str | None,
-) -> dict[str, str | int]:
-    kwargs: dict[str, str | int] = {
-        "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
-        "deliverable_id": deliverable.id,
-    }
-    if custom_prompt is not None:
-        kwargs["custom_prompt"] = custom_prompt
-    if meeting.notes is not None:
-        kwargs["notes_content"] = meeting.notes
-    return kwargs
