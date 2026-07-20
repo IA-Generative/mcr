@@ -176,6 +176,37 @@ class TestMarkDeliverableInProgress:
 
         mock_httpx_client.post.assert_called_once()
 
+    def test_retries_on_425_then_succeeds(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        deliverable_not_pending_yet = MagicMock()
+        deliverable_not_pending_yet.raise_for_status.side_effect = _http_error(425)
+        successful_response = MagicMock()
+        mock_httpx_client.post.side_effect = [
+            deliverable_not_pending_yet,
+            successful_response,
+        ]
+
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 2
+
+    def test_raises_after_exhausting_retries_on_425(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            425
+        )
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 3
+
     def test_raises_after_exhausting_retries_on_404(
         self,
         core_client: CoreApiClient,

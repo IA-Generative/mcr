@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.exceptions.exceptions import (
+    DeliverableNotYetPendingError,
     DeliverableStateConflictException,
     NotFoundException,
 )
@@ -66,3 +67,23 @@ class TestMarkDeliverableInProgress:
     ) -> None:
         with pytest.raises(NotFoundException):
             mark_report_in_progress(deliverable_id=999999)
+
+    def test_raises_not_yet_pending_when_still_requested(
+        self,
+        db_session: Session,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        requested = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.REQUESTED,
+        )
+
+        with pytest.raises(DeliverableNotYetPendingError):
+            mark_report_in_progress(deliverable_id=requested.id)
+
+        db_session.refresh(requested)
+        assert requested.status == DeliverableStatus.REQUESTED
