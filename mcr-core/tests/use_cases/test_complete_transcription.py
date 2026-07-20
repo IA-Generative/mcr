@@ -4,6 +4,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
@@ -12,6 +13,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
 )
 from mcr_meeting.app.infrastructure.redis import save_refresh_token
+from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -40,6 +42,13 @@ def mock_generate_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-
         generate_mock,
     )
     return generate_mock
+
+
+@pytest.fixture
+def mock_drain_celery(mocker: MockerFixture) -> MagicMock:
+    return mocker.patch(
+        "mcr_meeting.app.use_cases.complete_transcription.celery_producer_app"
+    )
 
 
 @pytest.fixture
@@ -89,6 +98,18 @@ def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
         .filter(
             Deliverable.meeting_id == meeting_id,
             Deliverable.type == DeliverableType.TRANSCRIPTION,
+        )
+        .all()
+    )
+
+
+def _report_deliverables(meeting_id: int) -> list[Deliverable]:
+    return list(
+        get_db_session_ctx()
+        .query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type != DeliverableType.TRANSCRIPTION,
         )
         .all()
     )
@@ -395,3 +416,72 @@ class TestCompleteTranscription:
         assert len(_transcription_deliverables(meeting_id)) == 1
         assert len(_transcription_done_records(meeting_id)) == 1
         assert len(in_memory_email.sent) == 1
+
+
+class TestCompleteTranscriptionDrain:
+    def test_dispatches_every_requested_report(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        mock_drain_celery: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        db_session: Session,
+    ) -> None:
+        meeting = transcription_in_progress_meeting
+        decision = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.REQUESTED,
+        )
+        synthesis = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DETAILED_SYNTHESIS,
+            status=DeliverableStatus.REQUESTED,
+        )
+
+        complete_transcription(
+            meeting_id=meeting.id, transcriptions=sample_transcriptions
+        )
+
+        db_session.refresh(decision)
+        db_session.refresh(synthesis)
+        db_session.refresh(meeting)
+        assert decision.status == DeliverableStatus.PENDING
+        assert synthesis.status == DeliverableStatus.PENDING
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
+
+        assert mock_drain_celery.send_task.call_count == 2
+        dispatched_ids = {
+            call.kwargs["kwargs"]["deliverable_id"]
+            for call in mock_drain_celery.send_task.call_args_list
+        }
+        assert dispatched_ids == {decision.id, synthesis.id}
+        expected_object_name = get_transcription_object_name(
+            meeting_id=meeting.id, filename="v0.docx"
+        )
+        for call in mock_drain_celery.send_task.call_args_list:
+            assert call.kwargs["args"][0] == meeting.id
+            assert call.kwargs["args"][1] == expected_object_name
+
+    def test_empty_drain_sends_no_task(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        mock_drain_celery: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        db_session: Session,
+    ) -> None:
+        meeting = transcription_in_progress_meeting
+
+        complete_transcription(
+            meeting_id=meeting.id, transcriptions=sample_transcriptions
+        )
+
+        db_session.refresh(meeting)
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
+        assert _report_deliverables(meeting.id) == []
+        mock_drain_celery.send_task.assert_not_called()
