@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import (
@@ -107,6 +108,31 @@ def test_fail_transcription_raises_when_deliverable_missing() -> None:
 
     assert _transcription_deliverables(meeting.id) == []
     assert _failed_records(meeting.id) == []
+
+
+def test_fail_transcription_marks_requested_reports_failed(db_session: Session) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    _active_transcription_deliverable(meeting, DeliverableStatus.IN_PROGRESS)
+    decision = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.DECISION_RECORD,
+        status=DeliverableStatus.REQUESTED,
+    )
+    synthesis = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.DETAILED_SYNTHESIS,
+        status=DeliverableStatus.REQUESTED,
+    )
+
+    fail_transcription(meeting_id=meeting.id)
+
+    db_session.refresh(decision)
+    db_session.refresh(synthesis)
+    assert decision.status == DeliverableStatus.FAILED
+    assert synthesis.status == DeliverableStatus.FAILED
 
 
 def test_fail_transcription_silent_conflicts_when_transcription_already_done() -> None:
