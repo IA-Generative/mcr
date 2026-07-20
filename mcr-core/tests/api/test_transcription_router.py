@@ -32,6 +32,7 @@ class TestCreateTranscriptionTask:
         mock_celery_producer_app.send_task.assert_called_once_with(
             "transcription_worker.transcribe",
             args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+            countdown=5,
             link_error=mock_celery_producer_app.signature.return_value,
         )
 
@@ -64,6 +65,7 @@ class TestCreateTranscriptionTask:
         mock_celery_producer_app.send_task.assert_called_once_with(
             "transcription_worker.transcribe",
             args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+            countdown=5,
             link_error=mock_celery_producer_app.signature.return_value,
         )
 

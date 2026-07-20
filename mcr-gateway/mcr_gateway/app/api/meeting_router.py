@@ -6,7 +6,7 @@ from fastapi import (
     Query,
     status,
 )
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 
 from mcr_gateway.app.schemas.meeting_schema import (
@@ -16,6 +16,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     MeetingWithDetails,
     PaginatedMeetingsResponse,
 )
+from mcr_gateway.app.schemas.requeue_schema import RequeueTranscriptionsRequest
 from mcr_gateway.app.schemas.S3_types import (
     PresignedAudioFileRequest,
 )
@@ -30,6 +31,7 @@ from mcr_gateway.app.services.meeting_service import (
     get_meeting_service,
     get_meetings_service,
     init_meeting_capture_service,
+    requeue_transcriptions_service,
     start_meeting_transcription_service,
     stop_meeting_capture_service,
     update_meeting_service,
@@ -316,3 +318,22 @@ async def get_meeting_audio(
     except Exception as e:
         logger.error("Error getting meeting audio: {}", str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post(
+    "/meetings/transcription/requeue",
+    tags=["Admin"],
+)
+async def requeue_transcriptions(
+    body: RequeueTranscriptionsRequest,
+    current_user: TokenUser = Depends(authorize_user(Role.ADMIN.value)),
+    token: str = Depends(security),
+) -> JSONResponse:
+    """Admin-only: requeue stuck/failed transcriptions. Forwards the caller's
+    bearer to mcr-core (which authorizes independently) and returns core's
+    response verbatim — including 207 Multi-Status on partial success."""
+    return await requeue_transcriptions_service(
+        meeting_ids=body.meeting_ids,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+        bearer=token,
+    )

@@ -4,7 +4,7 @@ from typing import Any
 
 import httpx
 from fastapi import HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from pydantic import UUID4
 
@@ -22,14 +22,22 @@ from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 
 
 class MCRCoreCustomAuth(httpx.Auth):
-    def __init__(self, user_keycloak_uuid: UUID4, access_token: str | None = None):
+    def __init__(
+        self,
+        user_keycloak_uuid: UUID4,
+        access_token: str | None = None,
+        bearer: str | None = None,
+    ):
         self.token = str(user_keycloak_uuid)
         self.access_token = access_token
+        self.bearer = bearer
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, Any, None]:
         request.headers["X-User-Keycloak-Uuid"] = self.token
         if self.access_token:
             request.headers["X-User-Access-Token"] = self.access_token
+        if self.bearer:
+            request.headers["Authorization"] = f"Bearer {self.bearer}"
         yield request
 
 
@@ -37,10 +45,11 @@ class MCRCoreCustomAuth(httpx.Auth):
 async def get_meeting_http_client(
     user_keycloak_uuid: UUID4,
     access_token: str | None = None,
+    bearer: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
     client = httpx.AsyncClient(
         base_url=settings.MEETING_SERVICE_URL,
-        auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
+        auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token, bearer),
     )
     try:
         yield client
@@ -336,6 +345,23 @@ async def get_meeting_audio_service(
             status_code=500,
             detail="An unexpected error occurred while requesting the meeting audio.",
         )
+
+
+async def requeue_transcriptions_service(
+    meeting_ids: list[int],
+    user_keycloak_uuid: UUID4,
+    bearer: str,
+) -> JSONResponse:
+    """Forward the admin requeue to mcr-core and return core's response verbatim.
+
+    Core answers 202 (all requeued) or 207 (partial) with an identical body
+    shape; both are passed through unchanged — the 207 must not be flattened to
+    200/4xx. 4xx/5xx from core (e.g. its own 401/422) are forwarded as-is too."""
+    async with get_meeting_http_client(user_keycloak_uuid, bearer=bearer) as client:
+        response = await client.post(
+            url="transcription/requeue", json={"meeting_ids": meeting_ids}
+        )
+    return JSONResponse(status_code=response.status_code, content=response.json())
 
 
 def update_dict_with_iso_dates(
