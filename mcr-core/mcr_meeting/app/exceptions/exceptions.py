@@ -104,3 +104,8 @@ class TransientInfraError(MCRException):
 
 class S3TransientError(TransientInfraError):
     """Transient S3 error"""
+
+
+class TokenValidationError(Exception):
+    """Raised when a bearer token is absent, malformed, expired, tampered, or not
+    minted by the expected frontend client."""

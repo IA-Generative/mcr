@@ -2,8 +2,11 @@ from dataclasses import dataclass
 
 from keycloak import KeycloakOpenID
 from loguru import logger
+from pydantic import ValidationError
 
 from mcr_meeting.app.configs.base import KeycloakExchangeSettings
+from mcr_meeting.app.exceptions.exceptions import TokenValidationError
+from mcr_meeting.app.schemas.keycloak_claims import TokenClaims
 
 
 @dataclass(frozen=True)
@@ -15,13 +18,16 @@ class TokenRefreshResult:
 _settings = KeycloakExchangeSettings()
 
 _KEYCLOAK_TIMEOUT_SECONDS = 10
+FRONTEND_CLIENT_ID = _settings.KEYCLOAK_FRONTEND_CLIENT_ID
+
+
+def _is_kc_public_endpoint_configured() -> bool:
+    return bool(_settings.KEYCLOAK_URL and _settings.KEYCLOAK_REALM)
 
 
 def _is_keycloak_configured() -> bool:
     return bool(
-        _settings.KEYCLOAK_URL
-        and _settings.KEYCLOAK_REALM
-        and _settings.KEYCLOAK_CORE_CLIENT_SECRET
+        _is_kc_public_endpoint_configured() and _settings.KEYCLOAK_CORE_CLIENT_SECRET
     )
 
 
@@ -36,6 +42,39 @@ _keycloak: KeycloakOpenID | None = (
     if _is_keycloak_configured()
     else None
 )
+
+# Separate client dedicated to inbound token validation. decode_token only needs
+# the realm public key (server_url + realm), so no client secret is required —
+# signature verification is realm-wide, independent of which client is configured.
+_keycloak_validator: KeycloakOpenID | None = (
+    KeycloakOpenID(
+        server_url=_settings.KEYCLOAK_URL,
+        client_id=_settings.KEYCLOAK_FRONTEND_CLIENT_ID,
+        client_secret_key="",
+        realm_name=_settings.KEYCLOAK_REALM,
+        timeout=_KEYCLOAK_TIMEOUT_SECONDS,
+    )
+    if _is_kc_public_endpoint_configured()
+    else None
+)
+
+
+def decode_and_verify(token: str) -> TokenClaims:
+    if _keycloak_validator is None:
+        raise TokenValidationError("Keycloak token validation is not configured")
+    try:
+        raw = _keycloak_validator.decode_token(token)
+    except Exception as exc:
+        raise TokenValidationError("Invalid or expired token") from exc
+
+    try:
+        claims = TokenClaims.model_validate(raw)
+    except ValidationError as exc:
+        raise TokenValidationError("Token claims are missing or malformed") from exc
+
+    if claims.azp != FRONTEND_CLIENT_ID:
+        raise TokenValidationError("Token not issued for the frontend client")
+    return claims
 
 
 def exchange_token_for_offline(access_token: str) -> str | None:
