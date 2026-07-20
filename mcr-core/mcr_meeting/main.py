@@ -20,6 +20,7 @@ from mcr_meeting.app.api.meeting.meeting_multipart_router import (
     router as meeting_multipart_router,
 )
 from mcr_meeting.app.api.meeting.meeting_router import router as meeting_router
+from mcr_meeting.app.api.meeting.requeue_router import router as requeue_router
 from mcr_meeting.app.api.meeting.transcription_router import (
     router as transcription_router,
 )
@@ -70,6 +71,7 @@ app.include_router(feedback_router)
 app.include_router(deliverable_meeting_router)
 app.include_router(deliverables_router)
 app.include_router(transcription_router)
+app.include_router(requeue_router)
 
 if __name__ == "__main__":
     uvicorn.run("main:app")
