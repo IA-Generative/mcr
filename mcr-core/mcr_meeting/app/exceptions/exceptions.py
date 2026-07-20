@@ -98,6 +98,12 @@ class MeetingStateConflictException(MCRException):
     an allowed source state (mapped to HTTP 409)."""
 
 
+class DeliverableNotYetPendingError(MCRException):
+    """Raised when a deliverable is still REQUESTED: the drain has not dispatched
+    it to PENDING yet. Mapped to HTTP 425 so the generation worker retries,
+    unlike the terminal 409 raised when it is already past PENDING."""
+
+
 class TransientInfraError(MCRException):
     """Transient network/infra error — trigger local retry (tenacity) and task level retry."""
 

@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from mcr_meeting.app.exceptions.exceptions import (
     BadRequestException,
     DataConflictException,
+    DeliverableNotYetPendingError,
     DeliverableStateConflictException,
     ForbiddenAccessException,
     InvalidAudioFileError,
@@ -37,6 +38,7 @@ EXCEPTION_STATUS_MAP = {
     InvalidEvaluationZipError: status.HTTP_400_BAD_REQUEST,
     DeliverableStateConflictException: status.HTTP_409_CONFLICT,
     MeetingStateConflictException: status.HTTP_409_CONFLICT,
+    DeliverableNotYetPendingError: status.HTTP_425_TOO_EARLY,
 }
 
 

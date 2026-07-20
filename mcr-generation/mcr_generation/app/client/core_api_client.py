@@ -6,6 +6,7 @@ from loguru import logger
 from mcr_generation.app.client.http_client import HttpClient
 from mcr_generation.app.configs.settings import ApiSettings, InProgressCallbackSettings
 from mcr_generation.app.exceptions.exceptions import (
+    DeliverableNotYetPendingError,
     DeliverableNotYetVisibleError,
     ReportCallbackError,
 )
@@ -15,7 +16,7 @@ from mcr_generation.app.utils.retry import retry_transient
 _in_progress_settings = InProgressCallbackSettings()
 
 _retry_in_progress = retry_transient(
-    on=(DeliverableNotYetVisibleError,),
+    on=(DeliverableNotYetVisibleError, DeliverableNotYetPendingError),
     attempts=_in_progress_settings.IN_PROGRESS_RETRY_MAX_ATTEMPTS,
     initial_delay=_in_progress_settings.IN_PROGRESS_RETRY_MIN_WAIT,
     max_delay=_in_progress_settings.IN_PROGRESS_RETRY_MAX_WAIT,
@@ -68,6 +69,10 @@ class CoreApiClient:
             if status_code == 404:
                 raise DeliverableNotYetVisibleError(
                     f"Deliverable not visible yet at {url}: {e}"
+                ) from e
+            if status_code == 425:
+                raise DeliverableNotYetPendingError(
+                    f"Deliverable not pending yet at {url}: {e}"
                 ) from e
             raise ReportCallbackError(f"Failed to POST callback to {url}: {e}") from e
         except Exception as e:

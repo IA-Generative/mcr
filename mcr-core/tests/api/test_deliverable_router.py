@@ -433,6 +433,26 @@ class TestInProgressCallbackRoute:
 
         assert response.status_code == 409
 
+    def test_425_when_still_requested(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+    ) -> None:
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        requested_deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.REQUESTED,
+        )
+
+        response = deliverables_client.post(f"/{requested_deliverable.id}/start")
+
+        assert response.status_code == 425
+
     def test_404_for_unknown_deliverable(
         self,
         deliverables_client: PrefixedTestClient,

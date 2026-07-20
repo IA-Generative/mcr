@@ -28,6 +28,12 @@ class DeliverableNotYetVisibleError(ReportCallbackError):
     not committed yet (send_task ran inside the transaction). Triggers a retry."""
 
 
+class DeliverableNotYetPendingError(ReportCallbackError):
+    """Raised when mcr-core returns 425 on in_progress: the deliverable is still
+    REQUESTED (the drain has not committed its dispatch to PENDING yet). Triggers
+    a retry, unlike the terminal 409 raised once it is already past PENDING."""
+
+
 class UnsupportedReportTypeError(MCRGenerationException):
     """Raised when an unknown report type is requested."""
 
