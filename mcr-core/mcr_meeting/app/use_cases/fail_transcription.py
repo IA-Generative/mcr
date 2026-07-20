@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 
-from mcr_meeting.app.db.deliverable_repository import get_active_by_meeting_and_type
+from mcr_meeting.app.db.deliverable_repository import (
+    find_requested_reports_by_meeting,
+    get_active_by_meeting_and_type,
+    save_deliverable,
+)
 from mcr_meeting.app.db.meeting_repository import get_meeting_by_id, update_meeting
 from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
@@ -34,6 +38,9 @@ def fail_transcription(meeting_id: int) -> Meeting:
     with UnitOfWork():
         update_meeting(meeting)
         mark_failed(deliverable)
+        for report in find_requested_reports_by_meeting(meeting.id):
+            mark_failed(report)
+            save_deliverable(report)
         save_meeting_transition_record(
             MeetingTransitionRecord(
                 meeting_id=meeting.id,
