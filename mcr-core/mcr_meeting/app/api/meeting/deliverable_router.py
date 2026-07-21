@@ -127,6 +127,15 @@ async def deliverable_success_callback(
 
 
 @deliverables_router.post("/{deliverable_id}/fail")
+# Legacy path: mcr-generation was renamed /failure -> /fail. During a rolling
+# deploy old workers still call /failure, and mark_deliverable_failure swallows a
+# 404, so a missing route would strand the deliverable in PENDING silently. Keep
+# this alias until no old worker remains, then remove it in a follow-up.
+@deliverables_router.post(
+    "/{deliverable_id}/failure",
+    deprecated=True,
+    operation_id="deliverable_failure_callback_legacy",
+)
 async def deliverable_fail_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:

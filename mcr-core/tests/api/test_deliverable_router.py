@@ -534,6 +534,31 @@ class TestFailureCallbackRoute:
         assert pending_deliverable.status == DeliverableStatus.FAILED
         assert meeting.status == MeetingStatus.REPORT_FAILED
 
+    def test_legacy_failure_alias_still_flips_to_failed(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        db_session: Any,
+    ) -> None:
+        """Old mcr-generation workers call /failure during a rolling deploy; the
+        alias must keep working so the deliverable never strands in PENDING."""
+        meeting = MeetingFactory.create(
+            owner=user_fixture,
+            status=MeetingStatus.REPORT_PENDING,
+            name_platform=MeetingPlatforms.COMU,
+        )
+        pending_deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        response = deliverables_client.post(f"/{pending_deliverable.id}/failure")
+
+        assert response.status_code == 200
+        db_session.refresh(pending_deliverable)
+        assert pending_deliverable.status == DeliverableStatus.FAILED
+
 
 class TestDeleteRoute:
     def test_returns_204_and_soft_deletes(
