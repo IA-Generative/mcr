@@ -7,7 +7,13 @@ from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
 )
-from mcr_meeting.app.models import Meeting, MeetingStatus, Transcription
+from mcr_meeting.app.models import (
+    Deliverable,
+    DeliverableStatus,
+    Meeting,
+    MeetingStatus,
+    Transcription,
+)
 from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, PaginatedMeetings
 
 
@@ -36,7 +42,13 @@ def get_meeting_by_id(meeting_id: int, *, with_deliverables: bool = False) -> Me
         Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED
     )
     if with_deliverables:
-        query = query.options(joinedload(Meeting.deliverables))
+        query = query.options(
+            joinedload(
+                Meeting.deliverables.and_(
+                    Deliverable.status != DeliverableStatus.DELETED
+                )
+            )
+        )
 
     meeting = query.first()
     if meeting is None:
@@ -78,7 +90,13 @@ def _build_meetings_query(user_id: int, search: str | None) -> Query[Meeting]:
     db = get_db_session_ctx()
     query = (
         db.query(Meeting)
-        .options(selectinload(Meeting.deliverables))
+        .options(
+            selectinload(
+                Meeting.deliverables.and_(
+                    Deliverable.status != DeliverableStatus.DELETED
+                )
+            )
+        )
         .filter(Meeting.user_id == user_id, Meeting.status != MeetingStatus.DELETED)
     )
     if search:
