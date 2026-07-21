@@ -16,7 +16,7 @@ from mcr_meeting.app.use_cases._shared.drive_upload import (
 )
 
 
-def mark_deliverable_success(
+def mark_report_success(
     deliverable_id: int,
     report_response: ReportResponse,
 ) -> Deliverable:
