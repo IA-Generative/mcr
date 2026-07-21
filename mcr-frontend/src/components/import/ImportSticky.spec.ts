@@ -1,7 +1,7 @@
 import ImportSticky from '@/components/import/ImportSticky.vue';
 import { useUploadBatchWriter, type UploadDraft } from '@/composables/use-upload-batch';
 import { renderWithPlugins } from '@/vitest.setup';
-import { screen, within } from '@testing-library/vue';
+import { fireEvent, screen, within } from '@testing-library/vue';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createMemoryHistory, createRouter } from 'vue-router';
 
@@ -156,6 +156,26 @@ describe('ImportSticky', () => {
     writer.fail(third, 'offline');
 
     expect(await screen.findByText('2 importation(s) réussie(s), 1 en erreur')).toBeInTheDocument();
+  });
+
+  it('offers a cross to close the tracking sticky', async () => {
+    renderWithPlugins(ImportSticky);
+    enqueueWithMeetings([draft()]);
+
+    expect(
+      await screen.findByRole('button', { name: 'Fermer le suivi des importations' }),
+    ).toBeInTheDocument();
+  });
+
+  it('closes straight away when the cross is clicked with nothing left to do', async () => {
+    renderWithPlugins(ImportSticky);
+    const [id] = enqueueWithMeetings([draft({ title: 'fini' })]);
+    writer.complete(id);
+    await screen.findByRole('region', { name: 'Suivi des importations' });
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Fermer le suivi des importations' }));
+
+    expect(screen.queryByRole('region', { name: 'Suivi des importations' })).toBeNull();
   });
 
   it('survives an internal navigation without losing its lines', async () => {

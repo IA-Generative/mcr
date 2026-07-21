@@ -223,8 +223,14 @@
         "description": "Cela annulera l'import en cours.",
         "button": "Quitter"
       },
+      "confirm-close": {
+        "title": "Interrompre les importations en cours ?",
+        "description": "Les importations en cours seront annulées.",
+        "button": "Interrompre"
+      },
       "sticky": {
         "label": "Suivi des importations",
+        "close": "Fermer le suivi des importations",
         "status": {
           "pending": "En attente",
           "in-progress": "Importation en cours",
