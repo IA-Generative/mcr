@@ -1,11 +1,9 @@
 type ActiveUpload = { abort: () => void };
 
-const activeUploads = reactive(new Map<number, ActiveUpload>());
+const activeUploads = new Map<number, ActiveUpload>();
 let nextImportId = 0;
 
 export function useUploadStatus() {
-  const hasActiveUploads = computed(() => activeUploads.size > 0);
-
   function registerUpload(upload: ActiveUpload): number {
     const id = ++nextImportId;
     activeUploads.set(id, upload);
@@ -23,5 +21,5 @@ export function useUploadStatus() {
     });
   }
 
-  return { hasActiveUploads, registerUpload, unregisterUpload, abortActiveUploads };
+  return { registerUpload, unregisterUpload, abortActiveUploads };
 }
