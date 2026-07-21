@@ -56,6 +56,34 @@ def get_meeting_by_id(meeting_id: int, *, with_deliverables: bool = False) -> Me
     return meeting
 
 
+def get_meeting_for_update(
+    meeting_id: int, *, with_deliverables: bool = False, with_owner: bool = False
+) -> Meeting:
+    db = get_db_session_ctx()
+    # `with_for_update` locks the sole meeting row; `selectinload` (not
+    # `joinedload`) loads relations in separate queries so the locked query
+    # carries no JOIN — Postgres forbids `FOR UPDATE` on an outer join.
+    query = (
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.status != MeetingStatus.DELETED)
+        .with_for_update()
+    )
+    if with_owner:
+        query = query.options(selectinload(Meeting.owner))
+    if with_deliverables:
+        query = query.options(
+            selectinload(
+                Meeting.deliverables.and_(
+                    Deliverable.status != DeliverableStatus.DELETED
+                )
+            )
+        )
+    meeting = query.one_or_none()
+    if meeting is None:
+        raise NotFoundException(f"Meeting not found: id={meeting_id}")
+    return meeting
+
+
 def get_meeting_with_owner(meeting_id: int) -> Meeting:
     db = get_db_session_ctx()
     meeting: Meeting | None = (
