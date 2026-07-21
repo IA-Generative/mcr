@@ -20,7 +20,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
     TaskCreationException,
 )
-from mcr_meeting.app.infrastructure.celery import celery_producer_app
+from mcr_meeting.app.infrastructure.celery import celery_producer_app, celery_settings
 from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import (
@@ -108,6 +108,7 @@ def _persist_and_dispatch(
                 MCRReportGenerationTasks.REPORT,
                 args=[meeting.id, transcription_object_name, report_type],
                 kwargs=kwargs,
+                countdown=celery_settings.REPORT_START_COUNTDOWN_SECONDS,
             )
             return deliverable
     except (

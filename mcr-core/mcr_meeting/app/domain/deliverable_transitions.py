@@ -25,9 +25,7 @@ class DeliverableStateMachine(StateMachine):
     )
 
     MARK_IN_PROGRESS = _states.PENDING.to(_states.IN_PROGRESS)
-    MARK_AVAILABLE = _states.PENDING.to(_states.AVAILABLE) | _states.IN_PROGRESS.to(
-        _states.AVAILABLE
-    )
+    MARK_AVAILABLE = _states.IN_PROGRESS.to(_states.AVAILABLE)
     MARK_FAILED = _states.PENDING.to(_states.FAILED) | _states.IN_PROGRESS.to(
         _states.FAILED
     )

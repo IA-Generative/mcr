@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
+from tenacity import stop_after_attempt, wait_none
 
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.exceptions.exceptions import ReportCallbackError
@@ -128,6 +129,68 @@ class TestMarkDeliverableSuccess:
             )
 
 
+class TestMarkDeliverableInProgress:
+    @pytest.fixture(autouse=True)
+    def _fast_retries(self, monkeypatch: Any) -> None:
+        policy = CoreApiClient.mark_deliverable_in_progress.retry  # type: ignore[attr-defined]
+        monkeypatch.setattr(policy, "stop", stop_after_attempt(3))
+        monkeypatch.setattr(policy, "wait", wait_none())
+
+    def test_posts_to_in_progress_endpoint(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        mock_httpx_client.post.assert_called_once()
+        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/start"
+
+    def test_retries_on_404_then_succeeds(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        deliverable_not_visible_yet = MagicMock()
+        deliverable_not_visible_yet.raise_for_status.side_effect = _http_error(404)
+        successful_response = MagicMock()
+        mock_httpx_client.post.side_effect = [
+            deliverable_not_visible_yet,
+            successful_response,
+        ]
+
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 2
+
+    def test_swallows_409(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            409
+        )
+
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        mock_httpx_client.post.assert_called_once()
+
+    def test_raises_after_exhausting_retries_on_404(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+    ) -> None:
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            404
+        )
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 3
+
+
 class TestMarkDeliverableFailure:
     def test_posts_to_deliverable_failure_endpoint(
         self,
@@ -137,7 +200,7 @@ class TestMarkDeliverableFailure:
         core_client.mark_deliverable_failure(deliverable_id=7)
 
         mock_httpx_client.post.assert_called_once()
-        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/failure"
+        assert mock_httpx_client.post.call_args.args[0] == "/deliverables/7/fail"
 
     def test_swallows_404(
         self,

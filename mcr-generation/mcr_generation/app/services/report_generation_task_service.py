@@ -34,11 +34,14 @@ def generate_report_from_docx(
     meeting_id: int,
     transcription_object_filename: str,
     report_type: str = ReportTypes.DECISION_RECORD.value,
-    deliverable_id: int | None = None,
+    *,
+    deliverable_id: int,
     owner_keycloak_uuid: str | None = None,
     notes_content: str | None = None,
     custom_prompt: str | None = None,
 ) -> BaseReport | CustomMarkdownReport:
+    CoreApiClient().mark_deliverable_in_progress(deliverable_id=deliverable_id)
+
     record_report_trace_context(
         meeting_id=meeting_id,
         transcription_object_filename=transcription_object_filename,

@@ -82,23 +82,15 @@ class TestRequeue:
 
 
 class TestMarkAvailable:
-    def test_flips_pending_to_available(self) -> None:
-        deliverable = _make_deliverable(DeliverableStatus.PENDING)
-
-        result = mark_available(deliverable, external_url=None)
-
-        assert result is deliverable
-        assert deliverable.status == DeliverableStatus.AVAILABLE
-
     def test_sets_external_url(self) -> None:
-        deliverable = _make_deliverable(DeliverableStatus.PENDING)
+        deliverable = _make_deliverable(DeliverableStatus.IN_PROGRESS)
 
         mark_available(deliverable, external_url="https://drive.example.com/x")
 
         assert deliverable.external_url == "https://drive.example.com/x"
 
     def test_keeps_external_url_none_when_none_passed(self) -> None:
-        deliverable = _make_deliverable(DeliverableStatus.PENDING)
+        deliverable = _make_deliverable(DeliverableStatus.IN_PROGRESS)
 
         mark_available(deliverable, external_url=None)
 
@@ -110,6 +102,14 @@ class TestMarkAvailable:
         mark_available(deliverable, external_url=None)
 
         assert deliverable.status == DeliverableStatus.AVAILABLE
+
+    def test_rejects_from_pending(self) -> None:
+        deliverable = _make_deliverable(DeliverableStatus.PENDING)
+
+        with pytest.raises(DeliverableStateConflictException):
+            mark_available(deliverable, external_url=None)
+
+        assert deliverable.status == DeliverableStatus.PENDING
 
     def test_rejects_already_available(self) -> None:
         deliverable = _make_deliverable(DeliverableStatus.AVAILABLE)

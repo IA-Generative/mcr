@@ -20,6 +20,9 @@ from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
 )
 from mcr_meeting.app.use_cases.mark_deliverable_failure import mark_deliverable_failure
+from mcr_meeting.app.use_cases.mark_deliverable_in_progress import (
+    mark_deliverable_in_progress,
+)
 from mcr_meeting.app.use_cases.mark_deliverable_success import (
     mark_deliverable_success,
 )
@@ -103,6 +106,14 @@ async def get_deliverable_file_route(
     return StreamingResponse(result.buffer, media_type=DOCX_MIME_TYPE, headers=headers)
 
 
+@deliverables_router.post("/{deliverable_id}/start")
+async def deliverable_start_callback(
+    deliverable_id: int,
+) -> DeliverableResponse:
+    deliverable = mark_deliverable_in_progress(deliverable_id=deliverable_id)
+    return DeliverableResponse.model_validate(deliverable)
+
+
 @deliverables_router.post("/{deliverable_id}/success")
 async def deliverable_success_callback(
     deliverable_id: int,
@@ -115,8 +126,17 @@ async def deliverable_success_callback(
     return DeliverableResponse.model_validate(deliverable)
 
 
-@deliverables_router.post("/{deliverable_id}/failure")
-async def deliverable_failure_callback(
+@deliverables_router.post("/{deliverable_id}/fail")
+# Legacy path: mcr-generation was renamed /failure -> /fail. During a rolling
+# deploy old workers still call /failure, and mark_deliverable_failure swallows a
+# 404, so a missing route would strand the deliverable in PENDING silently. Keep
+# this alias until no old worker remains, then remove it in a follow-up.
+@deliverables_router.post(
+    "/{deliverable_id}/failure",
+    deprecated=True,
+    operation_id="deliverable_failure_callback_legacy",
+)
+async def deliverable_fail_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_deliverable_failure(deliverable_id=deliverable_id)

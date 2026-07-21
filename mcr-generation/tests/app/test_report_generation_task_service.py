@@ -30,6 +30,9 @@ sys.modules["mcr_generation.app.utils.celery_worker"] = _mock_celery_worker
 sys.modules["mcr_generation.app.services.utils.input_chunker"] = MagicMock()
 sys.modules["mcr_generation.app.services.report_generator"] = MagicMock()
 
+from mcr_generation.app.exceptions.exceptions import (  # noqa: E402
+    ReportCallbackError,
+)
 from mcr_generation.app.services.report_generation_task_service import (  # noqa: E402
     generate_report_from_docx,
     generate_report_from_docx_success,
@@ -90,7 +93,6 @@ class TestGenerateReportFromDocxSignature:
 
         for name in (
             "report_type",
-            "deliverable_id",
             "owner_keycloak_uuid",
             "notes_content",
             "custom_prompt",
@@ -99,13 +101,26 @@ class TestGenerateReportFromDocxSignature:
                 f"{name} must have a default so mcr-core can pass it via kwargs"
             )
 
+    def test_deliverable_id_is_required_keyword_only(self) -> None:
+        # Required + keyword-only: mcr-core always dispatches it by name, and this
+        # makes the positional mis-binding of bug #739 impossible.
+        param = inspect.signature(generate_report_from_docx).parameters[
+            "deliverable_id"
+        ]
+
+        assert param.default is inspect.Parameter.empty
+        assert param.kind is inspect.Parameter.KEYWORD_ONLY
+
     def test_accepts_celery_dispatch_shape(
         self,
         decision_record: DecisionRecord,
+        mock_core_api_client: MagicMock,
         mock_load_transcript_chunks: MagicMock,
         mock_create_report_generator: MagicMock,
     ) -> None:
-        """Replicates exactly what request_deliverable.py sends via send_task."""
+        """Replicates exactly what request_deliverable.py sends via send_task:
+        args positional, deliverable_id / owner_keycloak_uuid / custom_prompt by
+        name. Guards the cross-service binding contract (bug #739)."""
         mock_load_transcript_chunks.return_value = [SimpleNamespace(id=0, text="chunk")]
         mock_create_report_generator.return_value.generate.return_value = (
             decision_record
@@ -114,11 +129,15 @@ class TestGenerateReportFromDocxSignature:
         args = [42, "transcription.docx", "DECISION_RECORD"]
         kwargs = {
             "owner_keycloak_uuid": "owner-uuid",
+            "deliverable_id": 7,
             "custom_prompt": "résume",
         }
 
         generate_report_from_docx(*args, **kwargs)
 
+        mock_core_api_client.mark_deliverable_in_progress.assert_called_once_with(
+            deliverable_id=7
+        )
         mock_load_transcript_chunks.assert_called_once_with("transcription.docx")
         _, factory_kwargs = mock_create_report_generator.call_args
         assert factory_kwargs == {"custom_prompt": "résume"}
@@ -128,6 +147,7 @@ class TestGenerateReportFromDocx:
     def test_returns_decision_record_built_from_service_outputs(
         self,
         decision_record: DecisionRecord,
+        mock_core_api_client: MagicMock,
         mock_load_transcript_chunks: MagicMock,
         mock_create_report_generator: MagicMock,
     ) -> None:
@@ -140,7 +160,9 @@ class TestGenerateReportFromDocx:
             decision_record
         )
 
-        generate_report_from_docx(1, "transcription.docx", notes_content="raw notes")
+        generate_report_from_docx(
+            1, "transcription.docx", deliverable_id=7, notes_content="raw notes"
+        )
 
         mock_load_transcript_chunks.assert_called_once_with("transcription.docx")
         mock_create_report_generator.assert_called_once()
@@ -148,15 +170,20 @@ class TestGenerateReportFromDocx:
             [chunk1, chunk2], notes_content="raw notes"
         )
 
-    def test_propagates_s3_error(self, mock_load_transcript_chunks: MagicMock) -> None:
+    def test_propagates_s3_error(
+        self,
+        mock_core_api_client: MagicMock,
+        mock_load_transcript_chunks: MagicMock,
+    ) -> None:
         """An exception raised while loading the transcript must propagate."""
         mock_load_transcript_chunks.side_effect = RuntimeError("S3 unavailable")
 
         with pytest.raises(RuntimeError, match="S3 unavailable"):
-            generate_report_from_docx(1, "transcription.docx")
+            generate_report_from_docx(1, "transcription.docx", deliverable_id=7)
 
     def test_returns_custom_markdown_report_built_from_generator(
         self,
+        mock_core_api_client: MagicMock,
         mock_load_transcript_chunks: MagicMock,
         mock_create_report_generator: MagicMock,
     ) -> None:
@@ -169,6 +196,7 @@ class TestGenerateReportFromDocx:
             1,
             "transcription.docx",
             report_type="CUSTOM_REPORT",
+            deliverable_id=7,
             notes_content="raw notes",
             custom_prompt="Liste les risques",
         )
@@ -209,6 +237,42 @@ class TestExtractReportTaskArgs:
                     "kwargs": {"owner_keycloak_uuid": "abc", "deliverable_id": None},
                 }
             )
+
+
+class TestMarkInProgressInTaskBody:
+    def test_marks_in_progress_when_deliverable_id_given(
+        self,
+        decision_record: DecisionRecord,
+        mock_core_api_client: MagicMock,
+        mock_load_transcript_chunks: MagicMock,
+        mock_create_report_generator: MagicMock,
+    ) -> None:
+        mock_load_transcript_chunks.return_value = [SimpleNamespace(id=0, text="c")]
+        mock_create_report_generator.return_value.generate.return_value = (
+            decision_record
+        )
+
+        generate_report_from_docx(42, "transcription.docx", deliverable_id=7)
+
+        mock_core_api_client.mark_deliverable_in_progress.assert_called_once_with(
+            deliverable_id=7
+        )
+
+    def test_callback_failure_skips_llm_generation(
+        self,
+        mock_core_api_client: MagicMock,
+        mock_load_transcript_chunks: MagicMock,
+        mock_create_report_generator: MagicMock,
+    ) -> None:
+        mock_core_api_client.mark_deliverable_in_progress.side_effect = (
+            ReportCallbackError("boom")
+        )
+
+        with pytest.raises(ReportCallbackError):
+            generate_report_from_docx(42, "transcription.docx", deliverable_id=7)
+
+        mock_load_transcript_chunks.assert_not_called()
+        mock_create_report_generator.assert_not_called()
 
 
 class TestGenerateReportFromDocxSuccess:
