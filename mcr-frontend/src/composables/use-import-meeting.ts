@@ -127,7 +127,6 @@ export function useImportMeeting(): Orchestrator {
         writer.attachMeeting(id, meeting.id);
         pump();
       } catch (error) {
-        toaster.addErrorMessage(t('error.meeting-creation')!);
         settleAsFailed(id, classifyUploadFailure(error, navigator.onLine));
       }
     }
@@ -185,7 +184,6 @@ export function useImportMeeting(): Orchestrator {
           },
         },
       });
-      toaster.addErrorMessage(t('meeting.import.errors.file-invalid')!);
       settleAsFailed(id, 'http-client');
     } finally {
       runtime.stopTranscoding = undefined;
@@ -223,11 +221,7 @@ export function useImportMeeting(): Orchestrator {
         return;
       }
 
-      const failureType = classifyUploadFailure(error, navigator.onLine);
-      toaster.addErrorMessage(
-        t(failureType === 'blocked' ? 'error.file-upload-blocked' : 'error.file-upload')!,
-      );
-      settleAsFailed(id, failureType);
+      settleAsFailed(id, classifyUploadFailure(error, navigator.onLine));
     }
   }
 

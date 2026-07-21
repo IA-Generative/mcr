@@ -312,7 +312,7 @@ describe('useImportMeeting.importFiles', () => {
     ]);
     await flush();
 
-    expect(addErrorMessage).toHaveBeenCalledWith('error.meeting-creation');
+    expect(addErrorMessage).not.toHaveBeenCalled();
     const byTitle = Object.fromEntries(batch.items.value.map((item) => [item.title, item]));
     expect(byTitle['bad']).toMatchObject({ status: 'error', failureType: 'unknown' });
     expect(byTitle['ok-1'].status).toBe('done');
@@ -320,8 +320,9 @@ describe('useImportMeeting.importFiles', () => {
     expect(startTranscription).toHaveBeenCalledTimes(2);
   });
 
-  it('an upload failure shows the existing toast, settles that file and lets the next one start', async () => {
+  it('an upload failure settles that file inline (no toast) and lets the next one start', async () => {
     uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('timeout');
     const { importFiles, batch } = await setup();
 
     await importFiles([
@@ -330,26 +331,15 @@ describe('useImportMeeting.importFiles', () => {
     ]);
     await flush();
 
-    expect(addErrorMessage).toHaveBeenCalledWith('error.file-upload');
+    expect(addErrorMessage).not.toHaveBeenCalled();
     const byTitle = Object.fromEntries(batch.items.value.map((item) => [item.title, item]));
-    expect(byTitle['fails']).toMatchObject({ status: 'error', failureType: 'unknown' });
+    expect(byTitle['fails']).toMatchObject({ status: 'error', failureType: 'timeout' });
     expect(byTitle['passes'].status).toBe('done');
     expect(startTranscription).toHaveBeenCalledTimes(1);
     expect(startTranscription).toHaveBeenCalledWith(102);
   });
 
-  it('shows the proxy-blocked message when the upload failure is classified as blocked', async () => {
-    uploadFile.mockRejectedValue(new Error('boom'));
-    classifyUploadFailure.mockReturnValue('blocked');
-    const { importFiles } = await setup();
-
-    await importFiles([makeFile('meeting.mp3')]);
-    await flush();
-
-    expect(addErrorMessage).toHaveBeenCalledWith('error.file-upload-blocked');
-  });
-
-  it('a transcode failure is reported, toasted, and marked unprocessable without any upload', async () => {
+  it('a transcode failure is reported and marked unprocessable inline (no toast) without any upload', async () => {
     transcodeToMp3.mockRejectedValue(new Error('bad codec'));
     const { importFiles, batch } = await setup();
 
@@ -360,7 +350,7 @@ describe('useImportMeeting.importFiles', () => {
       expect.any(Error),
       expect.objectContaining({ feature: 'meeting.import' }),
     );
-    expect(addErrorMessage).toHaveBeenCalledWith('meeting.import.errors.file-invalid');
+    expect(addErrorMessage).not.toHaveBeenCalled();
     expect(batch.items.value[0]).toMatchObject({ status: 'error', failureType: 'http-client' });
     expect(uploadFile).not.toHaveBeenCalled();
   });

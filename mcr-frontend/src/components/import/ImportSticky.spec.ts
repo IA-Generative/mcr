@@ -114,6 +114,24 @@ describe('ImportSticky', () => {
     ).toBeInTheDocument();
   });
 
+  it.each([
+    ['offline', 'Importation échouée. Vérifiez votre connexion et réessayez.'],
+    ['blocked', 'Importation échouée. Vérifiez votre connexion et réessayez.'],
+    ['timeout', 'Le serveur ne répond pas. Réessayez dans quelques minutes.'],
+    ['http-server', 'Le serveur ne répond pas. Réessayez dans quelques minutes.'],
+    ['unknown', 'Le serveur ne répond pas. Réessayez dans quelques minutes.'],
+    ['http-client', 'Nous ne pouvons pas traiter ce fichier.'],
+  ] as const)(
+    'shows the inline message dedicated to a %s failure',
+    async (failureType, message) => {
+      renderWithPlugins(ImportSticky);
+      const [id] = enqueueWithMeetings([draft({ title: 'raté' })]);
+      writer.fail(id, failureType);
+
+      expect(within(await findRowByTitle('raté')).getByText(message)).toBeInTheDocument();
+    },
+  );
+
   it('keeps every line visible once the batch is settled', async () => {
     renderWithPlugins(ImportSticky);
     const [first, second] = enqueueWithMeetings([
