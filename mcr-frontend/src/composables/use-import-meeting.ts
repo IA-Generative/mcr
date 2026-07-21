@@ -127,7 +127,12 @@ export function useImportMeeting(): Orchestrator {
         writer.attachMeeting(id, meeting.id);
         pump();
       } catch (error) {
-        settleAsFailed(id, classifyUploadFailure(error, navigator.onLine));
+        const failureType = classifyUploadFailure(error, navigator.onLine);
+        reportError(error, {
+          feature: 'meeting.import',
+          tags: { 'import.phase': 'meeting-creation', 'import.failure_type': failureType },
+        });
+        settleAsFailed(id, failureType);
       }
     }
   }
@@ -172,9 +177,10 @@ export function useImportMeeting(): Orchestrator {
         return;
       }
 
+      const failureType: UploadFailureType = 'http-client';
       reportError(error, {
         feature: 'meeting.import',
-        tags: { 'import.phase': 'transcode' },
+        tags: { 'import.phase': 'transcode', 'import.failure_type': failureType },
         contexts: {
           import: {
             extension: getFileExtension(runtime.file),
@@ -184,7 +190,7 @@ export function useImportMeeting(): Orchestrator {
           },
         },
       });
-      settleAsFailed(id, 'http-client');
+      settleAsFailed(id, failureType);
     } finally {
       runtime.stopTranscoding = undefined;
     }

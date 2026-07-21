@@ -313,6 +313,16 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
 
     expect(addErrorMessage).not.toHaveBeenCalled();
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        feature: 'meeting.import',
+        tags: expect.objectContaining({
+          'import.phase': 'meeting-creation',
+          'import.failure_type': 'unknown',
+        }),
+      }),
+    );
     const byTitle = Object.fromEntries(batch.items.value.map((item) => [item.title, item]));
     expect(byTitle['bad']).toMatchObject({ status: 'error', failureType: 'unknown' });
     expect(byTitle['ok-1'].status).toBe('done');
@@ -348,7 +358,13 @@ describe('useImportMeeting.importFiles', () => {
 
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ feature: 'meeting.import' }),
+      expect.objectContaining({
+        feature: 'meeting.import',
+        tags: expect.objectContaining({
+          'import.phase': 'transcode',
+          'import.failure_type': 'http-client',
+        }),
+      }),
     );
     expect(addErrorMessage).not.toHaveBeenCalled();
     expect(batch.items.value[0]).toMatchObject({ status: 'error', failureType: 'http-client' });
