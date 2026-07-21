@@ -16,8 +16,8 @@ from mcr_meeting.app.schemas.report_generation import (
     ReportGenerationResponse,
     ReportHeader,
 )
-from mcr_meeting.app.use_cases.mark_deliverable_success import (
-    mark_deliverable_success,
+from mcr_meeting.app.use_cases.mark_report_success import (
+    mark_report_success,
 )
 from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
@@ -55,7 +55,7 @@ class TestHappyPath:
             external_url=None,
         )
 
-        result = mark_deliverable_success(
+        result = mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -90,7 +90,7 @@ class TestDriveUpload:
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        result = mark_deliverable_success(
+        result = mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -118,7 +118,7 @@ class TestDriveUpload:
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        result = mark_deliverable_success(
+        result = mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -147,7 +147,7 @@ class TestDriveUpload:
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        result = mark_deliverable_success(
+        result = mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -176,7 +176,7 @@ class TestDriveUpload:
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        result = mark_deliverable_success(
+        result = mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -207,7 +207,7 @@ class TestDriveUpload:
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        mark_deliverable_success(
+        mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -234,7 +234,7 @@ class TestFailureRollback:
         )
 
         with pytest.raises(RuntimeError):
-            mark_deliverable_success(
+            mark_report_success(
                 deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
@@ -254,7 +254,7 @@ class TestFailureRollback:
         mocker: MockerFixture,
     ) -> None:
         mocker.patch(
-            "mcr_meeting.app.use_cases.mark_deliverable_success.render_report",
+            "mcr_meeting.app.use_cases.mark_report_success.render_report",
             side_effect=RuntimeError("render boom"),
         )
         meeting = MeetingFactory.create(
@@ -268,7 +268,7 @@ class TestFailureRollback:
         )
 
         with pytest.raises(RuntimeError):
-            mark_deliverable_success(
+            mark_report_success(
                 deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
@@ -298,13 +298,13 @@ class TestFailureRollback:
 
         in_memory_s3.fail(S3Op.PUT, RuntimeError("S3 put failed"), times=1)
         with pytest.raises(RuntimeError):
-            mark_deliverable_success(
+            mark_report_success(
                 deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
 
         with pytest.raises(DeliverableStateConflictException):
-            mark_deliverable_success(
+            mark_report_success(
                 deliverable_id=in_progress_deliverable.id,
                 report_response=_decision_record_response(),
             )
@@ -328,7 +328,7 @@ class TestPostCommitFailures:
             status=DeliverableStatus.IN_PROGRESS,
         )
 
-        result = mark_deliverable_success(
+        result = mark_report_success(
             deliverable_id=in_progress_deliverable.id,
             report_response=_decision_record_response(),
         )
@@ -358,7 +358,7 @@ class TestConflict:
         )
 
         with pytest.raises(DeliverableStateConflictException):
-            mark_deliverable_success(
+            mark_report_success(
                 deliverable_id=pending_deliverable.id,
                 report_response=_decision_record_response(),
             )
@@ -384,7 +384,7 @@ class TestConflict:
         )
 
         with pytest.raises(DeliverableStateConflictException):
-            mark_deliverable_success(
+            mark_report_success(
                 deliverable_id=existing.id,
                 report_response=_decision_record_response(),
             )

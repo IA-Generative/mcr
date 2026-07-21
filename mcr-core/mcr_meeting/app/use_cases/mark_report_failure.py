@@ -4,9 +4,10 @@ from mcr_meeting.app.domain import deliverable_transitions
 from mcr_meeting.app.models.deliverable_model import Deliverable
 
 
-def mark_deliverable_in_progress(deliverable_id: int) -> Deliverable:
+def mark_report_failure(deliverable_id: int) -> Deliverable:
     deliverable = deliverable_repository.get_by_id(deliverable_id)
-    deliverable_transitions.mark_in_progress(deliverable)
+
+    deliverable_transitions.mark_failed(deliverable)
 
     with UnitOfWork():
         deliverable_repository.save_deliverable(deliverable)

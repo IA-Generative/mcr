@@ -19,12 +19,12 @@ from mcr_meeting.app.use_cases.get_deliverable_file import get_deliverable_file
 from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
 )
-from mcr_meeting.app.use_cases.mark_deliverable_failure import mark_deliverable_failure
-from mcr_meeting.app.use_cases.mark_deliverable_in_progress import (
-    mark_deliverable_in_progress,
+from mcr_meeting.app.use_cases.mark_report_failure import mark_report_failure
+from mcr_meeting.app.use_cases.mark_report_in_progress import (
+    mark_report_in_progress,
 )
-from mcr_meeting.app.use_cases.mark_deliverable_success import (
-    mark_deliverable_success,
+from mcr_meeting.app.use_cases.mark_report_success import (
+    mark_report_success,
 )
 from mcr_meeting.app.use_cases.request_deliverable import (
     request_deliverable as request_deliverable_use_case,
@@ -110,7 +110,7 @@ async def get_deliverable_file_route(
 async def deliverable_start_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
-    deliverable = mark_deliverable_in_progress(deliverable_id=deliverable_id)
+    deliverable = mark_report_in_progress(deliverable_id=deliverable_id)
     return DeliverableResponse.model_validate(deliverable)
 
 
@@ -119,7 +119,7 @@ async def deliverable_success_callback(
     deliverable_id: int,
     body: DeliverableSuccessRequest,
 ) -> DeliverableResponse:
-    deliverable = mark_deliverable_success(
+    deliverable = mark_report_success(
         deliverable_id=deliverable_id,
         report_response=body.report_response,
     )
@@ -128,7 +128,7 @@ async def deliverable_success_callback(
 
 @deliverables_router.post("/{deliverable_id}/fail")
 # Legacy path: mcr-generation was renamed /failure -> /fail. During a rolling
-# deploy old workers still call /failure, and mark_deliverable_failure swallows a
+# deploy old workers still call /failure, and mark_report_failure swallows a
 # 404, so a missing route would strand the deliverable in PENDING silently. Keep
 # this alias until no old worker remains, then remove it in a follow-up.
 @deliverables_router.post(
@@ -139,5 +139,5 @@ async def deliverable_success_callback(
 async def deliverable_fail_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
-    deliverable = mark_deliverable_failure(deliverable_id=deliverable_id)
+    deliverable = mark_report_failure(deliverable_id=deliverable_id)
     return DeliverableResponse.model_validate(deliverable)

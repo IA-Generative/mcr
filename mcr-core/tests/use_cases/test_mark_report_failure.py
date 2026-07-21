@@ -8,7 +8,7 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingPlatforms,
     MeetingStatus,
 )
-from mcr_meeting.app.use_cases.mark_deliverable_failure import mark_deliverable_failure
+from mcr_meeting.app.use_cases.mark_report_failure import mark_report_failure
 from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
 
@@ -28,7 +28,7 @@ class TestMarkDeliverableFailure:
             status=DeliverableStatus.PENDING,
         )
 
-        mark_deliverable_failure(deliverable_id=pending.id)
+        mark_report_failure(deliverable_id=pending.id)
 
         db_session.refresh(pending)
         db_session.refresh(meeting)

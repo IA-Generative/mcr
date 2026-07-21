@@ -13,8 +13,8 @@ from mcr_meeting.app.models.meeting_model import (
     MeetingPlatforms,
     MeetingStatus,
 )
-from mcr_meeting.app.use_cases.mark_deliverable_in_progress import (
-    mark_deliverable_in_progress,
+from mcr_meeting.app.use_cases.mark_report_in_progress import (
+    mark_report_in_progress,
 )
 from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
@@ -35,7 +35,7 @@ class TestMarkDeliverableInProgress:
             status=DeliverableStatus.PENDING,
         )
 
-        result = mark_deliverable_in_progress(deliverable_id=pending.id)
+        result = mark_report_in_progress(deliverable_id=pending.id)
 
         db_session.refresh(pending)
         db_session.refresh(meeting)
@@ -58,11 +58,11 @@ class TestMarkDeliverableInProgress:
         )
 
         with pytest.raises(DeliverableStateConflictException):
-            mark_deliverable_in_progress(deliverable_id=deliverable.id)
+            mark_report_in_progress(deliverable_id=deliverable.id)
 
     def test_raises_not_found_for_unknown_deliverable(
         self,
         db_session: Session,
     ) -> None:
         with pytest.raises(NotFoundException):
-            mark_deliverable_in_progress(deliverable_id=999999)
+            mark_report_in_progress(deliverable_id=999999)
