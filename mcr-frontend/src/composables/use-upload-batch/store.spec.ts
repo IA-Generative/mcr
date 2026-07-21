@@ -12,6 +12,7 @@ import {
   getUploadingItems,
   hasActiveWork,
   isSettled,
+  isSoleItem,
 } from './selectors';
 import {
   MAX_CONCURRENT_TRANSCODES,
@@ -429,6 +430,16 @@ describe('upload-batch aggregate title, flags and error messages', () => {
     const bothSettled = fail(oneSettled, itemIds[1], 'offline');
     expect(hasActiveWork(bothSettled)).toBe(false);
     expect(isSettled(bothSettled)).toBe(true);
+  });
+
+  it('recognises the sole item of the store, and stops as soon as another joins it', () => {
+    const { state, itemIds } = enqueue(createInitialState(), [draft()]);
+    expect(isSoleItem(state, itemIds[0])).toBe(true);
+
+    const { state: withSecond } = enqueue(state, [draft()]);
+    expect(isSoleItem(withSecond, itemIds[0])).toBe(false);
+
+    expect(isSoleItem(createInitialState(), itemIds[0])).toBe(false);
   });
 
   it.each([
