@@ -231,9 +231,11 @@
       "sticky": {
         "label": "Suivi des importations",
         "close": "Fermer le suivi des importations",
+        "eta": "~{time} restantes",
         "status": {
           "pending": "En attente",
-          "in-progress": "Importation en cours",
+          "transcoding": "Conversion en cours",
+          "uploading": "Importation en cours",
           "done": "Importation terminée",
           "error": "Importation échouée"
         }

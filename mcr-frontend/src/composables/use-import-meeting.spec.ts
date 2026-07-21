@@ -13,6 +13,7 @@ const {
   unregisterUpload,
   registeredAborts,
   push,
+  transcodeProgress,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
   startTranscription: vi.fn(),
@@ -24,6 +25,7 @@ const {
   unregisterUpload: vi.fn(),
   registeredAborts: [] as (() => void)[],
   push: vi.fn(),
+  transcodeProgress: { cb: undefined as ((ratio: number) => void) | undefined },
 }));
 
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
@@ -40,7 +42,10 @@ vi.mock('@/composables/use-upload-status', () => ({
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@/router/routes', () => ({ ROUTES: { MEETINGS: { path: '/meetings' } } }));
 vi.mock('@/utils/video2audioConverter', () => ({
-  useVideo2audioConverter: () => ({ transcodeToMp3, stopTranscoding }),
+  useVideo2audioConverter: (cb?: (ratio: number) => void) => {
+    transcodeProgress.cb = cb;
+    return { transcodeToMp3, stopTranscoding };
+  },
 }));
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
@@ -104,6 +109,7 @@ describe('useImportMeeting.importFiles', () => {
     vi.resetModules();
     vi.clearAllMocks();
     registeredAborts.length = 0;
+    transcodeProgress.cb = undefined;
     fileDurations.clear();
     nextMeetingId = 101;
 
@@ -228,6 +234,33 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
     expect(uploadFile.mock.calls[2][0].meetingId).toBe(103);
     uploads[2].resolve();
+  });
+
+  it('feeds real network progress from the uploader into the store ring', async () => {
+    deferCalls<void>(uploadFile);
+    const { importFiles, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60, bytes: 1_000 })]);
+    await flush();
+
+    const onProgress = uploadFile.mock.calls[0][0].onProgress as (bytes: number) => void;
+    onProgress(500);
+
+    expect(batch.getProgressRatio(batch.items.value[0])).toBe(0.5);
+  });
+
+  it('feeds ffmpeg transcode progress into the store for the ETA', async () => {
+    deferCalls<File>(transcodeToMp3);
+    const { importFiles, batch } = await setup();
+
+    await importFiles([makeFile('video.mp4', { duration: 100, type: 'video/mp4' })]);
+    await flush();
+
+    expect(transcodeProgress.cb).toBeTypeOf('function');
+    transcodeProgress.cb!(0.1);
+    transcodeProgress.cb!(0.5);
+
+    expect(batch.items.value[0].transcodeRatio).toBe(0.5);
   });
 
   it('transcodes a video while another file uploads', async () => {

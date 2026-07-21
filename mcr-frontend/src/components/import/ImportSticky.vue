@@ -16,6 +16,13 @@
         @click="close"
       />
     </header>
+    <p
+      v-if="etaLabel"
+      class="m-0 border-t border-default-grey px-4 py-2 text-sm text-grey-mention"
+      role="status"
+    >
+      {{ etaLabel }}
+    </p>
     <ul class="m-0 list-none overflow-y-auto p-0 max-h-[40vh]">
       <ImportStickyRow
         v-for="item in items"
@@ -31,12 +38,21 @@ import ImportStickyRow from '@/components/import/ImportStickyRow.vue';
 import { useImportStickyClose } from '@/composables/use-import-sticky-close';
 import { useUploadBatch } from '@/composables/use-upload-batch';
 import { t } from '@/plugins/i18n';
+import { formatDurationLabel } from '@/utils/timeFormatting';
 
-const { isOpen, items, batchTitle } = useUploadBatch();
+const { isOpen, items, batchTitle, batchEtaSeconds } = useUploadBatch();
 const { close } = useImportStickyClose();
 
 const title = computed(() =>
   batchTitle.value ? t(batchTitle.value.key, batchTitle.value.params) : '',
+);
+
+const etaLabel = computed(() =>
+  batchEtaSeconds.value === null
+    ? ''
+    : t('meeting.import.sticky.eta', {
+        time: formatDurationLabel(Math.ceil(batchEtaSeconds.value)),
+      }),
 );
 </script>
 

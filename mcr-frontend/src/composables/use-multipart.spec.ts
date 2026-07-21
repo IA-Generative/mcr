@@ -69,6 +69,27 @@ describe('useMultipart.uploadFile', () => {
     expect(reportError).not.toHaveBeenCalled();
   });
 
+  it('streams cumulative bytes sent to the progress callback, clamped to the part size', async () => {
+    put.mockImplementation(
+      (
+        _url: string,
+        _blob: Blob,
+        config: { onUploadProgress?: (e: { loaded: number }) => void },
+      ) => {
+        config.onUploadProgress?.({ loaded: 4 });
+        config.onUploadProgress?.({ loaded: 15 });
+        return Promise.resolve({ headers: { etag: '"abc"' } });
+      },
+    );
+    const onProgress = vi.fn();
+    const { uploadFile } = useMultipart();
+
+    await uploadFile({ meetingId: 1, file: makeFile(), onProgress });
+
+    expect(onProgress).toHaveBeenNthCalledWith(1, 4);
+    expect(onProgress).toHaveBeenNthCalledWith(2, 10);
+  });
+
   it('reports once with rich context and re-throws the ORIGINAL error on a part failure', async () => {
     const err = networkError();
     put.mockRejectedValue(err);

@@ -154,7 +154,10 @@ export function useImportMeeting(): Orchestrator {
       return;
     }
 
-    const converter = useVideo2audioConverter();
+    const elapsed = createSampleClock();
+    const converter = useVideo2audioConverter((ratio) =>
+      writer.recordTranscodeProgress(id, ratio, elapsed()),
+    );
     runtime.stopTranscoding = converter.stopTranscoding;
 
     try {
@@ -196,11 +199,13 @@ export function useImportMeeting(): Orchestrator {
       return;
     }
 
+    const elapsed = createSampleClock();
     try {
       await uploadFile({
         meetingId: item.meetingId,
         file: renameWithTimestamp(runtime.file, id),
         signal: runtime.controller.signal,
+        onProgress: (sentBytes) => writer.recordProgress(id, sentBytes, elapsed()),
       });
       if (!runtimes.has(id)) {
         return;
@@ -259,6 +264,16 @@ export function useImportMeeting(): Orchestrator {
   }
 
   return { importFiles };
+}
+
+function createSampleClock(): () => number {
+  let last: number | null = null;
+  return () => {
+    const now = performance.now();
+    const seconds = last === null ? 0 : (now - last) / 1000;
+    last = now;
+    return seconds;
+  };
 }
 
 function sortByAscendingDuration(files: ValidatedFile[]): void {
