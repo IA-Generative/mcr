@@ -102,6 +102,8 @@ def test_get_meetings_returns_active_deliverables(
     assert len(deliverables) == 1
     assert deliverables[0]["type"] == DeliverableType.TRANSCRIPTION
     assert deliverables[0]["status"] == DeliverableStatus.AVAILABLE
+    assert "external_url" not in deliverables[0]
+    assert "updated_at" not in deliverables[0]
 
 
 def test_get_meetings_invalid_user(
@@ -206,7 +208,7 @@ def test_get_meeting_by_id_success(
     assert_json_equal_meeting_model(json_data, meeting_fixture)
 
 
-def test_get_meeting_by_id_returns_deliverables_with_legacy_and_new_keys(
+def test_get_meeting_by_id_returns_full_deliverable_payload(
     meeting_client: PrefixedTestClient,
     meeting_fixture: Meeting,
     user_fixture: User,
@@ -230,11 +232,11 @@ def test_get_meeting_by_id_returns_deliverables_with_legacy_and_new_keys(
     deliverables = response.json()["deliverables"]
     assert len(deliverables) == 1
     payload = deliverables[0]
-    # Legacy key kept for old frontend compatibility.
-    assert payload["file_type"] == DeliverableType.TRANSCRIPTION
-    # New keys exposed for the v2 frontend.
     assert payload["type"] == DeliverableType.TRANSCRIPTION
     assert payload["status"] == DeliverableStatus.AVAILABLE
+    assert payload["external_url"] == "https://drive.example.com/documents/42/"
+    assert "updated_at" in payload
+    assert "file_type" not in payload
 
 
 def test_get_meeting_by_id_unauthorized(

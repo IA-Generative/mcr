@@ -7,7 +7,6 @@ from urllib.parse import urlparse, urlunparse
 from pydantic import (
     BaseModel,
     ConfigDict,
-    computed_field,
     field_serializer,
     field_validator,
     model_validator,
@@ -126,19 +125,16 @@ class PaginatedMeetingsResponse(BaseModel):
     data: list["MeetingResponse"]
 
 
-class DeliverableResponse(BaseModel):
+class DeliverableTagResponse(BaseModel):
     type: DeliverableType
     status: DeliverableStatus
-    external_url: str | None
-    updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def file_type(self) -> DeliverableType:
-        # Legacy alias kept until the v2 frontend (Step 4) replaces the old one.
-        return self.type
+
+class MeetingDeliverableResponse(DeliverableTagResponse):
+    external_url: str | None
+    updated_at: datetime
 
 
 class MeetingResponse(MeetingBase):
@@ -160,16 +156,7 @@ class MeetingResponse(MeetingBase):
 
     id: int
     status: MeetingStatus
-    deliverables: list[DeliverableResponse] = []
-
-    @field_validator("deliverables", mode="before")
-    @classmethod
-    def drop_deleted_deliverables(cls, value: object) -> object:
-        if not isinstance(value, list):
-            return value
-        return [
-            d for d in value if getattr(d, "status", None) != DeliverableStatus.DELETED
-        ]
+    deliverables: list[DeliverableTagResponse] = []
 
     @field_validator("creation_date")
     @classmethod
@@ -244,4 +231,4 @@ def rewrite_comu_url_to_use_public_url(meeting: MeetingBase) -> MeetingBase:
 
 
 class MeetingDetailResponse(MeetingResponse):
-    pass
+    deliverables: list[MeetingDeliverableResponse] = []  # type: ignore[assignment]
