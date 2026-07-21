@@ -379,6 +379,17 @@ class CelerySettings(BaseSettings):
     the pod's terminationGracePeriodSeconds or k8s SIGKILLs mid-window.
     """,
     )
+    REPORT_START_COUNTDOWN_SECONDS: int = Field(
+        default=5,
+        ge=0,
+        description="""
+    Delay the broker holds the report task before a worker picks it up, so this
+    request's transaction commits the PENDING deliverable row before the worker's
+    start callback (POST /deliverables/{id}/start) can race it into a 404. Applied
+    at dispatch (send_task countdown) rather than slept inside the worker, which
+    would burn a concurrency slot doing nothing.
+    """,
+    )
 
     @property
     def CELERY_BROKER_URL(self) -> str:

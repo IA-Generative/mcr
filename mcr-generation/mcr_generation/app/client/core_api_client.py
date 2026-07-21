@@ -12,24 +12,24 @@ from mcr_generation.app.exceptions.exceptions import (
 from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.utils.retry import retry_transient
 
+_in_progress_settings = InProgressCallbackSettings()
+
+_retry_in_progress = retry_transient(
+    on=(DeliverableNotYetVisibleError,),
+    attempts=_in_progress_settings.IN_PROGRESS_RETRY_MAX_ATTEMPTS,
+    initial_delay=_in_progress_settings.IN_PROGRESS_RETRY_MIN_WAIT,
+    max_delay=_in_progress_settings.IN_PROGRESS_RETRY_MAX_WAIT,
+)
+
 
 class CoreApiClient:
     def __init__(self) -> None:
         self.api_settings = ApiSettings()
-        self.in_progress_settings = InProgressCallbackSettings()
         self.client = HttpClient(base_url=self.api_settings.MCR_CORE_API_URL)
 
+    @_retry_in_progress
     def mark_deliverable_in_progress(self, deliverable_id: int) -> None:
-        @retry_transient(
-            on=(DeliverableNotYetVisibleError,),
-            attempts=self.in_progress_settings.IN_PROGRESS_RETRY_MAX_ATTEMPTS,
-            initial_delay=self.in_progress_settings.IN_PROGRESS_RETRY_MIN_WAIT,
-            max_delay=self.in_progress_settings.IN_PROGRESS_RETRY_MAX_WAIT,
-        )
-        def _call() -> None:
-            self._post(f"/deliverables/{deliverable_id}/start", swallow_409=True)
-
-        _call()
+        self._post(f"/deliverables/{deliverable_id}/start", swallow_409=True)
 
     def mark_deliverable_success(
         self,

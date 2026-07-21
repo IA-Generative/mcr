@@ -134,11 +134,6 @@ class ApiSettings(BaseSettings):
 
 
 class InProgressCallbackSettings(BaseSettings):
-    IN_PROGRESS_START_DELAY_SECONDS: float = Field(
-        default=5.0,
-        ge=0.0,
-        description="Delay before the start callback, letting mcr-core commit the deliverable row dispatched in the same transaction as send_task.",
-    )
     IN_PROGRESS_RETRY_MAX_ATTEMPTS: int = Field(
         default=6,
         ge=1,

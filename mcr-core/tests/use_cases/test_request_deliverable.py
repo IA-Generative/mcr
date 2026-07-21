@@ -71,6 +71,7 @@ class TestRequestDeliverableHappyPath:
             "owner_keycloak_uuid": str(meeting.owner.keycloak_uuid),
             "deliverable_id": deliverable.id,
         }
+        assert call.kwargs["countdown"] >= 0
 
     def test_passes_custom_prompt_through(
         self,

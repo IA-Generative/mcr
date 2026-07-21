@@ -68,15 +68,6 @@ def decision_record() -> DecisionRecord:
     )
 
 
-@fixture(autouse=True)
-def _no_sleep(monkeypatch: MagicMock) -> None:
-    """The task body sleeps before the start callback; never wait in tests."""
-    monkeypatch.setattr(
-        "mcr_generation.app.services.report_generation_task_service.time.sleep",
-        lambda _: None,
-    )
-
-
 class TestGenerateReportFromDocxSignature:
     """Lock the task signature against the contract used by mcr-core.
 

@@ -6,6 +6,7 @@ from unittest.mock import MagicMock
 
 import httpx
 import pytest
+from tenacity import stop_after_attempt, wait_none
 
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.exceptions.exceptions import ReportCallbackError
@@ -131,9 +132,9 @@ class TestMarkDeliverableSuccess:
 class TestMarkDeliverableInProgress:
     @pytest.fixture(autouse=True)
     def _fast_retries(self, monkeypatch: Any) -> None:
-        monkeypatch.setenv("IN_PROGRESS_RETRY_MAX_ATTEMPTS", "3")
-        monkeypatch.setenv("IN_PROGRESS_RETRY_MIN_WAIT", "0")
-        monkeypatch.setenv("IN_PROGRESS_RETRY_MAX_WAIT", "0")
+        policy = CoreApiClient.mark_deliverable_in_progress.retry  # type: ignore[attr-defined]
+        monkeypatch.setattr(policy, "stop", stop_after_attempt(3))
+        monkeypatch.setattr(policy, "wait", wait_none())
 
     def test_posts_to_in_progress_endpoint(
         self,

@@ -1,4 +1,3 @@
-import time
 from typing import Any
 
 from celery.signals import task_failure, task_prerun, task_success
@@ -7,10 +6,7 @@ from loguru import logger
 
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
-from mcr_generation.app.configs.settings import (
-    InProgressCallbackSettings,
-    LangfuseSettings,
-)
+from mcr_generation.app.configs.settings import LangfuseSettings
 from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -30,7 +26,6 @@ from mcr_generation.app.utils.sentry_context import (
 )
 
 langfuse_settings = LangfuseSettings()
-in_progress_settings = InProgressCallbackSettings()
 
 
 @celery_app.task(name=MCRReportGenerationTasks.REPORT)
@@ -45,7 +40,6 @@ def generate_report_from_docx(
     notes_content: str | None = None,
     custom_prompt: str | None = None,
 ) -> BaseReport | CustomMarkdownReport:
-    time.sleep(in_progress_settings.IN_PROGRESS_START_DELAY_SECONDS)
     CoreApiClient().mark_deliverable_in_progress(deliverable_id=deliverable_id)
 
     record_report_trace_context(
