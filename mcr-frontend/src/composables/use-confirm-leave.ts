@@ -18,7 +18,11 @@ export async function confirmLeaveIfUploading(): Promise<boolean> {
 
   isConfirming = true;
   try {
-    const leave = await confirmLeave();
+    const leave = await confirmLeave({
+      title: t('meeting.import.confirm-leave.title'),
+      text: t('meeting.import.confirm-leave.description'),
+      ctaLabel: t('meeting.import.confirm-leave.button'),
+    });
     if (leave) {
       abortActiveUploads();
     }
@@ -29,15 +33,17 @@ export async function confirmLeaveIfUploading(): Promise<boolean> {
   }
 }
 
-export function confirmLeave(): Promise<boolean> {
+export type ConfirmDialog = { title: string; text: string; ctaLabel: string };
+
+export function confirmLeave(dialog: ConfirmDialog): Promise<boolean> {
   return new Promise((resolve) => {
     let confirmed = false;
     const modal = useModal({
       component: BaseModal,
       attrs: {
-        title: t('meeting.import.confirm-leave.title'),
-        text: t('meeting.import.confirm-leave.description'),
-        ctaLabel: t('meeting.import.confirm-leave.button'),
+        title: dialog.title,
+        text: dialog.text,
+        ctaLabel: dialog.ctaLabel,
         onSuccess: () => {
           confirmed = true;
         },

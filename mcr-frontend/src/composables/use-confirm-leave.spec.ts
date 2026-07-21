@@ -29,6 +29,8 @@ vi.mock('@/composables/use-upload-status', () => ({
 
 import { confirmLeave, confirmLeaveIfUploading } from './use-confirm-leave';
 
+const dialog = { title: 'title', text: 'text', ctaLabel: 'cta' };
+
 function getModalAttrs(call = 0): ModalAttrs {
   return useModal.mock.calls[call][0].attrs;
 }
@@ -39,7 +41,7 @@ describe('confirmLeave', () => {
   });
 
   it('resolves true when the user confirms', async () => {
-    const result = confirmLeave();
+    const result = confirmLeave(dialog);
     const attrs = getModalAttrs();
 
     attrs.onSuccess();
@@ -49,7 +51,7 @@ describe('confirmLeave', () => {
   });
 
   it('resolves false on any close without confirmation (ESC, outside click, cancel)', async () => {
-    const result = confirmLeave();
+    const result = confirmLeave(dialog);
 
     getModalAttrs().onClosed();
 
@@ -57,7 +59,7 @@ describe('confirmLeave', () => {
   });
 
   it('opens the modal and destroys it once settled', async () => {
-    const result = confirmLeave();
+    const result = confirmLeave(dialog);
     expect(open).toHaveBeenCalledTimes(1);
 
     getModalAttrs().onClosed();
