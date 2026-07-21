@@ -43,6 +43,10 @@ import { formatMeetingDate } from '@/utils/formatters';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { usePagination } from '@/composables/use-pagination';
 import useToaster from '@/composables/use-toaster';
+import {
+  getReportStatus,
+  getTranscriptionStatus,
+} from '@/services/deliverables/deliverables.service';
 import type { CellMap, ColKey } from './types';
 
 const toaster = useToaster();
@@ -104,8 +108,8 @@ const rows = computed(() =>
       id: meeting.id,
       creation_date: meeting.creation_date,
     },
-    transcription: meeting.deliverables,
-    report: meeting.deliverables,
+    transcription: getTranscriptionStatus(meeting.deliverables),
+    report: getReportStatus(meeting.deliverables),
     actions: meeting,
   })),
 );

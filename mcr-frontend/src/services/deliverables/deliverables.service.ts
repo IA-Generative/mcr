@@ -2,12 +2,11 @@ import type { AxiosResponse } from 'axios';
 import HttpService, { API_PATHS } from '../http/http.service';
 import {
   type DeliverableCreateRequest,
+  type DeliverableDto,
   type DeliverableListResponse,
   type DeliverableStatus,
   type DeliverableType,
 } from './deliverables.types';
-
-type DeliverableTag = { type: DeliverableType; status: DeliverableStatus };
 
 const REPORT_TYPES: DeliverableType[] = ['DECISION_RECORD', 'DETAILED_SYNTHESIS', 'CUSTOM_REPORT'];
 
@@ -32,12 +31,16 @@ export async function downloadDeliverableFile(deliverableId: number): Promise<Ax
   });
 }
 
-export function transcriptionTag(deliverables: DeliverableTag[]): DeliverableStatus | null {
+export function getTranscriptionStatus(
+  deliverables: Pick<DeliverableDto, 'type' | 'status'>[],
+): DeliverableStatus | null {
   const transcription = deliverables.find((d) => d.type === 'TRANSCRIPTION');
   return transcription ? transcription.status : 'PENDING';
 }
 
-export function reportTag(deliverables: DeliverableTag[]): DeliverableStatus | null {
+export function getReportStatus(
+  deliverables: Pick<DeliverableDto, 'type' | 'status'>[],
+): DeliverableStatus | null {
   const statuses = deliverables.filter((d) => REPORT_TYPES.includes(d.type)).map((d) => d.status);
   if (statuses.length === 0) {
     return 'PENDING';

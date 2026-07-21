@@ -60,11 +60,7 @@ export interface RecordMeetingDto extends MeetingDtoBase {
   name_platform: RecordMeetingPlatforms;
 }
 
-export const DeliverableFileType = ['TRANSCRIPTION', 'REPORT'] as const;
-export type DeliverableFileType = (typeof DeliverableFileType)[number];
-
 export interface DeliverableDto {
-  file_type: DeliverableFileType;
   type: DeliverableType;
   status: DeliverableStatus;
   external_url: string | null;
