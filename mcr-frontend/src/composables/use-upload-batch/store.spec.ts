@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ESTIMATED_VIDEO_BYTES_PER_SECOND,
+  ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
+  ESTIMATED_MP3_BYTES_PER_SECOND,
   getBatchEtaSeconds,
   getBatchTitle,
   getDisplayOrder,
@@ -26,6 +27,7 @@ import {
   finishTranscode,
   promote,
   recordProgress,
+  recordTranscodeProgress,
   type UploadDraft,
   type UploadItem,
   type UploadState,
@@ -327,7 +329,7 @@ describe('upload-batch progress and ETA', () => {
     expect(getBatchEtaSeconds(sampled)).toBe((9_000 + 5_000) / 1_000);
   });
 
-  it('counts an untranscoded video for its estimated mp3 weight, then for its real size once transcoded', () => {
+  it('counts an untranscoded video for its estimated mp3 weight AND its estimated transcode time, then only its upload once transcoded', () => {
     const { state, itemIds } = enqueueWithMeetings(createInitialState(), [
       draft({ durationSeconds: 10, totalBytes: 10_000 }),
       draft({ kind: 'video', durationSeconds: 120, totalBytes: 50_000_000 }),
@@ -336,11 +338,24 @@ describe('upload-batch progress and ETA', () => {
     const sampled = recordProgress(promote(state), audioId, 1_000, 1);
 
     expect(getBatchEtaSeconds(sampled)).toBe(
-      (9_000 + 120 * ESTIMATED_VIDEO_BYTES_PER_SECOND) / 1_000,
+      (9_000 + 120 * ESTIMATED_MP3_BYTES_PER_SECOND) / 1_000 +
+        120 / ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
     );
 
     const transcoded = finishTranscode(sampled, videoId, 600_000);
     expect(getBatchEtaSeconds(transcoded)).toBe((9_000 + 600_000) / 1_000);
+  });
+
+  it('estimates the transcode time of a queued video before it has reported any progress', () => {
+    const { state, itemIds } = enqueueWithMeetings(createInitialState(), [
+      draft({ durationSeconds: 10, totalBytes: 10_000 }),
+      draft({ kind: 'video', durationSeconds: 300, totalBytes: 50_000_000 }),
+    ]);
+    const sampled = recordProgress(promote(state), itemIds[0], 1_000, 1);
+
+    const uploadSeconds = (9_000 + 300 * ESTIMATED_MP3_BYTES_PER_SECOND) / 1_000;
+    const estimatedTranscodeSeconds = 300 / ESTIMATED_TRANSCODE_SECONDS_PER_SECOND;
+    expect(getBatchEtaSeconds(sampled)).toBe(uploadSeconds + estimatedTranscodeSeconds);
   });
 
   it('estimates a video with unreadable duration by its source size', () => {
@@ -364,6 +379,60 @@ describe('upload-batch progress and ETA', () => {
     expect(item(zeroDelta, id).sentBytes).toBe(300);
     expect(zeroDelta.bytesPerSecond).toBeNull();
     expect(getBatchEtaSeconds(zeroDelta)).toBeNull();
+  });
+
+  function transcodingVideo(durationSeconds: number | null): { state: UploadState; id: number } {
+    const { state } = enqueue(createInitialState(), [
+      draft({ kind: 'video', durationSeconds, totalBytes: 50_000_000 }),
+    ]);
+    const running = promote(state);
+    return { state: running, id: getTranscodingItems(running)[0].id };
+  }
+
+  it('measures transcoding speed from ffmpeg progress and smooths new samples toward it', () => {
+    const { state, id } = transcodingVideo(100);
+
+    const first = recordTranscodeProgress(state, id, 0.1, 1);
+    expect(first.transcodeSecondsPerSecond).toBe(10);
+
+    const second = recordTranscodeProgress(first, id, 0.3, 1);
+    expect(second.transcodeSecondsPerSecond).toBeGreaterThan(10);
+    expect(second.transcodeSecondsPerSecond).toBeLessThan(20);
+    expect(item(second, id).transcodeRatio).toBe(0.3);
+  });
+
+  it('shows the remaining transcoding time in the ETA before any byte is uploaded', () => {
+    const { state, id } = transcodingVideo(100);
+
+    const sampled = recordTranscodeProgress(state, id, 0.1, 1);
+
+    expect(getBatchEtaSeconds(sampled)).toBe(((1 - 0.1) * 100) / 10);
+  });
+
+  it('sums transcoding and upload time once both lanes have a measured rate', () => {
+    const { state, itemIds } = enqueueWithMeetings(createInitialState(), [
+      draft({ durationSeconds: 10, totalBytes: 10_000 }),
+      draft({ kind: 'video', durationSeconds: 100, totalBytes: 50_000_000 }),
+    ]);
+    const running = promote(state);
+    const [audioId, videoId] = itemIds;
+
+    const withUpload = recordProgress(running, audioId, 1_000, 1);
+    const withTranscode = recordTranscodeProgress(withUpload, videoId, 0.2, 1);
+
+    const uploadSeconds = (9_000 + 100 * ESTIMATED_MP3_BYTES_PER_SECOND) / 1_000;
+    const transcodeSeconds = ((1 - 0.2) * 100) / 20;
+    expect(getBatchEtaSeconds(withTranscode)).toBe(uploadSeconds + transcodeSeconds);
+  });
+
+  it('cannot measure transcoding speed for a video whose duration is unknown', () => {
+    const { state, id } = transcodingVideo(null);
+
+    const sampled = recordTranscodeProgress(state, id, 0.5, 1);
+
+    expect(sampled.transcodeSecondsPerSecond).toBeNull();
+    expect(item(sampled, id).transcodeRatio).toBe(0.5);
+    expect(getBatchEtaSeconds(sampled)).toBeNull();
   });
 
   it('reports per-file progress as the ratio of bytes really sent', () => {

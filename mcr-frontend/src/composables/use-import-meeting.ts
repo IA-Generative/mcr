@@ -127,8 +127,12 @@ export function useImportMeeting(): Orchestrator {
         writer.attachMeeting(id, meeting.id);
         pump();
       } catch (error) {
-        toaster.addErrorMessage(t('error.meeting-creation')!);
-        settleAsFailed(id, classifyUploadFailure(error, navigator.onLine));
+        const failureType = classifyUploadFailure(error, navigator.onLine);
+        reportError(error, {
+          feature: 'meeting.import',
+          tags: { 'import.phase': 'meeting-creation', 'import.failure_type': failureType },
+        });
+        settleAsFailed(id, failureType);
       }
     }
   }
@@ -154,7 +158,10 @@ export function useImportMeeting(): Orchestrator {
       return;
     }
 
-    const converter = useVideo2audioConverter();
+    const elapsed = createSampleClock();
+    const converter = useVideo2audioConverter((ratio) =>
+      writer.recordTranscodeProgress(id, ratio, elapsed()),
+    );
     runtime.stopTranscoding = converter.stopTranscoding;
 
     try {
@@ -170,9 +177,10 @@ export function useImportMeeting(): Orchestrator {
         return;
       }
 
+      const failureType: UploadFailureType = 'http-client';
       reportError(error, {
         feature: 'meeting.import',
-        tags: { 'import.phase': 'transcode' },
+        tags: { 'import.phase': 'transcode', 'import.failure_type': failureType },
         contexts: {
           import: {
             extension: getFileExtension(runtime.file),
@@ -182,8 +190,7 @@ export function useImportMeeting(): Orchestrator {
           },
         },
       });
-      toaster.addErrorMessage(t('meeting.import.errors.file-invalid')!);
-      settleAsFailed(id, 'http-client');
+      settleAsFailed(id, failureType);
     } finally {
       runtime.stopTranscoding = undefined;
     }
@@ -196,11 +203,13 @@ export function useImportMeeting(): Orchestrator {
       return;
     }
 
+    const elapsed = createSampleClock();
     try {
       await uploadFile({
         meetingId: item.meetingId,
         file: renameWithTimestamp(runtime.file, id),
         signal: runtime.controller.signal,
+        onProgress: (sentBytes) => writer.recordProgress(id, sentBytes, elapsed()),
       });
       if (!runtimes.has(id)) {
         return;
@@ -218,11 +227,7 @@ export function useImportMeeting(): Orchestrator {
         return;
       }
 
-      const failureType = classifyUploadFailure(error, navigator.onLine);
-      toaster.addErrorMessage(
-        t(failureType === 'blocked' ? 'error.file-upload-blocked' : 'error.file-upload')!,
-      );
-      settleAsFailed(id, failureType);
+      settleAsFailed(id, classifyUploadFailure(error, navigator.onLine));
     }
   }
 
@@ -259,6 +264,16 @@ export function useImportMeeting(): Orchestrator {
   }
 
   return { importFiles };
+}
+
+function createSampleClock(): () => number {
+  let last: number | null = null;
+  return () => {
+    const now = performance.now();
+    const seconds = last === null ? 0 : (now - last) / 1000;
+    last = now;
+    return seconds;
+  };
 }
 
 function sortByAscendingDuration(files: ValidatedFile[]): void {

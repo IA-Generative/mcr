@@ -13,6 +13,7 @@ const {
   unregisterUpload,
   registeredAborts,
   push,
+  transcodeProgress,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
   startTranscription: vi.fn(),
@@ -24,6 +25,7 @@ const {
   unregisterUpload: vi.fn(),
   registeredAborts: [] as (() => void)[],
   push: vi.fn(),
+  transcodeProgress: { cb: undefined as ((ratio: number) => void) | undefined },
 }));
 
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
@@ -40,7 +42,10 @@ vi.mock('@/composables/use-upload-status', () => ({
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
 vi.mock('@/router/routes', () => ({ ROUTES: { MEETINGS: { path: '/meetings' } } }));
 vi.mock('@/utils/video2audioConverter', () => ({
-  useVideo2audioConverter: () => ({ transcodeToMp3, stopTranscoding }),
+  useVideo2audioConverter: (cb?: (ratio: number) => void) => {
+    transcodeProgress.cb = cb;
+    return { transcodeToMp3, stopTranscoding };
+  },
 }));
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
@@ -104,6 +109,7 @@ describe('useImportMeeting.importFiles', () => {
     vi.resetModules();
     vi.clearAllMocks();
     registeredAborts.length = 0;
+    transcodeProgress.cb = undefined;
     fileDurations.clear();
     nextMeetingId = 101;
 
@@ -230,6 +236,33 @@ describe('useImportMeeting.importFiles', () => {
     uploads[2].resolve();
   });
 
+  it('feeds real network progress from the uploader into the store ring', async () => {
+    deferCalls<void>(uploadFile);
+    const { importFiles, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60, bytes: 1_000 })]);
+    await flush();
+
+    const onProgress = uploadFile.mock.calls[0][0].onProgress as (bytes: number) => void;
+    onProgress(500);
+
+    expect(batch.getProgressRatio(batch.items.value[0])).toBe(0.5);
+  });
+
+  it('feeds ffmpeg transcode progress into the store for the ETA', async () => {
+    deferCalls<File>(transcodeToMp3);
+    const { importFiles, batch } = await setup();
+
+    await importFiles([makeFile('video.mp4', { duration: 100, type: 'video/mp4' })]);
+    await flush();
+
+    expect(transcodeProgress.cb).toBeTypeOf('function');
+    transcodeProgress.cb!(0.1);
+    transcodeProgress.cb!(0.5);
+
+    expect(batch.items.value[0].transcodeRatio).toBe(0.5);
+  });
+
   it('transcodes a video while another file uploads', async () => {
     deferCalls<void>(uploadFile);
     deferCalls<File>(transcodeToMp3);
@@ -279,7 +312,17 @@ describe('useImportMeeting.importFiles', () => {
     ]);
     await flush();
 
-    expect(addErrorMessage).toHaveBeenCalledWith('error.meeting-creation');
+    expect(addErrorMessage).not.toHaveBeenCalled();
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        feature: 'meeting.import',
+        tags: expect.objectContaining({
+          'import.phase': 'meeting-creation',
+          'import.failure_type': 'unknown',
+        }),
+      }),
+    );
     const byTitle = Object.fromEntries(batch.items.value.map((item) => [item.title, item]));
     expect(byTitle['bad']).toMatchObject({ status: 'error', failureType: 'unknown' });
     expect(byTitle['ok-1'].status).toBe('done');
@@ -287,8 +330,9 @@ describe('useImportMeeting.importFiles', () => {
     expect(startTranscription).toHaveBeenCalledTimes(2);
   });
 
-  it('an upload failure shows the existing toast, settles that file and lets the next one start', async () => {
+  it('an upload failure settles that file inline (no toast) and lets the next one start', async () => {
     uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('timeout');
     const { importFiles, batch } = await setup();
 
     await importFiles([
@@ -297,26 +341,15 @@ describe('useImportMeeting.importFiles', () => {
     ]);
     await flush();
 
-    expect(addErrorMessage).toHaveBeenCalledWith('error.file-upload');
+    expect(addErrorMessage).not.toHaveBeenCalled();
     const byTitle = Object.fromEntries(batch.items.value.map((item) => [item.title, item]));
-    expect(byTitle['fails']).toMatchObject({ status: 'error', failureType: 'unknown' });
+    expect(byTitle['fails']).toMatchObject({ status: 'error', failureType: 'timeout' });
     expect(byTitle['passes'].status).toBe('done');
     expect(startTranscription).toHaveBeenCalledTimes(1);
     expect(startTranscription).toHaveBeenCalledWith(102);
   });
 
-  it('shows the proxy-blocked message when the upload failure is classified as blocked', async () => {
-    uploadFile.mockRejectedValue(new Error('boom'));
-    classifyUploadFailure.mockReturnValue('blocked');
-    const { importFiles } = await setup();
-
-    await importFiles([makeFile('meeting.mp3')]);
-    await flush();
-
-    expect(addErrorMessage).toHaveBeenCalledWith('error.file-upload-blocked');
-  });
-
-  it('a transcode failure is reported, toasted, and marked unprocessable without any upload', async () => {
+  it('a transcode failure is reported and marked unprocessable inline (no toast) without any upload', async () => {
     transcodeToMp3.mockRejectedValue(new Error('bad codec'));
     const { importFiles, batch } = await setup();
 
@@ -325,9 +358,15 @@ describe('useImportMeeting.importFiles', () => {
 
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ feature: 'meeting.import' }),
+      expect.objectContaining({
+        feature: 'meeting.import',
+        tags: expect.objectContaining({
+          'import.phase': 'transcode',
+          'import.failure_type': 'http-client',
+        }),
+      }),
     );
-    expect(addErrorMessage).toHaveBeenCalledWith('meeting.import.errors.file-invalid');
+    expect(addErrorMessage).not.toHaveBeenCalled();
     expect(batch.items.value[0]).toMatchObject({ status: 'error', failureType: 'http-client' });
     expect(uploadFile).not.toHaveBeenCalled();
   });

@@ -1,7 +1,8 @@
 import type { UploadFailureType } from '@/services/http/http.utils';
 import type { UploadItem, UploadState } from './store';
 
-export const ESTIMATED_VIDEO_BYTES_PER_SECOND = (1024 * 1024) / 60;
+export const ESTIMATED_MP3_BYTES_PER_SECOND = (1024 * 1024) / 60;
+export const ESTIMATED_TRANSCODE_SECONDS_PER_SECOND = 5;
 
 export type BatchTitle = {
   key: string;
@@ -53,12 +54,22 @@ export function getProgressRatio(item: UploadItem): number {
 }
 
 export function getBatchEtaSeconds(state: UploadState): number | null {
-  if (state.bytesPerSecond === null || !hasActiveWork(state)) {
+  const remainingMediaSeconds = state.items.reduce(
+    (sum, item) => sum + getRemainingTranscodeSeconds(item),
+    0,
+  );
+
+  if (!hasActiveWork(state) || (state.bytesPerSecond === null && remainingMediaSeconds === 0)) {
     return null;
   }
 
-  const remaining = state.items.reduce((sum, item) => sum + getRemainingBytes(item), 0);
-  return remaining / state.bytesPerSecond;
+  const remainingBytes = state.items.reduce((sum, item) => sum + getRemainingBytes(item), 0);
+  const uploadSeconds = state.bytesPerSecond === null ? 0 : remainingBytes / state.bytesPerSecond;
+
+  const transcodeSpeed = state.transcodeSecondsPerSecond ?? ESTIMATED_TRANSCODE_SECONDS_PER_SECOND;
+  const transcodeSeconds = remainingMediaSeconds / transcodeSpeed;
+
+  return uploadSeconds + transcodeSeconds;
 }
 
 export function getBatchTitle(state: UploadState): BatchTitle | null {
@@ -124,10 +135,24 @@ function getRemainingBytes(item: UploadItem): number {
     case 'transcode-pending':
     case 'transcoding':
       return item.durationSeconds !== null
-        ? item.durationSeconds * ESTIMATED_VIDEO_BYTES_PER_SECOND
+        ? item.durationSeconds * ESTIMATED_MP3_BYTES_PER_SECOND
         : item.totalBytes;
     case 'done':
     case 'error':
+      return 0;
+  }
+}
+
+function getRemainingTranscodeSeconds(item: UploadItem): number {
+  if (item.durationSeconds === null) {
+    return 0;
+  }
+  switch (item.status) {
+    case 'transcode-pending':
+      return item.durationSeconds;
+    case 'transcoding':
+      return (1 - item.transcodeRatio) * item.durationSeconds;
+    default:
       return 0;
   }
 }

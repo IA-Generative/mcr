@@ -17,7 +17,7 @@ import {
 import type { Part } from '@/services/meetings/meetings.types';
 import { reportError, type ReportOptions } from '@/services/observability/sentry';
 import { useMutation } from '@tanstack/vue-query';
-import axios from 'axios';
+import axios, { type AxiosProgressEvent } from 'axios';
 
 export type UploadPhase = 'init' | 'sign' | 'put' | 'complete';
 
@@ -64,8 +64,9 @@ export function useMultipart() {
     meetingId: number;
     file: File;
     signal?: AbortSignal;
+    onProgress?: (sentBytes: number) => void;
   }): Promise<void> {
-    const { meetingId, file, signal } = params;
+    const { meetingId, file, signal, onProgress } = params;
     const startedAt = performance.now();
     const totalSize = file.size;
     const totalParts = Math.ceil(totalSize / PART_SIZE);
@@ -96,7 +97,20 @@ export function useMultipart() {
           partNumber,
         );
         lastPutUrl = url;
-        const etag = await step('put', () => putMultipartPart({ url, blob, signal }), partNumber);
+        const partBaseBytes = bytesSent;
+        const etag = await step(
+          'put',
+          () =>
+            putMultipartPart({
+              url,
+              blob,
+              signal,
+              onUploadProgress: onProgress
+                ? (loaded: number) => onProgress(partBaseBytes + Math.min(loaded, blob.size))
+                : undefined,
+            }),
+          partNumber,
+        );
         completedParts.push({ partNumber, etag });
         bytesSent += blob.size;
       }
@@ -212,12 +226,20 @@ export function useMultipart() {
   });
 
   const { mutateAsync: putMultipartPart } = useMutation({
-    mutationFn: async (params: { url: string; blob: Blob; signal?: AbortSignal }) => {
-      const { url, blob, signal } = params;
+    mutationFn: async (params: {
+      url: string;
+      blob: Blob;
+      signal?: AbortSignal;
+      onUploadProgress?: (loaded: number) => void;
+    }) => {
+      const { url, blob, signal, onUploadProgress } = params;
 
       const response = await HttpService.put(url, blob, {
         timeout: PUT_TIMEOUT_MS,
         signal,
+        onUploadProgress: onUploadProgress
+          ? (event: AxiosProgressEvent) => onUploadProgress(event.loaded)
+          : undefined,
         transformRequest: (data, headers) => {
           setFileHeaders(blob, headers);
           return data;

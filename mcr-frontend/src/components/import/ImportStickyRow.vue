@@ -1,69 +1,31 @@
 <template>
-  <li class="row flex items-center justify-between gap-4 px-4 py-3">
-    <span class="truncate font-medium">{{ item.title }}</span>
-    <span
-      role="img"
-      :aria-label="statusMeta.label"
-      class="flex shrink-0"
-      :class="statusMeta.class"
+  <li class="row flex flex-col gap-1 px-4 py-3">
+    <div class="flex items-center justify-between gap-4">
+      <span class="truncate font-medium">{{ item.title }}</span>
+      <ImportStatusIndicator :item="item" />
+    </div>
+    <p
+      v-if="errorMessage"
+      class="m-0 text-sm text-error-425"
     >
-      <VIcon
-        :name="statusMeta.icon"
-        :animation="statusMeta.animation"
-      />
-    </span>
+      {{ errorMessage }}
+    </p>
   </li>
 </template>
 
-<script lang="ts">
-import type { UploadItem } from '@/composables/use-upload-batch';
+<script lang="ts" setup>
+import ImportStatusIndicator from '@/components/import/ImportStatusIndicator.vue';
+import { useUploadBatch, type UploadItem } from '@/composables/use-upload-batch';
 import { t } from '@/plugins/i18n';
 
-interface StatusMeta {
-  class: string;
-  label: string;
-  icon: string;
-  animation?: 'spin';
-}
-
-export function getStatusMeta(status: UploadItem['status']): StatusMeta {
-  if (status === 'transcode-pending' || status === 'upload-pending') {
-    return {
-      class: 'text-grey-mention',
-      label: t('meeting.import.sticky.status.pending'),
-      icon: 'ri-pause-circle-line',
-    };
-  }
-
-  if (status === 'transcoding' || status === 'uploading') {
-    return {
-      class: 'text-blue-france-sun',
-      label: t('meeting.import.sticky.status.in-progress'),
-      icon: 'ri-loader-3-line',
-      animation: 'spin',
-    };
-  }
-
-  if (status === 'done') {
-    return {
-      class: 'text-success-425',
-      label: t('meeting.import.sticky.status.done'),
-      icon: 'ri-checkbox-circle-fill',
-    };
-  }
-
-  return {
-    class: 'text-error-425',
-    label: t('meeting.import.sticky.status.error'),
-    icon: 'ri-error-warning-fill',
-  };
-}
-</script>
-
-<script lang="ts" setup>
 const props = defineProps<{ item: UploadItem }>();
 
-const statusMeta = computed(() => getStatusMeta(props.item.status));
+const { getFailureMessageKey } = useUploadBatch();
+
+const errorMessage = computed(() => {
+  const key = getFailureMessageKey(props.item);
+  return key ? t(key) : '';
+});
 </script>
 
 <style scoped>

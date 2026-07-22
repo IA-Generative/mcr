@@ -39,6 +39,7 @@ export type UploadItem = {
   meetingId: number | null;
   status: UploadItemStatus;
   failureType: UploadFailureType | null;
+  transcodeRatio: number;
 };
 
 export type UploadState = {
@@ -46,6 +47,7 @@ export type UploadState = {
   nextId: number;
   nextBatchId: number;
   bytesPerSecond: number | null;
+  transcodeSecondsPerSecond: number | null;
 };
 
 export function createInitialState(): UploadState {
@@ -54,6 +56,7 @@ export function createInitialState(): UploadState {
     nextId: 1,
     nextBatchId: 1,
     bytesPerSecond: null,
+    transcodeSecondsPerSecond: null,
   };
 }
 
@@ -76,6 +79,7 @@ export function enqueue(
     meetingId: null,
     status: draft.kind === 'video' ? 'transcode-pending' : 'upload-pending',
     failureType: null,
+    transcodeRatio: 0,
   }));
 
   return {
@@ -156,6 +160,35 @@ export function recordProgress(
   return {
     ...next,
     bytesPerSecond: smoothThroughput(state.bytesPerSecond, deltaBytes / deltaSeconds),
+  };
+}
+
+export function recordTranscodeProgress(
+  state: UploadState,
+  id: number,
+  ratio: number,
+  deltaSeconds: number,
+): UploadState {
+  const item = getItem(state, id);
+  if (!item || item.status !== 'transcoding') {
+    return state;
+  }
+
+  const clampedRatio = Math.min(1, Math.max(item.transcodeRatio, ratio));
+  const next = replaceItem(state, { ...item, transcodeRatio: clampedRatio });
+
+  const deltaRatio = clampedRatio - item.transcodeRatio;
+  if (item.durationSeconds === null || deltaSeconds <= 0 || deltaRatio <= 0) {
+    return next;
+  }
+
+  const mediaSecondsDone = deltaRatio * item.durationSeconds;
+  return {
+    ...next,
+    transcodeSecondsPerSecond: smoothThroughput(
+      state.transcodeSecondsPerSecond,
+      mediaSecondsDone / deltaSeconds,
+    ),
   };
 }
 

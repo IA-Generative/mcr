@@ -64,22 +64,34 @@ describe('ImportSticky', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows an in-progress status while a file uploads', async () => {
+  it('shows a determinate upload ring reflecting the bytes really sent', async () => {
     renderWithPlugins(ImportSticky);
-    enqueueWithMeetings([draft({ title: 'en cours' })]);
+    const [id] = enqueueWithMeetings([draft({ title: 'en cours', totalBytes: 1_000 })]);
+    writer.recordProgress(id, 500, 1);
 
-    expect(
-      within(await findRowByTitle('en cours')).getByRole('img', { name: 'Importation en cours' }),
-    ).toBeInTheDocument();
+    const ring = within(await findRowByTitle('en cours')).getByRole('progressbar', {
+      name: 'Importation en cours',
+    });
+    expect(ring).toHaveAttribute('aria-valuenow', '50');
   });
 
-  it('shows an in-progress status while a video transcodes', async () => {
+  it('shows an indeterminate spinner while a video transcodes', async () => {
     renderWithPlugins(ImportSticky);
     writer.enqueue([draft({ title: 'vidéo', kind: 'video' })]);
 
     expect(
-      within(await findRowByTitle('vidéo')).getByRole('img', { name: 'Importation en cours' }),
+      within(await findRowByTitle('vidéo')).getByRole('img', { name: 'Conversion en cours' }),
     ).toBeInTheDocument();
+  });
+
+  it('displays the global remaining-time banner once bytes start leaving', async () => {
+    renderWithPlugins(ImportSticky);
+    expect(screen.queryByText(/restantes/)).toBeNull();
+
+    const [id] = enqueueWithMeetings([draft({ title: 'gros', totalBytes: 10_000 })]);
+    writer.recordProgress(id, 2_000, 1);
+
+    expect(await screen.findByText(/^~.+ restantes$/)).toBeInTheDocument();
   });
 
   it('shows a success status once a file is imported', async () => {
@@ -101,6 +113,24 @@ describe('ImportSticky', () => {
       within(await findRowByTitle('raté')).getByRole('img', { name: 'Importation échouée' }),
     ).toBeInTheDocument();
   });
+
+  it.each([
+    ['offline', 'Importation échouée. Vérifiez votre connexion et réessayez.'],
+    ['blocked', 'Importation échouée. Vérifiez votre connexion et réessayez.'],
+    ['timeout', 'Le serveur ne répond pas. Réessayez dans quelques minutes.'],
+    ['http-server', 'Le serveur ne répond pas. Réessayez dans quelques minutes.'],
+    ['unknown', 'Le serveur ne répond pas. Réessayez dans quelques minutes.'],
+    ['http-client', 'Nous ne pouvons pas traiter ce fichier.'],
+  ] as const)(
+    'shows the inline message dedicated to a %s failure',
+    async (failureType, message) => {
+      renderWithPlugins(ImportSticky);
+      const [id] = enqueueWithMeetings([draft({ title: 'raté' })]);
+      writer.fail(id, failureType);
+
+      expect(within(await findRowByTitle('raté')).getByText(message)).toBeInTheDocument();
+    },
+  );
 
   it('keeps every line visible once the batch is settled', async () => {
     renderWithPlugins(ImportSticky);

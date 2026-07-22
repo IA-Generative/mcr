@@ -28,6 +28,10 @@ function recordProgress(id: number, sentBytes: number, deltaSeconds: number): vo
   state.value = store.recordProgress(state.value, id, sentBytes, deltaSeconds);
 }
 
+function recordTranscodeProgress(id: number, ratio: number, deltaSeconds: number): void {
+  state.value = store.recordTranscodeProgress(state.value, id, ratio, deltaSeconds);
+}
+
 function complete(id: number): void {
   dispatch((current) => store.complete(current, id));
 }
@@ -77,6 +81,7 @@ export function useUploadBatchWriter() {
     attachMeeting,
     finishTranscode,
     recordProgress,
+    recordTranscodeProgress,
     complete,
     fail,
     clearAll,
