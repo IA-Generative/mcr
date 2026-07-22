@@ -65,7 +65,9 @@
           {{ $t('meeting-v2.custom-report-modal.cancel-button') }}
         </DsfrButton>
         <DsfrButton
-          icon="ri-refresh-line"
+          icon="fr-icon-sparkling-2-line"
+          size="sm"
+          class="generate-button"
           :disabled="isGenerateDisabled"
           @click="handleGenerate"
         >
@@ -164,6 +166,11 @@ function handleGenerate() {
 <style scoped>
 :deep(.fr-modal__title) {
   color: var(--blue-france-sun-113-625);
+}
+
+.generate-button {
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 40, 0.16);
 }
 
 :deep(.fr-tile) {
