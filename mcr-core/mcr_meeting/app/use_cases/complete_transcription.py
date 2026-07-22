@@ -22,7 +22,6 @@ from mcr_meeting.app.domain.transcription_rendering import (
     render_transcription_docx,
 )
 from mcr_meeting.app.infrastructure import email as email_infra
-from mcr_meeting.app.infrastructure.celery import celery_producer_app
 from mcr_meeting.app.infrastructure.s3 import (
     get_transcription_object_name,
     read_full_transcript,
@@ -32,14 +31,12 @@ from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_model import MeetingStatus
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
-from mcr_meeting.app.schemas.celery_types import MCRReportGenerationTasks
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
 from mcr_meeting.app.use_cases._shared.drive_upload import (
     try_upload_deliverable_to_drive,
 )
 from mcr_meeting.app.use_cases._shared.report_dispatch import (
-    REPORT_TYPE_BY_DELIVERABLE,
-    build_report_task_kwargs,
+    dispatch_report_generation,
 )
 
 TRANSCRIPTION_FILENAME = "v0.docx"
@@ -94,15 +91,7 @@ def _drain_requested_reports(meeting: Meeting) -> None:
     for report in deliverable_repository.find_requested_reports_by_meeting(meeting.id):
         deliverable_transitions.dispatch(report)
         deliverable_repository.save_deliverable(report)
-        celery_producer_app.send_task(
-            MCRReportGenerationTasks.REPORT,
-            args=[
-                meeting.id,
-                transcription_object_name,
-                REPORT_TYPE_BY_DELIVERABLE[report.type],
-            ],
-            kwargs=build_report_task_kwargs(meeting, report),
-        )
+        dispatch_report_generation(meeting, report, transcription_object_name)
 
 
 def _notify_transcription_ready_best_effort(meeting: Meeting) -> None:
