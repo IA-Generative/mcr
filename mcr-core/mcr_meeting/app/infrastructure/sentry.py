@@ -12,6 +12,9 @@ from sentry_sdk.integrations.loguru import LoguruIntegration
 from mcr_meeting.app.configs.base import SentrySettings, Settings
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
 
+sentry_settings = SentrySettings()
+settings = Settings()
+
 
 def _logging_integrations() -> list[Integration]:
     # A logged error is not a failure point: keep log records as breadcrumbs

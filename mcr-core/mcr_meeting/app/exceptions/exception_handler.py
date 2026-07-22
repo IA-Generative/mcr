@@ -30,7 +30,7 @@ EXCEPTION_STATUS_MAP = {
     InvalidDataException: status.HTTP_422_UNPROCESSABLE_ENTITY,
     DataConflictException: status.HTTP_409_CONFLICT,
     NotFoundException: status.HTTP_404_NOT_FOUND,
-    ForbiddenAccessException: status.HTTP_403_FORBIDDEN,
+    ForbiddenAccessException: status.HTTP_404_NOT_FOUND,
     MeetingMultipartException: status.HTTP_400_BAD_REQUEST,
     BadRequestException: status.HTTP_400_BAD_REQUEST,
     InvalidEvaluationZipError: status.HTTP_400_BAD_REQUEST,
