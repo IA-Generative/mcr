@@ -2,6 +2,7 @@
   <button
     type="button"
     class="trigger fr-btn fr-btn--primary fr-btn--md"
+    :class="{ 'trigger--compact': compact }"
     aria-haspopup="dialog"
     @click="modal.open()"
   >
@@ -10,7 +11,7 @@
       role="presentation"
       class="trigger-icon"
     />
-    {{ t('feedback.button.label') }}
+    <span class="trigger-label">{{ t('feedback.button.label') }}</span>
   </button>
 </template>
 
@@ -19,6 +20,8 @@ import communityIcon from '@dsfr-artwork/pictograms/leisure/community.svg?url';
 import FeedbackModal from './FeedbackModal.vue';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
+
+defineProps<{ compact?: boolean }>();
 
 const modal = useModal({
   component: FeedbackModal,
@@ -29,12 +32,17 @@ const modal = useModal({
 .trigger {
   position: fixed;
   z-index: 1000;
-  bottom: 24px;
-  right: 24px;
+  bottom: var(--sticky-corner-margin);
+  right: var(--sticky-corner-margin);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
   border-radius: 24px;
+  transition:
+    right 0.3s ease,
+    border-radius 0.3s ease,
+    padding 0.3s ease,
+    width 0.3s ease;
 }
 
 .trigger-icon {
@@ -46,10 +54,36 @@ const modal = useModal({
   padding: 2px;
 }
 
-@media (max-width: 550px) {
-  .trigger {
-    bottom: 16px;
-    right: 16px;
+.trigger-label {
+  max-width: 12rem;
+  overflow: hidden;
+  white-space: nowrap;
+  margin-left: 0.5rem;
+  transition:
+    max-width 0.3s ease,
+    margin-left 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.trigger--compact {
+  right: calc(var(--sticky-corner-margin) + var(--import-sticky-width) + var(--sticky-corner-gap));
+  border-radius: 50%;
+  padding: 8px;
+  width: var(--feedback-compact-size);
+  height: var(--feedback-compact-size);
+  min-height: 0;
+}
+
+.trigger--compact .trigger-label {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .trigger-label {
+    transition: none;
   }
 }
 </style>

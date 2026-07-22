@@ -1,0 +1,43 @@
+<template>
+  <section
+    v-if="isOpen"
+    class="import-sticky"
+    :aria-label="t('meeting.import.sticky.label')"
+  >
+    <header class="px-4 py-3">
+      <p class="m-0 font-bold">{{ title }}</p>
+    </header>
+    <ul class="m-0 list-none overflow-y-auto p-0 max-h-[40vh]">
+      <ImportStickyRow
+        v-for="item in items"
+        :key="item.id"
+        :item="item"
+      />
+    </ul>
+  </section>
+</template>
+
+<script setup lang="ts">
+import ImportStickyRow from '@/components/import/ImportStickyRow.vue';
+import { useUploadBatch } from '@/composables/use-upload-batch';
+import { t } from '@/plugins/i18n';
+
+const { isOpen, items, batchTitle } = useUploadBatch();
+
+const title = computed(() =>
+  batchTitle.value ? t(batchTitle.value.key, batchTitle.value.params) : '',
+);
+</script>
+
+<style scoped>
+.import-sticky {
+  position: fixed;
+  z-index: 1000;
+  bottom: var(--sticky-corner-margin);
+  right: var(--sticky-corner-margin);
+  width: var(--import-sticky-width);
+  background-color: var(--background-default-grey, #fff);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+</style>

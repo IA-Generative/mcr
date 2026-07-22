@@ -47,6 +47,8 @@ declare module 'vue' {
     EndLiveMeetingModal: typeof import('./components/meeting/modals/EndLiveMeetingModal.vue')['default']
     FeedbackButton: typeof import('./components/feedback/FeedbackButton.vue')['default']
     FeedbackModal: typeof import('./components/feedback/FeedbackModal.vue')['default']
+    ImportSticky: typeof import('./components/import/ImportSticky.vue')['default']
+    ImportStickyRow: typeof import('./components/import/ImportStickyRow.vue')['default']
     LiveMeetingAdvicesModal: typeof import('./components/meeting/modals/LiveMeetingAdvicesModal.vue')['default']
     LiveRecordingInProgress: typeof import('./components/meeting/LiveRecordingInProgress.vue')['default']
     MeetingAudioCard: typeof import('./components/meeting/MeetingAudioCard.vue')['default']

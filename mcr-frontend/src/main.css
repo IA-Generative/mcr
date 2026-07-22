@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --sticky-corner-margin: 24px;
+  --sticky-corner-gap: 12px;
+  --feedback-compact-size: 46px;
+  --import-sticky-width: min(
+    24rem,
+    calc(
+      100vw - 2 * var(--sticky-corner-margin) - var(--feedback-compact-size) -
+        var(--sticky-corner-gap)
+    )
+  );
+}
+
+@media (max-width: 550px) {
+  :root {
+    --sticky-corner-margin: 16px;
+  }
+}
+
 html,
 body,
 #app {

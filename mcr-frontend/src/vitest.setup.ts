@@ -9,7 +9,8 @@ export function renderWithPlugins<C>(component: C, options: RenderOptions<C> = {
   return render(component, {
     ...options,
     global: {
-      plugins: [i18n, VueQueryPlugin],
+      ...options.global,
+      plugins: [i18n, VueQueryPlugin, ...(options.global?.plugins ?? [])],
     },
   });
 }

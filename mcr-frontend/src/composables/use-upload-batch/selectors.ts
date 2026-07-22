@@ -28,6 +28,10 @@ export function getTranscodingItems(state: UploadState): UploadItem[] {
   return state.items.filter((item) => item.status === 'transcoding');
 }
 
+export function isOpen(state: UploadState): boolean {
+  return state.items.length > 0;
+}
+
 export function hasActiveWork(state: UploadState): boolean {
   return state.items.some((item) => !isSettledItem(item));
 }

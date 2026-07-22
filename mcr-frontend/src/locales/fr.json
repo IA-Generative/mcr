@@ -222,6 +222,15 @@
         "title": "Êtes-vous sûr de vouloir quitter la page ?",
         "description": "Cela annulera l'import en cours.",
         "button": "Quitter"
+      },
+      "sticky": {
+        "label": "Suivi des importations",
+        "status": {
+          "pending": "En attente",
+          "in-progress": "Importation en cours",
+          "done": "Importation terminée",
+          "error": "Importation échouée"
+        }
       }
     },
     "form": {
