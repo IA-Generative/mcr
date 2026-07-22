@@ -463,6 +463,32 @@ class TestCompleteTranscriptionDrain:
             assert call.kwargs["args"][0] == meeting.id
             assert call.kwargs["args"][1] == expected_object_name
 
+    def test_drain_forwards_the_queued_custom_prompt(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        mock_drain_celery: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        db_session: Session,
+    ) -> None:
+        meeting = transcription_in_progress_meeting
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.CUSTOM_REPORT,
+            status=DeliverableStatus.REQUESTED,
+            custom_prompt="Analyse les risques",
+        )
+
+        complete_transcription(
+            meeting_id=meeting.id, transcriptions=sample_transcriptions
+        )
+
+        mock_drain_celery.send_task.assert_called_once()
+        call = mock_drain_celery.send_task.call_args
+        assert call.kwargs["kwargs"]["custom_prompt"] == "Analyse les risques"
+
     def test_empty_drain_sends_no_task(
         self,
         transcription_in_progress_meeting: Meeting,
