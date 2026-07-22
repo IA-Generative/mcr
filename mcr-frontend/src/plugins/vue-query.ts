@@ -7,6 +7,7 @@ import {
 import { isUnexpectedHttpError, isRetryableError } from '@/services/http/http.utils';
 import { reportError } from '@/services/observability/sentry';
 import type { AppErrorMeta } from '@/services/observability/error-meta';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 // Total wait time of ~30s (arbitrary)
 const MAX_RETRIES = 5;
@@ -16,13 +17,20 @@ function shouldRetryGuard(failureCount: number, error: Error) {
   return failureCount < MAX_RETRIES;
 }
 
+// A session/refresh-token expiry is an expected auth-lifecycle event (the app
+// redirects to login or aborts the in-flight request), not an operator-facing
+// error. It carries no HTTP status, so isUnexpectedHttpError would fail open.
+function isExpectedError(error: unknown): boolean {
+  return error instanceof SessionExpiredError || !isUnexpectedHttpError(error);
+}
+
 export function handleMutationError(error: unknown, meta: AppErrorMeta | undefined): void {
-  if (meta?.skipReport || !isUnexpectedHttpError(error)) return;
+  if (meta?.skipReport || isExpectedError(error)) return;
   reportError(error, { feature: meta?.feature ?? 'mutation' });
 }
 
 export function handleQueryError(error: unknown, meta: AppErrorMeta | undefined): void {
-  if (meta?.skipReport || !isUnexpectedHttpError(error)) return;
+  if (meta?.skipReport || isExpectedError(error)) return;
   reportError(error, { feature: meta?.feature ?? 'query', level: 'warning' });
 }
 
