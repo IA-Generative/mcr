@@ -18,6 +18,7 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableType,
 )
 from mcr_meeting.app.models.meeting_model import (
+    Meeting,
     MeetingPlatforms,
     MeetingStatus,
 )
@@ -35,17 +36,41 @@ def mock_use_case_celery(mocker: MockerFixture) -> MagicMock:
     return mocker.patch("mcr_meeting.app.infrastructure.celery.celery_producer_app")
 
 
+def _transcribed_meeting(**kwargs: object) -> Meeting:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_DONE,
+        name_platform=MeetingPlatforms.COMU,
+        transcription_filename="transcription.docx",
+        **kwargs,
+    )
+    DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.AVAILABLE,
+    )
+    return meeting
+
+
+def _transcribing_meeting() -> Meeting:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.IN_PROGRESS,
+    )
+    return meeting
+
+
 class TestRequestDeliverableHappyPath:
     def test_creates_pending_row_and_dispatches_celery_with_deliverable_id(
         self,
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
 
         deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
@@ -74,11 +99,7 @@ class TestRequestDeliverableHappyPath:
         self,
         mock_use_case_celery: MagicMock,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
 
         deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
@@ -96,11 +117,7 @@ class TestRequestDeliverableHappyPath:
         self,
         mock_use_case_celery: MagicMock,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
 
         request_deliverable_use_case(
             meeting_id=meeting.id,
@@ -115,10 +132,7 @@ class TestRequestDeliverableHappyPath:
         self,
         mock_use_case_celery: MagicMock,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
+        meeting = _transcribed_meeting(
             notes="Points discutés : roadmap Q3 et budget",
         )
 
@@ -138,12 +152,7 @@ class TestRequestDeliverableHappyPath:
         self,
         mock_use_case_celery: MagicMock,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-            notes=None,
-        )
+        meeting = _transcribed_meeting(notes=None)
 
         request_deliverable_use_case(
             meeting_id=meeting.id,
@@ -155,29 +164,69 @@ class TestRequestDeliverableHappyPath:
         assert "notes_content" not in call.kwargs["kwargs"]
 
 
-class TestRequestDeliverableExistingActive:
-    def test_pending_same_type_returns_existing_no_new_task(
+class TestRequestDeliverableDuringTranscription:
+    def test_queues_requested_without_dispatch_while_transcription_runs(
         self,
         mock_use_case_celery: MagicMock,
+        db_session: Session,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.REPORT_PENDING,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
-        existing = DeliverableFactory.create(
-            meeting=meeting,
-            type=DeliverableType.DECISION_RECORD,
-            status=DeliverableStatus.PENDING,
-        )
+        meeting = _transcribing_meeting()
 
-        result = request_deliverable_use_case(
+        deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
             deliverable_type=DeliverableType.DECISION_RECORD,
         )
 
-        assert result.id == existing.id
+        assert deliverable.status == DeliverableStatus.REQUESTED
+        assert deliverable.type == DeliverableType.DECISION_RECORD
+        mock_use_case_celery.send_task.assert_not_called()
+
+        db_session.refresh(meeting)
+        assert meeting.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
+
+    def test_second_request_same_type_deduplicates_the_queue(
+        self,
+        mock_use_case_celery: MagicMock,
+        db_session: Session,
+    ) -> None:
+        meeting = _transcribing_meeting()
+
+        first_requested_deliverable = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+        second_requested_deliverable = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        assert first_requested_deliverable.id == second_requested_deliverable.id
+        assert second_requested_deliverable.status == DeliverableStatus.REQUESTED
+        mock_use_case_celery.send_task.assert_not_called()
+
+
+class TestRequestDeliverableExistingActive:
+    def test_pending_same_type_returns_existing_no_new_task(
+        self,
+        mock_use_case_celery: MagicMock,
+    ) -> None:
+        meeting = _transcribed_meeting()
+        existing_deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.PENDING,
+        )
+
+        resulted_requested_deliverable = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        assert resulted_requested_deliverable.id == existing_deliverable.id
         mock_use_case_celery.send_task.assert_not_called()
 
     def test_available_same_type_soft_deletes_and_creates_new(
@@ -185,29 +234,24 @@ class TestRequestDeliverableExistingActive:
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-            report_filename="decision.docx",
-        )
-        previous = DeliverableFactory.create(
+        meeting = _transcribed_meeting(report_filename="decision.docx")
+        previously_requested_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.AVAILABLE,
         )
 
-        new_deliverable = request_deliverable_use_case(
+        newly_requested_deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
             deliverable_type=DeliverableType.DECISION_RECORD,
         )
 
-        db_session.refresh(previous)
+        db_session.refresh(previously_requested_deliverable)
         db_session.refresh(meeting)
-        assert previous.status == DeliverableStatus.DELETED
-        assert new_deliverable.id != previous.id
-        assert new_deliverable.status == DeliverableStatus.PENDING
+        assert previously_requested_deliverable.status == DeliverableStatus.DELETED
+        assert newly_requested_deliverable.id != previously_requested_deliverable.id
+        assert newly_requested_deliverable.status == DeliverableStatus.PENDING
         assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         mock_use_case_celery.send_task.assert_called_once()
 
@@ -216,28 +260,47 @@ class TestRequestDeliverableExistingActive:
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
-        previous = DeliverableFactory.create(
+        meeting = _transcribed_meeting()
+        previously_requested_deliverable = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.FAILED,
         )
 
-        new_deliverable = request_deliverable_use_case(
+        newly_requested_deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
             deliverable_type=DeliverableType.DECISION_RECORD,
         )
 
-        db_session.refresh(previous)
+        db_session.refresh(previously_requested_deliverable)
         db_session.refresh(meeting)
-        assert previous.status == DeliverableStatus.DELETED
-        assert new_deliverable.status == DeliverableStatus.PENDING
+        assert previously_requested_deliverable.status == DeliverableStatus.DELETED
+        assert newly_requested_deliverable.status == DeliverableStatus.PENDING
         assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
+
+    def test_failed_same_type_requeues_when_transcription_still_running(
+        self,
+        mock_use_case_celery: MagicMock,
+        db_session: Session,
+    ) -> None:
+        meeting = _transcribing_meeting()
+        previously_requested_deliverable = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.DECISION_RECORD,
+            status=DeliverableStatus.FAILED,
+        )
+
+        newly_requested_deliverable = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.DECISION_RECORD,
+        )
+
+        db_session.refresh(previously_requested_deliverable)
+        assert previously_requested_deliverable.status == DeliverableStatus.DELETED
+        assert newly_requested_deliverable.status == DeliverableStatus.REQUESTED
+        mock_use_case_celery.send_task.assert_not_called()
 
 
 class TestRequestDeliverableMultipleTypes:
@@ -246,27 +309,23 @@ class TestRequestDeliverableMultipleTypes:
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
 
-        first = request_deliverable_use_case(
+        first_requested_deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
             deliverable_type=DeliverableType.DECISION_RECORD,
         )
-        second = request_deliverable_use_case(
+        second_requested_deliverable = request_deliverable_use_case(
             meeting_id=meeting.id,
             user_keycloak_uuid=meeting.owner.keycloak_uuid,
             deliverable_type=DeliverableType.DETAILED_SYNTHESIS,
         )
 
         db_session.refresh(meeting)
-        assert first.status == DeliverableStatus.PENDING
-        assert second.status == DeliverableStatus.PENDING
-        assert first.id != second.id
+        assert first_requested_deliverable.status == DeliverableStatus.PENDING
+        assert second_requested_deliverable.status == DeliverableStatus.PENDING
+        assert first_requested_deliverable.id != second_requested_deliverable.id
         assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
         assert mock_use_case_celery.send_task.call_count == 2
 
@@ -276,11 +335,7 @@ class TestRequestDeliverableAuth:
         self,
         mock_use_case_celery: MagicMock,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
         intruder = UserFactory.create()
 
         with pytest.raises(ForbiddenAccessException):
@@ -300,11 +355,7 @@ class TestRequestDeliverableConcurrentInsertRecovery:
     ) -> None:
         """If two requests race and the second INSERT trips the partial
         unique index, the use case must reload and return the winning row."""
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
         winner = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
@@ -339,11 +390,7 @@ class TestRequestDeliverableCeleryDispatchFailure:
         """Celery dispatch happens inside the UnitOfWork — when it raises, the
         savepoint reverts the PENDING deliverable INSERT and the meeting
         status update, so the request leaves no orphan rows."""
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
         mock_use_case_celery.send_task.side_effect = RuntimeError("broker down")
 
         with pytest.raises(TaskCreationException):
@@ -366,11 +413,7 @@ class TestRequestDeliverableCeleryDispatchFailure:
         mock_use_case_celery: MagicMock,
         db_session: Session,
     ) -> None:
-        meeting = MeetingFactory.create(
-            status=MeetingStatus.TRANSCRIPTION_DONE,
-            name_platform=MeetingPlatforms.COMU,
-            transcription_filename="transcription.docx",
-        )
+        meeting = _transcribed_meeting()
         mock_use_case_celery.send_task.side_effect = RuntimeError("broker down")
 
         with pytest.raises(TaskCreationException):

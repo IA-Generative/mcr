@@ -5,16 +5,13 @@ from mcr_meeting.app.db.deliverable_repository import (
     save_deliverable,
     soft_delete_by_id,
 )
-from mcr_meeting.app.db.meeting_repository import get_meeting_by_id
+from mcr_meeting.app.db.meeting_repository import get_meeting_for_update
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
 from mcr_meeting.app.domain.authorize_meeting_access import authorize_meeting_access
 from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
-    MeetingStateConflictException,
     NotFoundException,
-    TaskCreationException,
 )
-from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
@@ -22,7 +19,7 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableType,
 )
 from mcr_meeting.app.use_cases._shared.report_dispatch import (
-    dispatch_report_generation,
+    dispatch_requested_report,
 )
 
 
@@ -32,74 +29,67 @@ def request_deliverable(
     deliverable_type: DeliverableType,
     custom_prompt: str | None = None,
 ) -> Deliverable:
-    meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
-    authorize_meeting_access(meeting, user_keycloak_uuid)
-
     try:
-        existing_deliverable = get_active_by_meeting_and_type(
-            meeting_id=meeting.id, deliverable_type=deliverable_type
-        )
-        if _is_already_pending(existing_deliverable):
-            return existing_deliverable
-        soft_delete_by_id(deliverable_id=existing_deliverable.id)
-    except NotFoundException:
-        pass
-
-    try:
-        return _persist_and_dispatch(
-            meeting=meeting,
+        return _decide_and_persist(
+            meeting_id=meeting_id,
+            user_keycloak_uuid=user_keycloak_uuid,
             deliverable_type=deliverable_type,
             custom_prompt=custom_prompt,
         )
     except DeliverableConcurrentlyCreatedException as concurrent_exc:
         try:
             return get_active_by_meeting_and_type(
-                meeting_id=meeting.id, deliverable_type=deliverable_type
+                meeting_id=meeting_id, deliverable_type=deliverable_type
             )
         except NotFoundException:
             raise concurrent_exc from None
 
 
-def _is_already_pending(deliverable: Deliverable) -> bool:
-    return deliverable.status == DeliverableStatus.PENDING
-
-
-def _persist_and_dispatch(
-    meeting: Meeting,
+def _decide_and_persist(
+    meeting_id: int,
+    user_keycloak_uuid: UUID4,
     deliverable_type: DeliverableType,
     custom_prompt: str | None,
 ) -> Deliverable:
-    try:
-        with UnitOfWork():
-            deliverable = save_deliverable(
-                Deliverable(
-                    meeting_id=meeting.id,
-                    type=deliverable_type,
-                    status=DeliverableStatus.PENDING,
-                )
-            )
-
-            transcription_object_name = _resolve_transcription_object_name(meeting)
-            dispatch_report_generation(
-                meeting, deliverable, transcription_object_name, custom_prompt
-            )
-            return deliverable
-    except (
-        DeliverableConcurrentlyCreatedException,
-        MeetingStateConflictException,
-        TaskCreationException,
-        ValueError,
-    ):
-        raise
-    except Exception as exc:
-        raise TaskCreationException(str(exc)) from exc
-
-
-def _resolve_transcription_object_name(meeting: Meeting) -> str:
-    if meeting.transcription_filename is None:
-        raise NotFoundException(
-            f"Could not find meeting transcription: id={meeting.id}"
+    with UnitOfWork():
+        meeting = get_meeting_for_update(
+            meeting_id, with_deliverables=True, with_owner=True
         )
-    return get_transcription_object_name(
-        meeting_id=meeting.id, filename=meeting.transcription_filename
+        authorize_meeting_access(meeting, user_keycloak_uuid)
+
+        try:
+            existing = get_active_by_meeting_and_type(
+                meeting_id=meeting.id, deliverable_type=deliverable_type
+            )
+            if _is_in_flight(existing):
+                return existing
+            soft_delete_by_id(deliverable_id=existing.id)
+        except NotFoundException:
+            pass
+
+        deliverable = save_deliverable(
+            Deliverable(
+                meeting_id=meeting.id,
+                type=deliverable_type,
+                status=DeliverableStatus.REQUESTED,
+            )
+        )
+
+        if _is_transcription_available(meeting):
+            dispatch_requested_report(meeting, deliverable, custom_prompt)
+        return deliverable
+
+
+def _is_in_flight(deliverable: Deliverable) -> bool:
+    return deliverable.status in (
+        DeliverableStatus.REQUESTED,
+        DeliverableStatus.PENDING,
+    )
+
+
+def _is_transcription_available(meeting: Meeting) -> bool:
+    return any(
+        deliverable.type == DeliverableType.TRANSCRIPTION
+        and deliverable.status == DeliverableStatus.AVAILABLE
+        for deliverable in meeting.deliverables
     )
