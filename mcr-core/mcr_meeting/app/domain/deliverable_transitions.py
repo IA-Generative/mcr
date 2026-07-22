@@ -38,13 +38,7 @@ class DeliverableStateMachine(StateMachine):
         | _states.FAILED.to(_states.PENDING)
         | _states.PENDING.to.itself()
     )
-    SOFT_DELETE = (
-        _states.REQUESTED.to(_states.DELETED)
-        | _states.PENDING.to(_states.DELETED)
-        | _states.IN_PROGRESS.to(_states.DELETED)
-        | _states.AVAILABLE.to(_states.DELETED)
-        | _states.FAILED.to(_states.DELETED)
-    )
+    SOFT_DELETE = _states.DELETED.from_.any()
 
 
 def dispatch(deliverable: Deliverable) -> Deliverable:
