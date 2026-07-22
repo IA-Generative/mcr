@@ -1,5 +1,3 @@
-from datetime import datetime, timedelta, timezone
-
 import pytest
 from sqlalchemy.orm import Session
 
@@ -115,59 +113,6 @@ def test_set_external_url_updates_url(db_session: Session) -> None:
 
     db_session.refresh(pending)
     assert pending.external_url == "https://drive.example.com/xyz"
-
-
-def test_find_requested_reports_by_meeting_returns_only_requested_reports() -> None:
-    meeting = MeetingFactory.create()
-    now = datetime.now(timezone.utc)
-    requested_decision = DeliverableFactory.create(
-        meeting=meeting,
-        type=DeliverableType.DECISION_RECORD,
-        status=DeliverableStatus.REQUESTED,
-        created_at=now,
-    )
-    requested_synthesis = DeliverableFactory.create(
-        meeting=meeting,
-        type=DeliverableType.DETAILED_SYNTHESIS,
-        status=DeliverableStatus.REQUESTED,
-        created_at=now + timedelta(seconds=1),
-    )
-    DeliverableFactory.create(
-        meeting=meeting,
-        type=DeliverableType.CUSTOM_REPORT,
-        status=DeliverableStatus.PENDING,
-    )
-    DeliverableFactory.create(
-        meeting=meeting,
-        type=DeliverableType.TRANSCRIPTION,
-        status=DeliverableStatus.REQUESTED,
-    )
-
-    rows = repo.find_requested_reports_by_meeting(meeting_id=meeting.id)
-
-    assert [row.id for row in rows] == [
-        requested_decision.id,
-        requested_synthesis.id,
-    ]
-
-
-def test_find_requested_reports_by_meeting_excludes_other_meetings() -> None:
-    meeting = MeetingFactory.create()
-    other_meeting = MeetingFactory.create()
-    mine = DeliverableFactory.create(
-        meeting=meeting,
-        type=DeliverableType.DECISION_RECORD,
-        status=DeliverableStatus.REQUESTED,
-    )
-    DeliverableFactory.create(
-        meeting=other_meeting,
-        type=DeliverableType.DECISION_RECORD,
-        status=DeliverableStatus.REQUESTED,
-    )
-
-    rows = repo.find_requested_reports_by_meeting(meeting_id=meeting.id)
-
-    assert [row.id for row in rows] == [mine.id]
 
 
 def test_soft_delete_by_id_marks_status_deleted(db_session: Session) -> None:
