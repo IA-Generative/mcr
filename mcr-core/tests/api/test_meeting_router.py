@@ -248,8 +248,10 @@ def test_get_meeting_by_id_unauthorized(
     headers = get_user_auth_header(invalid_user_uuid)
     response = meeting_client.get("/1", headers=headers)
 
-    # Assert
-    assert response.status_code == status.HTTP_403_FORBIDDEN
+    # Assert: a non-owner cannot distinguish "forbidden" from "absent" — the
+    # meeting's existence is not leaked, so access to someone else's meeting is
+    # reported as 404, not 403.
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
 
 def test_get_meeting_by_id_not_found(

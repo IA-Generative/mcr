@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi import status
+from fastapi.testclient import TestClient
 
 from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
 from mcr_meeting.app.schemas.transcription_schema import SpeakerTranscription
@@ -47,21 +48,18 @@ class TestCreateTranscriptionTask:
         meeting_factory: Callable[..., Meeting],
         mock_celery_producer_app: Mock,
     ) -> None:
-        """Test handling of Celery task creation errors."""
         # Arrange
         meeting = meeting_factory(status=MeetingStatus.CAPTURE_DONE)
+        meeting_client.client = TestClient(
+            meeting_client.client.app, raise_server_exceptions=False
+        )
 
         # Act
         response = meeting_client.post(f"/{meeting.id}/transcription/init")
 
         # Assert
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        response_data = response.json()
-        assert "detail" in response_data
-        assert (
-            f"Failed to enqueue transcription task for meeting {meeting.id}"
-            in response_data["detail"]
-        )
+        assert response.json() == {"detail": "Internal Server Error"}
         mock_celery_producer_app.send_task.assert_called_once_with(
             "transcription_worker.transcribe",
             args=[meeting.id, str(meeting.owner.keycloak_uuid)],
