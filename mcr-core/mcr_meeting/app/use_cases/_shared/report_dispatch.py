@@ -30,20 +30,6 @@ def dispatch_requested_report(
     return deliverable
 
 
-def dispatch_report_generation(
-    meeting: Meeting,
-    deliverable: Deliverable,
-    transcription_object_name: str,
-    custom_prompt: str | None = None,
-) -> None:
-    enqueue_report_generation_task(
-        meeting_id=meeting.id,
-        transcription_object_name=transcription_object_name,
-        report_type=_REPORT_TYPE_BY_DELIVERABLE[deliverable.type],
-        kwargs=_build_report_task_kwargs(meeting, deliverable, custom_prompt),
-    )
-
-
 def _resolve_transcription_object_name(meeting: Meeting) -> str:
     if meeting.transcription_filename is None:
         raise NotFoundException(
