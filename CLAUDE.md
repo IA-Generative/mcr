@@ -168,6 +168,7 @@ Migration direction (existing code that doesn't yet fit):
 
 ## Testing
 
+- **TDD is mandatory**: write the test first and see it fail for the right reason, then implement until it passes. Test the business invariant behind the change, not the mechanism the diff touched — see the `testing` rule and the `testing-standard` skill for what a good test asserts.
 - **Python**: pytest with `pytest-asyncio`, `factory-boy` (mcr-core), `pytest-httpx` (mcr-gateway)
 - **Frontend**: Vitest + @testing-library/vue
 - Tests use a temporary SQLite database with transaction rollback per test
