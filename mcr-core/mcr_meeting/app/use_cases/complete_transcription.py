@@ -3,11 +3,7 @@ from datetime import datetime, timezone
 
 from loguru import logger
 
-from mcr_meeting.app.db.deliverable_repository import (
-    find_requested_reports_by_meeting,
-    get_active_by_meeting_and_type,
-    save_deliverable,
-)
+from mcr_meeting.app.db import deliverable_repository
 from mcr_meeting.app.db.meeting_repository import (
     get_meeting_with_owner,
     update_meeting,
@@ -16,7 +12,7 @@ from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
-from mcr_meeting.app.domain.deliverable_transitions import dispatch, mark_available
+from mcr_meeting.app.domain import deliverable_transitions
 from mcr_meeting.app.domain.email import (
     build_transcription_ready_email,
 )
@@ -55,7 +51,7 @@ def complete_transcription(
     meeting = get_meeting_with_owner(meeting_id)
     mark_transcription_done(meeting)
 
-    deliverable = get_active_by_meeting_and_type(
+    deliverable = deliverable_repository.get_active_by_meeting_and_type(
         meeting_id=meeting.id, deliverable_type=DeliverableType.TRANSCRIPTION
     )
 
@@ -85,7 +81,7 @@ def complete_transcription(
                 status=MeetingStatus.TRANSCRIPTION_DONE,
             )
         )
-        mark_available(deliverable, external_url)
+        deliverable_transitions.mark_available(deliverable, external_url)
         _drain_requested_reports(meeting)
 
     _notify_transcription_ready_best_effort(meeting)
@@ -95,9 +91,9 @@ def _drain_requested_reports(meeting: Meeting) -> None:
     transcription_object_name = get_transcription_object_name(
         meeting_id=meeting.id, filename=TRANSCRIPTION_FILENAME
     )
-    for report in find_requested_reports_by_meeting(meeting.id):
-        dispatch(report)
-        save_deliverable(report)
+    for report in deliverable_repository.find_requested_reports_by_meeting(meeting.id):
+        deliverable_transitions.dispatch(report)
+        deliverable_repository.save_deliverable(report)
         celery_producer_app.send_task(
             MCRReportGenerationTasks.REPORT,
             args=[
