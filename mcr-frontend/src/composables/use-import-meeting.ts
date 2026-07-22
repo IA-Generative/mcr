@@ -14,8 +14,10 @@ import {
   VIDEO_IMPORT_EXTENSIONS,
   getFileExtension,
 } from '@/utils/file';
+import { ROUTES } from '@/router/routes';
 import { formatDurationLabel } from '@/utils/timeFormatting';
 import { useVideo2audioConverter } from '@/utils/video2audioConverter';
+import { useRouter } from 'vue-router';
 
 type Orchestrator = { importFiles: (files: File[]) => Promise<void> };
 
@@ -33,6 +35,7 @@ const startedUploads = new Set<number>();
 const startedTranscodes = new Set<number>();
 
 export function useImportMeeting(): Orchestrator {
+  const router = useRouter();
   const toaster = useToaster();
   const { addMeetingMutation, startTranscriptionMutation } = useMeetings();
   const { mutateAsync: createMeetingAsync } = addMeetingMutation();
@@ -204,8 +207,12 @@ export function useImportMeeting(): Orchestrator {
       }
       writer.complete(id);
       startTranscription(item.meetingId);
+      const soleItem = writer.isSoleItem(id);
       settle(id);
       pump();
+      if (soleItem) {
+        redirectToMeeting(item.meetingId);
+      }
     } catch (error) {
       if (error instanceof UploadAbortedError || !runtimes.has(id)) {
         return;
@@ -217,6 +224,11 @@ export function useImportMeeting(): Orchestrator {
       );
       settleAsFailed(id, failureType);
     }
+  }
+
+  function redirectToMeeting(meetingId: number): void {
+    writer.clearAll();
+    void router.push(`${ROUTES.MEETINGS.path}/${meetingId}`);
   }
 
   function settle(id: number): void {

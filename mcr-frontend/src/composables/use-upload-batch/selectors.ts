@@ -32,6 +32,10 @@ export function isOpen(state: UploadState): boolean {
   return state.items.length > 0;
 }
 
+export function isSoleItem(state: UploadState, id: number): boolean {
+  return state.items.length === 1 && state.items[0].id === id;
+}
+
 export function hasActiveWork(state: UploadState): boolean {
   return state.items.some((item) => !isSettledItem(item));
 }

@@ -1,14 +1,27 @@
 import BaseModal from '@/components/core/BaseModal.vue';
+import { useUploadBatch, useUploadBatchWriter } from '@/composables/use-upload-batch';
 import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
 
 let isConfirming = false;
 
-export async function confirmLeaveIfUploading(): Promise<boolean> {
-  const { hasActiveUploads, abortActiveUploads } = useUploadStatus();
+export type ConfirmDialog = { title: string; text: string; ctaLabel: string };
 
-  if (!hasActiveUploads.value) {
+export function dialogFor(namespace: string): ConfirmDialog {
+  return {
+    title: t(`${namespace}.title`),
+    text: t(`${namespace}.description`),
+    ctaLabel: t(`${namespace}.button`),
+  };
+}
+
+export async function confirmAbortActiveUploads(dialog: ConfirmDialog): Promise<boolean> {
+  const { hasActiveWork } = useUploadBatch();
+  const { abortActiveUploads } = useUploadStatus();
+  const { clearAll } = useUploadBatchWriter();
+
+  if (!hasActiveWork.value) {
     return true;
   }
 
@@ -18,26 +31,31 @@ export async function confirmLeaveIfUploading(): Promise<boolean> {
 
   isConfirming = true;
   try {
-    const leave = await confirmLeave();
-    if (leave) {
+    const confirmed = await confirmLeave(dialog);
+    if (confirmed) {
       abortActiveUploads();
+      clearAll();
     }
 
-    return leave;
+    return confirmed;
   } finally {
     isConfirming = false;
   }
 }
 
-export function confirmLeave(): Promise<boolean> {
+export function confirmLeaveIfUploading(): Promise<boolean> {
+  return confirmAbortActiveUploads(dialogFor('meeting.import.confirm-leave'));
+}
+
+export function confirmLeave(dialog: ConfirmDialog): Promise<boolean> {
   return new Promise((resolve) => {
     let confirmed = false;
     const modal = useModal({
       component: BaseModal,
       attrs: {
-        title: t('meeting.import.confirm-leave.title'),
-        text: t('meeting.import.confirm-leave.description'),
-        ctaLabel: t('meeting.import.confirm-leave.button'),
+        title: dialog.title,
+        text: dialog.text,
+        ctaLabel: dialog.ctaLabel,
         onSuccess: () => {
           confirmed = true;
         },

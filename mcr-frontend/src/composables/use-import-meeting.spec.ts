@@ -12,6 +12,7 @@ const {
   registerUpload,
   unregisterUpload,
   registeredAborts,
+  push,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
   startTranscription: vi.fn(),
@@ -22,6 +23,7 @@ const {
   registerUpload: vi.fn(),
   unregisterUpload: vi.fn(),
   registeredAborts: [] as (() => void)[],
+  push: vi.fn(),
 }));
 
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
@@ -35,6 +37,8 @@ vi.mock('@/composables/use-multipart', () => {
 vi.mock('@/composables/use-upload-status', () => ({
   useUploadStatus: () => ({ registerUpload, unregisterUpload }),
 }));
+vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@/router/routes', () => ({ ROUTES: { MEETINGS: { path: '/meetings' } } }));
 vi.mock('@/utils/video2audioConverter', () => ({
   useVideo2audioConverter: () => ({ transcodeToMp3, stopTranscoding }),
 }));
@@ -255,7 +259,8 @@ describe('useImportMeeting.importFiles', () => {
     const uploaded = uploadFile.mock.calls[0][0];
     expect(uploaded.meetingId).toBe(101);
     expect((uploaded.file as File).name).toMatch(/^\d+-\d+\.mp3$/);
-    expect(batch.items.value[0]).toMatchObject({ status: 'done', totalBytes: 20 });
+    expect(push).toHaveBeenCalledWith('/meetings/101');
+    expect(batch.items.value).toHaveLength(0);
   });
 
   it('a meeting-creation failure settles that file only; the others upload and transcribe', async () => {
@@ -339,7 +344,7 @@ describe('useImportMeeting.importFiles', () => {
     expect(batch.items.value[0].status).toBe('error');
   });
 
-  it('starts the transcription of each completed file, without any redirect callback', async () => {
+  it('starts the transcription of each completed file', async () => {
     const { importFiles } = await setup();
 
     await importFiles([makeFile('meeting.mp3')]);
@@ -349,12 +354,49 @@ describe('useImportMeeting.importFiles', () => {
     expect(startTranscription.mock.calls[0]).toEqual([101]);
   });
 
+  it('redirects to the meeting page and clears the sticky when the sole file completes', async () => {
+    const { importFiles, batch } = await setup();
+
+    await importFiles([makeFile('solo.mp3', { duration: 60 })]);
+    await flush();
+
+    expect(push).toHaveBeenCalledWith('/meetings/101');
+    expect(batch.items.value).toHaveLength(0);
+  });
+
+  it('does not redirect when a second batch joined the store meanwhile', async () => {
+    const uploads = deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([makeFile('first.mp3', { duration: 60 })]);
+    await flush();
+    await importFiles([makeFile('second.mp3', { duration: 120 })]);
+    await flush();
+
+    uploads[0].resolve();
+    await flush();
+
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it('does not redirect when the sole file fails to upload', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    const { importFiles, batch } = await setup();
+
+    await importFiles([makeFile('solo.mp3', { duration: 60 })]);
+    await flush();
+
+    expect(push).not.toHaveBeenCalled();
+    expect(batch.items.value[0]).toMatchObject({ status: 'error' });
+  });
+
   it.each([
     ['notes.txt', 'text/plain', 'meeting.import.errors.file-format-unsupported'],
     ['sansextension', 'audio/mpeg', 'meeting.import.errors.file-format-unsupported'],
   ])(
     'rejects an unsupported file (%s) at selection, before it enters the queue',
     async (name, type, key) => {
+      deferCalls<void>(uploadFile);
       const { importFiles, batch } = await setup();
 
       await importFiles([makeFile(name, { type }), makeFile('ok.mp3')]);
@@ -386,7 +428,8 @@ describe('useImportMeeting.importFiles', () => {
     const dto = createMeetingAsync.mock.calls[0][0];
     expect(dto.start_date).toBeUndefined();
     expect(dto.end_date).toBeUndefined();
-    expect(batch.items.value[0]).toMatchObject({ durationSeconds: null, status: 'done' });
+    expect(startTranscription).toHaveBeenCalledWith(101);
+    expect(batch.items.value).toHaveLength(0);
   });
 
   it('imports a video whose MIME type is empty, based on its extension', async () => {

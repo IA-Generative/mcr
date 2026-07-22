@@ -52,6 +52,10 @@ function getItem(id: number): store.UploadItem | undefined {
   return selectors.getItem(state.value, id);
 }
 
+function isSoleItem(id: number): boolean {
+  return selectors.isSoleItem(state.value, id);
+}
+
 const derived = {
   isOpen: computed(() => selectors.isOpen(state.value)),
   items: computed(() => selectors.getDisplayOrder(state.value)),
@@ -79,5 +83,6 @@ export function useUploadBatchWriter() {
     getUploadingItems,
     getTranscodingItems,
     getItem,
+    isSoleItem,
   };
 }

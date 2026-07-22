@@ -10,31 +10,7 @@ describe('useUploadStatus', () => {
     vi.resetModules();
   });
 
-  it('toggles hasActiveUploads on register/unregister', async () => {
-    const { hasActiveUploads, registerUpload, unregisterUpload } = await freshComposable();
-    expect(hasActiveUploads.value).toBe(false);
-
-    const id = registerUpload({ abort: vi.fn() });
-    expect(hasActiveUploads.value).toBe(true);
-
-    unregisterUpload(id);
-    expect(hasActiveUploads.value).toBe(false);
-  });
-
-  it('stays active while at least one upload remains', async () => {
-    const { hasActiveUploads, registerUpload, unregisterUpload } = await freshComposable();
-
-    const first = registerUpload({ abort: vi.fn() });
-    const second = registerUpload({ abort: vi.fn() });
-
-    unregisterUpload(first);
-    expect(hasActiveUploads.value).toBe(true);
-
-    unregisterUpload(second);
-    expect(hasActiveUploads.value).toBe(false);
-  });
-
-  it('aborts every active upload', async () => {
+  it('aborts every registered upload', async () => {
     const { registerUpload, abortActiveUploads } = await freshComposable();
     const firstAbort = vi.fn();
     const secondAbort = vi.fn();
@@ -47,21 +23,37 @@ describe('useUploadStatus', () => {
     expect(secondAbort).toHaveBeenCalledTimes(1);
   });
 
-  it('unregisters immediately on abort so the guard cannot re-prompt for a dead import', async () => {
-    const { hasActiveUploads, registerUpload, abortActiveUploads } = await freshComposable();
-    registerUpload({ abort: vi.fn() });
+  it('never aborts an upload that was unregistered beforehand', async () => {
+    const { registerUpload, unregisterUpload, abortActiveUploads } = await freshComposable();
+    const abort = vi.fn();
+    const id = registerUpload({ abort });
 
+    unregisterUpload(id);
     abortActiveUploads();
 
-    expect(hasActiveUploads.value).toBe(false);
+    expect(abort).not.toHaveBeenCalled();
   });
 
-  it('shares state across composable instances', async () => {
+  it('drops each upload before aborting it so a second abort is a no-op', async () => {
+    const { registerUpload, abortActiveUploads } = await freshComposable();
+    const abort = vi.fn();
+    registerUpload({ abort });
+
+    abortActiveUploads();
+    abortActiveUploads();
+
+    expect(abort).toHaveBeenCalledTimes(1);
+  });
+
+  it('shares the registry across composable instances', async () => {
     const first = await freshComposable();
     const { useUploadStatus } = await import('./use-upload-status');
     const second = useUploadStatus();
+    const abort = vi.fn();
 
-    first.registerUpload({ abort: vi.fn() });
-    expect(second.hasActiveUploads.value).toBe(true);
+    first.registerUpload({ abort });
+    second.abortActiveUploads();
+
+    expect(abort).toHaveBeenCalledTimes(1);
   });
 });

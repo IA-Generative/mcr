@@ -4,8 +4,17 @@
     class="import-sticky"
     :aria-label="t('meeting.import.sticky.label')"
   >
-    <header class="px-4 py-3">
+    <header class="flex items-center justify-between gap-2 px-4 py-3">
       <p class="m-0 font-bold">{{ title }}</p>
+      <DsfrButton
+        :label="t('meeting.import.sticky.close')"
+        icon="fr-icon-close-line"
+        icon-only
+        tertiary
+        no-outline
+        size="sm"
+        @click="close"
+      />
     </header>
     <ul class="m-0 list-none overflow-y-auto p-0 max-h-[40vh]">
       <ImportStickyRow
@@ -19,10 +28,12 @@
 
 <script setup lang="ts">
 import ImportStickyRow from '@/components/import/ImportStickyRow.vue';
+import { useImportStickyClose } from '@/composables/use-import-sticky-close';
 import { useUploadBatch } from '@/composables/use-upload-batch';
 import { t } from '@/plugins/i18n';
 
 const { isOpen, items, batchTitle } = useUploadBatch();
+const { close } = useImportStickyClose();
 
 const title = computed(() =>
   batchTitle.value ? t(batchTitle.value.key, batchTitle.value.params) : '',
