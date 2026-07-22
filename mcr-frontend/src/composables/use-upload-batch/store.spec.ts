@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
-  ESTIMATED_VIDEO_BYTES_PER_SECOND,
+  ESTIMATED_MP3_BYTES_PER_SECOND,
   getBatchEtaSeconds,
   getBatchTitle,
   getDisplayOrder,
@@ -338,7 +338,7 @@ describe('upload-batch progress and ETA', () => {
     const sampled = recordProgress(promote(state), audioId, 1_000, 1);
 
     expect(getBatchEtaSeconds(sampled)).toBe(
-      (9_000 + 120 * ESTIMATED_VIDEO_BYTES_PER_SECOND) / 1_000 +
+      (9_000 + 120 * ESTIMATED_MP3_BYTES_PER_SECOND) / 1_000 +
         120 / ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
     );
 
@@ -353,7 +353,7 @@ describe('upload-batch progress and ETA', () => {
     ]);
     const sampled = recordProgress(promote(state), itemIds[0], 1_000, 1);
 
-    const uploadSeconds = (9_000 + 300 * ESTIMATED_VIDEO_BYTES_PER_SECOND) / 1_000;
+    const uploadSeconds = (9_000 + 300 * ESTIMATED_MP3_BYTES_PER_SECOND) / 1_000;
     const estimatedTranscodeSeconds = 300 / ESTIMATED_TRANSCODE_SECONDS_PER_SECOND;
     expect(getBatchEtaSeconds(sampled)).toBe(uploadSeconds + estimatedTranscodeSeconds);
   });
@@ -420,7 +420,7 @@ describe('upload-batch progress and ETA', () => {
     const withUpload = recordProgress(running, audioId, 1_000, 1);
     const withTranscode = recordTranscodeProgress(withUpload, videoId, 0.2, 1);
 
-    const uploadSeconds = (9_000 + 100 * ESTIMATED_VIDEO_BYTES_PER_SECOND) / 1_000;
+    const uploadSeconds = (9_000 + 100 * ESTIMATED_MP3_BYTES_PER_SECOND) / 1_000;
     const transcodeSeconds = ((1 - 0.2) * 100) / 20;
     expect(getBatchEtaSeconds(withTranscode)).toBe(uploadSeconds + transcodeSeconds);
   });

@@ -1,7 +1,7 @@
 import type { UploadFailureType } from '@/services/http/http.utils';
 import type { UploadItem, UploadState } from './store';
 
-export const ESTIMATED_VIDEO_BYTES_PER_SECOND = (1024 * 1024) / 60;
+export const ESTIMATED_MP3_BYTES_PER_SECOND = (1024 * 1024) / 60;
 export const ESTIMATED_TRANSCODE_SECONDS_PER_SECOND = 5;
 
 export type BatchTitle = {
@@ -135,7 +135,7 @@ function getRemainingBytes(item: UploadItem): number {
     case 'transcode-pending':
     case 'transcoding':
       return item.durationSeconds !== null
-        ? item.durationSeconds * ESTIMATED_VIDEO_BYTES_PER_SECOND
+        ? item.durationSeconds * ESTIMATED_MP3_BYTES_PER_SECOND
         : item.totalBytes;
     case 'done':
     case 'error':
