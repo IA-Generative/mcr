@@ -19,6 +19,13 @@ interface TagMeta {
 }
 
 export function getTagMeta(status: DeliverableStatus | null): TagMeta | null {
+  if (status === 'REQUESTED') {
+    return {
+      class: 'bg-info-950 text-info-425',
+      label: t('meetings_v2.table.columns.status.requested'),
+      icon: 'fr-icon-time-line',
+    };
+  }
   if (status === 'PENDING') {
     return {
       class: 'bg-info-950 text-info-425',

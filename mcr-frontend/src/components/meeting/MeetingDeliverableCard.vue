@@ -7,93 +7,99 @@
       {{ $t('meeting-v2.deliverable-card.description') }}
     </p>
 
-    <DsfrRadioButtonSet
-      v-model="selectedType"
-      name="deliverable-type"
-      :options="radioOptions"
-      @update:model-value="onSelectType"
-    />
-
-    <DsfrButton
-      icon="ri-refresh-line"
-      :disabled="generateDisabled"
-      @click="generate"
-    >
-      {{ $t('meeting-v2.deliverable-card.generate-button') }}
-    </DsfrButton>
-
-    <hr class="w-full border-0 border-t border-t-[var(--grey-925-125)] m-0 pb-0.5" />
-
-    <MeetingDeliverableList :active-deliverables="activeDeliverables" />
+    <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-4 items-stretch">
+      <DeliverableTypeCard
+        v-for="type in types"
+        :key="type"
+        :type="type"
+        :deliverable="findActive(type)"
+        :is-generating="pendingTypes.includes(type)"
+        :transcription-ready="transcriptionReady"
+        :transcription-failed="transcriptionFailed"
+        @generate="() => onGenerate(type)"
+        @customize="openCustomReportModal"
+        @download="onDownload"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import MeetingDeliverableList from './MeetingDeliverableList.vue';
+import DeliverableTypeCard from './DeliverableTypeCard.vue';
 import CustomReportModal from './modals/CustomReportModal.vue';
 import { useDeliverables } from '@/services/deliverables/use-deliverables';
-import { DeliverableType } from '@/services/deliverables/deliverables.types';
+import type { DeliverableType } from '@/services/deliverables/deliverables.types';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
+import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file';
 
 const props = defineProps<{ meetingId: number }>();
 
-const { getDeliverablesQuery, createDeliverableMutation } = useDeliverables();
+const { getDeliverablesQuery, createDeliverableMutation, downloadDeliverableMutation } =
+  useDeliverables();
 const { data: deliverables } = getDeliverablesQuery(props.meetingId);
-const { mutate: createMutate, isPending: isCreating } = createDeliverableMutation(props.meetingId);
+const { mutate: createMutate } = createDeliverableMutation(props.meetingId);
+const { mutate: downloadMutate } = downloadDeliverableMutation();
 
 const toaster = useToaster();
-
 const isCustomReportEnabled = useFeatureFlag('custom_cr');
-const selectedType = ref<DeliverableType | undefined>(undefined);
+
 const customPrompt = ref('');
+const pending = ref<Partial<Record<DeliverableType, number | null>>>({});
 
-const activeDeliverables = computed(
+const pendingTypes = computed(() => Object.keys(pending.value) as DeliverableType[]);
+
+function clearPending(type: DeliverableType): void {
+  const next = { ...pending.value };
+  delete next[type];
+  pending.value = next;
+}
+
+const types = computed<DeliverableType[]>(() => {
+  const base: DeliverableType[] = ['TRANSCRIPTION', 'DECISION_RECORD', 'DETAILED_SYNTHESIS'];
+  return isCustomReportEnabled.value ? [...base, 'CUSTOM_REPORT'] : base;
+});
+
+const transcriptionReady = computed(
   () =>
-    deliverables.value?.filter((d) => d.type !== 'CUSTOM_REPORT' || isCustomReportEnabled.value) ??
-    [],
+    deliverables.value?.some((d) => d.type === 'TRANSCRIPTION' && d.status === 'AVAILABLE') ??
+    false,
 );
 
-const successfullyGeneratedTypes = computed(
-  () => new Set(activeDeliverables.value.map((d) => d.type)),
-);
-
-const hasPendingDeliverable = computed(() =>
-  activeDeliverables.value.some((d) => d.status === 'PENDING' || d.status === 'IN_PROGRESS'),
-);
-
-const radioOptions = computed(() => [
-  {
-    label: t('meeting-v2.deliverable-card.type.decision-record.label'),
-    hint: t('meeting-v2.deliverable-card.type.decision-record.hint'),
-    value: 'DECISION_RECORD',
-    disabled: successfullyGeneratedTypes.value.has('DECISION_RECORD'),
-  },
-  {
-    label: t('meeting-v2.deliverable-card.type.detailed-synthesis.label'),
-    hint: t('meeting-v2.deliverable-card.type.detailed-synthesis.hint'),
-    value: 'DETAILED_SYNTHESIS',
-    disabled: successfullyGeneratedTypes.value.has('DETAILED_SYNTHESIS'),
-  },
-  {
-    label: t('meeting-v2.deliverable-card.type.custom-report.label'),
-    hint: t('meeting-v2.deliverable-card.type.custom-report.hint'),
-    value: 'CUSTOM_REPORT',
-    disabled: false,
-  },
-]);
-
-const generateDisabled = computed(
+const transcriptionFailed = computed(
   () =>
-    selectedType.value === undefined ||
-    selectedType.value === 'CUSTOM_REPORT' ||
-    isCreating.value ||
-    hasPendingDeliverable.value,
+    deliverables.value?.some((d) => d.type === 'TRANSCRIPTION' && d.status === 'FAILED') ?? false,
 );
 
-const modalGenerateDisabled = computed(() => isCreating.value || hasPendingDeliverable.value);
+function findActive(type: DeliverableType) {
+  return deliverables.value?.find((d) => d.type === type);
+}
+
+watch(deliverables, () => {
+  for (const type of pendingTypes.value) {
+    const currentId = findActive(type)?.id ?? null;
+    if (currentId !== pending.value[type]) clearPending(type);
+  }
+});
+
+function requestGeneration(type: DeliverableType, prompt?: string): void {
+  pending.value = { ...pending.value, [type]: findActive(type)?.id ?? null };
+  createMutate(
+    { meeting_id: props.meetingId, type, custom_prompt: prompt },
+    {
+      onError: () => {
+        clearPending(type);
+        toaster.addErrorMessage(t('error.deliverable-generation')!);
+      },
+    },
+  );
+}
+
+function onGenerate(type: DeliverableType): void {
+  requestGeneration(type);
+}
 
 const { open: openCustomReportModal } = useModal({
   component: CustomReportModal,
@@ -101,49 +107,25 @@ const { open: openCustomReportModal } = useModal({
     get initialPrompt() {
       return customPrompt.value;
     },
-    get generateBlockedByPending() {
-      return modalGenerateDisabled.value;
-    },
+    generateBlockedByPending: false,
     onGenerate: (prompt: string) => {
-      createMutate(
-        { meeting_id: props.meetingId, type: 'CUSTOM_REPORT', custom_prompt: prompt },
-        {
-          onError: () => {
-            toaster.addErrorMessage(t('error.deliverable-generation')!);
-          },
-        },
-      );
+      requestGeneration('CUSTOM_REPORT', prompt);
       customPrompt.value = '';
-      selectedType.value = undefined;
     },
     onUpdatePrompt: (value: string) => {
       customPrompt.value = value;
-      selectedType.value = undefined;
     },
   },
 });
 
-function onSelectType(newType: string | number | boolean): void {
-  if (newType === 'CUSTOM_REPORT') {
-    openCustomReportModal();
-  }
-}
-
-function generate(): void {
-  if (selectedType.value === undefined || selectedType.value === 'CUSTOM_REPORT') return;
-  createMutate(
-    { meeting_id: props.meetingId, type: selectedType.value },
-    {
-      onError: () => {
-        toaster.addErrorMessage(t('error.deliverable-generation')!);
-      },
+function onDownload(deliverableId: number): void {
+  downloadMutate(deliverableId, {
+    onSuccess: (response) => {
+      downloadFileFromAxios(response, extractFilenameFromResponse(response));
     },
-  );
+    onError: () => {
+      toaster.addErrorMessage(t('error.default')!);
+    },
+  });
 }
 </script>
-
-<style scoped>
-:deep(.fr-fieldset) {
-  margin-bottom: 0;
-}
-</style>

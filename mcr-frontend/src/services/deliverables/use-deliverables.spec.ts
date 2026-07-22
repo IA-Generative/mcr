@@ -15,7 +15,7 @@ function deliverable(status: DeliverableStatus): DeliverableDto {
 }
 
 describe('shouldPollDeliverables', () => {
-  it.each(['PENDING', 'IN_PROGRESS'] satisfies DeliverableStatus[])(
+  it.each(['REQUESTED', 'PENDING', 'IN_PROGRESS'] satisfies DeliverableStatus[])(
     'should_keep_polling_while_a_deliverable_is_%s',
     (status) => {
       expect(shouldPollDeliverables([deliverable('AVAILABLE'), deliverable(status)])).toBe(true);

@@ -136,6 +136,7 @@
         },
         "actions": "Actions",
         "status": {
+          "requested": "En attente de la transcription",
           "pending": "EN ATTENTE",
           "info": "EN COURS",
           "success": "DISPONIBLE",
@@ -359,9 +360,20 @@
     },
     "deliverable-card": {
       "title": "Livrables",
-      "description": "Sélectionnez un format de compte-rendu à générer :",
+      "description": "Générez autant de livrables que souhaité. Les générations commencent quand la transcription est terminée.",
       "generate-button": "Générer",
+      "customize-button": "Personnaliser",
       "format": "DOCX",
+      "tag": {
+        "in-progress": "En cours",
+        "waiting": "En attente transcription",
+        "error": "Erreur",
+        "failed": "Erreur"
+      },
+      "transcription-failed": "Erreur transcription",
+      "report": {
+        "auto-when-ready": "Se lance automatiquement dès que la transcription est prête."
+      },
       "type": {
         "decision-record": {
           "label": "Relevé de décisions",
@@ -374,7 +386,8 @@
           "title": "Synthèse détaillée"
         },
         "transcription": {
-          "title": "Transcription"
+          "title": "Transcription",
+          "auto": "Générée automatiquement à la fin de la réunion."
         },
         "custom-report": {
           "label": "Compte-rendu personnalisé avec prompt",
@@ -384,7 +397,8 @@
       },
       "actions": {
         "download": "Télécharger",
-        "open-external": "Consulter"
+        "open-external": "Consulter",
+        "regenerate": "Régénérer"
       }
     },
     "custom-report-modal": {
