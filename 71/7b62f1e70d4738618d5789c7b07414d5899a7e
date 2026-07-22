@@ -1,0 +1,23 @@
+mcr-frontend/src/plugins/vue-query.ts
+  s_96638cb8317652::t_56249ff8577365 20-26,28,33
+  s_96638cb8317652::t_51e986b5cd5abd 10
+mcr-frontend/src/plugins/vue-query.spec.ts
+  s_96638cb8317652::t_1847a496b4d335 41-46
+  s_96638cb8317652::t_1f84374c097d26 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "717b62f1e70d4738618d5789c7b07414d5899a7e",
+  "prompts": {},
+  "sessions": {
+    "s_96638cb8317652": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f2136234-20b3-4b2a-b7c6-01e2ed7c8fef",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Thomas Metzger <thomas.metzger@theodo.com>"
+    }
+  }
+}
