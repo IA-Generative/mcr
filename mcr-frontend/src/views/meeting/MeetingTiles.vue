@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-[18px] min-[1040px]:flex-row">
-    <div :class="[tileClasses, 'relative']">
+    <div :class="tileClasses">
       <ActionTile
         class="size-full"
         :img-src="videoSvgPath"
@@ -8,27 +8,16 @@
         :description="
           t('meetings_v2.tile-import.subtitle', { formats: ALLOWED_IMPORT_FORMATS_LABEL })!
         "
-        :disabled="hasActiveUploads"
         @click="openFilePicker"
       />
-
-      <div
-        v-if="hasActiveUploads"
-        class="pointer-events-none absolute inset-0 flex items-center justify-center"
-      >
-        <VIcon
-          name="ri-loader-4-line"
-          animation="spin"
-          :scale="2"
-        />
-      </div>
 
       <input
         ref="fileInput"
         type="file"
         :accept="IMPORT_ACCEPT_ATTR"
+        multiple
         hidden
-        @change="onFileSelected"
+        @change="onFilesSelected"
       />
     </div>
 
@@ -60,7 +49,6 @@ import CreateVisioMeetingModal from '@/components/meeting/modals/CreateVisioMeet
 import RecordMeetingModal from '@/components/meeting/modals/RecordMeetingModal.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useImportMeeting } from '@/composables/use-import-meeting';
-import { useUploadStatus } from '@/composables/use-upload-status';
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import videoSvgPath from '@dsfr-artwork/pictograms/leisure/video.svg?url';
@@ -80,7 +68,6 @@ const tileClasses =
   'w-[95vw] h-[20vh] min-[440px]:h-[15vh] min-[1040px]:w-[30vw] min-[1040px]:h-[20vh]';
 
 const isWebexEnabled = useFeatureFlag('webex');
-const { hasActiveUploads } = useUploadStatus();
 const fileInput = ref<HTMLInputElement | null>(null);
 
 const router = useRouter();
@@ -88,19 +75,19 @@ const toaster = useToaster();
 const { addMeetingMutation, startCaptureMutation } = useMeetings();
 const { mutate: createMeeting } = addMeetingMutation();
 const { mutateAsync: startCaptureAsync } = startCaptureMutation();
-const { importFile } = useImportMeeting();
+const { importFiles } = useImportMeeting();
 
 function openFilePicker() {
   fileInput.value?.click();
 }
 
-async function onFileSelected(event: Event) {
+async function onFilesSelected(event: Event) {
   const input = event.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
+  const files = Array.from(input.files ?? []);
+  if (files.length === 0) return;
 
   try {
-    await importFile(file);
+    await importFiles(files);
   } finally {
     input.value = '';
   }
