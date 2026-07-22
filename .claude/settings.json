@@ -10,6 +10,15 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -c 'if ((.tool_input.file_path // \"\") | test(\"\\\\.claude/projects/[^/]*/memory/\")) then {hookSpecificOutput:{hookEventName:\"PreToolUse\",permissionDecision:\"deny\",permissionDecisionReason:\"Recorded memories are learnings from past mistakes. In this project they must be integrated into the harness — .claude/rules/, .claude/skills/, or CLAUDE.md — not written to personal memory. Put the learning where it will enforce itself, then skip the memory write.\"}} else {} end'"
+          }
+        ]
       }
     ],
     "Stop": [
