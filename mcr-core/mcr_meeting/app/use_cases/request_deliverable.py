@@ -14,7 +14,6 @@ from mcr_meeting.app.exceptions.exceptions import (
     NotFoundException,
     TaskCreationException,
 )
-from mcr_meeting.app.infrastructure.celery import celery_producer_app, celery_settings
 from mcr_meeting.app.infrastructure.s3 import get_transcription_object_name
 from mcr_meeting.app.models import Meeting
 from mcr_meeting.app.models.deliverable_model import (
@@ -22,11 +21,8 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
 )
-from mcr_meeting.app.schemas.celery_types import MCRReportGenerationTasks
-from mcr_meeting.app.schemas.report_generation import ReportType
 from mcr_meeting.app.use_cases._shared.report_dispatch import (
-    REPORT_TYPE_BY_DELIVERABLE,
-    build_report_task_kwargs,
+    dispatch_report_generation,
 )
 
 
@@ -36,8 +32,6 @@ def request_deliverable(
     deliverable_type: DeliverableType,
     custom_prompt: str | None = None,
 ) -> Deliverable:
-    report_type = REPORT_TYPE_BY_DELIVERABLE[deliverable_type]
-
     meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
     authorize_meeting_access(meeting, user_keycloak_uuid)
 
@@ -55,7 +49,6 @@ def request_deliverable(
         return _persist_and_dispatch(
             meeting=meeting,
             deliverable_type=deliverable_type,
-            report_type=report_type,
             custom_prompt=custom_prompt,
         )
     except DeliverableConcurrentlyCreatedException as concurrent_exc:
@@ -74,7 +67,6 @@ def _is_already_pending(deliverable: Deliverable) -> bool:
 def _persist_and_dispatch(
     meeting: Meeting,
     deliverable_type: DeliverableType,
-    report_type: ReportType,
     custom_prompt: str | None,
 ) -> Deliverable:
     try:
@@ -88,17 +80,14 @@ def _persist_and_dispatch(
             )
 
             transcription_object_name = _resolve_transcription_object_name(meeting)
-            kwargs = build_report_task_kwargs(meeting, deliverable, custom_prompt)
-            celery_producer_app.send_task(
-                MCRReportGenerationTasks.REPORT,
-                args=[meeting.id, transcription_object_name, report_type],
-                kwargs=kwargs,
-                countdown=celery_settings.REPORT_START_COUNTDOWN_SECONDS,
+            dispatch_report_generation(
+                meeting, deliverable, transcription_object_name, custom_prompt
             )
             return deliverable
     except (
         DeliverableConcurrentlyCreatedException,
         MeetingStateConflictException,
+        TaskCreationException,
         ValueError,
     ):
         raise

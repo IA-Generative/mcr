@@ -30,12 +30,9 @@ from tests.factories.deliverable_factory import DeliverableFactory
 
 @pytest.fixture
 def mock_use_case_celery(mocker: MockerFixture) -> MagicMock:
-    """The use case imports celery_producer_app directly, so the patch path
-    must target the use case module — not the SM actions module that the
-    global fixture patches."""
-    return mocker.patch(
-        "mcr_meeting.app.use_cases.request_deliverable.celery_producer_app"
-    )
+    """Report dispatch goes through the infra celery wrapper, so patch the
+    broker there — the use case no longer references celery_producer_app."""
+    return mocker.patch("mcr_meeting.app.infrastructure.celery.celery_producer_app")
 
 
 class TestRequestDeliverableHappyPath:

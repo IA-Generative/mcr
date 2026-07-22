@@ -46,9 +46,7 @@ def mock_generate_docx(monkeypatch: Any) -> MagicMock:  # type: ignore[explicit-
 
 @pytest.fixture
 def mock_drain_celery(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch(
-        "mcr_meeting.app.use_cases.complete_transcription.celery_producer_app"
-    )
+    return mocker.patch("mcr_meeting.app.infrastructure.celery.celery_producer_app")
 
 
 @pytest.fixture

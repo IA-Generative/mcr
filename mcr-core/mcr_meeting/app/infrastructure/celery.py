@@ -8,6 +8,7 @@ from mcr_meeting.app.schemas.celery_types import (
     MCRReportGenerationTasks,
     MCRTranscriptionTasks,
 )
+from mcr_meeting.app.schemas.report_generation import ReportType
 
 celery_settings = CelerySettings()
 
@@ -77,6 +78,25 @@ def enqueue_transcription_pipeline(meeting_id: int, owner_keycloak_uuid: str) ->
         raise TaskCreationException(
             f"Failed to enqueue transcription pipeline for meeting {meeting_id}"
         ) from e
+
+
+def enqueue_report_generation_task(
+    meeting_id: int,
+    transcription_object_name: str,
+    report_type: ReportType,
+    kwargs: dict[str, str | int],
+) -> None:
+    try:
+        celery_producer_app.send_task(
+            MCRReportGenerationTasks.REPORT,
+            args=[meeting_id, transcription_object_name, report_type],
+            kwargs=kwargs,
+            countdown=celery_settings.REPORT_START_COUNTDOWN_SECONDS,
+        )
+    except Exception as exc:
+        raise TaskCreationException(
+            f"Failed to enqueue report generation task for meeting {meeting_id}"
+        ) from exc
 
 
 def enqueue_evaluation_task(zip_bytes: bytes) -> None:
