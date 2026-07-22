@@ -1,7 +1,5 @@
-import sentry_sdk
 import uvicorn
 from fastapi import FastAPI
-from loguru import logger
 
 from mcr_meeting.app.api._shared.request_id_middleware import AddRequestIdMiddleware
 from mcr_meeting.app.api.evaluation_router import router as evaluation_router
@@ -25,28 +23,15 @@ from mcr_meeting.app.api.meeting.transcription_router import (
     router as transcription_router,
 )
 from mcr_meeting.app.api.user_router import router as user_router
-from mcr_meeting.app.configs.base import SentrySettings, Settings
 from mcr_meeting.app.exceptions.exception_handler import (
     mcr_exception_handler,
-    value_error_handler,
+    unhandled_exception_handler,
 )
 from mcr_meeting.app.exceptions.exceptions import MCRException
 from mcr_meeting.app.infrastructure.logger import setup_logging
+from mcr_meeting.app.infrastructure.sentry import init_api_sentry
 
-sentry_settings = SentrySettings()
-setting = Settings()
-
-if setting.ENV_MODE and setting.ENV_MODE != "test":
-    try:
-        sentry_sdk.init(
-            dsn=sentry_settings.SENTRY_CORE_DSN,
-            send_default_pii=sentry_settings.SEND_DEFAULT_PII,
-            traces_sample_rate=sentry_settings.TRACES_SAMPLE_RATE,
-            environment=setting.ENV_MODE,
-            ignore_errors=[],
-        )
-    except Exception as e:
-        logger.warning("Sentry initialization failed, continuing without it: {}", e)
+init_api_sentry()
 
 app = FastAPI()
 
@@ -57,7 +42,7 @@ app.add_middleware(AddRequestIdMiddleware)
 # the handler typing excepts an Exception and can't be subclassed
 # But at runtime, the handler will only get Exceptions of the type of the first parameter
 app.add_exception_handler(MCRException, mcr_exception_handler)  # type: ignore[arg-type]
-app.add_exception_handler(ValueError, value_error_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]
 
 app.include_router(meeting_router)
 app.include_router(lookup_router)

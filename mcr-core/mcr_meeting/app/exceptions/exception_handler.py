@@ -2,12 +2,14 @@
 Exception handler for converting custom exceptions to HTTP responses.
 """
 
-from fastapi import HTTPException, Request, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
+from loguru import logger
 
 from mcr_meeting.app.exceptions.exceptions import (
     BadRequestException,
     DataConflictException,
+    DeliverableConcurrentlyCreatedException,
     DeliverableNotYetPendingError,
     DeliverableStateConflictException,
     ForbiddenAccessException,
@@ -18,9 +20,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     MeetingMultipartException,
     MeetingStateConflictException,
     NotFoundException,
-    NotSavedException,
     SilentAudioError,
-    TaskCreationException,
 )
 
 # Mapping of exception types to status codes
@@ -30,38 +30,30 @@ EXCEPTION_STATUS_MAP = {
     InvalidDataException: status.HTTP_422_UNPROCESSABLE_ENTITY,
     DataConflictException: status.HTTP_409_CONFLICT,
     NotFoundException: status.HTTP_404_NOT_FOUND,
-    NotSavedException: status.HTTP_500_INTERNAL_SERVER_ERROR,
-    TaskCreationException: status.HTTP_500_INTERNAL_SERVER_ERROR,
     ForbiddenAccessException: status.HTTP_403_FORBIDDEN,
     MeetingMultipartException: status.HTTP_400_BAD_REQUEST,
     BadRequestException: status.HTTP_400_BAD_REQUEST,
     InvalidEvaluationZipError: status.HTTP_400_BAD_REQUEST,
     DeliverableStateConflictException: status.HTTP_409_CONFLICT,
+    DeliverableConcurrentlyCreatedException: status.HTTP_409_CONFLICT,
     MeetingStateConflictException: status.HTTP_409_CONFLICT,
     DeliverableNotYetPendingError: status.HTTP_425_TOO_EARLY,
 }
 
 
 async def mcr_exception_handler(request: Request, exc: MCRException) -> JSONResponse:
-    """
-    Handle MCRException exceptions and convert them to HTTP responses.
-
-    Args:
-        request: The FastAPI request object
-        exc: The exception
-
-    Returns:
-        JSONResponse with appropriate status code and error message
-    """
-    status_code = EXCEPTION_STATUS_MAP.get(
-        type(exc), status.HTTP_500_INTERNAL_SERVER_ERROR
-    )
+    status_code = EXCEPTION_STATUS_MAP.get(type(exc))
+    if status_code is None:
+        # Unmapped MCRExceptions are server faults, not anticipated client
+        # outcomes: let them bubble to the catch-all so they are reported.
+        raise exc
 
     return JSONResponse(status_code=status_code, content={"detail": str(exc)})
 
 
-async def value_error_handler(request: Request, exc: ValueError) -> None:
-    raise HTTPException(
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled error on {} {}", request.method, request.url.path)
+    return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail=str(exc),
+        content={"detail": "Internal Server Error"},
     )
