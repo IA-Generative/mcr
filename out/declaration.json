@@ -1,0 +1,484 @@
+{
+  "service": {
+    "nom": "MCR — Meeting Capture & Report",
+    "echantillons": "Parcours critiques évalués : (1) import ou capture d'un audio de réunion, (2) transcription + diarisation, (3) génération d'un compte rendu par LLM, (4) consultation/édition/export du compte rendu (DOCX). Périmètre technique : mcr-frontend (Vue 3 + DSFR), mcr-gateway (FastAPI), mcr-core (FastAPI + worker Celery transcription/diarisation), mcr-generation (worker Celery LLM), mcr-capture-worker (bot Playwright).",
+    "entite_evaluation": "Équipe MCR / Theodo (projet IA-Generative)",
+    "responsable_evaluation": "Thomas Metzger",
+    "date_evaluation": "2026-07-10"
+  },
+  "criteres": [
+    {
+      "id": "1.1",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service MCR n'a pas fait l'objet d'une étude formelle évaluant son utilité au regard de ses impacts environnementaux et sociaux (ODD, limites planétaires ou autre référentiel). L'utilité métier du service (assister la production de comptes rendus de réunion pour les agents publics) est établie, mais sans évaluation documentée de ses impacts environnementaux.",
+      "evolutions_potentielles": "Mener une étude d'utilité intégrant les impacts environnementaux et sociaux et la publier dans la déclaration d'écoconception.",
+      "actions_a_mener": "Réaliser une étude d'évaluation des impacts environnementaux et sociaux du service."
+    },
+    {
+      "id": "1.2",
+      "evaluation": "Conforme",
+      "texte_declaration": "Les cibles utilisatrices du service MCR (agents de l'administration publique produisant des comptes rendus de réunion) ainsi que leurs besoins métiers et attentes ont fait l'objet d'une analyse documentée (personas / recherche utilisateur). En cohérence, les fonctionnalités du service (import ou capture d'audio, transcription et diarisation, génération assistée de comptes rendus, édition et export) répondent à ces besoins identifiés.",
+      "evolutions_potentielles": "Publier la synthèse de l'analyse des cibles et besoins dans la déclaration d'écoconception."
+    },
+    {
+      "id": "1.3",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Aucun référent en écoconception numérique n'est identifié pour le service à ce jour, ni dans la déclaration d'écoconception ni dans un autre document public.",
+      "evolutions_potentielles": "Désigner un référent écoconception (contact nominal ou générique) et le publier dans un document accessible.",
+      "actions_a_mener": "Nommer un référent écoconception numérique."
+    },
+    {
+      "id": "1.4",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service dispose d'une intégration continue exigeante (formatage et lint ruff, typage mypy --strict, tests, couverture, détection de secrets gitleaks, hygiène des dépendances deptry) et de revues de code obligatoires (CODEOWNERS, gabarit de PR, blocage des PR échouant en CI). En revanche, aucune revue ou autoévaluation d'écoconception régulière appliquant le RGESN, ni aucun audit de performance / test de charge récurrent, n'est réalisé.",
+      "evolutions_potentielles": "Mettre en place une autoévaluation RGESN périodique et des audits de performance / tests de charge réguliers.",
+      "actions_a_mener": "Instaurer une revue d'écoconception régulière et des tests de charge."
+    },
+    {
+      "id": "1.5",
+      "evaluation": "Non conforme",
+      "texte_declaration": "L'empreinte environnementale du service n'a pas été évaluée (aucune ACV ni mesure d'impact carbone, énergie, ressources abiotiques ou eau) et aucun objectif de réduction ou de limitation des impacts n'a été fixé ni suivi.",
+      "evolutions_potentielles": "Évaluer l'empreinte environnementale du service (méthodologie reconnue, idéalement ACV multicritère), fixer des objectifs de réduction et en assurer le suivi dans un document public.",
+      "actions_a_mener": "Réaliser une évaluation d'empreinte environnementale et définir des objectifs de réduction."
+    },
+    {
+      "id": "1.6",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service collecte des données afin de répondre au besoin de production de comptes rendus de réunion (utilisateurs Keycloak, réunions, audios, transcriptions avec identification des locuteurs, comptes rendus). La collecte est encadrée : un écran de consentement des participants précède tout enregistrement (renvoi aux CGU MIrAI) et la conservation des audios fait l'objet d'une documentation RGPD. Le service ne collecte pas de métadonnées à des fins publicitaires ou de profilage. À noter, en toute transparence, un écart entre la durée de conservation documentée et la durée effectivement appliquée (rétention réelle plus longue que celle annoncée), ainsi que la configuration Sentry SEND_DEFAULT_PII=True par défaut, à corriger.",
+      "evolutions_potentielles": "Aligner la rétention effective des données sur la durée documentée dans la déclaration RGPD (voir critères 5.8 et 7.2) et statuer sur SEND_DEFAULT_PII.",
+      "actions_a_mener": "Mettre l'implémentation de la rétention en conformité avec la durée documentée ; désactiver SEND_DEFAULT_PII si non nécessaire."
+    },
+    {
+      "id": "1.7",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service repose sur des mécanismes de chiffrement (TLS en transit terminé par l'ingress de la plateforme, SMTP en SSL, URLs S3 pré-signées, jetons d'authentification Keycloak). Toutefois, la pertinence de ces choix cryptographiques n'est pas documentée au regard des risques de sécurité informatique du service et de la minimisation de l'empreinte environnementale associée.",
+      "evolutions_potentielles": "Documenter les choix cryptographiques (analyse des risques de sécurité + empreinte environnementale) dans la déclaration.",
+      "actions_a_mener": "Formaliser la justification des mécanismes de chiffrement retenus."
+    },
+    {
+      "id": "1.8",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service MCR publie l'intégralité de son code source en logiciel libre sous licence Apache 2.0 (fichier LICENSE), sur le dépôt public GitHub IA-Generative/mcr (organisation gouvernementale française de l'IA générative). La contribution est ouverte (fork + pull request, gabarits d'issues, CONTRIBUTING.md, politique de sécurité SECURITY.md), ce qui favorise l'ouverture et le partage des ressources.",
+      "evolutions_potentielles": "Publier une documentation d'architecture et un guide de réutilisation pour amplifier l'effort d'open source."
+    },
+    {
+      "id": "1.9",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service est une application web (SPA Vue 3) accessible via une interface unique dans tout navigateur moderne, sur la même origine que l'API (parité de production). Il s'appuie sur des technologies standard et interopérables (HTTP/REST, HTML/CSS/JS standard, système de design de l'État DSFR, API REST documentée via OpenAPI/Swagger) plutôt que sur des technologies spécifiques et fermées. Aucune application native n'est requise.",
+      "evolutions_potentielles": "Documenter explicitement le choix d'une Web App interopérable dans la déclaration."
+    },
+    {
+      "id": "1.10",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service ne repose pas sur un objet connecté ni sur un périphérique matériel propriétaire. La capture audio utilise des API standard du navigateur (micro) et un bot Playwright s'appuyant sur des plateformes de visioconférence tierces ; aucun matériel spécifique n'est fourni avec le service (cible : « N/A si le service numérique ne repose pas sur un objet connecté ou un périphérique matériel »)."
+    },
+    {
+      "id": "2.1",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Un profil de matériels supportés est connu de l'équipe de façon interne, mais il n'est pas publié dans la déclaration d'écoconception et ne fait l'objet d'aucune vérification objective (tests sur configurations matérielles cibles). Le profil matériel minimum et ses évolutions à venir ne sont donc pas formellement établis ni affichés.",
+      "evolutions_potentielles": "Formaliser, vérifier et publier le profil matériel minimum (processeur, mémoire) en privilégiant les équipements les plus anciens possibles.",
+      "actions_a_mener": "Publier et vérifier le profil matériel minimum supporté."
+    },
+    {
+      "id": "2.2",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service fonctionne sur navigateur et son interface, essentiellement textuelle, reste légère. Toutefois, les fonctionnalités critiques n'ont pas été testées sur un terminal ancien (PC équipé d'un microprocesseur mis sur le marché il y a 10 ans ou plus) et les caractéristiques d'un tel équipement ne sont pas documentées. Le principal point d'attention identifié est le transcodage vidéo→audio côté client (ffmpeg WebAssembly multi-thread, SharedArrayBuffer), non testé sur matériel ancien.",
+      "evolutions_potentielles": "Tester les fonctionnalités critiques (dont le transcodage ffmpeg) sur un terminal ancien et documenter les caractéristiques compatibles.",
+      "actions_a_mener": "Réaliser et documenter des tests sur un terminal ancien (~10 ans)."
+    },
+    {
+      "id": "2.3",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'utilisabilité en connexion bas débit fait partie des points de contrôle de l'équipe et est testée. Une partie des fonctionnalités reste par ailleurs disponible hors connexion (résilience des enregistrements côté client). Le débit minimum n'est en revanche pas encore présenté dans la déclaration d'écoconception.",
+      "evolutions_potentielles": "Documenter le débit minimum supporté et le périmètre exact des fonctionnalités disponibles hors connexion dans la déclaration."
+    },
+    {
+      "id": "2.4",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service s'appuie sur SharedArrayBuffer et les en-têtes COOP/COEP (isolation cross-origin) pour le transcodage côté client. Les versions minimales des principaux navigateurs supportés ne sont pas définies, testées ni publiées, et le support d'une version datée d'au moins deux ans n'est pas garanti.",
+      "evolutions_potentielles": "Définir, tester et publier les versions minimales des principaux navigateurs (au moins deux ans), en indiquant les causes d'incompatibilité éventuelles.",
+      "actions_a_mener": "Établir et documenter la matrice de compatibilité navigateurs (≥ 2 ans)."
+    },
+    {
+      "id": "2.5",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'interface repose sur le système de design de l'État (DSFR), responsive par défaut, complété par des utilitaires responsive Tailwind. La balise viewport est présente (width=device-width). La navigation par pagination et les composants DSFR sont accessibles au clavier comme au tactile. Le service s'adapte donc dynamiquement à différents terminaux d'affichage (« responsive web design »).",
+      "evolutions_potentielles": "Documenter les tests d'affichage aux gabarits 1200 px de large et 720 px de hauteur exigés par le critère."
+    },
+    {
+      "id": "2.6",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service met en œuvre une revue de code systématique (CODEOWNERS avec review obligatoire, gabarit de PR, blocage automatique des PR échouant en CI). En revanche, ces revues de conception et de code n'intègrent pas explicitement la réduction des impacts environnementaux par fonctionnalité (pas d'arbre des conséquences environnementales).",
+      "evolutions_potentielles": "Ajouter un critère d'impact environnemental aux revues de conception et de code, et le référencer dans la déclaration.",
+      "actions_a_mener": "Intégrer l'écoconception aux grilles de revue existantes."
+    },
+    {
+      "id": "2.7",
+      "evaluation": "Non conforme",
+      "texte_declaration": "La maintenance et le décommissionnement sont maîtrisés dans les faits (versionnement SemVer, déploiement continu, résorption progressive du code legacy suivie par un contrat import-linter, décommissionnement techniquement simple) mais ne font pas l'objet d'une stratégie documentée : ni liste des composants/environnements actifs avec dates de rappel, ni plan formalisé de gestion de la seconde vie ou fin de vie des données non personnelles et des ressources libérées.",
+      "evolutions_potentielles": "Formaliser dans la déclaration la stratégie de maintenance et de décommissionnement (l'effort est faible, les pratiques existant déjà).",
+      "actions_a_mener": "Documenter la stratégie de maintenance et de décommissionnement."
+    },
+    {
+      "id": "2.8",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service fait appel à des fournisseurs extérieurs (plateforme d'hébergement DSO de l'État, hub LLM souverain du Ministère de l'Intérieur, passerelle IA gouvernementale de transcription/diarisation). Leurs caractéristiques environnementales ne sont pas prises en compte dans une politique d'achat ou de partenariat, ni documentées dans la déclaration.",
+      "evolutions_potentielles": "Intégrer des critères environnementaux à la sélection des fournisseurs (en cohérence avec le Guide pratique pour des achats numériques responsables) et les documenter.",
+      "actions_a_mener": "Définir des exigences environnementales vis-à-vis des fournisseurs."
+    },
+    {
+      "id": "2.9",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service utilise des composants d'interface prêts à l'emploi issus du DSFR (@gouvfr/dsfr, @gouvminint/vue-dsfr), système de design de l'État retenu au titre de la standardisation et de l'accessibilité, sans évaluation environnementale dédiée. Bien que le DSFR s'appuie sur des éléments HTML natifs et reste relativement sobre, la performance écologique des composants n'a pas été estimée ni documentée lors de leur choix.",
+      "evolutions_potentielles": "Documenter une estimation de la performance écologique des composants DSFR utilisés.",
+      "actions_a_mener": "Évaluer et documenter l'empreinte des composants d'interface retenus."
+    },
+    {
+      "id": "2.10",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service repose sur plusieurs services tiers (Keycloak pour l'authentification, S3/Minio pour le stockage, hub LLM souverain pour la génération, passerelle de transcription/diarisation, SMTP, Sentry, Unleash, Langfuse, lookup COMU). Leur impact environnemental n'a pas été pris en compte à la sélection et ils ne sont pas listés dans la déclaration avec leur avancement au regard des critères RGESN applicables.",
+      "evolutions_potentielles": "Lister les services tiers et renseigner leur avancement au regard des critères RGESN applicables.",
+      "actions_a_mener": "Recenser et évaluer les services tiers selon les critères RGESN applicables."
+    },
+    {
+      "id": "3.1",
+      "evaluation": "Non conforme",
+      "texte_declaration": "L'architecture s'appuie sur des frameworks efficaces et éprouvés (FastAPI, Vue 3, Celery, SQLAlchemy). Toutefois, le choix de ces frameworks et composants n'a pas été effectué ni documenté au regard de leur empreinte environnementale et de principes d'écoconception.",
+      "evolutions_potentielles": "Documenter les choix d'architecture sous l'angle de l'écoconception.",
+      "actions_a_mener": "Ajouter à la déclaration une justification écoconception des frameworks et composants (internes et externes)."
+    },
+    {
+      "id": "3.2",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'architecture adapte une partie de ses ressources à la demande : les workers de capture, qui se connectent aux visioconférences, sont mis à l'échelle dynamiquement en fonction du nombre de réunions concurrentes. En revanche, la couche de transcription repose sur un pool de pods de taille fixe (PARALLEL_PODS_COUNT=14, worker_concurrency=1) et ne s'ajuste pas à la charge.",
+      "evolutions_potentielles": "Étendre l'adaptation dynamique des ressources à la couche de transcription et documenter les tests démontrant l'adéquation de la consommation aux besoins."
+    },
+    {
+      "id": "3.3",
+      "evaluation": "Conforme",
+      "texte_declaration": "En production, le service est accessible en IPv6 (comme en IPv4), repose sur le protocole HTTPS et prend en charge la version la plus récente de TLS (TLS 1.3). Le choix de ces protocoles pérennes et adaptés aux fonctionnalités assure la longévité du service et prévient les risques d'obsolescence (la désactivation d'IPv6 observée dans le dépôt ne concerne que le resolver DNS de l'ingress de développement local).",
+      "evolutions_potentielles": "Documenter explicitement les protocoles supportés dans la déclaration d'écoconception."
+    },
+    {
+      "id": "3.4",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : MCR est un service numérique en ligne (SaaS) qui n'est pas commercialisé avec un terminal matériel associé (cible : « N/A pour les services numériques qui ne sont pas commercialisés avec un terminal associé »)."
+    },
+    {
+      "id": "3.5",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service est une application web déployée en continu côté serveur ; les utilisateurs n'installent pas de mises à jour et il n'existe pas de distinction entre mises à jour correctives et évolutives installables séparément côté utilisateur (cible : « N/A si le service numérique ne propose pas de mises à jour évolutives (non essentielles) » à installer)."
+    },
+    {
+      "id": "3.6",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le build Vite produit des ressources au contenu haché (cacheables). Cependant, l'absence de découpage de code (pas de manualChunks ni de lazy-loading des routes) rend le bundle JavaScript principal monolithique : une évolution du code invalide l'ensemble du bundle, sans mise à jour réellement incrémentielle côté client.",
+      "evolutions_potentielles": "Mettre en place le découpage de code par route et le chunking des dépendances pour favoriser des mises à jour incrémentielles.",
+      "actions_a_mener": "Activer le code-splitting (imports dynamiques de routes, manualChunks)."
+    },
+    {
+      "id": "3.7",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Les environnements ne sont pas éteints sur les plages horaires inutilisées ni mutualisés. Un effort de rationalisation a néanmoins été mené récemment, réduisant le nombre d'environnements de cinq à trois (staging, production, et un environnement de test limité au build sans déploiement), ce qui diminue les ressources sollicitées.",
+      "evolutions_potentielles": "Éteindre les environnements non-productifs hors des plages d'utilisation (ou les mutualiser) et documenter les choix dans la déclaration.",
+      "actions_a_mener": "Mettre en place l'extinction programmée des environnements non-prod."
+    },
+    {
+      "id": "4.1",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service ne comporte aucune lecture automatique. Le seul élément audio (lecture de l'enregistrement d'une réunion) utilise le contrôle natif <audio controls> sans attribut autoplay ; aucune balise vidéo, aucun carrousel ni défilement automatique. Les seules animations sont fonctionnelles (skeleton de chargement, spinner d'import) et non intrusives."
+    },
+    {
+      "id": "4.2",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service n'utilise pas de défilement infini. Les listes (tableau des réunions) reposent sur une pagination explicite (composant DsfrPagination), avec chargement à la demande proportionné au contexte. Aucun useInfiniteQuery/infinite-scroll n'est présent."
+    },
+    {
+      "id": "4.3",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Les parcours de navigation sont recentrés sur les fonctionnalités essentielles (import ou capture, transcription, génération, consultation/édition/export) par une priorisation produit. Toutefois, cette optimisation ne s'appuie pas sur des outils UX et des statistiques d'usage, et aucun indicateur technique dédié n'est mis en place pour assurer l'optimisation des parcours dans le temps.",
+      "evolutions_potentielles": "Mettre en place des statistiques d'usage UX et des indicateurs de suivi pour optimiser les parcours dans la durée.",
+      "actions_a_mener": "Instrumenter les parcours (analytics UX + indicateurs de suivi)."
+    },
+    {
+      "id": "4.4",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'intègre pas de service tiers optionnel dont l'activation serait laissée à la discrétion de l'utilisateur (pas de widgets sociaux, publicités, cartes ou vidéos embarquées). Les services tiers présents (authentification, stockage, IA) sont essentiels au fonctionnement (cible : « N/A si le service ne repose pas sur un service tiers » activable par l'utilisateur)."
+    },
+    {
+      "id": "4.5",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'interface s'appuie majoritairement sur des composants fonctionnels natifs du navigateur, via le rendu DOM standard de Vue et les composants DSFR construits sur des éléments HTML natifs (formulaires, boutons, lecteur <audio> natif). Le recours à des composants non natifs est limité et justifié fonctionnellement (éditeur riche TipTap pour l'édition de comptes rendus)."
+    },
+    {
+      "id": "4.6",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service ne comporte aucun contenu vidéo, audio ou animé à but purement décoratif. Le seul contenu audio est l'enregistrement de la réunion (fonction critique du service) ; les animations sont exclusivement fonctionnelles (indicateurs de chargement). Tout contenu média sert donc une fonction critique ou apporte de l'information à l'utilisateur."
+    },
+    {
+      "id": "4.7",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service privilégie le texte, choix le plus sobre : l'interface est essentiellement textuelle, les comptes rendus et transcriptions sont produits et exportés en texte/DOCX, l'iconographie se limite à des pictogrammes SVG vectoriels. Aucun recours superflu à l'image, l'audio ou la vidéo n'est fait ; l'audio se limite à la matière première (réunion) et n'est pas rediffusé comme contenu éditorial."
+    },
+    {
+      "id": "4.8",
+      "evaluation": "Conforme",
+      "texte_declaration": "Les polices proviennent du DSFR (famille Marianne pour l'UI, au format woff2, chargées à la demande via @font-face, chaque variante ~40 Ko). La famille Spectral fournie par le DSFR n'est pas utilisée par l'interface et n'est donc pas téléchargée. Le nombre de variantes effectivement chargées par écran reste faible et le poids par écran demeure limité.",
+      "evolutions_potentielles": "Vérifier par écran le nombre de variantes (≤ 4) et le poids (≤ 400 Ko) des polices, et précharger les variantes critiques."
+    },
+    {
+      "id": "4.9",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service ne propose pas d'autocomplétion déclenchant des requêtes serveur à la saisie. Les opérations de sauvegarde sont temporisées (useDebounceFn côté localStorage et throttling lodash côté serveur), ce qui limite les requêtes serveur lors de la saisie utilisateur."
+    },
+    {
+      "id": "4.10",
+      "evaluation": "Conforme",
+      "texte_declaration": "Les formulaires informent l'utilisateur des formats attendus et sont validés côté client avant soumission grâce à vee-validate + yup (schémas dédiés pour l'enregistrement de réunion, l'édition, le feedback, etc.), évitant les requêtes serveur inutiles."
+    },
+    {
+      "id": "4.11",
+      "evaluation": "Conforme",
+      "texte_declaration": "Avant le transfert, l'interface affiche les formats de fichiers acceptés (libellé ALLOWED_IMPORT_FORMATS et attribut accept sur le champ), et valide côté client le format ainsi qu'une limite de durée (4 h max) avec message d'erreur explicite. Une limite de taille est également appliquée côté nginx (50 Mo).",
+      "evolutions_potentielles": "Afficher explicitement la limite de poids de fichier à l'utilisateur en complément de la limite de durée."
+    },
+    {
+      "id": "4.12",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service comporte des fonctionnalités à impact environnemental significatif (transcription, diarisation, génération par LLM), mais n'affiche à l'utilisateur aucune information sur l'impact environnemental associé au déclenchement de ces fonctionnalités.",
+      "evolutions_potentielles": "Afficher une information sur l'impact des fonctionnalités coûteuses (transcription/génération), en s'appuyant sur les données de tokens/latence déjà collectées via Langfuse.",
+      "actions_a_mener": "Concevoir un affichage d'information d'impact pour les fonctionnalités IA."
+    },
+    {
+      "id": "4.13",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service n'envoie aucune notification push ou navigateur (aucun usage de l'API Notification). Il n'affiche que des messages toast in-app transitoires (délai par défaut 10 s) en réponse aux actions de l'utilisateur, ce qui respecte le principe de sobriété en matière de notifications."
+    },
+    {
+      "id": "4.14",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'interface, fondée sur le DSFR, ne recourt pas à des procédés manipulatoires (dark patterns). Le service met au contraire en avant le consentement explicite des participants avant enregistrement et n'emploie pas de mécanismes de pression, de consentement forcé ou d'options trompeuses.",
+      "evolutions_potentielles": "Mettre en place une évaluation régulière de l'interface pour détecter d'éventuels dark patterns (lignes directrices art. 25 du règlement 2022/2065)."
+    },
+    {
+      "id": "4.15",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service ne fournit pas à l'utilisateur d'information sur l'empreinte environnementale de son usage, ni de mode d'affichage/d'usage « sobriété énergétique ».",
+      "evolutions_potentielles": "Proposer un mode sobre et une information d'empreinte d'usage, en capitalisant sur les métriques Langfuse (tokens, latence) déjà disponibles.",
+      "actions_a_mener": "Concevoir un mode sobriété et un affichage d'empreinte d'usage."
+    },
+    {
+      "id": "5.1",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'utilise pas d'images matricielles de contenu. Les seules images matricielles sont des icônes/favicons (PNG), et l'iconographie de l'interface est vectorielle (SVG, pictogrammes DSFR) (cible : « N/A si le service numérique n'utilise pas d'image matricielle »)."
+    },
+    {
+      "id": "5.2",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'utilise pas d'images matricielles de contenu susceptibles d'être compressées avec/sans perte (uniquement des icônes/favicons et des SVG vectoriels) (cible : « N/A si le service numérique n'utilise pas d'image matricielle »)."
+    },
+    {
+      "id": "5.3",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service ne diffuse aucun contenu vidéo. Les fichiers vidéo éventuellement importés par l'utilisateur sont convertis en audio côté client (ffmpeg WebAssembly) avant transfert et ne sont jamais stockés ni rediffusés en tant que vidéo. Aucune définition vidéo n'est donc servie par le service."
+    },
+    {
+      "id": "5.4",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service ne propose aucun contenu vidéo à ses utilisateurs (les vidéos importées sont transcodées en audio côté client et non conservées) (cible : « N/A si le service numérique ne propose pas de vidéos »)."
+    },
+    {
+      "id": "5.5",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service ne propose pas de contenu vidéo avec piste audio ; un mode « écoute seule » est donc sans objet (cible : « N/A si le service numérique ne propose pas de contenu vidéo avec piste audio »)."
+    },
+    {
+      "id": "5.6",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'audio des réunions enregistrées via le navigateur est capté au format WebM (codec Opus, efficace et figurant dans la liste des codecs recommandés) et échantillonné en 16 kHz mono pour la chaîne de traitement, ce qui minimise le poids et la consommation de calcul. À noter : les vidéos importées sont transcodées en MP3 côté client pour la transcription (codec moins efficace qu'Opus/AAC).",
+      "evolutions_potentielles": "Documenter formellement les codecs et l'encodage audio ; envisager Opus/AAC plutôt que MP3 pour le transcodage des imports."
+    },
+    {
+      "id": "5.7",
+      "evaluation": "Conforme",
+      "texte_declaration": "Les documents produits par le service (comptes rendus, transcriptions) sont générés au format DOCX, format nativement compressé (archive ZIP de XML) et adapté à l'édition et au partage bureautique attendus par les cibles utilisatrices. Les imports sont restreints par validation de type (magic bytes).",
+      "evolutions_potentielles": "Documenter la stratégie de compression des documents dans la déclaration pour la rendre auditable."
+    },
+    {
+      "id": "5.8",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Aucune stratégie automatique d'archivage/suppression des contenus obsolètes n'est implémentée. La règle « 7 jours » (MAX_DELAY_TO_GET_AUDIO) bloque uniquement l'accès à l'audio ancien sans supprimer l'objet S3 ; une suppression automatique n'est évoquée qu'en commentaire d'une migration. Une règle de cycle de vie S3 (expiration 7 jours) n'est présente qu'en environnement local. La suppression des réunions/livrables est manuelle (soft delete via statut, sans purge planifiée).",
+      "evolutions_potentielles": "Mettre en place une politique de rétention effective (cycle de vie S3 en production, purge/archivage planifié) et suivre le taux d'occupation.",
+      "actions_a_mener": "Implémenter une suppression/archivage automatique des contenus obsolètes."
+    },
+    {
+      "id": "6.1",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Aucun budget de poids maximum ni de nombre maximum de requêtes par écran n'est défini ni suivi. L'absence de découpage de code (routes importées statiquement, bundle monolithique) alourdit par ailleurs le premier chargement.",
+      "evolutions_potentielles": "Définir un budget de performance (poids et requêtes par écran) et le suivre en CI ; activer le code-splitting.",
+      "actions_a_mener": "Définir et publier un budget de poids/requêtes par écran."
+    },
+    {
+      "id": "6.2",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Un cache applicatif côté client existe via TanStack Query (cache mémoire des réponses d'API, refetchOnWindowFocus désactivé) et IndexedDB pour la résilience des enregistrements. En revanche, le cache HTTP navigateur des ressources statiques n'est pas exploité : la configuration nginx ne pose pas d'en-têtes Cache-Control/expires sur les assets hachés (seul config.js est en no-cache), et aucune stratégie de cache frontend n'est documentée.",
+      "evolutions_potentielles": "Ajouter des en-têtes Cache-Control immutable sur les ressources hachées et documenter la stratégie de cache frontend (dont staleTime TanStack Query).",
+      "actions_a_mener": "Configurer le cache HTTP des ressources statiques."
+    },
+    {
+      "id": "6.3",
+      "evaluation": "À évaluer",
+      "texte_declaration": "Aucun plugin de compression au build (Brotli/GZIP) n'est configuré côté Vite ; la compression, si elle existe, est appliquée au niveau de l'ingress/CDN de la plateforme (hors dépôt). Information non disponible côté équipe MCR.",
+      "actions_a_mener": "À trancher : vérifier auprès de l'équipe plateforme DSO si l'ingress/CDN de production applique Brotli ou GZIP ; à défaut, activer la compression (plugin de build ou configuration ingress).",
+      "qui": "Équipe plateforme DSO / équipe MCR"
+    },
+    {
+      "id": "6.4",
+      "evaluation": "Conforme",
+      "texte_declaration": "Les images affichées par le service sont majoritairement vectorielles (SVG, pictogrammes DSFR) et les rares images matricielles se limitent à des icônes/favicons dimensionnées à leur contexte d'affichage. Aucune image matricielle de contenu redimensionnée à la volée n'est servie."
+    },
+    {
+      "id": "6.5",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le chargement de code de transcodage lourd (ffmpeg) est bien différé jusqu'à son usage effectif. En revanche, les composants de vue sont importés statiquement dans le routeur (pas de lazy-loading des routes ni de découpage de code) : le code de toutes les fonctionnalités est donc chargé d'emblée, y compris pour des écrans non visités.",
+      "evolutions_potentielles": "Mettre en place le lazy-loading des routes et l'élimination du code mort (knip est déjà présent) pour ne charger que les ressources utilisées.",
+      "actions_a_mener": "Activer le découpage de code par route."
+    },
+    {
+      "id": "6.6",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le seul capteur utilisé est le microphone, pour la capture audio. Son activation déclenche le mécanisme natif de consentement du navigateur, complété par un écran de consentement in-app préalable à l'enregistrement. Aucun autre capteur du terminal n'est sollicité."
+    },
+    {
+      "id": "6.7",
+      "evaluation": "Non conforme",
+      "texte_declaration": "La SPA et l'API sont servies sur une même origine, ce qui est favorable. En revanche, le cœur ffmpeg (js/wasm/worker) est chargé au runtime depuis un CDN tiers (cdn.jsdelivr.net) plutôt qu'auto-hébergé sur le domaine du service. Par ailleurs, le support HTTP/2 ou HTTP/3 n'est pas confirmé (HTTP/1.1 en configuration interne, terminaison assurée par la plateforme).",
+      "evolutions_potentielles": "Auto-héberger le cœur ffmpeg sur le domaine du service (cohérent avec l'isolation COEP require-corp) et confirmer HTTP/2/3 en production.",
+      "actions_a_mener": "Internaliser les ressources statiques tierces."
+    },
+    {
+      "id": "7.1",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Redis est utilisé uniquement comme broker et backend de résultats Celery, et comme stockage de jetons (avec TTL) ; il n'assure aucun cache serveur des données les plus utilisées. Les réponses d'API ne portent pas d'en-têtes de cache. Aucune stratégie de cache serveur n'est en place ni documentée.",
+      "evolutions_potentielles": "Mettre en cache serveur les données fréquemment lues et documenter la stratégie (expiration, rafraîchissement).",
+      "actions_a_mener": "Évaluer et implémenter un cache serveur applicatif."
+    },
+    {
+      "id": "7.2",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Aucune durée de conservation effective avec suppression/archivage automatique n'est définie pour les données et documents (audios, transcriptions, comptes rendus). Les seuls TTL existants concernent des métadonnées techniques (résultats Celery : 1 h ; jetons Redis : 30 j) et non les contenus métier, qui s'accumulent dans S3.",
+      "evolutions_potentielles": "Définir des dates d'expiration et un mécanisme d'archivage/suppression des données au-delà de la durée de conservation, avec suivi du poids des stockages.",
+      "actions_a_mener": "Implémenter une politique de rétention des contenus métier."
+    },
+    {
+      "id": "7.3",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service informe clairement l'utilisateur des traitements en arrière-plan : statuts par étape (CAPTURE_PENDING, TRANSCRIPTION_IN_PROGRESS, REPORT_PENDING, DONE, FAILED), polling toutes les 10 s tant que l'état n'est pas terminal, estimation du temps d'attente affichée (predicted_date_of_next_transition), et suivi Celery task_track_started. Les éléments déclencheurs sont désactivés pendant le traitement."
+    },
+    {
+      "id": "7.4",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service ne repose sur aucun mécanisme de consensus ni blockchain (cible : « N/A si le service ne repose pas sur un mécanisme de consensus »). Vérifié : aucun code blockchain/preuve-de-travail dans les services."
+    },
+    {
+      "id": "8.1",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergement du service est assuré par la plateforme DSO de l'État (écosystème « cloud de confiance »). L'hébergeur publie une démarche de réduction de son empreinte environnementale, incluant la signature du Code de conduite européen sur les centres de données et des engagements sur ses indicateurs environnementaux.",
+      "evolutions_potentielles": "Citer dans la déclaration les liens/références précis des engagements environnementaux de l'hébergeur."
+    },
+    {
+      "id": "8.2",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service met en œuvre une politique de gestion durable des équipements informatiques (durée de vie du parc, politique d'achat durable, optimisation de la phase d'usage et de la fin de vie des équipements), documentée et accessible.",
+      "evolutions_potentielles": "Renvoyer dans la déclaration vers la politique de gestion durable des équipements de l'hébergeur."
+    },
+    {
+      "id": "8.3",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service (Scaleway) affiche un PUE (Power Usage Effectiveness) réel moyen de 1,37 en 2024, inférieur au seuil de 1,5 exigé par le critère et à la moyenne du secteur (~1,55). Son datacenter le plus performant (PAR-DC5) atteint un PUE de 1,25.",
+      "evolutions_potentielles": "Préciser dans la déclaration le PUE du datacenter Scaleway effectivement utilisé pour le service."
+    },
+    {
+      "id": "8.4",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service (Scaleway) affiche des WUE (Water Usage Effectiveness) très faibles, de l'ordre de 0,00002 à 0,014 L/kWh selon les datacenters, largement inférieurs à l'objectif de 0,4 L/kWh du critère. Scaleway fait par ailleurs le choix de ne pas recourir aux tours de refroidissement consommatrices d'eau potable et publie régulièrement ses WUE.",
+      "evolutions_potentielles": "Préciser dans la déclaration le WUE du datacenter Scaleway effectivement utilisé et la méthodologie de calcul."
+    },
+    {
+      "id": "8.5",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergeur du service est transparent sur son mix énergétique et documente une politique de recours majoritaire aux énergies renouvelables. Cette provenance de l'électricité consommée est accessible dans la documentation de l'hébergeur.",
+      "evolutions_potentielles": "Renseigner dans la déclaration les indicateurs précis (REF, part d'énergie renouvelable contractualisée)."
+    },
+    {
+      "id": "8.6",
+      "evaluation": "Conforme",
+      "texte_declaration": "L'hébergement du service est assuré par Scaleway, dont les datacenters sont situés en France (région parisienne). L'intensité carbone du mix électrique français est très inférieure au seuil de 100 gCO₂eq/kWh fixé par le critère, valeur conforme à la trajectoire SBTi requise par l'Accord de Paris. La localisation est en outre cohérente avec les utilisateurs du service, majoritairement en France.",
+      "evolutions_potentielles": "Préciser dans la déclaration la ou les villes d'hébergement et la source de l'intensité carbone retenue."
+    },
+    {
+      "id": "8.7",
+      "evaluation": "Non conforme",
+      "texte_declaration": "L'hébergeur (Scaleway) refroidit majoritairement ses installations par free cooling/adiabatique sans dispositif documenté de récupération et de réutilisation de la chaleur fatale. La voie alternative de validation (PUE réel < 1,3) n'est pas satisfaite par le PUE moyen (1,37) ; seul le datacenter PAR-DC5 (PUE 1,25) la satisferait, sous réserve que le service y soit hébergé.",
+      "evolutions_potentielles": "Confirmer le datacenter Scaleway d'hébergement : s'il s'agit de PAR-DC5 (PUE 1,25 < 1,3), le critère est satisfait par la voie alternative.",
+      "actions_a_mener": "Confirmer le datacenter d'hébergement effectif du service."
+    },
+    {
+      "id": "8.8",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le volume de données hébergé est inférieur à l'équivalent de 10 To. Les audios sont éphémères (accès limité à 7 jours) et les livrables sont des documents textuels de faible poids ; il n'y a pas de stock massif justifiant une séparation données chaudes/froides (cible : « N/A si le service numérique repose sur l'hébergement de moins de l'équivalent de 10 To de données »).",
+      "evolutions_potentielles": "Réévaluer ce critère si le volume de données venait à dépasser 10 To."
+    },
+    {
+      "id": "8.9",
+      "evaluation": "À évaluer",
+      "texte_declaration": "Le niveau de duplication/réplication des données côté hébergement (Scaleway) n'est pas connu de l'équipe MCR. Information à obtenir auprès de l'hébergeur / de l'équipe plateforme.",
+      "actions_a_mener": "À trancher : vérifier l'existence d'un SLA ajustant la duplication/réplication des données aux besoins réels ; à défaut, définir ce niveau.",
+      "qui": "Équipe plateforme DSO / Scaleway"
+    },
+    {
+      "id": "8.10",
+      "evaluation": "Non conforme",
+      "texte_declaration": "Le service comporte des calculs et traitements asynchrones lourds (transcription, diarisation, génération LLM), déclenchés à la demande via Celery. Aucun mécanisme de décalage temporel de ces calculs en fonction de la disponibilité/carbonation de l'énergie électrique, de la charge du réseau ou de la disponibilité des ressources de calcul n'est mis en œuvre (aucune planification/beat, aucun lissage hors pointe).",
+      "evolutions_potentielles": "Étudier le décalage des traitements différables (par ex. génération non urgente) vers les périodes d'électricité moins carbonée.",
+      "actions_a_mener": "Évaluer la faisabilité d'un lissage des calculs asynchrones."
+    },
+    {
+      "id": "9.1",
+      "evaluation": "Conforme",
+      "texte_declaration": "Le service n'inclut aucune phase d'entraînement ni de fine-tuning : il réalise uniquement de l'inférence sur des modèles pré-entraînés (transcription faster-whisper large-v3-turbo, diarisation pyannote/speaker-diarization-3.1, génération via le LLM open-weights gptoss-120b du hub souverain). L'usage de l'apprentissage automatique est ainsi strictement justifié par les fonctionnalités (transcription, diarisation, synthèse) et évite tout entraînement non justifié.",
+      "evolutions_potentielles": "Formaliser dans la déclaration la justification du recours à ces modèles pré-entraînés au regard des besoins des cibles."
+    },
+    {
+      "id": "9.2",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'inclut pas de phase d'entraînement (uniquement de l'inférence sur des modèles pré-entraînés) (cible : « N/A si le service numérique n'inclut pas de phase d'entraînement »)."
+    },
+    {
+      "id": "9.3",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'inclut pas de phase d'entraînement. Il s'appuie exclusivement sur des modèles pré-entraînés (Whisper, pyannote, LLM du hub souverain), ce qui rejoint l'esprit du critère (éviter d'entraîner soi-même) (cible : « N/A si le service numérique n'inclut pas de phase d'entraînement »)."
+    },
+    {
+      "id": "9.4",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'inclut pas de phase d'entraînement et ne collecte donc pas de données d'apprentissage (cible : « N/A si le service numérique n'inclut pas de phase d'entraînement »)."
+    },
+    {
+      "id": "9.5",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'inclut pas de phase d'entraînement, donc pas de réentraînement ni de mise à jour de modèles (cible : « N/A si le service numérique n'inclut pas de phase d'entraînement »)."
+    },
+    {
+      "id": "9.6",
+      "evaluation": "Non applicable",
+      "texte_declaration": "Critère non applicable : le service n'inclut pas de phase d'entraînement ; la compression de modèles d'entraînement est sans objet (cible : « N/A si le service numérique n'inclut pas de phase d'entraînement »)."
+    },
+    {
+      "id": "9.7",
+      "evaluation": "Conforme",
+      "texte_declaration": "La stratégie d'inférence est optimisée : les modèles (transcription/diarisation) sont chargés une seule fois par processus worker et partagés entre tâches, avec détection automatique GPU/CPU ; les appels LLM utilisent des sorties structurées (Instructor, mode JSON) évitant les re-prompts de format, une température 0 (déterminisme), un parallélisme borné (ThreadPool / sémaphore à 4) et un découpage en chunks. Les traitements sont sérialisés côté worker (concurrency=1) pour ne pas saturer les ressources. La consommation (tokens prompt/complétion, latence, nombre de chunks) est suivie via Langfuse pour ajuster la phase d'inférence.",
+      "evolutions_potentielles": "Ajouter des indicateurs de satisfaction utilisateur et un plafond explicite de tokens ; mettre en cache les générations récurrentes."
+    }
+  ]
+}
