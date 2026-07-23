@@ -91,7 +91,7 @@ def complete_transcription(
 
 def _drain_requested_reports(meeting: Meeting) -> None:
     for report in deliverable_repository.find_requested_reports_by_meeting(meeting.id):
-        dispatch_requested_report(meeting, report)
+        dispatch_requested_report(meeting, report, report.custom_prompt)
 
 
 def _notify_transcription_ready_best_effort(meeting: Meeting) -> None:

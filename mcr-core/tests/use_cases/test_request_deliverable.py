@@ -185,6 +185,23 @@ class TestRequestDeliverableDuringTranscription:
         db_session.refresh(meeting)
         assert meeting.status == MeetingStatus.TRANSCRIPTION_IN_PROGRESS
 
+    def test_persists_custom_prompt_on_the_requested_row(
+        self,
+        mock_use_case_celery: MagicMock,
+    ) -> None:
+        meeting = _transcribing_meeting()
+
+        deliverable = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.CUSTOM_REPORT,
+            custom_prompt="Analyse les risques",
+        )
+
+        assert deliverable.status == DeliverableStatus.REQUESTED
+        assert deliverable.custom_prompt == "Analyse les risques"
+        mock_use_case_celery.send_task.assert_not_called()
+
     def test_second_request_same_type_deduplicates_the_queue(
         self,
         mock_use_case_celery: MagicMock,

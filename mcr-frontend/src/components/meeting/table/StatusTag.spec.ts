@@ -5,6 +5,9 @@ import { DeliverableStatus } from '@/services/deliverables/deliverables.types';
 vi.mock('@/plugins/i18n', () => ({ t: vi.fn((key: string) => key) }));
 
 describe('getTagMeta', () => {
+  it('should_return_requested_for_REQUESTED', () => {
+    expect(getTagMeta('REQUESTED')?.class).toBe('bg-info-950 text-info-425');
+  });
   it('should_return_pending_for_PENDING', () => {
     expect(getTagMeta('PENDING')?.class).toBe('bg-info-950 text-info-425');
   });

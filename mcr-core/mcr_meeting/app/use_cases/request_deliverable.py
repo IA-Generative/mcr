@@ -72,6 +72,7 @@ def _decide_and_persist(
                 meeting_id=meeting.id,
                 type=deliverable_type,
                 status=DeliverableStatus.REQUESTED,
+                custom_prompt=custom_prompt,
             )
         )
 

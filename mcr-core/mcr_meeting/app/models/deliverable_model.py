@@ -46,6 +46,9 @@ class Deliverable(Base):
         String, nullable=False, default=DeliverableStatus.PENDING
     )
     external_url: Mapped[str | None] = mapped_column(String)
+    custom_prompt: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )

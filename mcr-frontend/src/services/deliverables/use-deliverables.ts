@@ -11,7 +11,9 @@ const POLLING_INTERVAL = 10 * 1000;
 
 export function shouldPollDeliverables(deliverables?: DeliverableDto[]): boolean {
   if (!deliverables) return false;
-  return deliverables.some((d) => d.status === 'PENDING' || d.status === 'IN_PROGRESS');
+  return deliverables.some(
+    (d) => d.status === 'REQUESTED' || d.status === 'PENDING' || d.status === 'IN_PROGRESS',
+  );
 }
 
 function getDeliverablesQuery(meetingId: number) {
@@ -29,9 +31,8 @@ function createDeliverableMutation(meetingId: number) {
 
   return useMutation({
     mutationFn: (payload: DeliverableCreateRequest) => createDeliverable(payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERABLES, meetingId] });
-    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.DELIVERABLES, meetingId] }),
   });
 }
 

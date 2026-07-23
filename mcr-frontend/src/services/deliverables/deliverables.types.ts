@@ -1,4 +1,10 @@
-export const DeliverableStatus = ['PENDING', 'IN_PROGRESS', 'AVAILABLE', 'FAILED'] as const;
+export const DeliverableStatus = [
+  'REQUESTED',
+  'PENDING',
+  'IN_PROGRESS',
+  'AVAILABLE',
+  'FAILED',
+] as const;
 export type DeliverableStatus = (typeof DeliverableStatus)[number];
 
 export const DeliverableType = [
@@ -23,26 +29,8 @@ export interface DeliverableListResponse {
   deliverables: DeliverableDto[];
 }
 
-export interface DeliverableItemView {
-  title: string;
-  status: DeliverableStatus;
-  externalUrl?: string | null;
-}
-
 export interface DeliverableCreateRequest {
   meeting_id: number;
   type: DeliverableType;
   custom_prompt?: string;
-}
-
-const STATUS_MAP: Record<Exclude<DeliverableStatus, 'IN_PROGRESS'>, DeliverableStatus> = {
-  PENDING: 'IN_PROGRESS',
-  AVAILABLE: 'AVAILABLE',
-  FAILED: 'FAILED',
-};
-
-export function mapDeliverableStatus(
-  status: Exclude<DeliverableStatus, 'IN_PROGRESS'>,
-): DeliverableStatus {
-  return STATUS_MAP[status];
 }
