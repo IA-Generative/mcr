@@ -36,6 +36,7 @@ declare module 'vue' {
     DsfrErrorPage: typeof import('@gouvminint/vue-dsfr')['DsfrErrorPage']
     DsfrFooter: typeof import('@gouvminint/vue-dsfr')['DsfrFooter']
     DsfrHeader: typeof import('@gouvminint/vue-dsfr')['DsfrHeader']
+    DsfrInput: typeof import('@gouvminint/vue-dsfr')['DsfrInput']
     DsfrInputGroup: typeof import('@gouvminint/vue-dsfr')['DsfrInputGroup']
     DsfrModal: typeof import('@gouvminint/vue-dsfr')['DsfrModal']
     DsfrNotice: typeof import('@gouvminint/vue-dsfr')['DsfrNotice']
