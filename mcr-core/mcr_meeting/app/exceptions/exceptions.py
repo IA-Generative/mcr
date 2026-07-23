@@ -112,6 +112,21 @@ class S3TransientError(TransientInfraError):
     """Transient S3 error"""
 
 
+class DiarizationTransientError(TransientInfraError):
+    """Fleeting, idempotent diarization-API fault (connect blip, 5xx, poll GET
+    error) — retried both in-process (tenacity) and at the task level.
+
+    A TransientInfraError (not a DiarizationError) so it feeds the task-level
+    autoretry and is never swallowed by an ``except DiarizationError``."""
+
+
+class DiarizationRetryableError(TransientInfraError):
+    """Diarization fault safe to re-run as a whole operation but NOT to replay
+    fast in-process — ambiguous submit timeout, or a server-declared transient
+    job failure (queue-stale / model cold-start). Retried at the task level only
+    (backoff), so it is deliberately absent from the in-process tenacity set."""
+
+
 class TokenValidationError(Exception):
     """Raised when a bearer token is absent, malformed, expired, tampered, or not
     minted by the expected frontend client."""
