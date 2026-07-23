@@ -41,7 +41,7 @@ def _timeout_error() -> Exception:
 
 
 def _run_chunk_with(exc: Exception) -> None:
-    processor = TranscriptionProcessor(MagicMock())
+    processor = TranscriptionProcessor()
     client = MagicMock()
     client.audio.transcriptions.create.side_effect = exc
     audio = np.zeros(16000, dtype=np.float32)
@@ -83,7 +83,7 @@ class TestDefinitiveFaultsFailLoud:
         assert not isinstance(excinfo.value, TransientInfraError)
 
     def test_empty_result_fails_loud(self) -> None:
-        processor = TranscriptionProcessor(MagicMock())
+        processor = TranscriptionProcessor()
         client = MagicMock()
         response = MagicMock()
         response.segments = []
