@@ -6,14 +6,17 @@ import numpy as np
 from faster_whisper import WhisperModel
 from loguru import logger
 from numpy.typing import NDArray
-from openai import NotGiven, OpenAI
+from openai import APIConnectionError, APIStatusError, NotGiven, OpenAI
 
 from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
     WhisperTranscriptionSettings,
 )
 from mcr_meeting.app.domain.audio import split_audio_on_timestamps
-from mcr_meeting.app.exceptions.exceptions import TranscriptionError
+from mcr_meeting.app.exceptions.exceptions import (
+    TranscriptionError,
+    TranscriptionTransientError,
+)
 from mcr_meeting.app.infrastructure.unleash import (
     FeatureFlag,
     get_feature_flag_client,
@@ -181,7 +184,23 @@ class TranscriptionProcessor:
                         )
                     )
 
+        except APIStatusError as e:
+            # 5xx (backend down/cold) and 429 (overload) recover on a whole-op
+            # replay; a 4xx is a request the server rejects on replay → permanent.
+            if e.status_code == 429 or e.status_code >= 500:
+                raise TranscriptionTransientError(
+                    f"Transient transcription API error (HTTP {e.status_code})"
+                ) from e
+            raise TranscriptionError(
+                f"Transcription API rejected the request (HTTP {e.status_code})"
+            ) from e
+        except APIConnectionError as e:
+            # Covers APITimeoutError. Connect blip / timeout on a stateless POST.
+            raise TranscriptionTransientError(
+                f"Transient error calling transcription API: {e}"
+            ) from e
         except Exception as e:
+            # Unknown fault → fail loud rather than retry-storm.
             raise TranscriptionError(f"Error calling transcription API: {e}") from e
 
         if not segments:

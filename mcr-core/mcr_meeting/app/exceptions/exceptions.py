@@ -85,7 +85,8 @@ class UnknownDiarizationStatus(MCRException):
 
 
 class TranscriptionError(MCRException):
-    """Raised when the transcription fails"""
+    """Raised when the transcription fails definitively (4xx rejection, empty
+    result, unknown fault) — no replay helps, fail loud."""
 
 
 class DeliverableStateConflictException(MCRException):
@@ -125,6 +126,18 @@ class DiarizationRetryableError(TransientInfraError):
     fast in-process — ambiguous submit timeout, or a server-declared transient
     job failure (queue-stale / model cold-start). Retried at the task level only
     (backoff), so it is deliberately absent from the in-process tenacity set."""
+
+
+class TranscriptionTransientError(TransientInfraError):
+    """Fleeting, idempotent transcription-API fault (connect blip, timeout, 5xx,
+    or 429 overload). A TransientInfraError (not a TranscriptionError) so it feeds
+    the task-level autoretry instead of killing the meeting, and is never swallowed
+    by an ``except TranscriptionError``.
+
+    In-process retry is already provided by the OpenAI client's ``max_retries``
+    (bounded exponential backoff, honouring Retry-After); the whole-operation
+    replay is safe because a transcription request is a stateless synchronous POST
+    — no job id, so a re-run creates no duplicate."""
 
 
 class TokenValidationError(Exception):
