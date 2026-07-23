@@ -5,6 +5,7 @@ on:
   pull_request:
     branches:
       - "main"
+  merge_group:
 
 permissions:
   contents: read
@@ -26,6 +27,7 @@ jobs:
       - uses: dorny/paths-filter@v2
         id: filter-out-unmodified-services
         with:
+          base: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_sha || '' }}
           # Each service also depends on root env files loaded by its pytest
           # (env_files in its pyproject.toml) and on this workflow's env: blocks —
           # changing those must re-run the service's CI, not skip it.
@@ -315,3 +317,19 @@ jobs:
       - name: Run Tests
         working-directory: mcr-capture-worker
         run: make test
+
+  ci-ok:
+    needs:
+      - filter-out-unmodified-services
+      - gitleaks
+      - mcr-gateway-ci
+      - mcr-generation-ci
+      - mcr-core-ci
+      - mcr-frontend-ci
+      - mcr-capture-worker-ci
+    if: always()
+    runs-on: actions-runner-controller
+    steps:
+      - name: Fail if any needed job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
