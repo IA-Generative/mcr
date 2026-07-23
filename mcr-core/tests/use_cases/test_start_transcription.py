@@ -2,7 +2,10 @@ import pytest
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.exceptions.exceptions import MeetingStateConflictException
+from mcr_meeting.app.exceptions.exceptions import (
+    MeetingStateConflictException,
+    NotFoundException,
+)
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -39,11 +42,21 @@ def _in_progress_records(meeting_id: int) -> list[MeetingTransitionRecord]:
     )
 
 
+def _pending_transcription_deliverable(meeting: object) -> Deliverable:
+    return DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.PENDING,
+        external_url=None,
+    )
+
+
 def test_start_transcription_promotes_status() -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_PENDING,
         name_platform=MeetingPlatforms.COMU,
     )
+    _pending_transcription_deliverable(meeting)
 
     result = start_transcription(meeting_id=meeting.id)
 
@@ -55,6 +68,7 @@ def test_start_transcription_records_predicted_transition() -> None:
         status=MeetingStatus.TRANSCRIPTION_PENDING,
         name_platform=MeetingPlatforms.COMU,
     )
+    _pending_transcription_deliverable(meeting)
 
     start_transcription(meeting_id=meeting.id)
 
@@ -83,17 +97,21 @@ def test_start_transcription_marks_deliverable_in_progress() -> None:
     assert deliverables[0].status == DeliverableStatus.IN_PROGRESS
 
 
-def test_start_transcription_creates_in_progress_deliverable_when_missing() -> None:
+def test_start_transcription_raises_when_deliverable_missing(
+    db_session: Session,
+) -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_PENDING,
         name_platform=MeetingPlatforms.COMU,
     )
 
-    start_transcription(meeting_id=meeting.id)
+    with pytest.raises(NotFoundException):
+        start_transcription(meeting_id=meeting.id)
 
-    deliverables = _transcription_deliverables(meeting.id)
-    assert len(deliverables) == 1
-    assert deliverables[0].status == DeliverableStatus.IN_PROGRESS
+    db_session.refresh(meeting)
+    assert meeting.status == MeetingStatus.TRANSCRIPTION_PENDING
+    assert _transcription_deliverables(meeting.id) == []
+    assert _in_progress_records(meeting.id) == []
 
 
 def test_start_transcription_rejects_illegal_transition(db_session: Session) -> None:

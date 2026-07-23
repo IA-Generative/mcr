@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from pydantic import UUID4
 
 from mcr_meeting.app.db.deliverable_repository import (
-    find_active_by_meeting_and_type,
+    get_active_by_meeting_and_type,
     save_deliverable,
     soft_delete_by_id,
 )
@@ -51,14 +51,15 @@ def request_deliverable(
     meeting = get_meeting_by_id(meeting_id, with_deliverables=True)
     authorize_meeting_access(meeting, user_keycloak_uuid)
 
-    existing_deliverable = find_active_by_meeting_and_type(
-        meeting_id=meeting.id, deliverable_type=deliverable_type
-    )
-
-    if existing_deliverable is not None:
+    try:
+        existing_deliverable = get_active_by_meeting_and_type(
+            meeting_id=meeting.id, deliverable_type=deliverable_type
+        )
         if _is_already_pending(existing_deliverable):
             return existing_deliverable
         soft_delete_by_id(deliverable_id=existing_deliverable.id)
+    except NotFoundException:
+        pass
 
     try:
         return _persist_and_dispatch(
@@ -67,13 +68,13 @@ def request_deliverable(
             report_type=report_type,
             custom_prompt=custom_prompt,
         )
-    except DeliverableConcurrentlyCreatedException:
-        winner = find_active_by_meeting_and_type(
-            meeting_id=meeting.id, deliverable_type=deliverable_type
-        )
-        if winner is None:
-            raise
-        return winner
+    except DeliverableConcurrentlyCreatedException as concurrent_exc:
+        try:
+            return get_active_by_meeting_and_type(
+                meeting_id=meeting.id, deliverable_type=deliverable_type
+            )
+        except NotFoundException:
+            raise concurrent_exc from None
 
 
 def _is_already_pending(deliverable: Deliverable) -> bool:

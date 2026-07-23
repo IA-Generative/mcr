@@ -604,6 +604,12 @@ class KeycloakExchangeSettings(BaseSettings):
     KEYCLOAK_REALM: str = ""
     KEYCLOAK_CORE_CLIENT_ID: str = "mcr-core"
     KEYCLOAK_CORE_CLIENT_SECRET: str = ""
+    KEYCLOAK_FRONTEND_CLIENT_ID: str = Field(
+        default="mcr",
+        description="Public client that mints user tokens. Asserted as the token "
+        "'azp' during core-side validation so only frontend-issued tokens are "
+        "accepted.",
+    )
 
 
 class DriveSettings(BaseSettings):

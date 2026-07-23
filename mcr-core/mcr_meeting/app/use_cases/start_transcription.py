@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
 
+from mcr_meeting.app.db.deliverable_repository import get_active_by_meeting_and_type
 from mcr_meeting.app.db.meeting_repository import get_meeting_by_id, update_meeting
 from mcr_meeting.app.db.meeting_transition_record_repository import (
     save_meeting_transition_record,
 )
 from mcr_meeting.app.db.unit_of_work import UnitOfWork
+from mcr_meeting.app.domain.deliverable_transitions import mark_in_progress
 from mcr_meeting.app.domain.meeting_transitions import (
     start_transcription as apply_start_transcription,
 )
@@ -12,10 +14,8 @@ from mcr_meeting.app.domain.transcription_queue_estimation import (
     estimate_transcription_duration_minutes,
 )
 from mcr_meeting.app.models import Meeting
+from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
-from mcr_meeting.app.use_cases._shared.transcription_deliverable import (
-    start_transcription_deliverable,
-)
 
 
 def start_transcription(meeting_id: int) -> Meeting:
@@ -24,13 +24,17 @@ def start_transcription(meeting_id: int) -> Meeting:
     meeting = get_meeting_by_id(meeting_id)
     apply_start_transcription(meeting)
 
+    deliverable = get_active_by_meeting_and_type(
+        meeting_id=meeting.id, deliverable_type=DeliverableType.TRANSCRIPTION
+    )
+
     waiting_time_minutes = estimate_transcription_duration_minutes(
         meeting.duration_minutes
     )
     now = datetime.now(timezone.utc)
     with UnitOfWork():
         update_meeting(meeting)
-        start_transcription_deliverable(meeting.id)
+        mark_in_progress(deliverable)
         save_meeting_transition_record(
             MeetingTransitionRecord(
                 meeting_id=meeting.id,

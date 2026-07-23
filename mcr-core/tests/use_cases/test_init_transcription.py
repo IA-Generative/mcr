@@ -5,7 +5,10 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.db import get_db_session_ctx
-from mcr_meeting.app.exceptions.exceptions import TaskCreationException
+from mcr_meeting.app.exceptions.exceptions import (
+    DeliverableConcurrentlyCreatedException,
+    TaskCreationException,
+)
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -28,7 +31,7 @@ def structural_split_flag_off(mocker: MockerFixture) -> Mock:
     """Keep the flag read away from a real Unleash client; tests that exercise
     the split pipeline re-patch it to True."""
     return mocker.patch(
-        "mcr_meeting.app.use_cases.init_transcription.is_enabled",
+        "mcr_meeting.app.use_cases._shared.dispatch_transcription.is_enabled",
         return_value=False,
     )
 
@@ -71,6 +74,7 @@ def test_init_transcription_queues_task_and_promotes_status(
     mock_celery_producer_app.send_task.assert_called_once_with(
         MCRTranscriptionTasks.TRANSCRIBE,
         args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        countdown=5,
         link_error=mock_celery_producer_app.signature.return_value,
     )
 
@@ -105,26 +109,28 @@ def test_init_transcription_creates_pending_transcription_deliverable(
     assert deliverables[0].status == DeliverableStatus.PENDING
 
 
-def test_init_transcription_requeues_failed_deliverable_on_retry(
+def test_init_transcription_rejects_when_active_deliverable_exists(
     mock_celery_producer_app: Mock,
 ) -> None:
+    # init now only ever INSERTs; it never upserts. If an active deliverable
+    # already exists (e.g. a stale FAILED one), the unique-active index rejects
+    # the insert. Recovery from a failed transcription goes through the admin
+    # requeue endpoint, not re-init.
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_FAILED,
         name_platform=MeetingPlatforms.COMU,
     )
-    failed_deliverable = DeliverableFactory.create(
+    DeliverableFactory.create(
         meeting=meeting,
         type=DeliverableType.TRANSCRIPTION,
         status=DeliverableStatus.FAILED,
         external_url=None,
     )
 
-    init_transcription(meeting_id=meeting.id)
+    with pytest.raises(DeliverableConcurrentlyCreatedException):
+        init_transcription(meeting_id=meeting.id)
 
-    deliverables = _transcription_deliverables(meeting.id)
-    assert len(deliverables) == 1
-    assert deliverables[0].id == failed_deliverable.id
-    assert deliverables[0].status == DeliverableStatus.PENDING
+    mock_celery_producer_app.send_task.assert_not_called()
 
 
 def test_init_transcription_stamps_end_date_for_record_meetings(
@@ -192,7 +198,8 @@ def test_init_transcription_enqueues_chain_when_split_enabled(
         ]
     )
     chain_mock.return_value.apply_async.assert_called_once_with(
-        link_error=mock_celery_producer_app.signature.return_value
+        countdown=5,
+        link_error=mock_celery_producer_app.signature.return_value,
     )
     mock_celery_producer_app.send_task.assert_not_called()
 
@@ -212,6 +219,7 @@ def test_init_transcription_falls_back_to_legacy_when_flag_unreadable(
     mock_celery_producer_app.send_task.assert_called_once_with(
         MCRTranscriptionTasks.TRANSCRIBE,
         args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        countdown=5,
         link_error=mock_celery_producer_app.signature.return_value,
     )
 

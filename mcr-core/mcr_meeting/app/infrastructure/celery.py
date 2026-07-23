@@ -15,6 +15,13 @@ celery_producer_app = Celery(
     broker=celery_settings.CELERY_BROKER_URL,
 )
 
+# Transcription is dispatched as the last statement inside the enclosing DB
+# UnitOfWork, so the task is published just before that transaction commits. This
+# countdown holds the first task in the broker long enough for the commit to
+# become visible, avoiding a worker reading the pre-commit row (e.g. status not
+# yet TRANSCRIPTION_PENDING).
+_FIRST_TASK_COUNTDOWN_SECONDS = 5
+
 celery_producer_app.conf.task_routes = {
     MCRTranscriptionTasks.select_all_tasks(): {
         "queue": MCRTranscriptionTasks.BASE_NAME
@@ -38,6 +45,7 @@ def enqueue_transcription_task(meeting_id: int, owner_keycloak_uuid: str) -> Non
         celery_producer_app.send_task(
             MCRTranscriptionTasks.TRANSCRIBE,
             args=[meeting_id, owner_keycloak_uuid],
+            countdown=_FIRST_TASK_COUNTDOWN_SECONDS,
             link_error=_mark_failed_errback(meeting_id, owner_keycloak_uuid),
         )
     except Exception as e:
@@ -61,7 +69,10 @@ def enqueue_transcription_pipeline(meeting_id: int, owner_keycloak_uuid: str) ->
                 args=args,
                 immutable=True,
             ),
-        ).apply_async(link_error=_mark_failed_errback(meeting_id, owner_keycloak_uuid))
+        ).apply_async(
+            countdown=_FIRST_TASK_COUNTDOWN_SECONDS,
+            link_error=_mark_failed_errback(meeting_id, owner_keycloak_uuid),
+        )
     except Exception as e:
         raise TaskCreationException(
             f"Failed to enqueue transcription pipeline for meeting {meeting_id}"

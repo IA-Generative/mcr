@@ -119,7 +119,7 @@ mcr-generation/mcr_generation/app/
 - **Python**: 3.12+ (3.13 for mcr-generation). `uv` for package management, `ruff` for formatting/linting, `mypy --strict` for type checking, `pydantic-settings` for config
 - **Frontend**: Node 22, pnpm 10. ESLint + Prettier, `vue-tsc`
 - **DB access**: SQLAlchemy 2.0 with repository pattern
-- **Comments**: don't add comments unless a block isn't understandable on its own — comment the non-obvious *why* (constraints, gotchas), not the *what*
+- **Comments**: don't add comments unless to document an IMPORTANT decision — in that case comment the non-obvious _why_ (constraints, ...), not the _what_
 - **Architecture layers**: see [Target architecture (mcr-core)](#target-architecture-mcr-core) below
 - **Commits**: Gitmoji convention — see the `/commit` skill for details
 
@@ -155,6 +155,7 @@ Migration direction (existing code that doesn't yet fit):
 - Don't make DB queries outside `db/` repositories
 - Don't add to `orchestrators/` or create new `services/` — put orchestration in a use-case and business rules in `domain`
 - Don't import a use-case from another use-case — share only via `use_cases/_shared/`, and only when the shared piece maps to a real business operation
+- Don't extract shared code just because lines repeat — duplication is not the deciding factor. First decide which layer owns the concern, then place it there: a repeated query belongs in a `db/` repository, cross-cutting types in `schemas`/`models`, business rules in `domain`. Only lift into `use_cases/_shared/` a step that is a real business operation used by multiple use-cases. When unsure, inline it in the use-case rather than inventing a helper.
 - Don't add new dependencies without checking existing ones first
 - Don't bypass ruff/mypy errors — fix them.
 

@@ -5,12 +5,13 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import Session
 
 from mcr_meeting.app.db.deliverable_repository import (
-    find_active_by_meeting_and_type,
+    get_active_by_meeting_and_type,
 )
 from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
     ForbiddenAccessException,
     MeetingStateConflictException,
+    NotFoundException,
     TaskCreationException,
 )
 from mcr_meeting.app.models.deliverable_model import (
@@ -352,9 +353,9 @@ class TestRequestDeliverableConcurrentInsertRecovery:
             status=DeliverableStatus.PENDING,
         )
 
-        find_mock = mocker.patch(
-            "mcr_meeting.app.use_cases.request_deliverable.find_active_by_meeting_and_type",
-            side_effect=[None, winner],
+        get_mock = mocker.patch(
+            "mcr_meeting.app.use_cases.request_deliverable.get_active_by_meeting_and_type",
+            side_effect=[NotFoundException("none yet"), winner],
         )
         mocker.patch(
             "mcr_meeting.app.use_cases.request_deliverable.save_deliverable",
@@ -368,7 +369,7 @@ class TestRequestDeliverableConcurrentInsertRecovery:
         )
 
         assert result.id == winner.id
-        assert find_mock.call_count == 2
+        assert get_mock.call_count == 2
 
 
 class TestRequestDeliverableCeleryDispatchFailure:
@@ -397,10 +398,10 @@ class TestRequestDeliverableCeleryDispatchFailure:
         db_session.refresh(meeting)
         assert meeting.status == MeetingStatus.TRANSCRIPTION_DONE
 
-        existing = find_active_by_meeting_and_type(
-            meeting_id=meeting.id, deliverable_type=DeliverableType.DECISION_RECORD
-        )
-        assert existing is None
+        with pytest.raises(NotFoundException):
+            get_active_by_meeting_and_type(
+                meeting_id=meeting.id, deliverable_type=DeliverableType.DECISION_RECORD
+            )
 
     def test_retry_after_dispatch_failure_creates_fresh_cycle(
         self,
