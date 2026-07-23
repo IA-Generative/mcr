@@ -4,6 +4,7 @@ const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
 
 import { handleMutationError, handleQueryError } from './vue-query';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 describe('vue-query error floor', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -34,6 +35,12 @@ describe('vue-query error floor', () => {
   it('does not report expected client errors (4xx)', () => {
     handleMutationError({ response: { status: 404 } }, undefined);
     handleQueryError({ response: { status: 403 } }, undefined);
+    expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it('does not report an expired session (expected auth-lifecycle event)', () => {
+    handleMutationError(new SessionExpiredError(), undefined);
+    handleQueryError(new SessionExpiredError(), undefined);
     expect(reportError).not.toHaveBeenCalled();
   });
 
