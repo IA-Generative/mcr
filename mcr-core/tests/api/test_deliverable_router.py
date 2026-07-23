@@ -129,6 +129,11 @@ class TestPostDeliverableRoute:
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
         )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
 
         response = deliverables_client.post(
             "",
@@ -154,6 +159,11 @@ class TestPostDeliverableRoute:
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
         )
 
         response = deliverables_client.post(
@@ -181,6 +191,11 @@ class TestPostDeliverableRoute:
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
         )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
 
         response = deliverables_client.post(
             "",
@@ -202,6 +217,11 @@ class TestPostDeliverableRoute:
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
         )
 
         response = deliverables_client.post(
@@ -235,6 +255,11 @@ class TestPostDeliverableRoute:
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
         )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
 
         response = deliverables_client.post(
             "",
@@ -263,6 +288,11 @@ class TestPostDeliverableRoute:
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
         )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
 
         response = deliverables_client.post(
             "",
@@ -286,6 +316,11 @@ class TestPostCustomReportRoute:
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
         )
 
         response = deliverables_client.post(
@@ -315,6 +350,11 @@ class TestPostCustomReportRoute:
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
         )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
 
         response = deliverables_client.post(
             "",
@@ -336,6 +376,11 @@ class TestPostCustomReportRoute:
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
         )
 
         response = deliverables_client.post(
@@ -362,6 +407,11 @@ class TestPostCustomReportRoute:
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
             transcription_filename="transcription.docx",
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
         )
 
         response = deliverables_client.post(

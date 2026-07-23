@@ -1,10 +1,49 @@
 import pytest
 
+from mcr_meeting.app.db.meeting_repository import get_meeting_for_update
 from mcr_meeting.app.exceptions.exceptions import NotFoundException
 from mcr_meeting.app.models import MeetingStatus
+from mcr_meeting.app.models.deliverable_model import (
+    DeliverableStatus,
+    DeliverableType,
+)
 from mcr_meeting.app.use_cases.get_meeting import get_meeting
 from mcr_meeting.app.use_cases.list_meetings import list_meetings as get_meetings
 from tests.factories import MeetingFactory, UserFactory
+from tests.factories.deliverable_factory import DeliverableFactory
+
+
+def test_get_meeting_for_update_loads_owner_and_active_deliverables():
+    user = UserFactory.create()
+    meeting = MeetingFactory.create(owner=user, status=MeetingStatus.TRANSCRIPTION_DONE)
+    transcription = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.TRANSCRIPTION,
+        status=DeliverableStatus.AVAILABLE,
+    )
+    DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.DECISION_RECORD,
+        status=DeliverableStatus.DELETED,
+    )
+
+    loaded = get_meeting_for_update(meeting.id, with_deliverables=True, with_owner=True)
+
+    assert loaded.id == meeting.id
+    assert loaded.owner.keycloak_uuid == user.keycloak_uuid
+    assert [d.id for d in loaded.deliverables] == [transcription.id]
+
+
+def test_get_meeting_for_update_raises_when_missing():
+    with pytest.raises(NotFoundException):
+        get_meeting_for_update(999_999)
+
+
+def test_get_meeting_for_update_raises_when_deleted():
+    deleted = MeetingFactory.create(status=MeetingStatus.DELETED)
+
+    with pytest.raises(NotFoundException):
+        get_meeting_for_update(deleted.id)
 
 
 def test_get_meeting_by_id_filters_returns_error():
