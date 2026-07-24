@@ -1,0 +1,45 @@
+# {{ title }}
+{% if objective %}
+## Objectif
+{{ objective }}
+{% endif %}
+{% if participants %}
+## Participants
+{% for p in participants %}
+- {{ p.name or p.speaker_id }}{% if p.role %} — {{ p.role }}{% endif %}
+{% endfor %}
+{% endif %}
+
+## Thèmes
+{% for theme in themes %}
+### {{ theme.title }}
+{% if theme.summary %}
+{{ theme.summary }}
+{% endif %}
+{% if theme.decisions %}
+**Décisions :**
+{% for d in theme.decisions %}
+- {{ d.item }}{% if d.owner %} — resp. {{ d.owner }}{% endif %}{% if d.due %} — échéance {{ d.due }}{% endif %}
+{% endfor %}
+{% endif %}
+{% else %}
+- Aucun thème identifié.
+{% endfor %}
+
+## Points en suspens
+{% for point in open_points %}
+- {{ point }}
+{% else %}
+- Aucun point en suspens identifié.
+{% endfor %}
+
+## Recommandations
+{% for reco in recommendations %}
+- {{ reco }}
+{% else %}
+- Aucune recommandation.
+{% endfor %}
+{% if next_meeting %}
+## Prochaine réunion
+{{ next_meeting }}
+{% endif %}

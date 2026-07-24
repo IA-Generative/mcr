@@ -11,6 +11,7 @@ from mcr_meeting.app.models.deliverable_model import DeliverableType
         (DeliverableType.DETAILED_SYNTHESIS, "Synthese_Detaillee"),
         (DeliverableType.CUSTOM_REPORT, "Compte_Rendu_Personnalise"),
         (DeliverableType.TRANSCRIPTION, "Transcription"),
+        (DeliverableType.STRUCTURED_MINUTES, "Compte_Rendu_Structure"),
     ],
 )
 def test_builds_expected_label_per_type(
