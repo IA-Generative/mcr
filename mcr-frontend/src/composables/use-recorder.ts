@@ -99,8 +99,16 @@ async function startRecording(options: RecordingOptions = {}) {
     currentAudioId.value = getDefaultDeviceId(devices);
   }
 
+  // Disable the call-tuned voice processing: echo cancellation treats meeting
+  // audio played through the computer speakers as echo and subtracts it, which
+  // silences recordings of remote meetings; noise suppression gates quiet/distant
+  // speech. For room/meeting capture we want everything the mic hears.
   const mediaStream = await navigator.mediaDevices.getUserMedia({
-    audio: { deviceId: { ideal: currentAudioId.value } },
+    audio: {
+      deviceId: { ideal: currentAudioId.value },
+      echoCancellation: false,
+      noiseSuppression: false,
+    },
   });
 
   const availableDevices: AudioDeviceInfo[] = await navigator.mediaDevices

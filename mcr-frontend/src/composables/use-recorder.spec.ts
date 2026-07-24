@@ -71,15 +71,21 @@ describe('use-recorder', () => {
     });
   });
 
-  it('should pass exact deviceId to getUserMedia when setAudioDeviceId is called', async () => {
+  it('should pass the device and disable echo cancellation / noise suppression to getUserMedia', async () => {
     const { useRecorder } = await import('./use-recorder');
     const { setAudioDeviceId, startRecording } = useRecorder();
 
     setAudioDeviceId('abc123');
     await startRecording();
 
+    // Echo cancellation would subtract meeting audio played through the speakers
+    // and noise suppression would gate distant speech, silencing the recording.
     expect(mockGetUserMedia).toHaveBeenCalledWith({
-      audio: { deviceId: { ideal: 'abc123' } },
+      audio: {
+        deviceId: { ideal: 'abc123' },
+        echoCancellation: false,
+        noiseSuppression: false,
+      },
     });
   });
 
