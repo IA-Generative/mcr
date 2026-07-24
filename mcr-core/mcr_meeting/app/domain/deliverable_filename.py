@@ -5,6 +5,7 @@ _FILENAME_LABEL_BY_TYPE: dict[DeliverableType, str] = {
     DeliverableType.DETAILED_SYNTHESIS: "Synthese_Detaillee",
     DeliverableType.CUSTOM_REPORT: "Compte_Rendu_Personnalise",
     DeliverableType.TRANSCRIPTION: "Transcription",
+    DeliverableType.STRUCTURED_MINUTES: "Compte_Rendu_Structure",
 }
 
 
