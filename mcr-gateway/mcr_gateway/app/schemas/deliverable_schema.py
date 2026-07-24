@@ -10,6 +10,7 @@ class DeliverableType(StrEnum):
     DECISION_RECORD = "DECISION_RECORD"
     DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
     CUSTOM_REPORT = "CUSTOM_REPORT"
+    STRUCTURED_MINUTES = "STRUCTURED_MINUTES"
 
 
 class DeliverableStatus(StrEnum):
@@ -43,6 +44,7 @@ class StructuredDeliverableCreateRequest(BaseModel):
         DeliverableType.TRANSCRIPTION,
         DeliverableType.DECISION_RECORD,
         DeliverableType.DETAILED_SYNTHESIS,
+        DeliverableType.STRUCTURED_MINUTES,
     ]
 
 
