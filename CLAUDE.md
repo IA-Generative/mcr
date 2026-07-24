@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MCR (Meeting Capture & Report) — a microservices platform that captures meeting audio, transcribes it, and generates reports using LLMs. Documentation and commits are in French; code is in English.
+MCR (MIrAI Compte-Rendu) — a microservices platform that captures meeting audio, transcribes it, and generates reports using LLMs. Documentation and commits are in French; code is in English.
 
 ## Commands
 
