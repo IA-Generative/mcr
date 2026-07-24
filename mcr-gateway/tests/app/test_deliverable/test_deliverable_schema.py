@@ -11,9 +11,7 @@ _adapter = TypeAdapter(DeliverableCreateRequest)
 
 
 def test_accepts_structured_minutes_type() -> None:
-    request = _adapter.validate_python(
-        {"meeting_id": 42, "type": "STRUCTURED_MINUTES"}
-    )
+    request = _adapter.validate_python({"meeting_id": 42, "type": "STRUCTURED_MINUTES"})
 
     assert isinstance(request, StructuredDeliverableCreateRequest)
     assert request.type == DeliverableType.STRUCTURED_MINUTES
