@@ -95,6 +95,23 @@ class TestRequestDeliverableHappyPath:
         }
         assert call.kwargs["countdown"] >= 0
 
+    def test_structured_minutes_dispatches_generation_with_matching_report_type(
+        self,
+        mock_use_case_celery: MagicMock,
+    ) -> None:
+        meeting = _transcribed_meeting()
+
+        deliverable = request_deliverable_use_case(
+            meeting_id=meeting.id,
+            user_keycloak_uuid=meeting.owner.keycloak_uuid,
+            deliverable_type=DeliverableType.STRUCTURED_MINUTES,
+        )
+
+        assert deliverable.status == DeliverableStatus.PENDING
+        assert deliverable.type == DeliverableType.STRUCTURED_MINUTES
+        call = mock_use_case_celery.send_task.call_args
+        assert call.kwargs["args"][2] == "STRUCTURED_MINUTES"
+
     def test_passes_custom_prompt_through(
         self,
         mock_use_case_celery: MagicMock,
