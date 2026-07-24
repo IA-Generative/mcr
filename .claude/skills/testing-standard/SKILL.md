@@ -8,9 +8,11 @@ description: The MCR testing standard — use it to plan, write, and review test
 <purpose>
 A test earns its place by stating a business invariant and failing exactly when that invariant is violated — ideally legibly enough that a Product Manager could read its name and agree it is a rule the product must uphold. Coverage proves a line ran; this standard proves a test would catch the bug that matters.
 
+Test the business invariant *behind* a change, never the mechanism the diff just touched. Tells of a mechanism test (all worthless): it asserts a config value, `assert_called_once` alone, a wiring fact ("the handler is registered", "a log does not produce a Sentry event"), or you must drive a third-party library's internals to assert anything — that difficulty is itself the signal it's not a behavior test. For an observability/config change, the testable rule is the *product* consequence (resilience, an API contract); if the only effect is a monitoring-config value, it is verified by review + post-deploy, not a unit test.
+
 Use it two ways:
 
-- Writing or planning: classify the layer, target the invariant and its failure directions, and steer clear of the fatal flags.
+- Writing or planning: classify the layer, target the invariant and its failure directions, and steer clear of the fatal flags. Do this **before** writing the test, not after — deciding the invariant from the code you already wrote produces mechanism tests.
 - Reviewing: run the four steps and return the output format at the end.
   </purpose>
 
