@@ -14,13 +14,17 @@ from mcr_meeting.app.schemas.report_generation import (
     ReportHeader,
     ReportParticipant,
     ReportResponse,
+    StructuredMinutesResponse,
     is_custom_report,
     is_decision_report_synthesis,
     is_detailed_synthesis,
+    is_structured_minutes,
 )
 
 
 def render_report(report_response: ReportResponse, meeting_name: str) -> BytesIO:
+    if is_structured_minutes(report_response):
+        return generate_structured_minutes_docx(report_response, meeting_name)
     if is_detailed_synthesis(report_response):
         return generate_detailed_synthesis_docx(report_response, meeting_name)
     if is_decision_report_synthesis(report_response):
@@ -204,13 +208,30 @@ def generate_detailed_synthesis_docx(
     response: DetailedSynthesisGenerationResponse,
     meeting_name: str | None,
 ) -> BytesIO:
-    title = _format_title_detailed_synthesis(response.header, meeting_name)
+    title = _resolve_report_title(response.header, meeting_name)
     data = {
         "title": title,
         **response.model_dump(exclude={"header"}),
     }
     return render_to_docx(
         "detailed_synthesis.md.jinja", data, _get_style_template_path()
+    )
+
+
+def generate_structured_minutes_docx(
+    response: StructuredMinutesResponse,
+    meeting_name: str | None,
+) -> BytesIO:
+    title = _resolve_report_title(response.header, meeting_name)
+    data = {
+        "title": title,
+        "objective": response.header.objective,
+        "participants": [p.model_dump() for p in response.header.participants],
+        "next_meeting": response.header.next_meeting,
+        **response.model_dump(exclude={"header"}),
+    }
+    return render_to_docx(
+        "structured_minutes.md.jinja", data, _get_style_template_path()
     )
 
 
@@ -231,9 +252,7 @@ def generate_custom_report_docx(response: CustomReportResponse) -> BytesIO:
     return markdown_to_docx(response.markdown_content, _get_style_template_path())
 
 
-def _format_title_detailed_synthesis(
-    header: ReportHeader | None, meeting_name: str | None
-) -> str:
+def _resolve_report_title(header: ReportHeader | None, meeting_name: str | None) -> str:
     if header is not None and header.title is not None:
         return header.title
     return meeting_name or ""
