@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 import pytest
 from fastapi import status
+from fastapi.testclient import TestClient
 
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from tests.api.conftest import PrefixedTestClient
@@ -77,12 +78,17 @@ class TestEvaluateFromZip:
         transcription_client: PrefixedTestClient,
         mock_celery_producer_app: Mock,
     ) -> None:
+        transcription_client.client = TestClient(
+            transcription_client.client.app, raise_server_exceptions=False
+        )
+
         response = transcription_client.post(
             "/evaluation-from-zip",
             files={"file": ("dataset.zip", _valid_zip(), "application/zip")},
         )
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert response.json() == {"detail": "Internal Server Error"}
 
 
 class TestEvaluateFromS3:

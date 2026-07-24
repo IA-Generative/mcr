@@ -96,7 +96,7 @@ class TestListDeliverablesRoute:
         )
         assert response.status_code == 404
 
-    def test_403_for_non_owner(
+    def test_404_for_non_owner(
         self,
         meeting_client: PrefixedTestClient,
         user_fixture: User,
@@ -113,7 +113,9 @@ class TestListDeliverablesRoute:
             headers={"X-User-Keycloak-UUID": str(intruder.keycloak_uuid)},
         )
 
-        assert response.status_code == 403
+        # A non-owner must not learn the meeting exists: forbidden access is
+        # reported as 404, not 403.
+        assert response.status_code == 404
 
 
 class TestPostDeliverableRoute:
