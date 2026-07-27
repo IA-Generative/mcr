@@ -15,6 +15,7 @@ from mcr_generation.app.services.notes.notes_extractor import (
 from mcr_generation.app.services.sections.detailed_discussions.types import (
     DiscussionsContent,
 )
+from mcr_generation.app.services.sections.structured_minutes.types import MinutesContent
 from mcr_generation.app.services.sections.topics.types import TopicsContent
 
 _MODULE = "mcr_generation.app.services.notes.notes_extractor"
@@ -47,11 +48,16 @@ def _discussions_fixture() -> DiscussionsContent:
     return DiscussionsContent(detailed_discussions=[])
 
 
+def _minutes_fixture() -> MinutesContent:
+    return MinutesContent(themes=[])
+
+
 _FIXTURES_BY_MODEL: dict[type, Any] = {
     Intent: _intent_fixture,
     NextMeeting: _next_meeting_fixture,
     TopicsContent: _topics_fixture,
     DiscussionsContent: _discussions_fixture,
+    MinutesContent: _minutes_fixture,
 }
 
 
@@ -60,6 +66,9 @@ _DECISION_RECORD_FACETS = frozenset(
 )
 _DETAILED_SYNTHESIS_FACETS = frozenset(
     {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.DISCUSSIONS}
+)
+_STRUCTURED_MINUTES_FACETS = frozenset(
+    {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.MINUTES}
 )
 
 
@@ -77,6 +86,11 @@ class TestExtractAll:
                 _DETAILED_SYNTHESIS_FACETS,
                 {Intent, NextMeeting, DiscussionsContent},
                 id="detailed_synthesis_facets",
+            ),
+            pytest.param(
+                _STRUCTURED_MINUTES_FACETS,
+                {Intent, NextMeeting, MinutesContent},
+                id="structured_minutes_facets",
             ),
             pytest.param(
                 frozenset({NotesFacet.INTENT}),
@@ -116,6 +130,9 @@ class TestExtractAll:
         assert (result.topics == _topics_fixture()) == (NotesFacet.TOPICS in facets)
         assert (result.discussions == _discussions_fixture()) == (
             NotesFacet.DISCUSSIONS in facets
+        )
+        assert (result.minutes == _minutes_fixture()) == (
+            NotesFacet.MINUTES in facets
         )
         assert result.custom_section_facts is None
 
