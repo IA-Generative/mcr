@@ -131,9 +131,7 @@ class TestExtractAll:
         assert (result.discussions == _discussions_fixture()) == (
             NotesFacet.DISCUSSIONS in facets
         )
-        assert (result.minutes == _minutes_fixture()) == (
-            NotesFacet.MINUTES in facets
-        )
+        assert (result.minutes == _minutes_fixture()) == (NotesFacet.MINUTES in facets)
         assert result.custom_section_facts is None
 
     @pytest.mark.asyncio

@@ -241,7 +241,9 @@ class DetailedSynthesis(BaseReport):
 
 
 class MinuteDecision(BaseModel):
-    item: str = Field(..., description="La décision ou l'action décidée, claire et concise.")
+    item: str = Field(
+        ..., description="La décision ou l'action décidée, claire et concise."
+    )
     owner: str | None = Field(
         None, description="Responsable de la décision/action. null si non évoqué."
     )
