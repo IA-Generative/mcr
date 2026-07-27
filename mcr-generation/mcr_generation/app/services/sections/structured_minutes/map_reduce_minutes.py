@@ -4,8 +4,8 @@ from mcr_generation.app.services.sections.structured_minutes.prompts import (
     REDUCE_PROMPT_TEMPLATE,
 )
 from mcr_generation.app.services.sections.structured_minutes.types import (
-    MappedMinuteTheme,
     MappedMinutesLLM,
+    MappedMinuteTheme,
     MinutesContent,
 )
 
