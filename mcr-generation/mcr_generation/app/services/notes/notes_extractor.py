@@ -15,11 +15,15 @@ from mcr_generation.app.services.notes.prompts import (
     EXTRACT_CUSTOM_FACTS_PROMPT_TEMPLATE,
     EXTRACT_DISCUSSIONS_HINT_PROMPT_TEMPLATE,
     EXTRACT_INTENT_PROMPT_TEMPLATE,
+    EXTRACT_MINUTES_HINT_PROMPT_TEMPLATE,
     EXTRACT_NEXT_MEETING_PROMPT_TEMPLATE,
     EXTRACT_TOPICS_HINT_PROMPT_TEMPLATE,
 )
 from mcr_generation.app.services.sections.detailed_discussions.types import (
     DiscussionsContent,
+)
+from mcr_generation.app.services.sections.structured_minutes.types import (
+    MinutesContent,
 )
 from mcr_generation.app.services.sections.topics.types import TopicsContent
 from mcr_generation.app.services.utils.llm_helpers import (
@@ -41,6 +45,7 @@ class ExtractedNotes(BaseModel):
     next_meeting: NextMeeting | None = None
     topics: TopicsContent | None = None
     discussions: DiscussionsContent | None = None
+    minutes: MinutesContent | None = None
     custom_section_facts: dict[str, list[str]] | None = None
 
 
@@ -88,6 +93,8 @@ class NotesExtractor:
                     facet_tasks[facet] = self.extract_topics_hint(notes_content)
                 case NotesFacet.DISCUSSIONS:
                     facet_tasks[facet] = self.extract_discussions_hint(notes_content)
+                case NotesFacet.MINUTES:
+                    facet_tasks[facet] = self.extract_minutes_hint(notes_content)
 
         facet_keys = list(facet_tasks.keys())
         coros: list[Awaitable[Any]] = list(facet_tasks.values())
@@ -129,6 +136,7 @@ class NotesExtractor:
             next_meeting=facet_values.get(NotesFacet.NEXT_MEETING),
             topics=facet_values.get(NotesFacet.TOPICS),
             discussions=facet_values.get(NotesFacet.DISCUSSIONS),
+            minutes=facet_values.get(NotesFacet.MINUTES),
             custom_section_facts=custom_facts if instructions_list else None,
         )
 
@@ -173,6 +181,18 @@ class NotesExtractor:
             return await async_call_llm_with_structured_output(
                 client=self.client_instructor,
                 response_model=DiscussionsContent,
+                user_message_content=prompt,
+            )
+
+    @observe(name="notes_extract_minutes_hint")
+    async def extract_minutes_hint(self, notes_content: str) -> MinutesContent:
+        prompt = EXTRACT_MINUTES_HINT_PROMPT_TEMPLATE.format(
+            notes_content=notes_content
+        )
+        async with self._semaphore:
+            return await async_call_llm_with_structured_output(
+                client=self.client_instructor,
+                response_model=MinutesContent,
                 user_message_content=prompt,
             )
 

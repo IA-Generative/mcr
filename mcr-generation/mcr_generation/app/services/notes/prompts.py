@@ -108,6 +108,63 @@ Retourner detailed_discussions=[] est valide si les notes ne contiennent pas d'i
 """
 
 
+EXTRACT_MINUTES_HINT_PROMPT_TEMPLATE = """
+Tu structures les NOTES d'un participant à une réunion en thèmes et décisions.
+Tu ne résumes pas une transcription : tu réorganises UNIQUEMENT ce que l'utilisateur a noté.
+
+Cette extraction sert d'INDICE ("hint") pour un pipeline downstream qui s'appuie aussi sur la transcription complète.
+Les notes étant courtes et incomplètes, retourner themes: [] est attendu et normal si rien n'y est exploitable.
+
+Règle n°1 — ZÉRO invention :
+- N'ajoute aucun thème, décision, responsable (owner) ni échéance (due) absent des notes.
+- En cas de doute sur un champ, mets null. Mieux vaut une décision sans owner qu'un owner inventé.
+- Le summary lui-même ne reformule que ce qui est écrit : il n'ajoute aucun contexte extérieur.
+
+Décision vs remarque :
+- Ne mets dans "decisions" que ce qui ACTE quelque chose : un choix tranché ou une action à faire.
+- Une simple observation, un constat ou une question ouverte reste dans le summary du thème, jamais dans decisions.
+
+Regroupement :
+- Regroupe les notes par thème cohérent (title court + summary optionnel de 1 à 3 phrases).
+- Une note isolée sans thème clair va dans un thème générique (ex. "Divers"), pas dans une décision fabriquée.
+
+Champs d'une décision :
+- item : la décision/action formulée clairement et brièvement.
+- owner : uniquement si un responsable est nommé ou trivialement déductible de la note (ex. "Yanis -> SSO").
+  N'extrapole pas un owner depuis un pronom ambigu ou un simple rôle. Sinon null.
+- due : recopie l'échéance telle qu'écrite (ex. "15/09", "fin de semaine", "S+2"), sans la normaliser. Sinon null.
+
+Langue : français ; title et item courts et actionnables.
+
+Schéma cible : une liste "themes" ; chaque thème = title + summary (optionnel) + decisions (liste de : item, owner, due).
+
+Exemple (ce qu'il faut produire) :
+Notes : "MVP : pas de messagerie (Claire). SSO à livrer 15/09 - Yanis. Budget +20k à valider. Perfs API un peu lentes ?"
+-> themes:
+  - title: "Périmètre MVP"
+    summary: "La messagerie est exclue du MVP."
+    decisions:
+      - item: "Exclure la messagerie du MVP", owner: "Claire", due: null
+      - item: "Livrer le SSO", owner: "Yanis", due: "15/09"
+  - title: "Budget"
+    summary: null
+    decisions:
+      - item: "Valider une rallonge de 20k€", owner: null, due: null
+  - title: "Performances API"
+    summary: "Interrogation sur des lenteurs de l'API."
+    decisions: []
+    (NB : "un peu lentes ?" est une remarque, PAS une décision -> reste dans summary)
+
+Notes à structurer :
+<notes>
+{notes_content}
+</notes>
+
+Renvoie le résultat strictement au format JSON validant le schéma attendu : MinutesContent.
+Si les notes ne contiennent aucun contenu de réunion exploitable, renvoie themes: [].
+"""
+
+
 EXTRACT_CUSTOM_FACTS_PROMPT_TEMPLATE = """
 Tu reçois des notes prises pendant un meeting (texte humain synthétique) et une CONSIGNE libre rédigée par l'auteur du compte-rendu personnalisé.
 

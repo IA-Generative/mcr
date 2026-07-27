@@ -8,6 +8,7 @@ class NotesFacet(StrEnum):
     NEXT_MEETING = "next_meeting"
     TOPICS = "topics"
     DISCUSSIONS = "discussions"
+    MINUTES = "minutes"
 
 
 _FACETS_BY_REPORT_TYPE: dict[ReportTypes, frozenset[NotesFacet]] = {
@@ -16,6 +17,9 @@ _FACETS_BY_REPORT_TYPE: dict[ReportTypes, frozenset[NotesFacet]] = {
     ),
     ReportTypes.DETAILED_SYNTHESIS: frozenset(
         {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.DISCUSSIONS}
+    ),
+    ReportTypes.STRUCTURED_MINUTES: frozenset(
+        {NotesFacet.INTENT, NotesFacet.NEXT_MEETING, NotesFacet.MINUTES}
     ),
 }
 
