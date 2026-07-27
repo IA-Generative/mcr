@@ -364,6 +364,41 @@ class TestRequestDeliverableMultipleTypes:
         assert mock_use_case_celery.send_task.call_count == 2
 
 
+class TestRequestDeliverableUnresolvableTranscription:
+    def test_unresolvable_transcription_file_leaves_no_pending_deliverable(
+        self,
+        mock_use_case_celery: MagicMock,
+        db_session: Session,
+    ) -> None:
+        """The transcription deliverable is available but the meeting carries no
+        transcription file: generation has nothing to read, so the request must
+        neither enqueue nor leave a PENDING row the user sees spinning forever."""
+        meeting = MeetingFactory.create(
+            status=MeetingStatus.TRANSCRIPTION_DONE,
+            name_platform=MeetingPlatforms.COMU,
+            transcription_filename=None,
+        )
+        DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.TRANSCRIPTION,
+            status=DeliverableStatus.AVAILABLE,
+        )
+
+        with pytest.raises(NotFoundException):
+            request_deliverable_use_case(
+                meeting_id=meeting.id,
+                user_keycloak_uuid=meeting.owner.keycloak_uuid,
+                deliverable_type=DeliverableType.DECISION_RECORD,
+            )
+
+        mock_use_case_celery.send_task.assert_not_called()
+        db_session.expire_all()
+        with pytest.raises(NotFoundException):
+            get_active_by_meeting_and_type(
+                meeting_id=meeting.id, deliverable_type=DeliverableType.DECISION_RECORD
+            )
+
+
 class TestRequestDeliverableAuth:
     def test_403_for_non_owner(
         self,

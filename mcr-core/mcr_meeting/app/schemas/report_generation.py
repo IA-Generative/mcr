@@ -1,14 +1,15 @@
-from enum import StrEnum
-from typing import TypeGuard
+from typing import Literal, TypeGuard
 
 from pydantic import BaseModel
 
+from mcr_meeting.app.models.deliverable_model import DeliverableType
 
-class ReportType(StrEnum):
-    DECISION_RECORD = "DECISION_RECORD"
-    DETAILED_SYNTHESIS = "DETAILED_SYNTHESIS"
-    CUSTOM_REPORT = "CUSTOM_REPORT"
-    STRUCTURED_MINUTES = "STRUCTURED_MINUTES"
+ReportType = Literal[
+    DeliverableType.DECISION_RECORD,
+    DeliverableType.DETAILED_SYNTHESIS,
+    DeliverableType.CUSTOM_REPORT,
+    DeliverableType.STRUCTURED_MINUTES,
+]
 
 
 class ReportParticipant(BaseModel):
