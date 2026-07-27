@@ -240,6 +240,31 @@ class DetailedSynthesis(BaseReport):
     to_monitor_list: list[str]
 
 
+class MinuteDecision(BaseModel):
+    item: str = Field(..., description="La décision ou l'action décidée, claire et concise.")
+    owner: str | None = Field(
+        None, description="Responsable de la décision/action. null si non évoqué."
+    )
+    due: str | None = Field(
+        None,
+        description="Échéance (JJ/MM/AAAA ou relatif). null si non évoquée.",
+    )
+
+
+class MinuteTheme(BaseModel):
+    title: str = Field(..., description="Titre court de la thématique discutée.")
+    summary: str | None = Field(
+        None, description="Résumé de 1 à 3 phrases. null si rien de pertinent."
+    )
+    decisions: list[MinuteDecision] = Field(default_factory=list)
+
+
+class StructuredMinutes(BaseReport):
+    themes: list[MinuteTheme]
+    open_points: list[str]
+    recommendations: list[str]
+
+
 class CustomMarkdownReport(BaseModel):
     model_config = ConfigDict(frozen=True)
     markdown_content: str
