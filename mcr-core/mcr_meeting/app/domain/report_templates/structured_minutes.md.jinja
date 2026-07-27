@@ -1,17 +1,19 @@
 # {{ title }}
-{% if objective %}
+{% if report.header.objective %}
 ## Objectif
-{{ objective }}
+{{ report.header.objective }}
 {% endif %}
-{% if participants %}
+{% if report.header.participants %}
 ## Participants
-{% for p in participants %}
-- {{ p.name or p.speaker_id }}{% if p.role %} — {{ p.role }}{% endif %}
+{% for p in report.header.participants %}
+{# +%} on the trailing endif keeps the newline that trim_blocks would eat, so
+   each bullet stays on its own line (otherwise items merge). #}
+- {{ p.name or p.speaker_id }}{% if p.role %} — {{ p.role }}{% endif +%}
 {% endfor %}
 {% endif %}
 
 ## Thèmes
-{% for theme in themes %}
+{% for theme in report.themes %}
 ### {{ theme.title }}
 {% if theme.summary %}
 {{ theme.summary }}
@@ -19,7 +21,7 @@
 {% if theme.decisions %}
 **Décisions :**
 {% for d in theme.decisions %}
-- {{ d.item }}{% if d.owner %} — resp. {{ d.owner }}{% endif %}{% if d.due %} — échéance {{ d.due }}{% endif %}
+- {{ d.item }}{% if d.owner %} — resp. {{ d.owner }}{% endif %}{% if d.due %} — échéance {{ d.due }}{% endif +%}
 {% endfor %}
 {% endif %}
 {% else %}
@@ -27,19 +29,19 @@
 {% endfor %}
 
 ## Points en suspens
-{% for point in open_points %}
+{% for point in report.open_points %}
 - {{ point }}
 {% else %}
 - Aucun point en suspens identifié.
 {% endfor %}
 
 ## Recommandations
-{% for reco in recommendations %}
+{% for reco in report.recommendations %}
 - {{ reco }}
 {% else %}
 - Aucune recommandation.
 {% endfor %}
-{% if next_meeting %}
+{% if report.header.next_meeting %}
 ## Prochaine réunion
-{{ next_meeting }}
+{{ report.header.next_meeting }}
 {% endif %}

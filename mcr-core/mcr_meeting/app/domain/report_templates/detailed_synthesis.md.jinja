@@ -1,11 +1,11 @@
 # {{ title }}
 ## Synthèse des échanges
-{% for summary_point in discussions_summary %}
+{% for summary_point in report.discussions_summary %}
 - {{ summary_point }}
 {% endfor %}
 
 ## Points de discussion détaillés
-{% for discussion in detailed_discussions %}
+{% for discussion in report.detailed_discussions %}
 ### {{ discussion.title }}
 {% if discussion.key_ideas %}
 **Points-clés :**
@@ -38,11 +38,11 @@
 {% endfor %}
 ## Récapitulatif final
 ### À faire
-{% for item in to_do_list %}
+{% for item in report.to_do_list %}
 - {{ item }}
 {% endfor %}
 
 ### À suivre
-{% for item in to_monitor_list %}
+{% for item in report.to_monitor_list %}
 - {{ item }}
 {% endfor %}

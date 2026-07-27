@@ -131,10 +131,7 @@ EXPECTED_MARKDOWN = """\
 
 def test_render_detailed_synthesis_markdown():
     synthesis = _build_fake_synthesis()
-    data = {
-        "title": synthesis.header.title or "",
-        **synthesis.model_dump(exclude={"header"}),
-    }
+    data = {"report": synthesis, "title": synthesis.header.title or ""}
     result = render_markdown_template("detailed_synthesis.md.jinja", data)
     assert result == EXPECTED_MARKDOWN
 

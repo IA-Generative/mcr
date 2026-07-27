@@ -209,10 +209,7 @@ def generate_detailed_synthesis_docx(
     meeting_name: str | None,
 ) -> BytesIO:
     title = _resolve_report_title(response.header, meeting_name)
-    data = {
-        "title": title,
-        **response.model_dump(exclude={"header"}),
-    }
+    data = {"report": response, "title": title}
     return render_to_docx(
         "detailed_synthesis.md.jinja", data, _get_style_template_path()
     )
@@ -223,11 +220,7 @@ def generate_structured_minutes_docx(
     meeting_name: str | None,
 ) -> BytesIO:
     title = _resolve_report_title(response.header, meeting_name)
-    data = {
-        **response.header.model_dump(),
-        **response.model_dump(exclude={"header"}),
-        "title": title,
-    }
+    data = {"report": response, "title": title}
     return render_to_docx(
         "structured_minutes.md.jinja", data, _get_style_template_path()
     )
