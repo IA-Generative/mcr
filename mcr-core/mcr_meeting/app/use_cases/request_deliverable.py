@@ -18,6 +18,7 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
 )
+from mcr_meeting.app.schemas.report_generation import ReportType
 from mcr_meeting.app.use_cases._shared.report_dispatch import (
     dispatch_requested_report,
 )
@@ -26,7 +27,7 @@ from mcr_meeting.app.use_cases._shared.report_dispatch import (
 def request_deliverable(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
-    deliverable_type: DeliverableType,
+    deliverable_type: ReportType,
     custom_prompt: str | None = None,
 ) -> Deliverable:
     try:
@@ -48,7 +49,7 @@ def request_deliverable(
 def _decide_and_persist(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
-    deliverable_type: DeliverableType,
+    deliverable_type: ReportType,
     custom_prompt: str | None,
 ) -> Deliverable:
     with UnitOfWork():

@@ -224,11 +224,9 @@ def generate_structured_minutes_docx(
 ) -> BytesIO:
     title = _resolve_report_title(response.header, meeting_name)
     data = {
-        "title": title,
-        "objective": response.header.objective,
-        "participants": [p.model_dump() for p in response.header.participants],
-        "next_meeting": response.header.next_meeting,
+        **response.header.model_dump(),
         **response.model_dump(exclude={"header"}),
+        "title": title,
     }
     return render_to_docx(
         "structured_minutes.md.jinja", data, _get_style_template_path()
