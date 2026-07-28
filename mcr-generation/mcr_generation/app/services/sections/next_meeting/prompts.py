@@ -23,6 +23,16 @@ INITIAL_PROMPT_TEMPLATE = """
     Retourne un JSON conforme au modèle NextMeeting.
 """
 
+REFINE_NOTES_AUTHORITY_CLAUSE = """
+    IMPORTANT — le JSON courant provient des NOTES du rédacteur (signal humain, plus fiable
+    que la transcription). Les champs DÉJÀ RENSEIGNÉS y font FOI : si le nouvel extrait propose
+    une date, une heure ou un objet différents, tu CONSERVES la valeur des notes et ne la
+    remplaces pas, même si la transcription paraît plus explicite (cette règle prime sur « le
+    nouvel extrait a plus de poids »). Tu peux seulement COMPLÉTER les champs laissés à null
+    dans les notes à partir de la transcription.
+"""
+
+
 REFINE_PROMPT_TEMPLATE = """
     Tu reçois :
     - un JSON courant décrivant la prochaine réunion,
@@ -37,7 +47,7 @@ REFINE_PROMPT_TEMPLATE = """
     Règle clé :
     - Le NOUVEL extrait a PLUS DE POIDS que les précédents.
       S'il corrige une date/heure/objet, tu DOIS remplacer l'ancienne valeur.
-
+    {notes_authority}
     Confiance :
     - Augmente-la si le nouvel extrait confirme ou précise (formulations du type "on valide", "c'est noté").
     - Réduis-la si tout devient flou ou incertain.
