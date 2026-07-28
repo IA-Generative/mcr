@@ -43,3 +43,10 @@ export function mockUseMeetings(overrides: Record<string, unknown> = {}) {
       }),
   };
 }
+
+// Mock ResizeObserver for testing environment
+vi.stubGlobal('ResizeObserver', class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+});
