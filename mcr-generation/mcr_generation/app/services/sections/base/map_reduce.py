@@ -38,6 +38,26 @@ from mcr_generation.app.utils.langfuse_observability import (
 langfuse_settings = LangfuseSettings()
 
 
+# Injected into every reduce prompt's ``{relevance_guard}`` slot. Keeps the reduce
+# free to drop genuine noise while forbidding it from discarding a substantive
+# transcript theme merely because it strays from the meeting objective — coherent
+# with the "les notes priment" rule of NOTES_SECTION_TEMPLATE.
+REDUCE_RELEVANCE_GUARD = """\
+## Pertinence vs fidélité au contenu
+
+- Tu peux écarter le vrai bruit : salutations, apartés, blagues, digressions sans contenu.
+- En revanche, ne retire JAMAIS un thème réellement présent dans la transcription au seul \
+motif qu'il ne colle pas à l'objectif de la réunion. L'objectif oriente la synthèse, il ne \
+définit pas ce qui est « autorisé » : un thème porteur de contenu concret (décisions, faits, \
+échéances) est conservé même s'il s'écarte de l'objectif.
+- N'érige PAS en thème (ni en décision) la simple logistique de la prochaine réunion \
+(« on se recale la semaine prochaine », date/heure/objet du prochain point) : cette \
+information est déjà portée par l'en-tête du compte-rendu ; ne la duplique pas dans les thèmes.
+- En cas de doute sur un thème doté de contenu concret, conserve-le.
+
+"""
+
+
 class _MappedItem(Protocol):
     """Structural typing contract for items produced by the map phase.
 
@@ -230,6 +250,7 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
             **{self.items_field: items_input},
             meeting_subject=self.meeting_subject or "Inconnu",
             speaker_mapping=self.speaker_mapping or "Non fourni",
+            relevance_guard=REDUCE_RELEVANCE_GUARD,
             notes_section=self._build_notes_section(notes_hint),
         )
 
