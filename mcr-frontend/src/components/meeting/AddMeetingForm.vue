@@ -18,7 +18,12 @@
           v-bind="urlAttrs"
           wrapper-class="w-full"
           class="w-full"
-          @update:model-value="(value) => { url = value as string | undefined; validateUrlAndLookup(value as string | undefined) }"
+          @update:model-value="
+            (value) => {
+              url = value as string | undefined;
+              validateUrlAndLookup(value as string | undefined);
+            }
+          "
         />
       </div>
 

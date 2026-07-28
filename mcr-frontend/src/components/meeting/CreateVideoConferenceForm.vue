@@ -5,41 +5,38 @@
   >
     <template #desc>
       <a
-      class="fr-notice__link"
-      :href="URL_GOOD_PRACTICES"
-      target="_blank"
-      rel="noopener external">
-      consulter cet article
-    </a>
+        class="fr-notice__link"
+        :href="URL_GOOD_PRACTICES"
+        target="_blank"
+        rel="noopener external"
+      >
+        consulter cet article
+      </a>
     </template>
   </DsfrNotice>
   <div class="pt-2 pb-4">
-      <div class="fr-grid-row fr-grid-row--gutters">
-        <div class="fr-col-8">
-          <DsfrInput
-            v-model="meetingTitle"
-            :label="$t('meeting-v2.visio-form.meeting-title.title')"
-            v-bind="meetingTitleAttrs"
-            label-visible
-          />
-        </div>
-        <div class="fr-col-4 flex items-end">
-          <DsfrSelect
-            v-model="selectedPlatform"
-            :label="$t('meeting-v2.visio-form.visio-tools')"
-            :options="meetingPlatformOptions"
-            default-unselected-text="Sélectionner un outil"
-          />
-        </div>
+    <div class="fr-grid-row fr-grid-row--gutters">
+      <div class="fr-col-8">
+        <DsfrInput
+          v-model="meetingTitle"
+          :label="$t('meeting-v2.visio-form.meeting-title.title')"
+          v-bind="meetingTitleAttrs"
+          label-visible
+        />
       </div>
+      <div class="fr-col-4 flex items-end">
+        <DsfrSelect
+          v-model="selectedPlatform"
+          :label="$t('meeting-v2.visio-form.visio-tools')"
+          :options="meetingPlatformOptions"
+          default-unselected-text="Sélectionner un outil"
+        />
+      </div>
+    </div>
   </div>
-  <div
-    v-if="selectedPlatform !== null"
-  >
-    <component 
-      :is="currentVisioToolComponent" 
-    />
-  </div> 
+  <div v-if="selectedPlatform !== null">
+    <component :is="currentVisioToolComponent" />
+  </div>
 
   <div class="flex justify-end">
     <DsfrButton
@@ -187,11 +184,8 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <style scoped>
-
-
 :deep(.fr-notice) {
   display: flex;
   flex-direction: column;
 }
-
 </style>

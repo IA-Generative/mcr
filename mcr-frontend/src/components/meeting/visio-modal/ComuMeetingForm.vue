@@ -11,30 +11,31 @@
       />
     </div>
     <template v-if="comuConnectionMode == 'idcode'">
-        <div class="fr-col-4 pt-2">
-          <DsfrInput
-            v-model="comuId"
-            class="w-full flex-1"
-            :label="$t('meeting-v2.visio-form.comu.meeting_id')"
-            :error-message="comuIdError"
-            label-visible
-            :disabled="!isIdPasswordEnabled"
-          />
-        </div>
-        <div class="fr-col-4 pt-2">
-          <DsfrInputGroup
-            v-model="comuPassword"
-            class="w-full flex-1"
-            :label="$t('meeting-v2.visio-form.comu.access_code')"
-            :error-message="comuPasswordError"
-            label-visible
-            :disabled="!isIdPasswordEnabled"
-          />
-        </div>
+      <div class="fr-col-4 pt-2">
+        <DsfrInput
+          v-model="comuId"
+          class="w-full flex-1"
+          :label="$t('meeting-v2.visio-form.comu.meeting_id')"
+          :error-message="comuIdError"
+          label-visible
+          :disabled="!isIdPasswordEnabled"
+        />
+      </div>
+      <div class="fr-col-4 pt-2">
+        <DsfrInputGroup
+          v-model="comuPassword"
+          class="w-full flex-1"
+          :label="$t('meeting-v2.visio-form.comu.access_code')"
+          :error-message="comuPasswordError"
+          label-visible
+          :disabled="!isIdPasswordEnabled"
+        />
+      </div>
     </template>
-    <div 
-    v-else
-    class="fr-col-8 ">
+    <div
+      v-else
+      class="fr-col-8"
+    >
       <DsfrInput
         v-model="comuUrl"
         class="m-0"
@@ -67,7 +68,6 @@ const isUrlEnabled = computed(() => {
 });
 
 const comuConnectionMode = ref<'idcode' | 'url'>('idcode');
-
 </script>
 
 <style scoped>
@@ -84,6 +84,6 @@ const comuConnectionMode = ref<'idcode' | 'url'>('idcode');
   color: var(--text-mention-grey);
 }
 :deep(.fr-hint-text) {
-  word-break: break-all; 
+  word-break: break-all;
 }
 </style>
