@@ -58,7 +58,12 @@ function clearPending(type: DeliverableType): void {
 }
 
 const types = computed<DeliverableType[]>(() => {
-  const base: DeliverableType[] = ['TRANSCRIPTION', 'DECISION_RECORD', 'DETAILED_SYNTHESIS'];
+  const base: DeliverableType[] = [
+    'TRANSCRIPTION',
+    'STRUCTURED_MINUTES',
+    'DECISION_RECORD',
+    'DETAILED_SYNTHESIS',
+  ];
   return isCustomReportEnabled.value ? [...base, 'CUSTOM_REPORT'] : base;
 });
 

@@ -375,6 +375,11 @@
         "auto-when-ready": "Se lance automatiquement dès que la transcription est prête."
       },
       "type": {
+        "structured-minutes": {
+          "label": "Compte-rendu structuré",
+          "hint": "Compte-rendu par thèmes avec décisions (responsable, échéance), points en suspens et recommandations.",
+          "title": "Compte-rendu structuré"
+        },
         "decision-record": {
           "label": "Relevé de décisions",
           "hint": "Synthèse rédigée des échanges et décisions prises lors de la réunion.",
