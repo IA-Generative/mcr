@@ -23,6 +23,17 @@ class _StubRefiner(BaseInitThenRefine[_StubModel]):
     section_name = "stub"
 
 
+_AUTHORITY_CLAUSE = "AUTORITE_NOTES: le JSON courant vient des notes et fait foi."
+
+
+class _NotesAuthorityRefiner(BaseInitThenRefine[_StubModel]):
+    response_model = _StubModel
+    initial_prompt_template = "INITIAL: {chunk_text}"
+    refine_prompt_template = "REFINE: {current_json} | {chunk_text}{notes_authority}"
+    refine_notes_authority_clause = _AUTHORITY_CLAUSE
+    section_name = "notes-authority"
+
+
 class TestInitialExtract:
     def test_initial_extract_uses_initial_template_and_response_model(
         self,
@@ -158,6 +169,43 @@ class TestInitThenRefineWithHint:
         assert content.startswith("REFINE: ")
         assert hint.model_dump_json() in content
         assert "c0" in content
+
+
+class TestNotesAuthorityInRefine:
+    """When the seed comes from the user's notes, the refine step must carry the
+    "notes take precedence" authority so a contradicting transcript chunk cannot
+    silently overwrite a notes-derived value. A chunk-derived seed carries no
+    such authority."""
+
+    def test_notes_seeded_refine_carries_authority_clause(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+    ) -> None:
+        hint = _StubModel(text="from-notes")
+
+        with fake_call_llm_with_structured_output(
+            _MODULE_PATH, _StubModel(text="refined")
+        ) as mock_call:
+            _NotesAuthorityRefiner().init_then_refine(
+                [Chunk(id=0, text="c0")], init_hint=hint
+            )
+
+        content = mock_call.call_args.kwargs["user_message_content"]
+        assert _AUTHORITY_CLAUSE in content
+
+    def test_chunk_seeded_refine_omits_authority_clause(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+    ) -> None:
+        responses = [_StubModel(text="s0"), _StubModel(text="s1")]
+
+        with fake_call_llm_with_structured_output(_MODULE_PATH, responses) as mock_call:
+            _NotesAuthorityRefiner().init_then_refine(
+                [Chunk(id=0, text="c0"), Chunk(id=1, text="c1")]
+            )
+
+        refine_content = mock_call.call_args_list[-1].kwargs["user_message_content"]
+        assert _AUTHORITY_CLAUSE not in refine_content
 
 
 class TestLangfuseSpanRename:

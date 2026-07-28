@@ -31,6 +31,11 @@ class BaseInitThenRefine(ABC, Generic[T]):
     refine_prompt_template: ClassVar[str]
     section_name: ClassVar[str]
 
+    # Injected into the refine prompt's ``{notes_authority}`` slot only when the
+    # seed came from the user's notes, so the notes win against a contradicting
+    # transcript chunk. Empty (and the slot stays empty) for chunk-derived seeds.
+    refine_notes_authority_clause: ClassVar[str] = ""
+
     def __init__(self) -> None:
         self.llm_config = LLMConfig()
         self.client_instructor = instructor.from_openai(
@@ -52,6 +57,7 @@ class BaseInitThenRefine(ABC, Generic[T]):
             name=f"section_{self.section_name}_generation",
         )
 
+        seed_from_notes = init_hint is not None
         if init_hint is not None:
             refined, chunks_to_refine = init_hint, chunks
         else:
@@ -61,7 +67,11 @@ class BaseInitThenRefine(ABC, Generic[T]):
             )
 
         for chunk in chunks_to_refine:
-            refined = self._refine_with_chunk(current=refined, chunk_text=chunk.text)
+            refined = self._refine_with_chunk(
+                current=refined,
+                chunk_text=chunk.text,
+                seed_from_notes=seed_from_notes,
+            )
 
         logger.debug("Final {} extract: {}", self.response_model.__name__, refined)
         return refined
@@ -81,14 +91,22 @@ class BaseInitThenRefine(ABC, Generic[T]):
             ),
         )
 
-    def _refine_with_chunk(self, current: T, chunk_text: str) -> T:
+    def _refine_with_chunk(
+        self, current: T, chunk_text: str, seed_from_notes: bool = False
+    ) -> T:
+        variables: dict[str, str] = {
+            "current_json": current.model_dump_json(),
+            "chunk_text": chunk_text,
+        }
+        if "{notes_authority}" in self.refine_prompt_template:
+            variables["notes_authority"] = (
+                self.refine_notes_authority_clause if seed_from_notes else ""
+            )
         prompt = PromptTemplate(
             template=self.refine_prompt_template,
-            input_variables=["current_json", "chunk_text"],
+            input_variables=list(variables),
         )
-        content = prompt.invoke(
-            {"current_json": current.model_dump_json(), "chunk_text": chunk_text}
-        ).to_string()
+        content = prompt.invoke(variables).to_string()
         return cast(
             T,
             call_llm_with_structured_output(

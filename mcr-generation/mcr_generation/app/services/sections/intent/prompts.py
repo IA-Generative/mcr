@@ -24,6 +24,15 @@ INITIAL_PROMPT_TEMPLATE = """
     Fournis les informations extraites au format JSON strictement conforme au modèle Intent.
 """
 
+REFINE_NOTES_AUTHORITY_CLAUSE = """
+    IMPORTANT — le JSON courant provient des NOTES du rédacteur (signal humain, plus fiable
+    que la transcription). Il fait FOI : si le nouvel extrait de transcription contredit son
+    titre ou son objet, tu CONSERVES la valeur des notes ; ne la remplace pas au motif que la
+    transcription serait « plus explicite ». Tu peux seulement préciser ou enrichir cette valeur
+    sans en changer le sens.
+"""
+
+
 REFINE_PROMPT_TEMPLATE = """
     Tu reçois :
     - un JSON courant représentant l'en-tête partiellement extrait,
@@ -39,7 +48,7 @@ REFINE_PROMPT_TEMPLATE = """
     Si tu mets à jour le titre ou l'objet :
     - ajuste le niveau de confiance en conséquence,
     - mets à jour la justification en citant les nouveaux indices.
-
+    {notes_authority}
     JSON courant :
     <current>
     {current_json}

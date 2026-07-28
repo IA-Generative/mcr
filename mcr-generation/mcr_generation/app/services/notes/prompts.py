@@ -26,18 +26,18 @@ EXTRACT_NEXT_MEETING_PROMPT_TEMPLATE = """
     Notes prises pendant un meeting (texte humain synthétique).
 
     Tâche :
-    - Repérer s'il y a une PROCHAINE RÉUNION décidée ou clairement envisagée.
+    - Repérer s'il y a une PROCHAINE RÉUNION ou un ÉVÉNEMENT À VENIR auquel les participants prendront part (réunion, point, démo, revue, atelier, comité...), y compris quand un tel événement voit sa date FIXÉE ou CHANGÉE dans les notes (ex. "démo repoussée au 14/10").
     - Extraire :
       - date (format JJ/MM/AAAA ou relatif : "mardi prochain", "dans deux semaines", etc.),
       - heure (HH:MM ou relatif : "le matin", "même heure", etc.),
-      - purpose : but principal de cette prochaine réunion (une phrase très courte),
+      - purpose : but ou nature de cet événement (une phrase très courte),
       - confidence : entre 0.0 et 1.0,
       - justification : quelques mots expliquant sur quels indices tu t'appuies.
 
     Règles :
-    - Ne considère que la prochaine réunion à venir (pas les réunions passées).
-    - Utilise les mentions explicites en priorité ("on se revoit", date/heure, "prochain point", etc.).
-    - Les notes peuvent ne rien mentionner sur ce point : dans ce cas, mets date, time et purpose à null avec une faible confidence. C'est attendu et normal.
+    - Ne considère que l'événement à venir (pas les événements passés).
+    - Un CHANGEMENT DE DATE d'un événement à venir (report, avancement) est une information à extraire : renvoie la NOUVELLE date et l'objet concerné.
+    - N'invente rien : si les notes n'évoquent aucun événement à venir ni aucune date, mets date, time et purpose à null avec une faible confidence. C'est attendu et normal.
 
     Notes prises pendant le meeting :
     <notes>
