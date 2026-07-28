@@ -9,6 +9,7 @@ export type DeliverableStatus = (typeof DeliverableStatus)[number];
 
 export const DeliverableType = [
   'TRANSCRIPTION',
+  'STRUCTURED_MINUTES',
   'DECISION_RECORD',
   'DETAILED_SYNTHESIS',
   'CUSTOM_REPORT',

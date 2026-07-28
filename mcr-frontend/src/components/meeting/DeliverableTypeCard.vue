@@ -121,6 +121,7 @@ const isFichierEnabled = useFeatureFlag('fichier-integration');
 
 const TYPE_KEY_MAP: Record<DeliverableType, string> = {
   TRANSCRIPTION: 'transcription',
+  STRUCTURED_MINUTES: 'structured-minutes',
   DECISION_RECORD: 'decision-record',
   DETAILED_SYNTHESIS: 'detailed-synthesis',
   CUSTOM_REPORT: 'custom-report',
