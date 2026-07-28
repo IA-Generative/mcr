@@ -38,14 +38,14 @@ Voici la liste initiale des topics extraits (au format JSON) :
 {topics}
 </topics>
 
-{notes_section}\
+{relevance_guard}{notes_section}\
 ## Ta tâche de consolidation
 
 1. **Regrouper et fusionner** les sujets similaires ou redondants:
    - Identifier les sujets ayant des faits ou décisions qui se recoupent
    - Fusionner leurs détails (facts, justifications, citations) en évitant les répétitions
    - Si un sujet contient plusieurs faits et decisons, voir s'il peut être divisé en sujets distincts.
-2. **Filtrer** les sujets non pertinents par rapport à l'objectif de la réunion
+2. **Filtrer** uniquement le bruit décrit plus haut (« Pertinence vs fidélité au contenu ») ; ne pas écarter un sujet substantiel présent dans la transcription au seul motif qu'il s'écarte de l'objectif
 3. **Synthétiser les détails par sujet** :
     - Utilise facts, facts_justification et facts_quotes pour créer 2-3 phrases factuelles riches
     - Chaque phrase = 1 fait concret avec chiffres/noms/contexte si disponibles

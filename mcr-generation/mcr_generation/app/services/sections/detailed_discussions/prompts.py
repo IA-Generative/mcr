@@ -44,7 +44,7 @@ Voici la liste initiale des discussions détaillées extraites (au format JSON) 
 {detailed_discussions}
 </detailed_discussions>
 
-{notes_section}\
+{relevance_guard}{notes_section}\
 ## Ta tâche de consolidation
 
 1. **Regrouper et fusionner** les discussions similaires ou redondantes :
@@ -54,7 +54,7 @@ Voici la liste initiale des discussions détaillées extraites (au format JSON) 
    - **Conserver l'ordre chronologique** : la liste finale doit suivre l'ordre d'apparition des sujets dans la réunion
    - **Règle "(reprise)"** : si un même sujet apparaît à nouveau plus tard dans la réunion, conserver les deux entrées distinctes en suffixant la seconde (et les suivantes) avec "(reprise)" — ex. "Préparation du séminaire", puis "Préparation du séminaire (reprise)"
 2. **Titres de sujets** : courts, factuels, sans intention ni interprétation (ex. "Préparation de la démo de fin d'année", "Optimisation du plan de recrutement")
-3. **Filtrer** les discussions non pertinentes par rapport à l'objectif de la réunion
+3. **Filtrer** uniquement le bruit décrit plus haut (« Pertinence vs fidélité au contenu ») ; ne pas écarter une discussion substantielle présente dans la transcription au seul motif qu'elle s'écarte de l'objectif
 4. **Synthétiser les key_ideas par discussion** :
    - Formuler entre **3 et 10 bullets** factuels et concrets à partir des takeaways (texte, détails, citations) — adapter le nombre à la densité du sujet
    - Chaque bullet = 1 idée clé avec chiffres/noms/contexte si disponibles

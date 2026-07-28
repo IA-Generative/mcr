@@ -8,7 +8,10 @@ import pytest
 from pydantic import BaseModel, Field
 
 from mcr_generation.app.exceptions.exceptions import AllChunksFailedError
-from mcr_generation.app.services.sections.base.map_reduce import BaseMapReduce
+from mcr_generation.app.services.sections.base.map_reduce import (
+    REDUCE_RELEVANCE_GUARD,
+    BaseMapReduce,
+)
 from mcr_generation.app.services.sections.detailed_discussions.types import (
     MappedDetailedDiscussionsLLM,
 )
@@ -113,6 +116,36 @@ class TestNotesHintInjection:
             assert hint.model_dump_json() in prompt  # type: ignore[union-attr]
         else:
             assert "Notes du rédacteur" not in prompt
+
+
+class _GuardMapReduce(_StubMapReduce):
+    reduce_prompt_template = (
+        "REDUCE {items} | {meeting_subject} | {speaker_mapping}"
+        "{relevance_guard}{notes_section}"
+    )
+
+
+class TestRelevanceGuardInjection:
+    """Bug 2 of the "notes biaisent l'objectif" ticket: the reduce must never drop
+    a substantive theme that is present in the transcription just because it does
+    not fit the meeting objective. Every map-reduce reduce carries that guard,
+    with or without notes."""
+
+    @pytest.mark.parametrize("hint", [None, _build_hint()])
+    def test_reduce_always_injects_relevance_guard(
+        self,
+        fake_call_llm_with_structured_output: Callable[..., Any],
+        hint: _StubContent | None,
+    ) -> None:
+        items = [_StubMapped(topic="X", topic_confidence=0.9, chunk_id=0)]
+
+        with fake_call_llm_with_structured_output(
+            _MODULE_PATH, _StubContent()
+        ) as mock_call:
+            _GuardMapReduce()._reduce(items, notes_hint=hint)
+
+        prompt = mock_call.call_args.kwargs["user_message_content"]
+        assert REDUCE_RELEVANCE_GUARD in prompt
 
 
 class TestReduceEmptyMapPhase:

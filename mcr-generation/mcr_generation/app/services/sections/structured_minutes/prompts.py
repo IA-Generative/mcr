@@ -44,7 +44,7 @@ Voici la liste initiale des thématiques extraites (au format JSON) :
 {themes}
 </themes>
 
-{notes_section}\
+{relevance_guard}{notes_section}\
 ## Ta tâche de consolidation
 
 1. **Regrouper et fusionner** les thématiques similaires ou redondantes en évitant les répétitions.
