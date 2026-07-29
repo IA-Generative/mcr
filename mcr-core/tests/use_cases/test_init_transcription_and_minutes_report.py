@@ -43,6 +43,18 @@ def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
     )
 
 
+def _structured_minutes(meeting_id: int) -> list[Deliverable]:
+    return list(
+        get_db_session_ctx()
+        .query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type == DeliverableType.STRUCTURED_MINUTES,
+        )
+        .all()
+    )
+
+
 def _pending_records(meeting_id: int) -> list[MeetingTransitionRecord]:
     return list(
         get_db_session_ctx()
@@ -156,6 +168,7 @@ def test_init_transcription_and_minutes_report_rolls_back_on_broker_failure(
 
     assert _pending_records(meeting.id) == []
     assert _transcription_deliverables(meeting.id) == []
+    assert _structured_minutes(meeting.id) == []
     db_session.refresh(meeting)
     assert meeting.status == MeetingStatus.TRANSCRIPTION_PENDING
 
@@ -252,3 +265,46 @@ def test_init_transcription_and_minutes_report_rejects_illegal_transition(
 
     mock_celery_producer_app.send_task.assert_not_called()
     assert _transcription_deliverables(meeting.id) == []
+
+
+def test_init_requests_default_structured_minutes(
+    mock_celery_producer_app: Mock,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.CAPTURE_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
+
+    reports = _structured_minutes(meeting.id)
+    assert len(reports) == 1
+    assert reports[0].status == DeliverableStatus.REQUESTED
+    assert reports[0].custom_prompt is None
+    # No dispatch at launch: only the transcription task is sent.
+    mock_celery_producer_app.send_task.assert_called_once_with(
+        MCRTranscriptionTasks.TRANSCRIBE,
+        args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        countdown=5,
+        link_error=mock_celery_producer_app.signature.return_value,
+    )
+
+
+def test_init_does_not_duplicate_an_existing_structured_minutes(
+    mock_celery_producer_app: Mock,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.CAPTURE_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    existing = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.STRUCTURED_MINUTES,
+        status=DeliverableStatus.REQUESTED,
+    )
+
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
+
+    reports = _structured_minutes(meeting.id)
+    assert len(reports) == 1
+    assert reports[0].id == existing.id
