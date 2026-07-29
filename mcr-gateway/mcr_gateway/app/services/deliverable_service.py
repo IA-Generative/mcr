@@ -8,6 +8,9 @@ from loguru import logger
 from pydantic import UUID4
 
 from mcr_gateway.app.configs.config import settings
+from mcr_gateway.app.schemas.deliverable_feedback_schema import (
+    DeliverableFeedbackUpsertRequest,
+)
 from mcr_gateway.app.schemas.deliverable_schema import (
     DeliverableCreateRequest,
     DeliverableListResponse,
@@ -84,6 +87,44 @@ async def soft_delete_deliverable(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error deleting deliverable: {}", str(e))
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
+async def upsert_deliverable_feedback(
+    deliverable_id: int,
+    body: DeliverableFeedbackUpsertRequest,
+    user_keycloak_uuid: UUID4,
+) -> Response:
+    try:
+        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+            response = await client.put(
+                url=f"{deliverable_id}/feedback", json=body.model_dump(mode="json")
+            )
+            response.raise_for_status()
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                media_type="application/json",
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error("Unexpected error saving deliverable feedback: {}", str(e))
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+
+async def deactivate_deliverable_feedback(
+    deliverable_id: int, user_keycloak_uuid: UUID4
+) -> Response:
+    try:
+        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+            response = await client.delete(url=f"{deliverable_id}/feedback")
+            response.raise_for_status()
+            return Response(status_code=204)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error("Unexpected error retracting deliverable feedback: {}", str(e))
         raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
 
 
