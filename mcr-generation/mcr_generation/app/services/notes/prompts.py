@@ -160,7 +160,6 @@ Notes à structurer :
 {notes_content}
 </notes>
 
-Renvoie le résultat strictement au format JSON validant le schéma attendu : MinutesContent.
 Si les notes ne contiennent aucun contenu de réunion exploitable, renvoie themes: [].
 """
 
