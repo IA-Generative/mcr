@@ -222,3 +222,46 @@ async def test_non_owner_propagates_403(httpx_mock: HTTPXMock) -> None:
         await soft_delete_deliverable(deliverable_id=77, user_keycloak_uuid=user_uuid)
 
     assert exc.value.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_an_active_feedback_survives_the_gateway_revalidation(
+    httpx_mock: HTTPXMock,
+) -> None:
+    meeting_id = 42
+    payload = _deliverable_payload(deliverable_id=1, meeting_id=meeting_id)
+    payload["feedback"] = {"vote_type": "POSITIVE", "comment": "clear and faithful"}
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{settings.MEETING_SERVICE_URL}{meeting_id}/deliverables",
+        json={"deliverables": [payload]},
+        status_code=200,
+    )
+
+    result = await list_deliverables_for_meeting(
+        meeting_id=meeting_id, user_keycloak_uuid=uuid.uuid4()
+    )
+
+    feedback = result.deliverables[0].feedback
+    assert feedback is not None
+    assert feedback.vote_type == "POSITIVE"
+    assert feedback.comment == "clear and faithful"
+
+
+@pytest.mark.asyncio
+async def test_a_deliverable_without_feedback_reports_none(
+    httpx_mock: HTTPXMock,
+) -> None:
+    meeting_id = 42
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{settings.MEETING_SERVICE_URL}{meeting_id}/deliverables",
+        json={"deliverables": [_deliverable_payload(meeting_id=meeting_id)]},
+        status_code=200,
+    )
+
+    result = await list_deliverables_for_meeting(
+        meeting_id=meeting_id, user_keycloak_uuid=uuid.uuid4()
+    )
+
+    assert result.deliverables[0].feedback is None
