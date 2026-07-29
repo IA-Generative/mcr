@@ -135,6 +135,26 @@ def test_fail_transcription_marks_requested_reports_failed(db_session: Session) 
     assert synthesis.status == DeliverableStatus.FAILED
 
 
+def test_fail_transcription_marks_auto_structured_minutes_failed(
+    db_session: Session,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.TRANSCRIPTION_IN_PROGRESS,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    _active_transcription_deliverable(meeting, DeliverableStatus.IN_PROGRESS)
+    minutes = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.STRUCTURED_MINUTES,
+        status=DeliverableStatus.REQUESTED,
+    )
+
+    fail_transcription(meeting_id=meeting.id)
+
+    db_session.refresh(minutes)
+    assert minutes.status == DeliverableStatus.FAILED
+
+
 def test_fail_transcription_silent_conflicts_when_transcription_already_done() -> None:
     meeting = MeetingFactory.create(
         status=MeetingStatus.TRANSCRIPTION_DONE,
