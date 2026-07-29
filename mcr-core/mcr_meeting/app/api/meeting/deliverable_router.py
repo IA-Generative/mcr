@@ -2,17 +2,25 @@ from fastapi import APIRouter, Depends, Header, Response, status
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
+from mcr_meeting.app.api._shared.deliverable_response import build_deliverable_response
 from mcr_meeting.app.api._shared.response_headers import create_safe_filename_header
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
 from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE
+from mcr_meeting.app.schemas.deliverable_feedback_schema import (
+    DeliverableFeedbackResponse,
+    DeliverableFeedbackUpsertRequest,
+)
 from mcr_meeting.app.schemas.deliverable_schema import (
     CustomDeliverableCreateRequest,
     DeliverableCreateRequest,
     DeliverableListResponse,
     DeliverableResponse,
     DeliverableSuccessRequest,
+)
+from mcr_meeting.app.use_cases.deactivate_deliverable_feedback import (
+    deactivate_deliverable_feedback,
 )
 from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 from mcr_meeting.app.use_cases.get_deliverable_file import get_deliverable_file
@@ -30,6 +38,9 @@ from mcr_meeting.app.use_cases.request_deliverable import (
     request_deliverable as request_deliverable_use_case,
 )
 from mcr_meeting.app.use_cases.soft_delete_deliverable import soft_delete_deliverable
+from mcr_meeting.app.use_cases.upsert_deliverable_feedback import (
+    upsert_deliverable_feedback,
+)
 
 api_settings = ApiSettings()
 
@@ -55,7 +66,7 @@ async def list_meeting_deliverables(
         meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
     return DeliverableListResponse(
-        deliverables=[DeliverableResponse.model_validate(row) for row in rows]
+        deliverables=[build_deliverable_response(row) for row in rows]
     )
 
 
@@ -77,7 +88,7 @@ async def create_deliverable(
         deliverable_type=body.type,
         custom_prompt=custom_prompt,
     )
-    return DeliverableResponse.model_validate(deliverable)
+    return build_deliverable_response(deliverable)
 
 
 @deliverables_router.delete("/{deliverable_id}", status_code=204)
@@ -86,6 +97,32 @@ async def delete_deliverable(
     x_user_keycloak_uuid: UUID4 = Header(),
 ) -> Response:
     soft_delete_deliverable(
+        deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
+    )
+    return Response(status_code=204)
+
+
+@deliverables_router.put("/{deliverable_id}/feedback")
+async def upsert_deliverable_feedback_route(
+    deliverable_id: int,
+    body: DeliverableFeedbackUpsertRequest,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> DeliverableFeedbackResponse:
+    feedback = upsert_deliverable_feedback(
+        deliverable_id=deliverable_id,
+        user_keycloak_uuid=x_user_keycloak_uuid,
+        vote_type=body.vote_type,
+        comment=body.comment,
+    )
+    return DeliverableFeedbackResponse.model_validate(feedback)
+
+
+@deliverables_router.delete("/{deliverable_id}/feedback", status_code=204)
+async def deactivate_deliverable_feedback_route(
+    deliverable_id: int,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> Response:
+    deactivate_deliverable_feedback(
         deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
     return Response(status_code=204)
@@ -111,7 +148,7 @@ async def deliverable_start_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_report_in_progress(deliverable_id=deliverable_id)
-    return DeliverableResponse.model_validate(deliverable)
+    return build_deliverable_response(deliverable)
 
 
 @deliverables_router.post("/{deliverable_id}/success")
@@ -123,7 +160,7 @@ async def deliverable_success_callback(
         deliverable_id=deliverable_id,
         report_response=body.report_response,
     )
-    return DeliverableResponse.model_validate(deliverable)
+    return build_deliverable_response(deliverable)
 
 
 @deliverables_router.post("/{deliverable_id}/fail")
@@ -140,4 +177,4 @@ async def deliverable_fail_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_report_failure(deliverable_id=deliverable_id)
-    return DeliverableResponse.model_validate(deliverable)
+    return build_deliverable_response(deliverable)
