@@ -43,58 +43,7 @@
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
   "failureFactor": 30,
-  "users": [
-    {
-      "id": "f0062539-f6df-449a-adcb-a78ef5d9524f",
-      "username": "fake@fake.com",
-      "email": "fake@fake.com",
-      "emailVerified": true,
-      "firstName": "Fa",
-      "lastName": "Ke",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "ChangeMe"
-        }
-      ],
-      "realmRoles": ["user", "default-roles-mirai", "offline_access"],
-      "groups": ["mcr-admin"]
-    },
-    {
-      "id": "c1e9c8f6-41f2-4f16-8726-6a6a5a4d5b38",
-      "username": "not-tester@fake.com",
-      "email": "not-tester@fake.com",
-      "emailVerified": true,
-      "firstName": "Not",
-      "lastName": "Tester",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "ChangeMe"
-        }
-      ],
-      "realmRoles": ["user", "default-roles-mirai", "offline_access"]
-    },
-    {
-      "id": "7f5f6c21-9e2d-4a7f-b7d8-44c89a5f3f11",
-      "username": "beta-tester@fake.com",
-      "email": "beta-tester@fake.com",
-      "emailVerified": true,
-      "firstName": "Beta",
-      "lastName": "Tester",
-      "enabled": true,
-      "credentials": [
-        {
-          "type": "password",
-          "value": "ChangeMe"
-        }
-      ],
-      "realmRoles": ["user", "default-roles-mirai", "offline_access"],
-      "groups": ["mcr-tester-group"]
-    }
-  ],
+  "users": [],
   "roles": {
     "realm": [
       {
