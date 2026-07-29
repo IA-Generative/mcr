@@ -396,6 +396,17 @@
         "regenerate": "Régénérer"
       }
     },
+    "deliverable-feedback": {
+      "thumb-up": "Ce livrable est utile",
+      "success": "Merci, votre retour a été pris en compte",
+      "error": "Votre retour n'a pas pu être enregistré, veuillez réessayer",
+      "modal": {
+        "title": "Merci pour votre retour !",
+        "description": "Dites-nous ce qui vous a plu dans ce livrable.",
+        "comment-label": "Commentaire (facultatif)",
+        "submit": "Envoyer"
+      }
+    },
     "custom-report-modal": {
       "title": "Rédigez votre prompt",
       "description": "Décrivez librement le compte-rendu que vous voulez obtenir, ou partez d'une suggestion.",

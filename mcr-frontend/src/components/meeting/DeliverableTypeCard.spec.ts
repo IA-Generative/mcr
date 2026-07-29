@@ -2,8 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { ref } from 'vue';
 import { screen } from '@testing-library/vue';
 
+const { closedFlags } = vi.hoisted(() => ({ closedFlags: new Set<string>() }));
+
 vi.mock('@/composables/use-feature-flag', () => ({
-  useFeatureFlag: () => ref(true),
+  useFeatureFlag: (name: string) => ref(!closedFlags.has(name)),
 }));
 
 import userEvent from '@testing-library/user-event';
@@ -24,6 +26,7 @@ function deliverable(type: DeliverableType, status: DeliverableStatus): Delivera
     external_url: null,
     created_at: '2026-07-10T00:00:00Z',
     updated_at: '2026-07-10T00:00:00Z',
+    feedback: null,
   };
 }
 
@@ -166,5 +169,43 @@ describe('DeliverableTypeCard', () => {
 
     expect(screen.getByText('En cours')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Générer' })).toBeNull();
+  });
+});
+
+describe('DeliverableTypeCard feedback thumbs', () => {
+  const THUMBS_STUB = {
+    DeliverableFeedbackThumbs: { template: '<div data-testid="feedback-thumbs" />' },
+  };
+
+  afterEach(() => closedFlags.clear());
+
+  function renderCard(status: DeliverableStatus) {
+    return renderWithPlugins(DeliverableTypeCard, {
+      props: { type: 'DECISION_RECORD', deliverable: deliverable('DECISION_RECORD', status) },
+      global: { stubs: THUMBS_STUB },
+    });
+  }
+
+  it('offers to rate a deliverable once it is available', () => {
+    renderCard('AVAILABLE');
+
+    expect(screen.getByTestId('feedback-thumbs')).toBeTruthy();
+  });
+
+  it.each(['REQUESTED', 'PENDING', 'IN_PROGRESS', 'FAILED'] satisfies DeliverableStatus[])(
+    'offers no rating while the deliverable is %s',
+    (status) => {
+      renderCard(status);
+
+      expect(screen.queryByTestId('feedback-thumbs')).toBeNull();
+    },
+  );
+
+  it('offers no rating when the feature is not released', () => {
+    closedFlags.add('deliverable-feedback');
+
+    renderCard('AVAILABLE');
+
+    expect(screen.queryByTestId('feedback-thumbs')).toBeNull();
   });
 });
