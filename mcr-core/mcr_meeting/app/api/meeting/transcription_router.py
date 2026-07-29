@@ -22,7 +22,9 @@ from mcr_meeting.app.use_cases.fail_transcription import fail_transcription
 from mcr_meeting.app.use_cases.get_or_create_transcription_docx import (
     get_or_create_transcription_docx,
 )
-from mcr_meeting.app.use_cases.init_transcription import init_transcription
+from mcr_meeting.app.use_cases.init_transcription_and_minutes_report import (
+    init_transcription_and_minutes_report,
+)
 from mcr_meeting.app.use_cases.start_transcription import start_transcription
 
 api_settings = ApiSettings()
@@ -69,7 +71,7 @@ async def init_transcription_task(
     x_user_keycloak_uuid: UUID4 | None = Header(default=None),
     x_user_access_token: str | None = Header(default=None),
 ) -> None:
-    init_transcription(meeting_id=meeting_id)
+    init_transcription_and_minutes_report(meeting_id=meeting_id)
     if x_user_keycloak_uuid is not None:
         ensure_offline_token(str(x_user_keycloak_uuid), x_user_access_token)
 
