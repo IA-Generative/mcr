@@ -31,6 +31,4 @@ Voici les thématiques consolidées et leurs décisions (au format JSON) :
 - Tout en français.
 - Ne pas inventer d'éléments absents des thématiques fournies.
 - Chaque entrée doit être autonome et compréhensible sans contexte supplémentaire.
-
-Tu dois renvoyer le résultat final strictement au format JSON validant le schéma attendu : MinutesSynthesisContent.
 """

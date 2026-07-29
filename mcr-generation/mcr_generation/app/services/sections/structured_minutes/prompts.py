@@ -3,17 +3,6 @@ Tu es un analyste qui produit un compte-rendu structuré d'une réunion à parti
 
 Analyse cet extrait et identifie les thématiques discutées ainsi que les décisions/actions explicitement décidées.
 
-Pour chaque thématique extraite, fournis :
-- topic : un titre court de la thématique
-- topic_confidence : la confiance (0 à 1) que c'est bien une thématique pertinente
-- summary : un résumé en 1 à 3 phrases (null si rien de pertinent)
-- decisions : la liste des décisions/actions explicitement décidées sur cette thématique
-
-Pour chaque décision, renseigne :
-- decision : la décision ou l'action décidée, formulée clairement
-- owner : la personne ou l'équipe qui doit la porter (null si non évoqué)
-- due : l'échéance (date ou formulation relative ; null si non évoquée)
-
 RÈGLES strictes :
 - Ne liste que les décisions/actions EXPLICITEMENT énoncées, pas tes interprétations.
 - Renseigne owner et due UNIQUEMENT s'ils sont évoqués dans la transcription, sinon null.
@@ -25,11 +14,9 @@ Objet de la réunion : {meeting_subject}
 
 Mapping entre les interlocuteurs et leurs noms/rôles si disponible : {speaker_mapping}
 
-Extrait de la transcription :
+<transcription>
 {chunk_text}
-Fin de l'extrait de la transcription.
-
-Tu dois renvoyer le résultat final strictement au format JSON validant le schéma attendu : MappedMinutes.
+</transcription>
 """
 
 
@@ -65,6 +52,4 @@ Voici la liste initiale des thématiques extraites (au format JSON) :
 - Fidélité : ne pas inventer de thématiques ou décisions absentes des extraits fournis.
 - 3 à 8 thématiques au maximum.
 - Tout en français.
-
-Tu dois renvoyer le résultat final strictement au format JSON validant le schéma attendu : MinutesContent.
 """
