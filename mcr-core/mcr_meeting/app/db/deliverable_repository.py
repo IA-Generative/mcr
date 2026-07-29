@@ -1,4 +1,5 @@
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from mcr_meeting.app.db.db import get_db_session_ctx
 from mcr_meeting.app.exceptions.exceptions import (
@@ -29,6 +30,7 @@ def list_by_meeting(meeting_id: int) -> list[Deliverable]:
     db = get_db_session_ctx()
     return list(
         db.query(Deliverable)
+        .options(joinedload(Deliverable.feedback))
         .filter(
             Deliverable.meeting_id == meeting_id,
             Deliverable.status != DeliverableStatus.DELETED,

@@ -1,4 +1,5 @@
 # Export the models for easy access
+from mcr_meeting.app.models.deliverable_feedback_model import DeliverableFeedback
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -16,6 +17,7 @@ from mcr_meeting.app.models.user_model import Role, User
 
 __all__ = [
     "Deliverable",
+    "DeliverableFeedback",
     "DeliverableStatus",
     "DeliverableType",
     "Meeting",

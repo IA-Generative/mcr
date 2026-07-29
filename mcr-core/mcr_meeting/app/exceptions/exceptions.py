@@ -60,6 +60,11 @@ class DataConflictException(MCRException):
     a table constraint (unique, foreign key, ...). Mapped to HTTP 409."""
 
 
+class DeliverableFeedbackValidationException(MCRException):
+    """Raised when a deliverable feedback breaks a content rule — e.g. a negative
+    vote with no comment to explain it. Mapped to HTTP 422."""
+
+
 class DeliverableConcurrentlyCreatedException(MCRException):
     """Raised when a concurrent INSERT trips the partial unique index that
     forbids more than one active deliverable per (meeting, type)."""
