@@ -34,7 +34,6 @@ def _init_sentry(
     extra_integrations: list[Integration] | None = None,
     include_local_variables: bool = True,
 ) -> None:
-
     try:
         sentry_sdk.init(
             dsn=dsn,
