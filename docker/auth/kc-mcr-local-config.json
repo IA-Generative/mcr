@@ -43,7 +43,41 @@
   "quickLoginCheckMilliSeconds": 1000,
   "maxDeltaTimeSeconds": 43200,
   "failureFactor": 30,
-  "users": [],
+  "users": [
+    {
+      "id": "91a681c2-340d-4c0e-b593-460306bebd45",
+      "username": "admin@fake.com",
+      "email": "admin@fake.com",
+      "emailVerified": true,
+      "firstName": "Admin",
+      "lastName": "Fake",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ChangeMe"
+        }
+      ],
+      "realmRoles": ["user", "default-roles-mirai", "offline_access"],
+      "groups": ["mcr-admin"]
+    },
+    {
+      "id": "c3edd43b-ce8b-4fa4-8ccd-2dff33e762ac",
+      "username": "not-admin@fake.com",
+      "email": "not-admin@fake.com",
+      "emailVerified": true,
+      "firstName": "Not",
+      "lastName": "Admin",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "ChangeMe"
+        }
+      ],
+      "realmRoles": ["user", "default-roles-mirai", "offline_access"]
+    }
+  ],
   "roles": {
     "realm": [
       {
