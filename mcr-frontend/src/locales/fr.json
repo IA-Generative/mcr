@@ -304,18 +304,8 @@
       }
     },
     "report": {
-      "generate": "Générer le compte-rendu",
       "download": "Télécharger le compte-rendu",
       "reset": "Regénérer le compte-rendu",
-      "disclaimer": {
-        "title": "Choisissez le format",
-        "description": "L'outil MCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
-      },
-      "type": {
-        "cr1": "Relevé de décisions",
-        "cr2": "Synthèse détaillée",
-        "cr3": "Format à venir"
-      },
       "report-pending": {
         "title": "L'écriture du compte-rendu est en cours...",
         "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte-rendu sera disponible au téléchargement une fois terminé."

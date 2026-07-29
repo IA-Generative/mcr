@@ -13,6 +13,7 @@ vi.mock('@/services/deliverables/use-deliverables', () => ({
   }),
 }));
 
+// DeliverableTypeCard (child) reads a feature flag; stub it so Unleash isn't hit in tests.
 vi.mock('@/composables/use-feature-flag', () => ({ useFeatureFlag: () => ref(false) }));
 vi.mock('@/composables/use-toaster', () => ({ default: () => ({ addErrorMessage: vi.fn() }) }));
 vi.mock('vue-final-modal', () => ({ useModal: () => ({ open: vi.fn() }) }));
@@ -33,6 +34,14 @@ describe('MeetingDeliverableCard', () => {
     });
 
     expect(tileTitles(container).slice(0, 2)).toEqual(['Transcription', 'Compte-rendu structuré']);
+  });
+
+  it('always offers the custom report tile (no longer feature-flag gated)', () => {
+    const { container } = renderWithPlugins(MeetingDeliverableCard, {
+      props: { meetingId: 1 },
+    });
+
+    expect(tileTitles(container)).toContain('Compte-rendu personnalisé');
   });
 
   it('requests a STRUCTURED_MINUTES generation when its tile generate button is clicked', async () => {

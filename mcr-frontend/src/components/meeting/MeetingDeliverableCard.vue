@@ -32,7 +32,6 @@ import type { DeliverableType } from '@/services/deliverables/deliverables.types
 import useToaster from '@/composables/use-toaster';
 import { t } from '@/plugins/i18n';
 import { useModal } from 'vue-final-modal';
-import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { downloadFileFromAxios, extractFilenameFromResponse } from '@/utils/file';
 
 const props = defineProps<{ meetingId: number }>();
@@ -44,7 +43,6 @@ const { mutate: createMutate } = createDeliverableMutation(props.meetingId);
 const { mutate: downloadMutate } = downloadDeliverableMutation();
 
 const toaster = useToaster();
-const isCustomReportEnabled = useFeatureFlag('custom_cr');
 
 const customPrompt = ref('');
 const pending = ref<Partial<Record<DeliverableType, number | null>>>({});
@@ -57,15 +55,13 @@ function clearPending(type: DeliverableType): void {
   pending.value = next;
 }
 
-const types = computed<DeliverableType[]>(() => {
-  const base: DeliverableType[] = [
-    'TRANSCRIPTION',
-    'STRUCTURED_MINUTES',
-    'DECISION_RECORD',
-    'DETAILED_SYNTHESIS',
-  ];
-  return isCustomReportEnabled.value ? [...base, 'CUSTOM_REPORT'] : base;
-});
+const types = computed<DeliverableType[]>(() => [
+  'TRANSCRIPTION',
+  'STRUCTURED_MINUTES',
+  'DECISION_RECORD',
+  'DETAILED_SYNTHESIS',
+  'CUSTOM_REPORT',
+]);
 
 const transcriptionReady = computed(
   () =>
