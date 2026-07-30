@@ -1,21 +1,23 @@
 """Centralized patch seams for the transcription golden test.
 
-Each external leaf of the transcription pipeline (diarization loader, whisper
-model, feature flags, LLM client, audio source) is patched at ONE place here.
-When code moves between layers during the refacto, only the ``_SEAM_*``
-constants below change — never the tests that consume them.
+Each external leaf of the transcription pipeline (diarization HTTP client,
+transcription API client, feature flags, LLM client, audio source) is patched at
+ONE place here. When code moves between layers during the refacto, only the
+``_SEAM_*`` constants below change — never the tests that consume them.
 
-The seams mock the *stable leaves* (loaders / clients / HTTP), never the
-wrapper classes that the refacto dissolves.
+The seams mock the *stable leaves* (clients / HTTP), never the wrapper classes
+that the refacto dissolves.
 """
 
 import re
 from io import BytesIO
+from threading import Lock
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from pytest_mock import MockerFixture
 
+from mcr_meeting.app.infrastructure import transcription as transcription_module
 from mcr_meeting.app.infrastructure.llm.client import CorrectedText
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
@@ -24,19 +26,14 @@ from mcr_meeting.app.schemas.transcription_schema import (
 )
 
 # --- Seam targets: the single edit point per external dependency. ---
-# The model accessors are patched at their home module: the processors now
-# receive them as injected providers resolved at call time.
-_SEAM_DIARIZATION_PIPELINE = (
-    "mcr_meeting.app.infrastructure.speech_to_text_models.get_diarization_pipeline"
+# Speech-to-text runs against remote APIs, so the leaf of each processor is its
+# transport client, resolved lazily at call time.
+_SEAM_DIARIZATION_HTTP = (
+    "mcr_meeting.app.infrastructure.diarization.DiarizationProcessor._get_http_client"
 )
-_SEAM_DIARIZATION_FF = (
-    "mcr_meeting.app.infrastructure.diarization.get_feature_flag_client"
-)
-_SEAM_TRANSCRIPTION_MODEL = (
-    "mcr_meeting.app.infrastructure.speech_to_text_models.get_transcription_model"
-)
-_SEAM_TRANSCRIPTION_FF = (
-    "mcr_meeting.app.infrastructure.transcription.get_feature_flag_client"
+_SEAM_TRANSCRIPTION_API = (
+    "mcr_meeting.app.infrastructure.transcription."
+    "TranscriptionProcessor._get_openai_client"
 )
 _SEAM_PREPROCESS_FF = (
     "mcr_meeting.app.use_cases.transcription."
@@ -94,29 +91,70 @@ class TranscriptionSeams:
         for target in (
             _SEAM_PREPROCESS_FF,
             _SEAM_POST_PROCESS_FF,
-            _SEAM_DIARIZATION_FF,
-            _SEAM_TRANSCRIPTION_FF,
         ):
             self._mocker.patch(target, return_value=client)
 
     def install_diarization(self, segments: list[DiarizationSegment]) -> None:
-        pipeline = MagicMock()
-        pipeline.return_value = MagicMock(
-            itertracks=lambda yield_label: [
-                (MagicMock(start=segment.start, end=segment.end), None, segment.speaker)
-                for segment in segments
-            ]
-        )
-        self._mocker.patch(_SEAM_DIARIZATION_PIPELINE, return_value=pipeline)
+        """Fake the diarization job API: submit returns a job id, the first poll
+        returns a completed job carrying ``segments``."""
+        submit_response = MagicMock()
+        submit_response.json.return_value = {"job_id": "job-golden"}
+
+        status_response = MagicMock()
+        status_response.json.return_value = {
+            "status": "completed",
+            "result": {
+                "segments": [
+                    {
+                        "start": segment.start,
+                        "end": segment.end,
+                        "speaker": segment.speaker,
+                    }
+                    for segment in segments
+                ]
+            },
+        }
+
+        client = MagicMock()
+        client.post.return_value = submit_response
+        client.get.return_value = status_response
+        self._mocker.patch(_SEAM_DIARIZATION_HTTP, return_value=client)
 
     def install_transcription(
         self, segments_per_chunk: list[list[TranscriptionSegment]]
     ) -> None:
-        model = MagicMock()
-        model.transcribe.side_effect = [
-            (iter(segments), MagicMock()) for segments in segments_per_chunk
-        ]
-        self._mocker.patch(_SEAM_TRANSCRIPTION_MODEL, return_value=model)
+        """Fake the transcription API, one canned response per chunk.
+
+        Chunks are dealt out in call order, so the golden test pins the pool to a
+        single worker (see ``_pin_serial_chunk_transcription``). Concurrency and
+        out-of-order completion are covered by test_parallel_chunk_transcription.
+        """
+        self._pin_serial_chunk_transcription()
+
+        remaining = list(segments_per_chunk)
+        lock = Lock()
+
+        def create(**kwargs: object) -> SimpleNamespace:
+            with lock:
+                segments = remaining.pop(0)
+            return SimpleNamespace(
+                segments=[
+                    SimpleNamespace(
+                        start=segment.start, end=segment.end, text=segment.text
+                    )
+                    for segment in segments
+                ]
+            )
+
+        client = SimpleNamespace(
+            audio=SimpleNamespace(transcriptions=SimpleNamespace(create=create))
+        )
+        self._mocker.patch(_SEAM_TRANSCRIPTION_API, return_value=client)
+
+    def _pin_serial_chunk_transcription(self) -> None:
+        self._mocker.patch.object(
+            transcription_module.api_settings, "MAX_CONCURRENT_CHUNKS", 1
+        )
 
     def install_llm(
         self,

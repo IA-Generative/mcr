@@ -2,7 +2,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from threading import Lock
-from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -22,13 +21,9 @@ from mcr_meeting.app.schemas.transcription_schema import (
 _SEAM_SPLIT_AUDIO = (
     "mcr_meeting.app.infrastructure.transcription.split_audio_on_timestamps"
 )
-_SEAM_API_MODE = (
-    "mcr_meeting.app.infrastructure.transcription."
-    "TranscriptionProcessor._is_api_transcription_enabled"
-)
 _SEAM_CHUNK_TRANSCRIBE = (
     "mcr_meeting.app.infrastructure.transcription."
-    "TranscriptionProcessor._transcribe_audio_chunk"
+    "TranscriptionProcessor._transcribe_audio_chunk_api"
 )
 _SEAM_POOL = "mcr_meeting.app.infrastructure.transcription.ThreadPoolExecutor"
 
@@ -67,15 +62,12 @@ def test_output_identical_when_chunks_complete_out_of_order(
 ) -> None:
     inputs = _make_transcription_inputs(4)
     mocker.patch(_SEAM_SPLIT_AUDIO, return_value=inputs)
-    mocker.patch(_SEAM_API_MODE, return_value=True)
     mocker.patch.object(api_settings, "MAX_CONCURRENT_CHUNKS", 4)
 
     completion_order: list[int] = []
     completion_lock = Lock()
 
-    def delayed_transcribe(
-        audio: np.ndarray, transcription_model: MagicMock
-    ) -> list[TranscriptionSegment]:
+    def delayed_transcribe(audio: np.ndarray) -> list[TranscriptionSegment]:
         idx = int(audio[0])
         time.sleep(0.05 * (len(inputs) - idx))
         with completion_lock:
@@ -84,7 +76,7 @@ def test_output_identical_when_chunks_complete_out_of_order(
 
     mocker.patch(_SEAM_CHUNK_TRANSCRIBE, side_effect=delayed_transcribe)
 
-    result = TranscriptionProcessor(MagicMock()).transcribe(BytesIO(), [])
+    result = TranscriptionProcessor().transcribe(BytesIO(), [])
 
     assert completion_order == [3, 2, 1, 0]
     assert result == _expected_sequential_output(
@@ -109,50 +101,32 @@ def test_parallel_output_matches_sequential_baseline(
     segments_per_chunk = request.getfixturevalue(fixture_name)[:chunk_count]
     inputs = _make_transcription_inputs(chunk_count)
     mocker.patch(_SEAM_SPLIT_AUDIO, return_value=inputs)
-    mocker.patch(_SEAM_API_MODE, return_value=True)
     mocker.patch(
         _SEAM_CHUNK_TRANSCRIBE,
-        side_effect=lambda audio, transcription_model: segments_per_chunk[
-            int(audio[0])
-        ],
+        side_effect=lambda audio: segments_per_chunk[int(audio[0])],
     )
 
-    result = TranscriptionProcessor(MagicMock()).transcribe(BytesIO(), [])
+    result = TranscriptionProcessor().transcribe(BytesIO(), [])
 
     assert result == _expected_sequential_output(inputs, segments_per_chunk)
 
 
-def test_pool_bounded_by_max_concurrent_chunks_in_api_mode(
+def test_pool_bounded_by_max_concurrent_chunks(
     mocker: MockerFixture,
 ) -> None:
     mocker.patch(_SEAM_SPLIT_AUDIO, return_value=_make_transcription_inputs(2))
-    mocker.patch(_SEAM_API_MODE, return_value=True)
     mocker.patch(_SEAM_CHUNK_TRANSCRIBE, return_value=[])
     pool_spy = mocker.patch(_SEAM_POOL, wraps=ThreadPoolExecutor)
 
-    TranscriptionProcessor(MagicMock()).transcribe(BytesIO(), [])
+    TranscriptionProcessor().transcribe(BytesIO(), [])
 
     pool_spy.assert_called_once_with(max_workers=api_settings.MAX_CONCURRENT_CHUNKS)
 
 
-def test_pool_capped_to_one_in_local_mode(mocker: MockerFixture) -> None:
-    mocker.patch(_SEAM_SPLIT_AUDIO, return_value=_make_transcription_inputs(2))
-    mocker.patch(_SEAM_API_MODE, return_value=False)
-    mocker.patch(_SEAM_CHUNK_TRANSCRIBE, return_value=[])
-    pool_spy = mocker.patch(_SEAM_POOL, wraps=ThreadPoolExecutor)
-
-    TranscriptionProcessor(MagicMock()).transcribe(BytesIO(), [])
-
-    pool_spy.assert_called_once_with(max_workers=1)
-
-
 def test_chunk_error_propagates(mocker: MockerFixture) -> None:
     mocker.patch(_SEAM_SPLIT_AUDIO, return_value=_make_transcription_inputs(3))
-    mocker.patch(_SEAM_API_MODE, return_value=True)
 
-    def failing_transcribe(
-        audio: np.ndarray, transcription_model: MagicMock
-    ) -> list[TranscriptionSegment]:
+    def failing_transcribe(audio: np.ndarray) -> list[TranscriptionSegment]:
         if int(audio[0]) == 1:
             raise TranscriptionError("chunk failed")
         return []
@@ -160,4 +134,4 @@ def test_chunk_error_propagates(mocker: MockerFixture) -> None:
     mocker.patch(_SEAM_CHUNK_TRANSCRIBE, side_effect=failing_transcribe)
 
     with pytest.raises(TranscriptionError):
-        TranscriptionProcessor(MagicMock()).transcribe(BytesIO(), [])
+        TranscriptionProcessor().transcribe(BytesIO(), [])
