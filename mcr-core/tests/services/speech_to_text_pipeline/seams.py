@@ -24,6 +24,7 @@ from mcr_meeting.app.schemas.transcription_schema import (
     Participant,
     TranscriptionSegment,
 )
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 
 # --- Seam targets: the single edit point per external dependency. ---
 # Speech-to-text runs against remote APIs, so the leaf of each processor is its
@@ -35,26 +36,10 @@ _SEAM_TRANSCRIPTION_API = (
     "mcr_meeting.app.infrastructure.transcription."
     "TranscriptionProcessor._get_openai_client"
 )
-_SEAM_PREPROCESS_FF = (
-    "mcr_meeting.app.use_cases.transcription."
-    "_shared.preprocess_audio.get_feature_flag_client"
-)
-_SEAM_POST_PROCESS_FF = (
-    "mcr_meeting.app.use_cases.transcription."
-    "_shared.post_process_segments.get_feature_flag_client"
-)
 _SEAM_LLM_FROM_OPENAI = (
     "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
 )
 _SEAM_AUDIO_SOURCE = "mcr_meeting.app.infrastructure.s3.fetch_audio_bytes"
-
-
-class _FakeFeatureFlagClient:
-    def __init__(self, enabled: dict[str, bool]) -> None:
-        self._enabled = enabled
-
-    def is_enabled(self, feature_flag_name: str) -> bool:
-        return self._enabled.get(str(feature_flag_name), False)
 
 
 class _FakeLLMCompletions:
@@ -81,18 +66,18 @@ def _last_delimited_block(content: str) -> str:
 
 
 class TranscriptionSeams:
-    def __init__(self, mocker: MockerFixture) -> None:
+    def __init__(
+        self, mocker: MockerFixture, feature_flags: InMemoryFeatureFlagClient
+    ) -> None:
         self._mocker = mocker
-        self._flags: dict[str, bool] = {}
+        self._feature_flags = feature_flags
 
     def install_feature_flags(self, **flags: bool) -> None:
-        self._flags = {str(name): value for name, value in flags.items()}
-        client = _FakeFeatureFlagClient(self._flags)
-        for target in (
-            _SEAM_PREPROCESS_FF,
-            _SEAM_POST_PROCESS_FF,
-        ):
-            self._mocker.patch(target, return_value=client)
+        for name, enabled in flags.items():
+            if enabled:
+                self._feature_flags.enable(name)
+            else:
+                self._feature_flags.disable(name)
 
     def install_diarization(self, segments: list[DiarizationSegment]) -> None:
         """Fake the diarization job API: submit returns a job id, the first poll

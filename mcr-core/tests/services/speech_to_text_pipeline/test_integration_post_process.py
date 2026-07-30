@@ -1,26 +1,22 @@
 """Test integration for the shared post_process_segments step."""
 
-from unittest.mock import MagicMock
-
 import pytest
 
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizedTranscriptionSegment,
 )
 from mcr_meeting.app.use_cases.transcription._shared.post_process_segments import (
     post_process_segments,
 )
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 
 
 @pytest.fixture(autouse=True)
-def mock_post_process_external_calls(monkeypatch: pytest.MonkeyPatch) -> None:
-    feature_flag_client = MagicMock()
-    feature_flag_client.is_enabled.return_value = True
-
-    monkeypatch.setattr(
-        "mcr_meeting.app.use_cases.transcription._shared.post_process_segments.get_feature_flag_client",
-        lambda: feature_flag_client,
-    )
+def mock_post_process_external_calls(
+    monkeypatch: pytest.MonkeyPatch, feature_flags: InMemoryFeatureFlagClient
+) -> None:
+    feature_flags.enable(FeatureFlag.SPELLING_CORRECTION)
     monkeypatch.setattr(
         "mcr_meeting.app.use_cases.transcription._shared.post_process_segments._apply_text_correction",
         lambda segments, correct_chunk: segments,

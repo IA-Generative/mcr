@@ -10,6 +10,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     MeetingStateConflictException,
     TaskCreationException,
 )
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -25,16 +26,7 @@ from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.use_cases.init_transcription import init_transcription
 from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
-
-
-@pytest.fixture(autouse=True)
-def structural_split_flag_off(mocker: MockerFixture) -> Mock:
-    """Keep the flag read away from a real Unleash client; tests that exercise
-    the split pipeline re-patch it to True."""
-    return mocker.patch(
-        "mcr_meeting.app.use_cases._shared.dispatch_transcription.is_enabled",
-        return_value=False,
-    )
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 
 
 def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
@@ -168,10 +160,10 @@ def test_init_transcription_rolls_back_on_broker_failure(
 
 def test_init_transcription_enqueues_chain_when_split_enabled(
     mock_celery_producer_app: Mock,
-    structural_split_flag_off: Mock,
+    feature_flags: InMemoryFeatureFlagClient,
     mocker: MockerFixture,
 ) -> None:
-    structural_split_flag_off.return_value = True
+    feature_flags.enable(FeatureFlag.STRUCTURAL_SPLIT_ENABLED)
     chain_mock = mocker.patch("mcr_meeting.app.infrastructure.celery.chain")
     meeting = MeetingFactory.create(
         status=MeetingStatus.CAPTURE_DONE,
@@ -207,9 +199,9 @@ def test_init_transcription_enqueues_chain_when_split_enabled(
 
 def test_init_transcription_falls_back_to_legacy_when_flag_unreadable(
     mock_celery_producer_app: Mock,
-    structural_split_flag_off: Mock,
+    feature_flags: InMemoryFeatureFlagClient,
 ) -> None:
-    structural_split_flag_off.side_effect = Exception("unleash down")
+    feature_flags.fail_with(Exception("unleash down"))
     meeting = MeetingFactory.create(
         status=MeetingStatus.CAPTURE_DONE,
         name_platform=MeetingPlatforms.COMU,
@@ -227,11 +219,11 @@ def test_init_transcription_falls_back_to_legacy_when_flag_unreadable(
 
 def test_init_transcription_rolls_back_on_pipeline_broker_failure(
     mock_celery_producer_app: Mock,
-    structural_split_flag_off: Mock,
+    feature_flags: InMemoryFeatureFlagClient,
     mocker: MockerFixture,
     db_session: Session,
 ) -> None:
-    structural_split_flag_off.return_value = True
+    feature_flags.enable(FeatureFlag.STRUCTURAL_SPLIT_ENABLED)
     chain_mock = mocker.patch("mcr_meeting.app.infrastructure.celery.chain")
     chain_mock.return_value.apply_async.side_effect = Exception("broker down")
     meeting = MeetingFactory.create(

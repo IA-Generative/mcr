@@ -11,26 +11,28 @@ from pydub.generators import Sine
 from pytest_mock import MockerFixture
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationSegment,
     TranscriptionSegment,
 )
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 from tests.services.speech_to_text_pipeline.seams import TranscriptionSeams
 
 M = WhisperTranscriptionSettings().MAX_CHUNK_DURATION
 
 
 @pytest.fixture
-def transcription_seams(mocker: MockerFixture) -> TranscriptionSeams:
-    return TranscriptionSeams(mocker)
+def transcription_seams(
+    mocker: MockerFixture, feature_flags: InMemoryFeatureFlagClient
+) -> TranscriptionSeams:
+    return TranscriptionSeams(mocker, feature_flags)
 
 
 @pytest.fixture
-def mock_noise_detection_dependencies():
+def mock_noise_detection_dependencies(feature_flags: InMemoryFeatureFlagClient):
+    feature_flags.enable(FeatureFlag.AUDIO_NOISE_FILTERING)
     with (
-        patch(
-            "mcr_meeting.app.use_cases.transcription._shared.preprocess_audio.get_feature_flag_client"
-        ) as mock_get_ff_client,
         patch(
             "mcr_meeting.app.use_cases.transcription._shared.preprocess_audio.is_audio_noisy"
         ) as mock_is_noisy,
@@ -38,7 +40,6 @@ def mock_noise_detection_dependencies():
             "mcr_meeting.app.use_cases.transcription._shared.preprocess_audio.filter_noise_from_audio_bytes"
         ) as mock_filter_noise,
     ):
-        mock_get_ff_client.return_value.is_enabled.return_value = True
         yield SimpleNamespace(
             mock_is_noisy=mock_is_noisy,
             mock_filter_noise=mock_filter_noise,
