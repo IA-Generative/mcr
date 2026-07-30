@@ -45,7 +45,7 @@
 
 <script lang="ts" setup>
 import ActionTile from '@/components/meeting/ActionTile.vue';
-import CreateVideoConferenceModal from '@/components/meeting/modals/CreateVideoConferenceModal.vue';
+import CreateVisioMeetingModal from '@/components/meeting/modals/CreateVisioMeetingModal.vue';
 import RecordMeetingModal from '@/components/meeting/modals/RecordMeetingModal.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { useImportMeeting } from '@/composables/use-import-meeting';
@@ -101,7 +101,7 @@ const { open: openRecordModal } = useModal({
 });
 
 const { open: openVideoConferenceModal } = useModal({
-  component: CreateVideoConferenceModal,
+  component: CreateVisioMeetingModal,
   attrs: {
     onCreateMeeting: (values: AddOnlineMeetingDto) => createMeetingStartCaptureAndRedirect(values),
   },

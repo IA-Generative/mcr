@@ -1,60 +1,45 @@
 <template>
-  <div class="text-xl font-semibold pb-4">{{ $t('meeting-v2.visio-form.parameters') }}</div>
-  <DsfrInputGroup
-    v-model="meetingTitle"
-    :label="$t('meeting-v2.visio-form.meeting-title.title')"
-    :hint="$t('meeting-v2.visio-form.meeting-title.example')"
-    v-bind="meetingTitleAttrs"
-    label-visible
-  />
-  <div class="pb-8">
-    <span class="pb-2">
-      {{ $t('meeting-v2.visio-form.visio-tools') }}
-    </span>
-    <DsfrSelect
-      v-model="selectedPlatform"
-      :options="meetingPlatformOptions"
-      class="w-2/5"
-    />
+  <DsfrNotice
+    type="info"
+    :title="$t('meeting-v2.visio-form.meeting-notice.title')"
+  >
+    <template #desc>
+      <a
+        class="fr-notice__link"
+        :href="URL_GOOD_PRACTICES"
+        target="_blank"
+        rel="noopener external"
+      >
+        {{ $t('meeting-v2.visio-form.meeting-notice.link') }}
+      </a>
+    </template>
+  </DsfrNotice>
+  <div class="pt-2 pb-4">
+    <div class="fr-grid-row fr-grid-row--gutters">
+      <div class="fr-col-8">
+        <DsfrInput
+          v-model="meetingTitle"
+          :label="$t('meeting-v2.visio-form.meeting-title.title')"
+          v-bind="meetingTitleAttrs"
+          label-visible
+        />
+      </div>
+      <div class="fr-col-4 flex items-end">
+        <DsfrSelect
+          v-model="selectedPlatform"
+          :label="$t('meeting-v2.visio-form.visio-tools')"
+          :options="meetingPlatformOptions"
+          default-unselected-text="Sélectionner un outil"
+        />
+      </div>
+    </div>
   </div>
-
   <div
     v-if="selectedPlatform !== null"
     class="pb-4"
   >
-    <div class="text-xl font-semibold pb-2">
-      {{ $t('meeting-v2.visio-form.connection.title') }}
-    </div>
-
-    <DsfrNotice>
-      <template #desc>
-        <div class="flex flex-row items-center">
-          <span
-            class="fr-icon-info-fill fr-icon--sm pr-1"
-            aria-hidden="true"
-          ></span>
-          <i18n-t
-            class="text-xs"
-            keypath="meeting-v2.visio-form.connection.advice"
-            tag="p"
-          >
-            <template #link>
-              <a
-                :href="URL_GOOD_PRACTICES"
-                target="_blank"
-              >
-                {{ $t('meeting-v2.visio-form.connection.link') }}
-              </a>
-            </template>
-          </i18n-t>
-        </div>
-      </template>
-    </DsfrNotice>
+    <component :is="currentVisioToolComponent" />
   </div>
-
-  <component :is="currentVisioToolComponent" />
-
-  <hr />
 
   <div class="flex justify-end">
     <DsfrButton
@@ -81,7 +66,7 @@ import {
   comuPrivateUrlValidator,
   visioMeetingFieldsToVisioMeetingDto,
   VisioMeetingSchema,
-} from './meeting.schema';
+} from './meeting.schema.ts';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { parseComuUrl } from '@/services/lookup/lookup.service';
 import { useI18n } from 'vue-i18n';
@@ -202,26 +187,8 @@ const onSubmit = handleSubmit((values) => {
 </script>
 
 <style scoped>
-:deep() div.fr-notice__body > p {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-:deep(.fr-container) {
-  padding: 0;
-}
-
 :deep(.fr-notice) {
-  background-color: transparent;
-  padding: 0;
-}
-
-:deep(.fr-notice__title:before) {
-  display: none;
-}
-
-:deep(a[target='_blank']::after) {
-  display: none !important; /* enlève l'icône à droite */
+  display: flex;
+  flex-direction: column;
 }
 </style>
