@@ -23,10 +23,6 @@ class Settings(BaseSettings):
         return f"{self.CORE_SERVICE_BASE_URL}/api/user/"
 
     @property
-    def MEMBER_SERVICE_URL(self) -> str:
-        return f"{self.CORE_SERVICE_BASE_URL}/api/members/"
-
-    @property
     def LOOKUP_SERVICE_URL(self) -> str:
         return f"{self.CORE_SERVICE_BASE_URL}/api/lookup/"
 

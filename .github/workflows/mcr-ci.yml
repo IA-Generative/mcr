@@ -75,9 +75,6 @@ jobs:
     runs-on: actions-runner-controller
     env:
       CORE_SERVICE_BASE_URL: ${{ vars.CORE_SERVICE_BASE_URL }}
-      MEETING_SERVICE_URL: ${{ vars.MEETING_SERVICE_URL }}
-      USER_SERVICE_URL: ${{ vars.USER_SERVICE_URL }}
-      MEMBER_SERVICE_URL: ${{ vars.MEMBER_SERVICE_URL }}
       KEYCLOAK_URL: ${{ vars.KEYCLOAK_URL }}
       KEYCLOAK_REALM: ${{ vars.KEYCLOAK_REALM }}
       KEYCLOAK_CLIENT_ID: ${{ vars.KEYCLOAK_CLIENT_ID }}
@@ -117,11 +114,7 @@ jobs:
     if: ${{ needs.filter-out-unmodified-services.outputs.mcr-generation == 'true' }}
     runs-on: actions-runner-controller
     env:
-      MEETING_SERVICE_URL: ${{ vars.MEETING_SERVICE_URL }}
-      USER_SERVICE_URL: ${{ vars.USER_SERVICE_URL }}
-      MEMBER_SERVICE_URL: ${{ vars.MEMBER_SERVICE_URL }}
       LLM_API_URL: ${{ vars.LLM_API_URL }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       LLM_HUB_API_URL: ${{ vars.LLM_HUB_API_URL }}
       LLM_HUB_API_KEY: ${{ secrets.LLM_HUB_API_KEY }}
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
@@ -167,8 +160,6 @@ jobs:
     if: ${{ needs.filter-out-unmodified-services.outputs.mcr-core == 'true' }}
     runs-on: actions-runner-controller
     env:
-      GENERATION_API: ${{ vars.GENERATION_API }}
-      HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
       POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
