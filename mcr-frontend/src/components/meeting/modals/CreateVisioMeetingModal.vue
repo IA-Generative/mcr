@@ -35,14 +35,14 @@ function onSubmit(dto: AddOnlineMeetingDto) {
 <style scoped>
 :global(#meeting-visio-modal-V2.fr-modal__title) {
   color: var(--blue-france-sun-113-625);
-  max-width: 83.33333%;
-  width: 83.33333%;
-  margin-left: 16.66667%;
+  max-width: 83.33%;
+  width: 83.33%;
+  margin-left: 16.67%;
 }
 
 .visio-meeting-modal-title-illustration {
-  max-width: 16.66667%;
-  width: 16.66667%;
+  max-width: 16.67%;
+  width: 16.67%;
   position: absolute;
   top: 2rem;
 }

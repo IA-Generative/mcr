@@ -489,6 +489,8 @@
     },
     "visio-form": {
       "comu": {
+        "radio-id": "Identifiants",
+        "radio-url": "URL modérateur",
         "access_code": "Code d'accès",
         "meeting_id": "ID de la réunion",
         "meeting_id_error": "Un identifiant de réunion COMU doit être composé uniquement de chiffres",
@@ -505,6 +507,10 @@
         "id-no-password": "Un mot de passe est nécessaire quand un identifiant de réunion est fourni",
         "no-field": "Veuillez fournir un URL de réunion ou un identifiant et un mot de passe",
         "password-no-id": "Un identifiant de réunion est nécessaire quand un mot de passe est fourni"
+      },
+      "meeting-notice": {
+        "title": "Pour localiser votre URL ou vos identifiants modérateur,",
+        "link": "consultez cet article"
       },
       "meeting-title": {
         "title": "Titre de votre réunion dans MCR*",

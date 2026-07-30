@@ -1,14 +1,12 @@
 <template>
-  <div class="pb-4">
-    <DsfrInputGroup
-      v-model="webconfUrl"
-      class="m-0"
-      :label="$t('meeting-v2.visio-form.webconf.url')"
-      :hint="$t('meeting-v2.visio-form.webconf.url_hint')"
-      :error-message="webconfUrlError"
-      label-visible
-    />
-  </div>
+  <DsfrInputGroup
+    v-model="webconfUrl"
+    class="m-0"
+    :label="$t('meeting-v2.visio-form.webconf.url')"
+    :hint="$t('meeting-v2.visio-form.webconf.url_hint')"
+    :error-message="webconfUrlError"
+    label-visible
+  />
 </template>
 
 <script setup lang="ts">

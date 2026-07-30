@@ -5,8 +5,8 @@
         v-model="comuConnectionMode"
         legend="Mode de connexion par"
         :options="[
-          { value: 'idcode', name: 'idcode', label: 'identifiants' },
-          { value: 'url', name: 'url', label: 'URL modérateur' },
+          { value: 'idcode', name: 'idcode', label: $t('meeting-v2.visio-form.comu.radio-id') },
+          { value: 'url', name: 'url', label: $t('meeting-v2.visio-form.comu.radio-url') },
         ]"
       />
     </div>
