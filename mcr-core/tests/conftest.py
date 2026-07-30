@@ -21,11 +21,12 @@ from mcr_meeting.app.db.db import (
     db_session_ctx,
     router_db_session_context_manager,
 )
-from mcr_meeting.app.infrastructure.unleash import FeatureFlag
+from mcr_meeting.app.infrastructure.unleash import FeatureFlagSingleton
 from mcr_meeting.app.schemas.S3_types import S3Object
 from mcr_meeting.main import app
 from tests.mocks.in_memory_drive import InMemoryDriveClient
 from tests.mocks.in_memory_email import InMemoryEmailClient
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 from tests.mocks.in_memory_keycloak import InMemoryKeycloak
 from tests.mocks.in_memory_redis import InMemoryRedis
 from tests.mocks.in_memory_s3 import InMemoryS3
@@ -201,35 +202,22 @@ def mock_celery_producer_app(
     return mock_celery_producer_app
 
 
-@pytest.fixture
-def create_mock_feature_flag_client(mocker: MockerFixture):
-    """Mock the feature flag client factory for testing.
+@pytest.fixture(autouse=True)
+def feature_flags() -> Generator[InMemoryFeatureFlagClient, None, None]:
+    """Replace Unleash with an in-memory client, all flags disabled by default.
 
-    Returns a factory function that creates mock feature flag clients
-    with configurable enabled/disabled states for specific flags.
+    Installed on the singleton rather than on each module-level import of
+    ``get_feature_flag_client``, so every call site sees the same client:
 
-    Usage:
-        def test_something(create_mock_feature_flag_client):
-            mock_feature_flag_client = create_mock_feature_flag_client("audio_noise_filtering", enabled=True)
-            # Will return True only for "audio_noise_filtering", False for other flags
-            assert mock_feature_flag_client.is_enabled("audio_noise_filtering") == True
-            assert mock_feature_flag_client.is_enabled("other_flag") == False
-            # Can also verify the flag was called
-            mock_feature_flag_client.is_enabled.assert_called_with("audio_noise_filtering")
+        def test_something(feature_flags):
+            feature_flags.enable(FeatureFlag.AUDIO_NOISE_FILTERING)
+            ...
+            assert FeatureFlag.AUDIO_NOISE_FILTERING in feature_flags.calls
     """
-
-    def _create_mock(flag_name: FeatureFlag, enabled: bool) -> Mock:
-        mock_client = Mock()
-
-        # Create a side_effect that returns enabled only for the specified flag
-        def is_enabled_side_effect(name: str) -> bool:
-            return enabled if name == flag_name else False
-
-        mock_client.is_enabled.side_effect = is_enabled_side_effect
-        mocker.patch(
-            "mcr_meeting.app.infrastructure.unleash.get_feature_flag_client",
-            return_value=mock_client,
-        )
-        return mock_client
-
-    return _create_mock
+    client = InMemoryFeatureFlagClient()
+    singleton = FeatureFlagSingleton.__new__(FeatureFlagSingleton)
+    singleton._feature_flag_client = client
+    original = FeatureFlagSingleton._instance
+    FeatureFlagSingleton._instance = singleton
+    yield client
+    FeatureFlagSingleton._instance = original

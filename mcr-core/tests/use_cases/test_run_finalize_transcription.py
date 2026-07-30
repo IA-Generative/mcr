@@ -1,5 +1,4 @@
 import json
-from unittest.mock import Mock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -20,11 +19,6 @@ FULL_TRANSCRIPT_KEY = "transcription/123/full_transcript.json"
 def _setup_pipeline(in_memory_s3: InMemoryS3, mocker: MockerFixture) -> None:
     in_memory_s3.objects[TRANSCRIPTION_RAW_KEY] = (
         b'[{"id": 0, "start": 0.0, "end": 1.0, "text": "hello", "speaker": "A"}]'
-    )
-    mocker.patch.object(
-        pps,
-        "get_feature_flag_client",
-        return_value=Mock(is_enabled=Mock(return_value=False)),
     )
     mocker.patch.object(pps, "correct_acronyms", side_effect=lambda text: text)
     mocker.patch.object(rf, "extract_participants", return_value=[])

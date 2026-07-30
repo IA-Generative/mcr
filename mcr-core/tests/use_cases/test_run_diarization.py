@@ -20,11 +20,6 @@ _DIARIZATION = [DiarizationSegment(start=0.0, end=1.0, speaker="A")]
 
 
 def _patch_preprocessing(mocker: MockerFixture, wav: BytesIO) -> None:
-    mocker.patch.object(
-        pa,
-        "get_feature_flag_client",
-        return_value=Mock(is_enabled=Mock(return_value=False)),
-    )
     mocker.patch.object(rd.s3, "fetch_audio_bytes", return_value=BytesIO(b"raw"))
     mocker.patch.object(pa, "audio_bytes_to_wav_bytes", return_value=wav)
     mocker.patch.object(pa, "check_audio_is_not_silent")

@@ -1,7 +1,6 @@
 """Test integration for the shared preprocess_audio step."""
 
 from io import BytesIO
-from unittest.mock import patch
 
 import pytest
 import soundfile as sf
@@ -12,32 +11,24 @@ from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.use_cases.transcription._shared.preprocess_audio import (
     preprocess_audio,
 )
-
-_PREPROCESS_FF = (
-    "mcr_meeting.app.use_cases.transcription."
-    "_shared.preprocess_audio.get_feature_flag_client"
-)
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 
 
 @pytest.mark.parametrize("feature_flag_enabled", [True, False])
 @pytest.mark.parametrize("audio_format", ["mp3", "mp4", "m4a", "wav", "mov"])
-@patch(_PREPROCESS_FF)
 def test_integration_pre_process(
-    mock_get_feature_flag_client,
     create_audio_buffer,
-    create_mock_feature_flag_client,
+    feature_flags: InMemoryFeatureFlagClient,
     feature_flag_enabled: bool,
     audio_format: str,
 ):
-    mock_feature_flag_client = create_mock_feature_flag_client(
-        FeatureFlag.AUDIO_NOISE_FILTERING, enabled=feature_flag_enabled
-    )
-    mock_get_feature_flag_client.return_value = mock_feature_flag_client
+    if feature_flag_enabled:
+        feature_flags.enable(FeatureFlag.AUDIO_NOISE_FILTERING)
     audio_buffer = create_audio_buffer(audio_format)
 
     processed_bytes = preprocess_audio(audio_buffer)
 
-    mock_feature_flag_client.is_enabled.assert_any_call("audio_noise_filtering")
+    assert FeatureFlag.AUDIO_NOISE_FILTERING in feature_flags.calls
 
     assert isinstance(processed_bytes, BytesIO)
 
@@ -86,28 +77,20 @@ def test_pre_process_applies_filtering_when_audio_is_noisy(
     mocks.mock_filter_noise.assert_called_once()
 
 
-@patch(_PREPROCESS_FF)
 def test_pre_process_recovers_phase_inverted_audio_when_downmix_enabled(
-    mock_get_feature_flag_client,
     create_phase_inverted_stereo_buffer,
-    create_mock_feature_flag_client,
+    feature_flags: InMemoryFeatureFlagClient,
 ):
-    mock_get_feature_flag_client.return_value = create_mock_feature_flag_client(
-        FeatureFlag.AUDIO_PHASE_AWARE_DOWNMIX, enabled=True
-    )
+    feature_flags.enable(FeatureFlag.AUDIO_PHASE_AWARE_DOWNMIX)
 
     preprocess_audio(create_phase_inverted_stereo_buffer(3.0))
 
 
-@patch(_PREPROCESS_FF)
 def test_pre_process_flags_phase_inverted_audio_when_downmix_disabled(
-    mock_get_feature_flag_client,
     create_phase_inverted_stereo_buffer,
-    create_mock_feature_flag_client,
+    feature_flags: InMemoryFeatureFlagClient,
 ):
-    mock_get_feature_flag_client.return_value = create_mock_feature_flag_client(
-        FeatureFlag.AUDIO_NOISE_FILTERING, enabled=False
-    )
+    feature_flags.disable(FeatureFlag.AUDIO_PHASE_AWARE_DOWNMIX)
 
     with pytest.raises(SilentAudioError):
         preprocess_audio(create_phase_inverted_stereo_buffer(3.0))
