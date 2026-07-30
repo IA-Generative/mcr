@@ -122,6 +122,7 @@ mcr-generation/mcr_generation/app/
 - **Comments**: don't add comments unless to document an IMPORTANT decision — in that case comment the non-obvious _why_ (constraints, ...), not the _what_
 - **Architecture layers**: see [Target architecture (mcr-core)](#target-architecture-mcr-core) below
 - **Commits**: Gitmoji convention — see the `/commit` skill for details
+- **Docker images**: built by **kaniko** in the DSO pipeline (BuildKit only locally) — no `RUN --mount=...`, build against `uv.lock`, one image per service package with the role dispatched by `docker/docker-entrypoint.sh` (dev: `docker-entrypoint.dev.sh`). See the `docker-build` rule (`.claude/rules/docker-build.md`)
 
 ### Target architecture (mcr-core)
 
@@ -157,6 +158,7 @@ Migration direction (existing code that doesn't yet fit):
 - Don't import a use-case from another use-case — share only via `use_cases/_shared/`, and only when the shared piece maps to a real business operation
 - Don't extract shared code just because lines repeat — duplication is not the deciding factor. First decide which layer owns the concern, then place it there: a repeated query belongs in a `db/` repository, cross-cutting types in `schemas`/`models`, business rules in `domain`. Only lift into `use_cases/_shared/` a step that is a real business operation used by multiple use-cases. When unsure, inline it in the use-case rather than inventing a helper.
 - Don't add new dependencies without checking existing ones first
+- Don't use BuildKit-only Dockerfile features (`RUN --mount=type=cache|bind|secret`) — kaniko builds these images in CI
 - Don't bypass ruff/mypy errors — fix them.
 
 ## Environment Files
