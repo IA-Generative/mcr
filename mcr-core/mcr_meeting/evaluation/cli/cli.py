@@ -5,10 +5,6 @@ from pathlib import Path
 from loguru import logger
 
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
-from mcr_meeting.app.infrastructure.speech_to_text_models import (
-    get_diarization_pipeline,
-    get_transcription_model,
-)
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.use_cases.transcription.run_speech_to_text import (
     run_speech_to_text,
@@ -38,8 +34,8 @@ def main() -> None:
         inputs=evaluation_inputs,
         transcribe_audio=partial(
             run_speech_to_text,
-            diarization_processor=DiarizationProcessor(get_diarization_pipeline),
-            transcription_processor=TranscriptionProcessor(get_transcription_model),
+            diarization_processor=DiarizationProcessor(),
+            transcription_processor=TranscriptionProcessor(),
         ),
     )
     summary = pipeline.run_evaluation(output_dir=out_dir)

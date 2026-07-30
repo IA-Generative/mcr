@@ -1,11 +1,8 @@
-import tempfile
 import time
-from collections.abc import Callable
 from io import BytesIO
 
 import httpx
 from loguru import logger
-from pyannote.audio import Pipeline
 
 from mcr_meeting.app.configs.base import (
     CelerySettings,
@@ -16,10 +13,6 @@ from mcr_meeting.app.domain.transcription.speaker_segments import (
     convert_to_french_speaker,
 )
 from mcr_meeting.app.exceptions.exceptions import DiarizationError
-from mcr_meeting.app.infrastructure.unleash import (
-    FeatureFlag,
-    get_feature_flag_client,
-)
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationJobResponse,
     DiarizationJobStatus,
@@ -56,8 +49,7 @@ class _PollCadence:
 
 
 class DiarizationProcessor:
-    def __init__(self, pipeline_provider: Callable[[], Pipeline] | None = None) -> None:
-        self._pipeline_provider = pipeline_provider
+    def __init__(self) -> None:
         self._http_client: httpx.Client | None = None
 
     def _get_http_client(self) -> httpx.Client:
@@ -71,17 +63,6 @@ class DiarizationProcessor:
             )
         return self._http_client
 
-    def _is_api_diarization_enabled(self) -> bool:
-        try:
-            feature_flag_client = get_feature_flag_client()
-            return feature_flag_client.is_enabled(FeatureFlag.API_BASED_DIARIZATION)
-        except Exception as e:
-            logger.warning(
-                "Failed to check diarization feature flag, defaulting to local mode: {}",
-                e,
-            )
-            return False
-
     def diarize(
         self,
         audio_bytes: BytesIO,
@@ -94,36 +75,7 @@ class DiarizationProcessor:
         Returns:
             List[DiarizationSegment]: The diarization result with speaker segments.
         """
-        if self._is_api_diarization_enabled():
-            return self._diarize_async_api(audio_bytes)
-        else:
-            return self._diarize_local(audio_bytes)
-
-    def _diarize_local(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
-        if self._pipeline_provider is None:
-            raise DiarizationError(
-                "Local diarization requested but no pipeline provider was injected"
-            )
-        diarization_pipeline = self._pipeline_provider()
-
-        with tempfile.NamedTemporaryFile(suffix=".wav") as tmp_audio:
-            tmp_audio.write(audio_bytes.getvalue())
-            tmp_audio_path = tmp_audio.name
-
-            pyannote_diarization = diarization_pipeline(tmp_audio_path)
-
-            diarization_segments = [
-                DiarizationSegment(
-                    start=segment.start,
-                    end=segment.end,
-                    speaker=convert_to_french_speaker(speaker),
-                )
-                for segment, _, speaker in pyannote_diarization.itertracks(
-                    yield_label=True
-                )
-            ]
-
-            return diarization_segments
+        return self._diarize_async_api(audio_bytes)
 
     def _submit_diarization_job(self, audio_bytes: BytesIO) -> str:
         client = self._get_http_client()

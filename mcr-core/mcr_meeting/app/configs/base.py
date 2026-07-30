@@ -210,14 +210,6 @@ class WhisperTranscriptionSettings(BaseSettings):
     Configuration settings for Whisper Transcription
     """
 
-    LANGUAGE: str | None = Field(
-        default="fr",
-        description="The language of the audio. If None, language detection will be performed.",
-    )
-    WORD_TIMESTAMPS: bool | None = Field(
-        default=True,
-        description="For the model to return word_timestamps or just segment timestamps.",
-    )
     INITIAL_PROMPT: str | None = Field(
         default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
         description="Prompt passed to the transcription model",
@@ -237,16 +229,6 @@ class Speech2TextSettings(BaseSettings):
     Configuration settings parameters for speech to text transcription
     """
 
-    HUGGINGFACE_API_KEY: str = Field(
-        default="", description="Hugging Face API key for accessing gated models."
-    )
-    STT_MODEL: str = Field(
-        default="large-v3-turbo", description="speech to text model name"
-    )
-    DIARIZATION_MODEL: str = Field(
-        default="pyannote/speaker-diarization-3.1",
-        description="model name for speaker diarization.",
-    )
     NOISE_FILTERS: str = "highpass=f=80,afftdn=nf=-25,agate=threshold=0.008:ratio=2,equalizer=f=250:width_type=h:width=200:g=-2,equalizer=f=3500:width_type=h:width=2500:g=3,acompressor=threshold=-18dB:ratio=2.5:attack=15:release=200:makeup=1,loudnorm=I=-18:LRA=6:TP=-1.5"
 
 
