@@ -15,7 +15,7 @@ from io import BytesIO
 
 import pytest
 
-from mcr_meeting.app.infrastructure import speech_to_text_models
+from mcr_meeting.app.exceptions.exceptions import DiarizationError
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import (
@@ -42,23 +42,20 @@ pytestmark = pytest.mark.usefixtures("in_memory_s3")
 
 
 def _transcribe(meeting_id: int) -> list[SpeakerTranscription]:
-    # Providers are read off the module at call time, after the seams patched it.
     run_diarization(
         meeting_id,
-        DiarizationProcessor(speech_to_text_models.get_diarization_pipeline),
+        DiarizationProcessor(),
     )
     run_transcribe_chunks(
         meeting_id,
-        TranscriptionProcessor(speech_to_text_models.get_transcription_model),
+        TranscriptionProcessor(),
     )
     return run_finalize_transcription(meeting_id)
 
 
-_LOCAL_MODEL_FLAGS = dict(
+_BASE_FLAGS = dict(
     audio_phase_aware_downmix=False,
     audio_noise_filtering=False,
-    api_based_diarization=False,
-    api_based_transcription=False,
     spelling_correction=False,
 )
 
@@ -69,7 +66,7 @@ def test_multi_speaker_golden(
     diarization_result_multiple_speakers: list[DiarizationSegment],
     mock_transcription_segments_normal: list[list[TranscriptionSegment]],
 ) -> None:
-    transcription_seams.install_feature_flags(**_LOCAL_MODEL_FLAGS)
+    transcription_seams.install_feature_flags(**_BASE_FLAGS)
     transcription_seams.install_audio_source(create_audio_buffer("wav"))
     transcription_seams.install_diarization(diarization_result_multiple_speakers)
     transcription_seams.install_transcription(mock_transcription_segments_normal)
@@ -103,7 +100,7 @@ def test_single_speaker_golden(
     diarization_result_single_speaker: list[DiarizationSegment],
     mock_transcription_segments_normal: list[list[TranscriptionSegment]],
 ) -> None:
-    transcription_seams.install_feature_flags(**_LOCAL_MODEL_FLAGS)
+    transcription_seams.install_feature_flags(**_BASE_FLAGS)
     transcription_seams.install_audio_source(create_audio_buffer("wav"))
     transcription_seams.install_diarization(diarization_result_single_speaker)
     transcription_seams.install_transcription(mock_transcription_segments_normal)
@@ -119,20 +116,26 @@ def test_single_speaker_golden(
     assert "3rd segment" in result[0].transcription
 
 
-def test_empty_diarization_returns_empty(
+def test_empty_diarization_fails_the_transcription(
     transcription_seams: TranscriptionSeams,
     create_audio_buffer: Callable[[str], BytesIO],
     diarization_result_empty: list[DiarizationSegment],
 ) -> None:
-    transcription_seams.install_feature_flags(**_LOCAL_MODEL_FLAGS)
+    """A meeting where the API detects no speaker fails instead of yielding an
+    empty transcription.
+
+    The removed local path returned no segments and the pipeline degraded to an
+    empty transcription; the diarization API reports a completed job with no
+    segments as an error. Pinned here so the trade-off can't change unnoticed.
+    """
+    transcription_seams.install_feature_flags(**_BASE_FLAGS)
     transcription_seams.install_audio_source(create_audio_buffer("wav"))
     transcription_seams.install_diarization(diarization_result_empty)
     transcription_seams.install_transcription([])
     transcription_seams.install_llm(participants=[])
 
-    result = _transcribe(MEETING_ID)
-
-    assert result == []
+    with pytest.raises(DiarizationError):
+        _transcribe(MEETING_ID)
 
 
 def test_enrich_participants_failure_keeps_raw_labels(
@@ -141,7 +144,7 @@ def test_enrich_participants_failure_keeps_raw_labels(
     diarization_result_multiple_speakers: list[DiarizationSegment],
     mock_transcription_segments_normal: list[list[TranscriptionSegment]],
 ) -> None:
-    transcription_seams.install_feature_flags(**_LOCAL_MODEL_FLAGS)
+    transcription_seams.install_feature_flags(**_BASE_FLAGS)
     transcription_seams.install_audio_source(create_audio_buffer("wav"))
     transcription_seams.install_diarization(diarization_result_multiple_speakers)
     transcription_seams.install_transcription(mock_transcription_segments_normal)
@@ -165,7 +168,7 @@ def test_participant_names_replace_speaker_labels(
     diarization_result_multiple_speakers: list[DiarizationSegment],
     mock_transcription_segments_normal: list[list[TranscriptionSegment]],
 ) -> None:
-    transcription_seams.install_feature_flags(**_LOCAL_MODEL_FLAGS)
+    transcription_seams.install_feature_flags(**_BASE_FLAGS)
     transcription_seams.install_audio_source(create_audio_buffer("wav"))
     transcription_seams.install_diarization(diarization_result_multiple_speakers)
     transcription_seams.install_transcription(mock_transcription_segments_normal)

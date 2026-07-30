@@ -268,34 +268,19 @@ class TestPollDiarizationJob:
 
 
 class TestDiarizeRouting:
-    def _diarize_with_flag(self, enabled: bool) -> tuple[MagicMock, MagicMock]:
+    def test_diarize_always_uses_the_async_job_api(self) -> None:
         processor = DiarizationProcessor()
-        ff_client = MagicMock()
-        ff_client.is_enabled.return_value = enabled
 
-        with (
-            patch.object(dp, "get_feature_flag_client", return_value=ff_client),
-            patch.object(processor, "_diarize_async_api") as mock_async,
-            patch.object(processor, "_diarize_local") as mock_local,
-        ):
+        with patch.object(processor, "_diarize_async_api") as mock_async:
             processor.diarize(BytesIO(b"audio"))
 
-        return mock_async, mock_local
-
-    def test_routes_to_async_api_when_flag_on(self) -> None:
-        mock_async, mock_local = self._diarize_with_flag(enabled=True)
-
         mock_async.assert_called_once()
-        mock_local.assert_not_called()
-
-    def test_routes_to_local_when_flag_off(self) -> None:
-        mock_async, mock_local = self._diarize_with_flag(enabled=False)
-
-        mock_local.assert_called_once()
-        mock_async.assert_not_called()
 
     def test_sync_diarize_api_is_removed(self) -> None:
         assert not hasattr(DiarizationProcessor, "_diarize_api")
+
+    def test_local_diarization_path_is_removed(self) -> None:
+        assert not hasattr(DiarizationProcessor, "_diarize_local")
 
 
 class TestHttpClientTimeout:

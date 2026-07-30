@@ -1,12 +1,14 @@
 """Test integration of the shared transcribe_diarized_audio step."""
 
 from io import BytesIO
-from unittest.mock import MagicMock, patch
 
 import pytest
 
 from mcr_meeting.app.configs.base import WhisperTranscriptionSettings
-from mcr_meeting.app.infrastructure import speech_to_text_models
+from mcr_meeting.app.exceptions.exceptions import (
+    DiarizationError,
+    TranscriptionError,
+)
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import (
@@ -17,24 +19,18 @@ from mcr_meeting.app.schemas.transcription_schema import (
 from mcr_meeting.app.use_cases.transcription._shared.transcribe_diarized_audio import (
     transcribe_diarized_audio,
 )
+from tests.services.speech_to_text_pipeline.seams import TranscriptionSeams
 
 transcription_settings = WhisperTranscriptionSettings()
 M = transcription_settings.MAX_CHUNK_DURATION
-
-_DIARIZATION_PIPELINE = (
-    "mcr_meeting.app.infrastructure.speech_to_text_models.get_diarization_pipeline"
-)
-_TRANSCRIPTION_MODEL = (
-    "mcr_meeting.app.infrastructure.speech_to_text_models.get_transcription_model"
-)
 
 
 def run_the_code_to_test(
     pre_processed_audio_bytes: BytesIO,
 ) -> list[DiarizedTranscriptionSegment]:
-    diarization_result = DiarizationProcessor(
-        speech_to_text_models.get_diarization_pipeline
-    ).diarize(audio_bytes=pre_processed_audio_bytes)
+    diarization_result = DiarizationProcessor().diarize(
+        audio_bytes=pre_processed_audio_bytes
+    )
 
     if not diarization_result:
         return []
@@ -42,7 +38,7 @@ def run_the_code_to_test(
     return transcribe_diarized_audio(
         pre_processed_audio_bytes,
         diarization_result,
-        TranscriptionProcessor(speech_to_text_models.get_transcription_model),
+        TranscriptionProcessor(),
     )
 
 
@@ -71,47 +67,20 @@ def run_the_code_to_test(
         ),
     ],
 )
-@patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
-@patch("mcr_meeting.app.infrastructure.transcription.get_feature_flag_client")
-@patch(_TRANSCRIPTION_MODEL)
-@patch(_DIARIZATION_PIPELINE)
 def test_integration_center_process_normal_flow(
-    mock_get_diarization_pipeline: MagicMock,
-    mock_get_transcription_model: MagicMock,
-    mock_get_feature_flag_client_transcription: MagicMock,
-    mock_get_feature_flag_client_diarization: MagicMock,
+    transcription_seams: TranscriptionSeams,
     diarization_fixture: str,
     transcription_fixture: str,
     expected_segments_count: int,
     expected_speakers: list[str],
     pre_processed_audio_bytes: BytesIO,
-    create_mock_feature_flag_client,
     request: pytest.FixtureRequest,
 ) -> None:
     diarization_result = request.getfixturevalue(diarization_fixture)
     transcription_segments_list = request.getfixturevalue(transcription_fixture)
 
-    mock_get_feature_flag_client_diarization.return_value = (
-        create_mock_feature_flag_client("api_based_diarization", enabled=False)
-    )
-    mock_get_feature_flag_client_transcription.return_value = (
-        create_mock_feature_flag_client("api_based_transcription", enabled=False)
-    )
-
-    mock_diarization_pipeline = MagicMock()
-    mock_diarization_pipeline.return_value = MagicMock(
-        itertracks=lambda yield_label: [
-            (MagicMock(start=seg.start, end=seg.end), None, seg.speaker)
-            for seg in diarization_result
-        ]
-    )
-    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
-
-    mock_model = MagicMock()
-    mock_model.transcribe.side_effect = [
-        (iter(segments), MagicMock()) for segments in transcription_segments_list
-    ]
-    mock_get_transcription_model.return_value = mock_model
+    transcription_seams.install_diarization(diarization_result)
+    transcription_seams.install_transcription(transcription_segments_list)
 
     transcription_segments = run_the_code_to_test(pre_processed_audio_bytes)
 
@@ -149,70 +118,37 @@ def test_integration_center_process_normal_flow(
         assert transcription_segments[6].speaker == "Intervenant 2"
 
 
-@patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
-@patch(_DIARIZATION_PIPELINE)
 def test_integration_center_process_empty_diarization(
-    mock_get_diarization_pipeline: MagicMock,
-    mock_get_feature_flag_client_diarization: MagicMock,
+    transcription_seams: TranscriptionSeams,
     pre_processed_audio_bytes: BytesIO,
-    create_mock_feature_flag_client,
 ) -> None:
-    mock_get_feature_flag_client_diarization.return_value = (
-        create_mock_feature_flag_client("api_based_diarization", enabled=False)
-    )
+    """A meeting where the API detects no speaker fails instead of yielding an
+    empty transcription.
 
-    mock_diarization_pipeline = MagicMock()
-    mock_diarization_pipeline.return_value = MagicMock(
-        itertracks=lambda yield_label: []
-    )
-    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
+    The removed local path returned no segments and the pipeline degraded to an
+    empty transcription; the diarization API reports a completed job with no
+    segments as an error. Pinned here so the trade-off can't change unnoticed.
+    """
+    transcription_seams.install_diarization([])
 
-    transcription_segments = run_the_code_to_test(pre_processed_audio_bytes)
-
-    assert len(transcription_segments) == 0
+    with pytest.raises(DiarizationError):
+        run_the_code_to_test(pre_processed_audio_bytes)
 
 
-@patch("mcr_meeting.app.infrastructure.diarization.get_feature_flag_client")
-@patch("mcr_meeting.app.infrastructure.transcription.get_feature_flag_client")
-@patch(_TRANSCRIPTION_MODEL)
-@patch(_DIARIZATION_PIPELINE)
-def test_integration_center_process_with_empty_chunks(
-    mock_get_diarization_pipeline: MagicMock,
-    mock_get_transcription_model: MagicMock,
-    mock_get_feature_flag_client_transcription: MagicMock,
-    mock_get_feature_flag_client_diarization: MagicMock,
+def test_a_chunk_without_speech_fails_the_transcription(
+    transcription_seams: TranscriptionSeams,
     diarization_result_multiple_speakers: list[DiarizationSegment],
     mock_transcription_segments_with_empty: list[list[TranscriptionSegment]],
     pre_processed_audio_bytes: BytesIO,
-    create_mock_feature_flag_client,
 ) -> None:
-    diarization_result = diarization_result_multiple_speakers
+    """A chunk the API returns no segments for aborts the whole transcription.
 
-    mock_get_feature_flag_client_diarization.return_value = (
-        create_mock_feature_flag_client("api_based_diarization", enabled=False)
-    )
-    mock_get_feature_flag_client_transcription.return_value = (
-        create_mock_feature_flag_client("api_based_transcription", enabled=False)
-    )
+    The removed local path skipped such a chunk and kept the rest; the API path
+    treats it as an error, so the meeting fails instead of losing a chunk
+    silently. Asserted here so the trade-off can't change unnoticed.
+    """
+    transcription_seams.install_diarization(diarization_result_multiple_speakers)
+    transcription_seams.install_transcription(mock_transcription_segments_with_empty)
 
-    mock_diarization_pipeline = MagicMock()
-    mock_diarization_pipeline.return_value = MagicMock(
-        itertracks=lambda yield_label: [
-            (MagicMock(start=seg.start, end=seg.end), None, seg.speaker)
-            for seg in diarization_result
-        ]
-    )
-    mock_get_diarization_pipeline.return_value = mock_diarization_pipeline
-
-    mock_model = MagicMock()
-    mock_model.transcribe.side_effect = [
-        (iter(segments), MagicMock())
-        for segments in mock_transcription_segments_with_empty
-    ]
-    mock_get_transcription_model.return_value = mock_model
-
-    transcription_segments = run_the_code_to_test(pre_processed_audio_bytes)
-
-    assert len(transcription_segments) == 2
-    assert transcription_segments[0].text == "1st segment"
-    assert transcription_segments[1].text == "3rd segment"
+    with pytest.raises(TranscriptionError):
+        run_the_code_to_test(pre_processed_audio_bytes)
