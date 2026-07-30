@@ -112,12 +112,16 @@ docker-build-frontend:
       dotenv: digest.env
     expire_in: 30 min
 
+# mcr-core ships ONE image for both roles (api + transcription worker); the role is
+# selected at run time by docker-entrypoint.sh via the deployment's `args`. Building
+# it once means api and worker can never run different commits, and the deploy
+# promotes a single digest — hence both *_IMAGE_SHA vars carry the same value.
 docker-build-core:
   variables:
     WORKING_DIR: mcr-core
     IMAGE_NAMES: ${CI_PROJECT_NAME}-core:${IMAGE_TAG}
-    DOCKERFILE: "mcr-core/Dockerfile"
-    EXTRA_BUILD_ARGS: "--target=api"
+    DOCKERFILE: "mcr-core/docker/Dockerfile"
+    EXTRA_BUILD_ARGS: "--target=prod"
   rules:
     - if: *is-manual-trigger
     - if: *is-build-mode
@@ -131,30 +135,6 @@ docker-build-core:
       set -x
       echo "Built core with image tag - ${IMAGE_TAG}"
       echo "CORE_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
-  artifacts:
-    reports:
-      dotenv: digest.env
-    expire_in: 30 min
-
-docker-build-transcription-worker:
-  variables:
-    WORKING_DIR: mcr-core
-    IMAGE_NAMES: ${CI_PROJECT_NAME}-transcription-worker:${IMAGE_TAG}
-    DOCKERFILE: "mcr-core/Dockerfile"
-    EXTRA_BUILD_ARGS: "--target=worker"
-  rules:
-    - if: *is-manual-trigger
-    - if: *is-build-mode
-      changes:
-        - mcr-core/**/*
-  stage: docker-build
-  extends:
-    - .mcr-kaniko-build
-  after_script:
-    - |
-      set -x 
-      echo "Built transcription-worker with image tag - ${IMAGE_TAG}"
-      echo "TR_WORKER_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
   artifacts:
     reports:
       dotenv: digest.env
@@ -267,7 +247,7 @@ rollout-infra:
             \"IMAGE_TAG\": \"${IMAGE_TAG}\",
             \"CORE_IMAGE_SHA\": \"${CORE_IMAGE_SHA}\",
             \"FRONTEND_IMAGE_SHA\": \"${FRONTEND_IMAGE_SHA}\",
-            \"TR_WORKER_IMAGE_SHA\": \"${TR_WORKER_IMAGE_SHA}\",
+            \"TR_WORKER_IMAGE_SHA\": \"${CORE_IMAGE_SHA}\",
             \"GATEWAY_IMAGE_SHA\": \"${GATEWAY_IMAGE_SHA}\",
             \"GENERATION_IMAGE_SHA\": \"${GENERATION_IMAGE_SHA}\",
             \"CP_WORKER_IMAGE_SHA\": \"${CP_WORKER_IMAGE_SHA}\"
