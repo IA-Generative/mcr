@@ -32,10 +32,6 @@ from loguru import logger
 
 from mcr_meeting.app.configs.base import EvaluationSettings
 from mcr_meeting.app.infrastructure.diarization import DiarizationProcessor
-from mcr_meeting.app.infrastructure.speech_to_text_models import (
-    get_diarization_pipeline,
-    get_transcription_model,
-)
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.transcription_schema import DiarizedTranscriptionSegment
 from mcr_meeting.app.use_cases.transcription.run_speech_to_text import (
@@ -181,8 +177,8 @@ def main() -> None:
 
     transcribe_audio = partial(
         run_speech_to_text,
-        diarization_processor=DiarizationProcessor(get_diarization_pipeline),
-        transcription_processor=TranscriptionProcessor(get_transcription_model),
+        diarization_processor=DiarizationProcessor(),
+        transcription_processor=TranscriptionProcessor(),
     )
     results_manager = ResultsManager(OUTPUT_DIR, dev=True)
 
