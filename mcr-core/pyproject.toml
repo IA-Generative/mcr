@@ -41,20 +41,9 @@ worker = [
     "pandas>=2.3.1",
     "jiwer>=4.0.0",
     "ffmpeg-python>=0.2.0",
-    "openai-whisper==20250625",
-    "transformers==4.52.4",
-    "torch==2.7.1",
-    "torchaudio==2.7.1",
-    "pytorch-lightning==2.5.5",
-    "lightning==2.5.5",
-    "onnxruntime==1.21.0",
-    "llvmlite>=0.44.0",
-    "numba>=0.61.0",
-    "pyannote-audio",
     "pyannote-metrics",
     "httpx>=0.28.1",
     "sentry-sdk[celery]>=2.34.1",
-    "faster-whisper>=1.2.0",
     "openai==1.92.2",
     "instructor==1.9.0",
     "langchain-text-splitters == 0.3.9",
@@ -114,12 +103,10 @@ warn_required_dynamic_aliases = true
 [[tool.mypy.overrides]]
 # This ignore type check on untyped imported modules.
 module = [
-    "whisper_timestamped",
     "jiwer",
     "ffmpeg",
     "num2words",
-    "pyannote.*",
-    "faster_whisper",
+    "pyannote.*",  # pyannote.core / pyannote.metrics, used by the ASR evaluations
     "soundfile",
     "docxtpl.*",
 ]
@@ -157,19 +144,6 @@ extend_exclude = ["scripts/**", "notebooks/**"]
 
 [tool.deptry.package_module_name_map]
 "ffmpeg-python" = ["ffmpeg"]
-
-[tool.deptry.per_rule_ignores]
-# These dependencies are used by whisper_timestamped but are never imported in the code
-DEP002 = [
-    "openai-whisper",
-    "transformers",
-    "torchaudio",
-    "pytorch-lightning",
-    "lightning",
-    "onnxruntime",
-    "llvmlite",
-    "numba",
-]
 
 # -----------------------------------------------------------------------------
 # import-linter — enforce the target architecture from CLAUDE.md.
