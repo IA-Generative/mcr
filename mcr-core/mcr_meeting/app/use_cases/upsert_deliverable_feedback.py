@@ -16,16 +16,25 @@ def upsert_deliverable_feedback(
     user_keycloak_uuid: UUID4,
     vote_type: VoteType,
     comment: str | None,
+    reasons: list[str],
 ) -> DeliverableFeedback:
     deliverable, owner_keycloak_uuid = deliverable_repository.get_by_id_with_owner_uuid(
         deliverable_id
     )
     authorize_meeting_owner(owner_keycloak_uuid, user_keycloak_uuid)
     ensure_deliverable_accepts_feedback(deliverable)
-    validate_feedback_content(vote_type=vote_type, comment=comment)
+    validate_feedback_content(
+        vote_type=vote_type,
+        comment=comment,
+        reasons=reasons,
+        deliverable_type=deliverable.type,
+    )
 
     with UnitOfWork():
         feedback = deliverable_feedback_repository.upsert(
-            deliverable_id=deliverable_id, vote_type=vote_type, comment=comment
+            deliverable_id=deliverable_id,
+            vote_type=vote_type,
+            comment=comment,
+            reasons=reasons,
         )
     return feedback

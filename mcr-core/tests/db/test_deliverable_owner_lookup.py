@@ -81,6 +81,7 @@ def test_rating_a_deliverable_reads_the_database_twice_at_most(
             user_keycloak_uuid=caller,
             vote_type=VoteType.POSITIVE,
             comment="ok",
+            reasons=[],
         )
 
     assert counter["count"] == 2

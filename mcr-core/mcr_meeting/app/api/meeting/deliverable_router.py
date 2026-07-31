@@ -7,9 +7,11 @@ from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
 from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE
+from mcr_meeting.app.models.deliverable_model import DeliverableType
 from mcr_meeting.app.schemas.deliverable_feedback_schema import (
     DeliverableFeedbackResponse,
     DeliverableFeedbackUpsertRequest,
+    ReasonCatalogueEntryResponse,
 )
 from mcr_meeting.app.schemas.deliverable_schema import (
     CustomDeliverableCreateRequest,
@@ -23,6 +25,9 @@ from mcr_meeting.app.use_cases.deactivate_deliverable_feedback import (
 )
 from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 from mcr_meeting.app.use_cases.get_deliverable_file import get_deliverable_file
+from mcr_meeting.app.use_cases.list_deliverable_feedback_reasons import (
+    list_deliverable_feedback_reasons,
+)
 from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
 )
@@ -101,6 +106,16 @@ async def delete_deliverable(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@deliverables_router.get("/feedback-reasons")
+async def list_deliverable_feedback_reasons_route() -> dict[
+    DeliverableType, ReasonCatalogueEntryResponse
+]:
+    return {
+        deliverable_type: ReasonCatalogueEntryResponse.model_validate(entry)
+        for deliverable_type, entry in list_deliverable_feedback_reasons().items()
+    }
+
+
 @deliverables_router.put("/{deliverable_id}/feedback")
 async def upsert_deliverable_feedback_route(
     deliverable_id: int,
@@ -112,6 +127,7 @@ async def upsert_deliverable_feedback_route(
         user_keycloak_uuid=x_user_keycloak_uuid,
         vote_type=body.vote_type,
         comment=body.comment,
+        reasons=body.reasons,
     )
     return DeliverableFeedbackResponse.model_validate(feedback)
 
