@@ -278,6 +278,37 @@ class TestCompleteTranscription:
         assert len(deliverables) == 1
         assert deliverables[0].external_url == in_memory_drive.url
 
+    def test_transition_commits_even_if_drive_enrichment_fails(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        db_session: Session,
+        mocker: MockerFixture,
+    ) -> None:
+        # guard-before-IO: the core transition to TRANSCRIPTION_DONE must commit
+        # even when the best-effort Drive enrichment blows up — a completed
+        # transcription is never lost to a failing side effect.
+        mocker.patch(
+            "mcr_meeting.app.use_cases.complete_transcription."
+            "try_upload_deliverable_to_drive",
+            side_effect=RuntimeError("drive down"),
+        )
+
+        complete_transcription(
+            meeting_id=transcription_in_progress_meeting.id,
+            transcriptions=sample_transcriptions,
+        )
+
+        db_session.refresh(transcription_in_progress_meeting)
+        assert (
+            transcription_in_progress_meeting.status == MeetingStatus.TRANSCRIPTION_DONE
+        )
+        deliverables = _transcription_deliverables(transcription_in_progress_meeting.id)
+        assert deliverables[0].status == DeliverableStatus.AVAILABLE
+
     def test_records_single_transcription_done_transition(
         self,
         transcription_in_progress_meeting: Meeting,

@@ -287,6 +287,10 @@ class RetrySettings(BaseSettings):
     S3_CONNECT_TIMEOUT: float = 5.0
     S3_READ_TIMEOUT: float = 30.0
 
+    CORE_RETRY_ATTEMPTS: int = 3
+    CORE_RETRY_INITIAL_DELAY: float = 0.5
+    CORE_RETRY_MAX_DELAY: float = 5.0
+
     TASK_RETRY_MAX_RETRIES: int = 6
     TASK_RETRY_BACKOFF: int = 30
     TASK_RETRY_BACKOFF_MAX: int = 600

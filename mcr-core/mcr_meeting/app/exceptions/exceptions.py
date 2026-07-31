@@ -112,6 +112,10 @@ class S3TransientError(TransientInfraError):
     """Transient S3 error"""
 
 
+class CoreServiceTransientError(TransientInfraError):
+    """Transient network error while calling the mcr-core service."""
+
+
 class TokenValidationError(Exception):
     """Raised when a bearer token is absent, malformed, expired, tampered, or not
     minted by the expected frontend client."""

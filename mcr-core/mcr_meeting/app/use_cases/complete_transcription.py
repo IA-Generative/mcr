@@ -1,5 +1,7 @@
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from datetime import datetime, timezone
+from time import perf_counter
 
 from loguru import logger
 
@@ -45,24 +47,50 @@ TRANSCRIPTION_FILENAME = "v0.docx"
 def complete_transcription(
     meeting_id: int, transcriptions: list[SpeakerTranscription] | None = None
 ) -> None:
+    # This endpoint runs several external I/O stages synchronously before it
+    # answers, and can exceed the worker's HTTP timeout (see ticket 1009). Time
+    # each stage so we can tell which one is slow when it does — always emitted,
+    # not only on error, so the signal survives the worker-side retry.
+    timings: dict[str, float] = {}
+
     meeting = get_meeting_with_owner(meeting_id)
 
-    segments: Sequence[HasSpeakerTranscription] = (
-        transcriptions
-        if transcriptions is not None
-        else read_full_transcript(meeting_id).segments
+    with _timed("read_transcript", timings):
+        segments: Sequence[HasSpeakerTranscription] = (
+            transcriptions
+            if transcriptions is not None
+            else read_full_transcript(meeting_id).segments
+        )
+    with _timed("render_docx", timings):
+        docx_buffer = render_transcription_docx(meeting.name, segments)
+    with _timed("s3_upload", timings):
+        upload_transcription_to_s3(
+            meeting_id=meeting.id,
+            filename=TRANSCRIPTION_FILENAME,
+            content=docx_buffer,
+        )
+
+    # Core write first (guard-before-IO): the transition to DONE must commit
+    # before any best-effort enrichment, so a slow or failing Drive/email side
+    # effect can never leave a finished transcription stuck as FAILED.
+    with _timed("db_commit", timings):
+        deliverable_id = _commit_transcription_done(meeting_id)
+
+    _enrich_deliverable_with_drive_link(
+        meeting, deliverable_id, docx_buffer.getvalue(), timings
     )
-    docx_buffer = render_transcription_docx(meeting.name, segments)
-    upload_transcription_to_s3(
-        meeting_id=meeting.id,
-        filename=TRANSCRIPTION_FILENAME,
-        content=docx_buffer,
+    with _timed("notify_email", timings):
+        _notify_transcription_ready_best_effort(meeting)
+
+    logger.info(
+        "complete_transcription timings meeting={} total={:.2f}s {}",
+        meeting_id,
+        sum(timings.values()),
+        " ".join(f"{stage}={seconds:.2f}s" for stage, seconds in timings.items()),
     )
 
-    external_url = try_upload_deliverable_to_drive(
-        meeting, DeliverableType.TRANSCRIPTION, docx_buffer.getvalue()
-    )
 
+def _commit_transcription_done(meeting_id: int) -> int:
     with UnitOfWork():
         # Same lock as request_deliverable: serialises this drain against a
         # concurrent request so a REQUESTED report is never left orphaned.
@@ -83,10 +111,40 @@ def complete_transcription(
             meeting_id=locked_meeting.id,
             deliverable_type=DeliverableType.TRANSCRIPTION,
         )
-        deliverable_transitions.mark_available(deliverable, external_url)
+        # The Drive URL is filled in afterwards, best-effort — the deliverable is
+        # already usable from its S3 copy, so availability isn't gated on Drive.
+        deliverable_transitions.mark_available(deliverable, external_url=None)
         _drain_requested_reports(locked_meeting)
+        return deliverable.id
 
-    _notify_transcription_ready_best_effort(meeting)
+
+def _enrich_deliverable_with_drive_link(
+    meeting: Meeting,
+    deliverable_id: int,
+    file_bytes: bytes,
+    timings: dict[str, float],
+) -> None:
+    with _timed("drive_upload", timings):
+        try:
+            external_url = try_upload_deliverable_to_drive(
+                meeting, DeliverableType.TRANSCRIPTION, file_bytes
+            )
+            if external_url is not None:
+                with UnitOfWork():
+                    deliverable_repository.set_external_url(
+                        deliverable_id, external_url
+                    )
+        except Exception:
+            logger.exception("Drive enrichment failed for meeting {}", meeting.id)
+
+
+@contextmanager
+def _timed(stage: str, timings: dict[str, float]) -> Iterator[None]:
+    start = perf_counter()
+    try:
+        yield
+    finally:
+        timings[stage] = perf_counter() - start
 
 
 def _drain_requested_reports(meeting: Meeting) -> None:
