@@ -25,6 +25,7 @@ declare module 'vue' {
     DeliverableFeedbackModal: typeof import('./components/meeting/deliverable-feedback/DeliverableFeedbackModal.vue')['default']
     DeliverableFeedbackThumbs: typeof import('./components/meeting/deliverable-feedback/DeliverableFeedbackThumbs.vue')['default']
     DeliverableTypeCard: typeof import('./components/meeting/DeliverableTypeCard.vue')['default']
+    DeliverableTypeCardActions: typeof import('./components/meeting/DeliverableTypeCardActions.vue')['default']
     DsfrAlert: typeof import('@gouvminint/vue-dsfr')['DsfrAlert']
     DsfrButton: typeof import('@gouvminint/vue-dsfr')['DsfrButton']
     DsfrButtonGroup: typeof import('@gouvminint/vue-dsfr')['DsfrButtonGroup']
