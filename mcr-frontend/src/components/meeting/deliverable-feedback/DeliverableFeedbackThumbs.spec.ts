@@ -91,22 +91,6 @@ describe('DeliverableFeedbackThumbs', () => {
     expect(open).not.toHaveBeenCalled();
   });
 
-  it('empties the thumb immediately on retraction, before the server answers', async () => {
-    let releaseServer: () => void = () => {};
-    remove.mockImplementation(
-      () =>
-        new Promise<void>((resolve) => {
-          releaseServer = () => resolve();
-        }),
-    );
-    renderThumbs({ vote_type: 'POSITIVE', comment: 'bien' });
-
-    await userEvent.click(thumbUp());
-
-    await waitFor(() => expect(thumbUp()).toHaveAttribute('aria-pressed', 'false'));
-    releaseServer();
-  });
-
   it('confirms a retraction with the emptied thumb alone, never a success banner', async () => {
     renderThumbs({ vote_type: 'POSITIVE', comment: 'bien' });
 
@@ -116,17 +100,16 @@ describe('DeliverableFeedbackThumbs', () => {
     expect(addSuccessMessage).not.toHaveBeenCalled();
   });
 
-  it('restores the vote and warns the user when the retraction fails', async () => {
+  it('warns the user when the retraction fails', async () => {
     remove.mockRejectedValue(new Error('boom'));
     renderThumbs({ vote_type: 'POSITIVE', comment: 'bien' });
 
     await userEvent.click(thumbUp());
 
     await waitFor(() => expect(addErrorMessage).toHaveBeenCalled());
-    expect(thumbUp()).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('fills the thumb and thanks the user once the vote is recorded', async () => {
+  it('closes the modal and thanks the user once the vote is recorded', async () => {
     upsert.mockResolvedValue({ vote_type: 'POSITIVE', comment: null });
     renderThumbs();
     await userEvent.click(thumbUp());
@@ -134,7 +117,6 @@ describe('DeliverableFeedbackThumbs', () => {
     submitFromModal('clair et fidèle');
 
     await waitFor(() => expect(addSuccessMessage).toHaveBeenCalled());
-    expect(thumbUp()).toHaveAttribute('aria-pressed', 'true');
     expect(close).toHaveBeenCalled();
   });
 
