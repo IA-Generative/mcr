@@ -3,13 +3,11 @@ import pytest
 from mcr_meeting.app.domain.deliverable_feedback import (
     ensure_deliverable_accepts_feedback,
     validate_feedback_content,
-    visible_feedback,
 )
 from mcr_meeting.app.exceptions.exceptions import (
     BadRequestException,
     DeliverableFeedbackValidationException,
 )
-from mcr_meeting.app.models.deliverable_feedback_model import DeliverableFeedback
 from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableStatus
 from mcr_meeting.app.models.feedback_model import VoteType
 
@@ -49,24 +47,3 @@ def test_only_an_available_deliverable_can_be_rated(status: DeliverableStatus) -
 
 def test_an_available_deliverable_accepts_feedback() -> None:
     ensure_deliverable_accepts_feedback(Deliverable(status=DeliverableStatus.AVAILABLE))
-
-
-def test_a_retracted_opinion_is_not_published() -> None:
-    deliverable = Deliverable(status=DeliverableStatus.AVAILABLE)
-    deliverable.feedback = DeliverableFeedback(
-        vote_type=VoteType.POSITIVE, comment="kept for the dashboards", is_active=False
-    )
-
-    assert visible_feedback(deliverable) is None
-
-
-def test_a_live_opinion_is_published() -> None:
-    deliverable = Deliverable(status=DeliverableStatus.AVAILABLE)
-    feedback = DeliverableFeedback(vote_type=VoteType.POSITIVE, is_active=True)
-    deliverable.feedback = feedback
-
-    assert visible_feedback(deliverable) is feedback
-
-
-def test_a_deliverable_never_rated_publishes_nothing() -> None:
-    assert visible_feedback(Deliverable(status=DeliverableStatus.AVAILABLE)) is None

@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, Header, Response, status
 from fastapi.responses import StreamingResponse
 from pydantic import UUID4
 
-from mcr_meeting.app.api._shared.deliverable_response import build_deliverable_response
 from mcr_meeting.app.api._shared.response_headers import create_safe_filename_header
 from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
@@ -66,7 +65,7 @@ async def list_meeting_deliverables(
         meeting_id=meeting_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
     return DeliverableListResponse(
-        deliverables=[build_deliverable_response(row) for row in rows]
+        deliverables=[DeliverableResponse.model_validate(row) for row in rows]
     )
 
 
@@ -88,7 +87,7 @@ async def create_deliverable(
         deliverable_type=body.type,
         custom_prompt=custom_prompt,
     )
-    return build_deliverable_response(deliverable)
+    return DeliverableResponse.model_validate(deliverable)
 
 
 @deliverables_router.delete("/{deliverable_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -150,7 +149,7 @@ async def deliverable_start_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_report_in_progress(deliverable_id=deliverable_id)
-    return build_deliverable_response(deliverable)
+    return DeliverableResponse.model_validate(deliverable)
 
 
 @deliverables_router.post("/{deliverable_id}/success")
@@ -162,7 +161,7 @@ async def deliverable_success_callback(
         deliverable_id=deliverable_id,
         report_response=body.report_response,
     )
-    return build_deliverable_response(deliverable)
+    return DeliverableResponse.model_validate(deliverable)
 
 
 @deliverables_router.post("/{deliverable_id}/fail")
@@ -179,4 +178,4 @@ async def deliverable_fail_callback(
     deliverable_id: int,
 ) -> DeliverableResponse:
     deliverable = mark_report_failure(deliverable_id=deliverable_id)
-    return build_deliverable_response(deliverable)
+    return DeliverableResponse.model_validate(deliverable)
