@@ -128,9 +128,30 @@ class S3Settings(BaseSettings):
 class ApiSettings(BaseSettings):
     CORE_SERVICE_BASE_URL: str
 
+    HTTP_CONNECT_TIMEOUT: float = Field(
+        default=5.0, description="Connect timeout in seconds for calls to mcr-core"
+    )
+    HTTP_READ_TIMEOUT: float = Field(
+        default=30.0, description="Read timeout in seconds for calls to mcr-core"
+    )
+
     @property
     def MCR_CORE_API_URL(self) -> str:
         return f"{self.CORE_SERVICE_BASE_URL}/api"
+
+
+class CallbackRetrySettings(BaseSettings):
+    CALLBACK_RETRY_MAX_ATTEMPTS: int = Field(
+        default=3,
+        ge=1,
+        description="Max attempts for a callback on transient network errors.",
+    )
+    CALLBACK_RETRY_MIN_WAIT: float = Field(
+        default=0.5, description="Minimum wait in seconds between callback retries"
+    )
+    CALLBACK_RETRY_MAX_WAIT: float = Field(
+        default=5.0, description="Maximum wait in seconds between callback retries"
+    )
 
 
 class InProgressCallbackSettings(BaseSettings):
