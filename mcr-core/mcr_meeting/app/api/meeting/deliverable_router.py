@@ -125,9 +125,7 @@ async def upsert_deliverable_feedback_route(
     feedback = upsert_deliverable_feedback(
         deliverable_id=deliverable_id,
         user_keycloak_uuid=x_user_keycloak_uuid,
-        vote_type=body.vote_type,
-        comment=body.comment,
-        reasons=body.reasons,
+        feedback_request=body,
     )
     return DeliverableFeedbackResponse.model_validate(feedback)
 
