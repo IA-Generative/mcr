@@ -69,14 +69,18 @@ describe('useDeliverableFeedback optimistic cache', () => {
     });
     await flushPromises();
 
-    expect(cachedFeedback(queryClient)).toEqual({ vote_type: 'POSITIVE', comment: 'clair' });
+    expect(cachedFeedback(queryClient)).toEqual({
+      vote_type: 'POSITIVE',
+      comment: 'clair',
+      reasons: [],
+    });
     release();
   });
 
   it('empties the vote before the server answers a retraction', async () => {
     let release: () => void = () => {};
     remove.mockImplementation(() => new Promise<void>((resolve) => (release = resolve)));
-    const queryClient = seededClient({ vote_type: 'POSITIVE', comment: 'bien' });
+    const queryClient = seededClient({ vote_type: 'POSITIVE', comment: 'bien', reasons: [] });
     const { removeMutation } = mountComposable(queryClient);
 
     removeMutation.mutate(42);
@@ -88,14 +92,18 @@ describe('useDeliverableFeedback optimistic cache', () => {
 
   it('puts the previous vote back when the retraction fails', async () => {
     remove.mockRejectedValue(new Error('boom'));
-    const queryClient = seededClient({ vote_type: 'POSITIVE', comment: 'bien' });
+    const queryClient = seededClient({ vote_type: 'POSITIVE', comment: 'bien', reasons: [] });
     const { removeMutation } = mountComposable(queryClient);
 
     removeMutation.mutate(42);
     await flushPromises();
     await flushPromises();
 
-    expect(cachedFeedback(queryClient)).toEqual({ vote_type: 'POSITIVE', comment: 'bien' });
+    expect(cachedFeedback(queryClient)).toEqual({
+      vote_type: 'POSITIVE',
+      comment: 'bien',
+      reasons: [],
+    });
   });
 
   it('puts the absence of a vote back when the submission fails', async () => {

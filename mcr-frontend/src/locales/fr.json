@@ -398,6 +398,7 @@
     },
     "deliverable-feedback": {
       "thumb-up": "Ce livrable est utile",
+      "thumb-down": "Ce livrable n'est pas satisfaisant",
       "success": "Merci, votre retour a été pris en compte",
       "error": "Votre retour n'a pas pu être enregistré, veuillez réessayer",
       "modal": {
@@ -405,6 +406,48 @@
         "description": "Dites-nous ce qui vous a plu dans ce livrable.",
         "comment-label": "Commentaire (facultatif)",
         "submit": "Envoyer"
+      },
+      "negative-modal": {
+        "title": "Qu'est-ce qui n'a pas fonctionné\u00a0?",
+        "description": "Votre retour nous aide à améliorer les générations.",
+        "reasons-label": "Motif",
+        "comment-label": "Commentaire",
+        "comment-placeholder": "Un exemple précis nous aidera à améliorer l'outil.",
+        "submit": "Envoyer",
+        "reasons-loading": "Chargement des motifs…",
+        "reasons-unavailable": "Les motifs n'ont pas pu être chargés. Sans eux, votre retour ne peut pas être envoyé.",
+        "retry": "Réessayer",
+        "errors": {
+          "no-signal": "Vous devez sélectionner un motif ou laisser un commentaire",
+          "other-needs-comment": "Précisez ce qui n'allait pas"
+        }
+      },
+      "reasons": {
+        "shared": {
+          "OTHER": "Autre"
+        },
+        "TRANSCRIPTION": {
+          "WORD_ERRORS": "Erreurs de mots",
+          "MISIDENTIFIED_SPEAKERS": "Locuteurs mal identifiés",
+          "MISSING_PASSAGES": "Passages manquants",
+          "PUNCTUATION_OR_FORMATTING": "Ponctuation ou mise en forme",
+          "UNRECOGNIZED_ACRONYMS": "Sigles et acronymes du MI mal reconnus"
+        },
+        "STRUCTURED": {
+          "MISSING_INFORMATION": "Informations manquantes",
+          "FACTUAL_ERROR": "Erreur factuelle",
+          "OFF_TOPIC": "Hors sujet",
+          "TOO_SHORT_OR_INCOMPLETE": "Trop court ou incomplet",
+          "TOO_LONG_OR_DETAILED": "Trop long ou trop détaillé",
+          "POOR_STRUCTURE": "Mauvaise structure"
+        },
+        "CUSTOM": {
+          "PROMPT_NOT_FOLLOWED": "Prompt mal suivi",
+          "FORMAT_NOT_SUITABLE": "Format inadapté à la demande",
+          "MISSING_INFORMATION": "Informations manquantes",
+          "FACTUAL_ERROR": "Erreur factuelle",
+          "TONE_OR_STYLE_NOT_SUITABLE": "Ton ou style inadapté"
+        }
       }
     },
     "custom-report-modal": {

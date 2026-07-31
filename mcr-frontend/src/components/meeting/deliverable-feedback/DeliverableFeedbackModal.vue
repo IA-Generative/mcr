@@ -5,6 +5,7 @@
     size="lg"
     no-actions
     disable-close-on-outside-click
+    @closed="emit('closed')"
   >
     <div class="flex flex-col gap-4">
       <p class="text-[var(--text-default-grey)] m-0">
@@ -46,6 +47,8 @@ const props = defineProps<{
   isSubmitting: boolean;
   onSubmit: (comment: string) => void;
 }>();
+
+const emit = defineEmits<{ closed: [] }>();
 
 const comment = ref('');
 

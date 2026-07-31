@@ -59,4 +59,5 @@ export enum QUERY_KEYS {
   USERS = 'users',
   MEMBERS = 'members',
   DELIVERABLES = 'deliverables',
+  DELIVERABLE_FEEDBACK_REASONS = 'deliverable-feedback-reasons',
 }

@@ -2,7 +2,15 @@ import HttpService, { API_PATHS } from '../http/http.service';
 import type {
   DeliverableFeedbackDto,
   DeliverableFeedbackPayload,
+  ReasonCatalogue,
 } from './deliverable-feedback.types';
+
+export async function getDeliverableFeedbackReasons(): Promise<ReasonCatalogue> {
+  const { data } = await HttpService.get<ReasonCatalogue>(
+    `${API_PATHS.DELIVERABLES}/feedback-reasons`,
+  );
+  return data;
+}
 
 export async function upsertDeliverableFeedback(
   deliverableId: number,

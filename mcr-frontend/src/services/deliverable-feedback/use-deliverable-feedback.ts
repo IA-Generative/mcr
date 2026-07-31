@@ -62,6 +62,7 @@ export function useDeliverableFeedback(meetingId: number) {
       applyOptimistically(deliverableId, {
         vote_type: payload.vote_type,
         comment: payload.comment ?? null,
+        reasons: payload.vote_type === 'NEGATIVE' ? payload.reasons : [],
       }),
     onError: (_error, _variables, context) => rollback(context),
     onSettled: invalidateDeliverables,
