@@ -249,6 +249,33 @@ async def test_an_active_feedback_survives_the_gateway_revalidation(
 
 
 @pytest.mark.asyncio
+async def test_the_reasons_of_a_thumb_down_survive_the_gateway_revalidation(
+    httpx_mock: HTTPXMock,
+) -> None:
+    meeting_id = 42
+    payload = _deliverable_payload(deliverable_id=1, meeting_id=meeting_id)
+    payload["feedback"] = {
+        "vote_type": "NEGATIVE",
+        "comment": None,
+        "reasons": ["OFF_TOPIC", "FACTUAL_ERROR"],
+    }
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{settings.MEETING_SERVICE_URL}{meeting_id}/deliverables",
+        json={"deliverables": [payload]},
+        status_code=200,
+    )
+
+    result = await list_deliverables_for_meeting(
+        meeting_id=meeting_id, user_keycloak_uuid=uuid.uuid4()
+    )
+
+    feedback = result.deliverables[0].feedback
+    assert feedback is not None
+    assert feedback.reasons == ["OFF_TOPIC", "FACTUAL_ERROR"]
+
+
+@pytest.mark.asyncio
 async def test_a_deliverable_without_feedback_reports_none(
     httpx_mock: HTTPXMock,
 ) -> None:

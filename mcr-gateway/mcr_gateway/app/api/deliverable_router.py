@@ -13,6 +13,7 @@ from mcr_gateway.app.services.authentification_service import authorize_user, se
 from mcr_gateway.app.services.deliverable_service import (
     deactivate_deliverable_feedback,
     get_deliverable_file,
+    list_deliverable_feedback_reasons,
     list_deliverables_for_meeting,
     request_deliverable,
     soft_delete_deliverable,
@@ -63,6 +64,15 @@ async def delete_deliverable(
     return await soft_delete_deliverable(
         deliverable_id=deliverable_id,
         user_keycloak_uuid=current_user.keycloak_uuid,
+    )
+
+
+@router.get("/deliverables/feedback-reasons", tags=["Deliverables"])
+async def list_deliverable_feedback_reasons_route(
+    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+) -> Response:
+    return await list_deliverable_feedback_reasons(
+        user_keycloak_uuid=current_user.keycloak_uuid
     )
 
 

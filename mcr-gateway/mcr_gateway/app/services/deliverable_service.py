@@ -99,6 +99,28 @@ async def soft_delete_deliverable(
         )
 
 
+async def list_deliverable_feedback_reasons(user_keycloak_uuid: UUID4) -> Response:
+    try:
+        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+            response = await client.get(url="feedback-reasons")
+            response.raise_for_status()
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                media_type="application/json",
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error(
+            "Unexpected error listing deliverable feedback reasons: {}", str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
+
+
 async def upsert_deliverable_feedback(
     deliverable_id: int,
     body: DeliverableFeedbackUpsertRequest,
