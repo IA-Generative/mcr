@@ -28,18 +28,7 @@ const props = defineProps<{
 const toaster = useToaster();
 const { upsertMutation, removeMutation } = useDeliverableFeedback(props.deliverable.meeting_id);
 
-const optimisticallyRated = ref<boolean | null>(null);
-
-const isPositive = computed(
-  () => optimisticallyRated.value ?? props.deliverable.feedback?.vote_type === 'POSITIVE',
-);
-
-watch(
-  () => props.deliverable.feedback,
-  () => {
-    optimisticallyRated.value = null;
-  },
-);
+const isPositive = computed(() => props.deliverable.feedback?.vote_type === 'POSITIVE');
 
 const { open, close } = useModal({
   component: DeliverableFeedbackModal,
@@ -57,12 +46,8 @@ function onThumbUpClick(): void {
 }
 
 function retractVote(): void {
-  optimisticallyRated.value = false;
   removeMutation.mutate(props.deliverable.id, {
-    onError: () => {
-      optimisticallyRated.value = null;
-      toaster.addErrorMessage(t('meeting-v2.deliverable-feedback.error')!);
-    },
+    onError: () => toaster.addErrorMessage(t('meeting-v2.deliverable-feedback.error')!),
   });
 }
 
@@ -74,7 +59,6 @@ function submitPositiveVote(comment: string): void {
     },
     {
       onSuccess: () => {
-        optimisticallyRated.value = true;
         close();
         toaster.addSuccessMessage(t('meeting-v2.deliverable-feedback.success')!);
       },
