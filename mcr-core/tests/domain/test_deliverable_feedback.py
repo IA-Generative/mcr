@@ -123,16 +123,6 @@ def test_a_reason_shared_by_two_groups_is_legal_in_both() -> None:
         )
 
 
-def test_a_positive_vote_carries_no_reason() -> None:
-    with pytest.raises(DeliverableFeedbackValidationException):
-        validate_feedback_content(
-            vote_type=VoteType.POSITIVE,
-            comment="clear and well structured",
-            reasons=[StructuredFeedbackReason.FACTUAL_ERROR],
-            deliverable_type=DeliverableType.DECISION_RECORD,
-        )
-
-
 @pytest.mark.parametrize("comment", [None, "", "   ", "well structured"])
 def test_a_positive_vote_never_requires_a_comment(comment: str | None) -> None:
     validate_feedback_content(

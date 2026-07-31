@@ -65,10 +65,6 @@ def validate_feedback_content(
     deliverable_type: DeliverableType,
 ) -> None:
     if vote_type == VoteType.POSITIVE:
-        if reasons:
-            raise DeliverableFeedbackValidationException(
-                "A positive vote carries no reason"
-            )
         return
 
     group = feedback_group_of(deliverable_type)
