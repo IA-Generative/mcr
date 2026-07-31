@@ -1,3 +1,4 @@
+from pydantic import UUID4
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
@@ -11,6 +12,8 @@ from mcr_meeting.app.models.deliverable_model import (
     DeliverableStatus,
     DeliverableType,
 )
+from mcr_meeting.app.models.meeting_model import Meeting, MeetingStatus
+from mcr_meeting.app.models.user_model import User
 
 
 def save_deliverable(deliverable: Deliverable) -> Deliverable:
@@ -53,6 +56,25 @@ def get_by_id(deliverable_id: int) -> Deliverable:
     if deliverable is None:
         raise NotFoundException(f"Deliverable not found: id={deliverable_id}")
     return deliverable
+
+
+def get_by_id_with_owner_uuid(deliverable_id: int) -> tuple[Deliverable, UUID4]:
+    db = get_db_session_ctx()
+    row = (
+        db.query(Deliverable, User.keycloak_uuid)
+        .join(Meeting, Meeting.id == Deliverable.meeting_id)
+        .join(User, User.id == Meeting.user_id)
+        .filter(
+            Deliverable.id == deliverable_id,
+            Deliverable.status != DeliverableStatus.DELETED,
+            Meeting.status != MeetingStatus.DELETED,
+        )
+        .one_or_none()
+    )
+    if row is None:
+        raise NotFoundException(f"Deliverable not found: id={deliverable_id}")
+    deliverable, owner_keycloak_uuid = row
+    return deliverable, owner_keycloak_uuid
 
 
 def get_active_by_meeting_and_type(
