@@ -12,13 +12,6 @@ from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
 from tests.factories.deliverable_feedback_factory import DeliverableFeedbackFactory
 
-REPORT_TYPES = (
-    DeliverableType.TRANSCRIPTION,
-    DeliverableType.DECISION_RECORD,
-    DeliverableType.DETAILED_SYNTHESIS,
-    DeliverableType.CUSTOM_REPORT,
-)
-
 
 def test_retracting_a_vote_keeps_it_in_the_database(db_session: Session) -> None:
     feedback = DeliverableFeedbackFactory.create(
@@ -55,7 +48,7 @@ def test_reading_a_meeting_costs_the_same_whatever_the_number_of_deliverables(
 
 def _meeting_with_rated_deliverables(count: int) -> int:
     meeting = MeetingFactory.create()
-    for deliverable_type in REPORT_TYPES[:count]:
+    for deliverable_type in list(DeliverableType)[:count]:
         DeliverableFeedbackFactory.create(
             deliverable=DeliverableFactory.create(
                 meeting=meeting,
