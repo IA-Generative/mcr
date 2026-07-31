@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse, StreamingResponse
 from loguru import logger
 from pydantic import UUID4
@@ -88,7 +88,10 @@ async def create_meeting_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def generate_presigned_url_service(
@@ -114,7 +117,10 @@ async def generate_presigned_url_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def get_meeting_service(
@@ -169,7 +175,10 @@ async def update_meeting_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def delete_meeting_service(
@@ -195,7 +204,10 @@ async def delete_meeting_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def init_meeting_capture_service(
@@ -217,7 +229,7 @@ async def init_meeting_capture_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while starting transcription",
         )
 
@@ -242,7 +254,7 @@ async def stop_meeting_capture_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while stopping transcription.",
         )
 
@@ -284,7 +296,10 @@ async def get_meetings_service(
             detail=f"Erreur lors de l'appel à mcr-core : {e.response.text}",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erreur inattendue : {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur inattendue : {str(e)}",
+        )
 
 
 async def start_meeting_transcription_service(
@@ -320,7 +335,7 @@ async def generate_meeting_transcription_document(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while fetching the transcription.",
         )
 
@@ -342,7 +357,7 @@ async def get_meeting_audio_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception:
         raise HTTPException(
-            status_code=500,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while requesting the meeting audio.",
         )
 

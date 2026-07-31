@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import Response, StreamingResponse
 
 from mcr_gateway.app.schemas.deliverable_feedback_schema import (
@@ -36,7 +36,9 @@ async def list_meeting_deliverables(
     )
 
 
-@router.post("/deliverables", tags=["Deliverables"], status_code=202)
+@router.post(
+    "/deliverables", tags=["Deliverables"], status_code=status.HTTP_202_ACCEPTED
+)
 async def create_deliverable(
     body: DeliverableCreateRequest,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
@@ -49,7 +51,11 @@ async def create_deliverable(
     )
 
 
-@router.delete("/deliverables/{deliverable_id}", tags=["Deliverables"], status_code=204)
+@router.delete(
+    "/deliverables/{deliverable_id}",
+    tags=["Deliverables"],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 async def delete_deliverable(
     deliverable_id: int,
     current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
@@ -74,7 +80,9 @@ async def upsert_deliverable_feedback_route(
 
 
 @router.delete(
-    "/deliverables/{deliverable_id}/feedback", tags=["Deliverables"], status_code=204
+    "/deliverables/{deliverable_id}/feedback",
+    tags=["Deliverables"],
+    status_code=status.HTTP_204_NO_CONTENT,
 )
 async def delete_deliverable_feedback_route(
     deliverable_id: int,
