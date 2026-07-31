@@ -1,5 +1,7 @@
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import contextmanager
 from datetime import datetime, timezone
+from time import perf_counter
 
 from loguru import logger
 
@@ -45,25 +47,34 @@ TRANSCRIPTION_FILENAME = "v0.docx"
 def complete_transcription(
     meeting_id: int, transcriptions: list[SpeakerTranscription] | None = None
 ) -> None:
+    # This endpoint runs several external I/O stages synchronously before it
+    # answers, and can exceed the worker's HTTP timeout (see ticket 1009). Time
+    # each stage so we can tell which one is slow when it does — always emitted,
+    # not only on error, so the signal survives the worker-side retry.
+    timings: dict[str, float] = {}
+
     meeting = get_meeting_with_owner(meeting_id)
 
-    segments: Sequence[HasSpeakerTranscription] = (
-        transcriptions
-        if transcriptions is not None
-        else read_full_transcript(meeting_id).segments
-    )
-    docx_buffer = render_transcription_docx(meeting.name, segments)
-    upload_transcription_to_s3(
-        meeting_id=meeting.id,
-        filename=TRANSCRIPTION_FILENAME,
-        content=docx_buffer,
-    )
+    with _timed("read_transcript", timings):
+        segments: Sequence[HasSpeakerTranscription] = (
+            transcriptions
+            if transcriptions is not None
+            else read_full_transcript(meeting_id).segments
+        )
+    with _timed("render_docx", timings):
+        docx_buffer = render_transcription_docx(meeting.name, segments)
+    with _timed("s3_upload", timings):
+        upload_transcription_to_s3(
+            meeting_id=meeting.id,
+            filename=TRANSCRIPTION_FILENAME,
+            content=docx_buffer,
+        )
+    with _timed("drive_upload", timings):
+        external_url = try_upload_deliverable_to_drive(
+            meeting, DeliverableType.TRANSCRIPTION, docx_buffer.getvalue()
+        )
 
-    external_url = try_upload_deliverable_to_drive(
-        meeting, DeliverableType.TRANSCRIPTION, docx_buffer.getvalue()
-    )
-
-    with UnitOfWork():
+    with _timed("db_commit", timings), UnitOfWork():
         # Same lock as request_deliverable: serialises this drain against a
         # concurrent request so a REQUESTED report is never left orphaned.
         locked_meeting = get_meeting_for_update(
@@ -86,7 +97,24 @@ def complete_transcription(
         deliverable_transitions.mark_available(deliverable, external_url)
         _drain_requested_reports(locked_meeting)
 
-    _notify_transcription_ready_best_effort(meeting)
+    with _timed("notify_email", timings):
+        _notify_transcription_ready_best_effort(meeting)
+
+    logger.info(
+        "complete_transcription timings meeting={} total={:.2f}s {}",
+        meeting_id,
+        sum(timings.values()),
+        " ".join(f"{stage}={seconds:.2f}s" for stage, seconds in timings.items()),
+    )
+
+
+@contextmanager
+def _timed(stage: str, timings: dict[str, float]) -> Iterator[None]:
+    start = perf_counter()
+    try:
+        yield
+    finally:
+        timings[stage] = perf_counter() - start
 
 
 def _drain_requested_reports(meeting: Meeting) -> None:
