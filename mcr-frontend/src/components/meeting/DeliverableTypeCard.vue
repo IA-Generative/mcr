@@ -12,7 +12,7 @@
     <div class="flex items-center justify-between gap-1 min-h-[2.5rem]">
       <div class="flex items-center gap-1">
         <DeliverableFeedbackThumbs
-          v-if="showFeedbackThumbs && deliverable"
+          v-if="isAvailable && deliverable"
           :deliverable="deliverable"
         />
       </div>
@@ -33,7 +33,6 @@
 </template>
 
 <script setup lang="ts">
-import { useFeatureFlag } from '@/composables/use-feature-flag';
 import { t } from '@/plugins/i18n';
 import type { DeliverableDto, DeliverableType } from '@/services/deliverables/deliverables.types';
 import DeliverableFeedbackThumbs from './deliverable-feedback/DeliverableFeedbackThumbs.vue';
@@ -53,8 +52,6 @@ const emit = defineEmits<{
   customize: [];
   download: [id: number];
 }>();
-
-const isDeliverableFeedbackEnabled = useFeatureFlag('deliverable-feedback');
 
 const TYPE_KEY_MAP: Record<DeliverableType, string> = {
   TRANSCRIPTION: 'transcription',
@@ -84,7 +81,6 @@ const hasError = computed(
     (status.value === 'FAILED' || isTranscriptionFailure.value),
 );
 const isAvailable = computed(() => status.value === 'AVAILABLE');
-const showFeedbackThumbs = computed(() => isDeliverableFeedbackEnabled.value && isAvailable.value);
 const isWaiting = computed(
   () => status.value === 'REQUESTED' || (optimistic.value && !props.transcriptionReady),
 );
