@@ -69,12 +69,29 @@ def complete_transcription(
             filename=TRANSCRIPTION_FILENAME,
             content=docx_buffer,
         )
-    with _timed("drive_upload", timings):
-        external_url = try_upload_deliverable_to_drive(
-            meeting, DeliverableType.TRANSCRIPTION, docx_buffer.getvalue()
-        )
 
-    with _timed("db_commit", timings), UnitOfWork():
+    # Core write first (guard-before-IO): the transition to DONE must commit
+    # before any best-effort enrichment, so a slow or failing Drive/email side
+    # effect can never leave a finished transcription stuck as FAILED.
+    with _timed("db_commit", timings):
+        deliverable_id = _commit_transcription_done(meeting_id)
+
+    _enrich_deliverable_with_drive_link(
+        meeting, deliverable_id, docx_buffer.getvalue(), timings
+    )
+    with _timed("notify_email", timings):
+        _notify_transcription_ready_best_effort(meeting)
+
+    logger.info(
+        "complete_transcription timings meeting={} total={:.2f}s {}",
+        meeting_id,
+        sum(timings.values()),
+        " ".join(f"{stage}={seconds:.2f}s" for stage, seconds in timings.items()),
+    )
+
+
+def _commit_transcription_done(meeting_id: int) -> int:
+    with UnitOfWork():
         # Same lock as request_deliverable: serialises this drain against a
         # concurrent request so a REQUESTED report is never left orphaned.
         locked_meeting = get_meeting_for_update(
@@ -94,18 +111,31 @@ def complete_transcription(
             meeting_id=locked_meeting.id,
             deliverable_type=DeliverableType.TRANSCRIPTION,
         )
-        deliverable_transitions.mark_available(deliverable, external_url)
+        # The Drive URL is filled in afterwards, best-effort — the deliverable is
+        # already usable from its S3 copy, so availability isn't gated on Drive.
+        deliverable_transitions.mark_available(deliverable, external_url=None)
         _drain_requested_reports(locked_meeting)
+        return deliverable.id
 
-    with _timed("notify_email", timings):
-        _notify_transcription_ready_best_effort(meeting)
 
-    logger.info(
-        "complete_transcription timings meeting={} total={:.2f}s {}",
-        meeting_id,
-        sum(timings.values()),
-        " ".join(f"{stage}={seconds:.2f}s" for stage, seconds in timings.items()),
-    )
+def _enrich_deliverable_with_drive_link(
+    meeting: Meeting,
+    deliverable_id: int,
+    file_bytes: bytes,
+    timings: dict[str, float],
+) -> None:
+    with _timed("drive_upload", timings):
+        try:
+            external_url = try_upload_deliverable_to_drive(
+                meeting, DeliverableType.TRANSCRIPTION, file_bytes
+            )
+            if external_url is not None:
+                with UnitOfWork():
+                    deliverable_repository.set_external_url(
+                        deliverable_id, external_url
+                    )
+        except Exception:
+            logger.exception("Drive enrichment failed for meeting {}", meeting.id)
 
 
 @contextmanager
