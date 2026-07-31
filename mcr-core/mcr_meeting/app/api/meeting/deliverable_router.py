@@ -91,7 +91,7 @@ async def create_deliverable(
     return build_deliverable_response(deliverable)
 
 
-@deliverables_router.delete("/{deliverable_id}", status_code=204)
+@deliverables_router.delete("/{deliverable_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_deliverable(
     deliverable_id: int,
     x_user_keycloak_uuid: UUID4 = Header(),
@@ -99,7 +99,7 @@ async def delete_deliverable(
     soft_delete_deliverable(
         deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
-    return Response(status_code=204)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @deliverables_router.put("/{deliverable_id}/feedback")
@@ -117,7 +117,9 @@ async def upsert_deliverable_feedback_route(
     return DeliverableFeedbackResponse.model_validate(feedback)
 
 
-@deliverables_router.delete("/{deliverable_id}/feedback", status_code=204)
+@deliverables_router.delete(
+    "/{deliverable_id}/feedback", status_code=status.HTTP_204_NO_CONTENT
+)
 async def deactivate_deliverable_feedback_route(
     deliverable_id: int,
     x_user_keycloak_uuid: UUID4 = Header(),
@@ -125,7 +127,7 @@ async def deactivate_deliverable_feedback_route(
     deactivate_deliverable_feedback(
         deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
-    return Response(status_code=204)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @deliverables_router.get("/{deliverable_id}/file")

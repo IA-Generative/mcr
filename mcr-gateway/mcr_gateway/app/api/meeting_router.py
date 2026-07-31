@@ -64,7 +64,8 @@ async def create_meeting(
         )
         if result is None:
             raise HTTPException(
-                status_code=500, detail="Service did not return a valid response"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Service did not return a valid response",
             )
         return result
     except HTTPException as e:
@@ -128,10 +129,14 @@ async def get_meeting(
         return meeting
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Meeting not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Meeting not found"
+            )
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.patch(
@@ -163,10 +168,14 @@ async def update_meeting(
         return updated_meeting
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Meeting not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Meeting not found"
+            )
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.delete(
@@ -193,10 +202,14 @@ async def delete_meeting(
         )
     except httpx.HTTPStatusError as e:
         if e.response.status_code == 404:
-            raise HTTPException(status_code=404, detail="Meeting not found")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Meeting not found"
+            )
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.post(
@@ -317,7 +330,9 @@ async def get_meeting_audio(
         raise e
     except Exception as e:
         logger.error("Error getting meeting audio: {}", str(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.post(

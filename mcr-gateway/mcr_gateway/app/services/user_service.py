@@ -1,5 +1,5 @@
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from loguru import logger
 
 from mcr_gateway.app.configs.config import settings
@@ -34,4 +34,7 @@ async def get_or_create_user_by_keycloak_uuid_service(user_create: UserCreate) -
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error during user creation: {}", str(e))
-        raise HTTPException(status_code=500, detail="Unexpected error occurred")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Unexpected error occurred",
+        )

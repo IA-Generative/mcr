@@ -1,7 +1,7 @@
 from venv import logger
 
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from pydantic import UUID4
 
 from mcr_gateway.app.schemas.S3_types import (
@@ -34,7 +34,10 @@ async def init_multipart_upload_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def sign_multipart_part_service(
@@ -57,7 +60,10 @@ async def sign_multipart_part_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def complete_multipart_upload_service(
@@ -79,7 +85,10 @@ async def complete_multipart_upload_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def abort_multipart_upload_service(
@@ -100,4 +109,7 @@ async def abort_multipart_upload_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
