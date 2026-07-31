@@ -15,6 +15,13 @@ def authorize_meeting_access(
         raise ForbiddenAccessException("Meeting is owned by a different user")
 
 
+def authorize_meeting_owner(
+    owner_keycloak_uuid: UUID4, caller_keycloak_uuid: UUID4
+) -> None:
+    if owner_keycloak_uuid != caller_keycloak_uuid:
+        raise ForbiddenAccessException("Meeting is owned by a different user")
+
+
 def authorize_meeting_owner_or_admin(meeting_owner_id: int, caller: Caller) -> None:
     if _is_owner(meeting_owner_id, caller) or caller.is_admin:
         return
