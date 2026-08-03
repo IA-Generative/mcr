@@ -7,6 +7,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     DeliverableConcurrentlyCreatedException,
     NotFoundException,
 )
+from mcr_meeting.app.models.deliverable_feedback_model import DeliverableFeedback
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -33,7 +34,9 @@ def list_by_meeting(meeting_id: int) -> list[Deliverable]:
     db = get_db_session_ctx()
     return list(
         db.query(Deliverable)
-        .options(joinedload(Deliverable.feedback))
+        .options(
+            joinedload(Deliverable.feedback).joinedload(DeliverableFeedback.reason_rows)
+        )
         .filter(
             Deliverable.meeting_id == meeting_id,
             Deliverable.status != DeliverableStatus.DELETED,

@@ -11,6 +11,9 @@ from mcr_meeting.app.exceptions.exceptions import NotFoundException
 from mcr_meeting.app.models.deliverable_model import DeliverableStatus, DeliverableType
 from mcr_meeting.app.models.feedback_model import VoteType
 from mcr_meeting.app.models.meeting_model import MeetingStatus
+from mcr_meeting.app.schemas.deliverable_feedback_schema import (
+    PositiveDeliverableFeedbackUpsertRequest,
+)
 from mcr_meeting.app.use_cases.upsert_deliverable_feedback import (
     upsert_deliverable_feedback,
 )
@@ -79,8 +82,9 @@ def test_rating_a_deliverable_reads_the_database_twice_at_most(
         upsert_deliverable_feedback(
             deliverable_id=deliverable_id,
             user_keycloak_uuid=caller,
-            vote_type=VoteType.POSITIVE,
-            comment="ok",
+            feedback_request=PositiveDeliverableFeedbackUpsertRequest(
+                vote_type=VoteType.POSITIVE, comment="ok"
+            ),
         )
 
     assert counter["count"] == 2

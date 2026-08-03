@@ -62,7 +62,7 @@ def test_the_active_flag_is_not_part_of_the_payload() -> None:
         _deliverable(DeliverableFeedback(vote_type=VoteType.POSITIVE, is_active=True))
     )
 
-    assert set(response.model_dump()["feedback"]) == {"vote_type", "comment"}
+    assert set(response.model_dump()["feedback"]) == {"vote_type", "comment", "reasons"}
 
 
 def test_a_feedback_read_back_from_json_survives_revalidation() -> None:

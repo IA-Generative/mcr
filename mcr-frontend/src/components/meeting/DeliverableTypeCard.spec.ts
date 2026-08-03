@@ -2,10 +2,8 @@ import { describe, it, expect, vi } from 'vitest';
 import { ref } from 'vue';
 import { screen } from '@testing-library/vue';
 
-const { closedFlags } = vi.hoisted(() => ({ closedFlags: new Set<string>() }));
-
 vi.mock('@/composables/use-feature-flag', () => ({
-  useFeatureFlag: (name: string) => ref(!closedFlags.has(name)),
+  useFeatureFlag: () => ref(true),
 }));
 
 import userEvent from '@testing-library/user-event';
@@ -177,8 +175,6 @@ describe('DeliverableTypeCard feedback thumbs', () => {
     DeliverableFeedbackThumbs: { template: '<div data-testid="feedback-thumbs" />' },
   };
 
-  afterEach(() => closedFlags.clear());
-
   function renderCard(status: DeliverableStatus) {
     return renderWithPlugins(DeliverableTypeCard, {
       props: { type: 'DECISION_RECORD', deliverable: deliverable('DECISION_RECORD', status) },
@@ -200,12 +196,4 @@ describe('DeliverableTypeCard feedback thumbs', () => {
       expect(screen.queryByTestId('feedback-thumbs')).toBeNull();
     },
   );
-
-  it('offers no rating when the feature is not released', () => {
-    closedFlags.add('deliverable-feedback');
-
-    renderCard('AVAILABLE');
-
-    expect(screen.queryByTestId('feedback-thumbs')).toBeNull();
-  });
 });

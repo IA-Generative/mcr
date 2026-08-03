@@ -58,7 +58,11 @@ class TestUpsertDeliverableFeedback:
         )
 
         assert put.status_code == 200
-        assert put.json() == {"vote_type": "POSITIVE", "comment": "clear and faithful"}
+        assert put.json() == {
+            "vote_type": "POSITIVE",
+            "comment": "clear and faithful",
+            "reasons": [],
+        }
 
         listed = meeting_client.get(
             f"/{deliverable.meeting_id}/deliverables", headers=_headers(user_fixture)
@@ -68,6 +72,7 @@ class TestUpsertDeliverableFeedback:
         assert row["feedback"] == {
             "vote_type": "POSITIVE",
             "comment": "clear and faithful",
+            "reasons": [],
         }
 
     def test_a_positive_vote_needs_no_comment(
@@ -84,7 +89,11 @@ class TestUpsertDeliverableFeedback:
         )
 
         assert response.status_code == 200
-        assert response.json() == {"vote_type": "POSITIVE", "comment": None}
+        assert response.json() == {
+            "vote_type": "POSITIVE",
+            "comment": None,
+            "reasons": [],
+        }
 
     def test_voting_twice_replaces_the_previous_opinion(
         self,
@@ -115,7 +124,7 @@ class TestUpsertDeliverableFeedback:
         )
 
     @pytest.mark.parametrize("comment", [None, "", "   "])
-    def test_a_negative_vote_without_a_comment_is_refused(
+    def test_a_negative_vote_with_neither_reason_nor_comment_is_refused(
         self,
         deliverables_client: PrefixedTestClient,
         user_fixture: User,
@@ -126,7 +135,7 @@ class TestUpsertDeliverableFeedback:
 
         response = deliverables_client.put(
             f"/{deliverable.id}/feedback",
-            json={"vote_type": "NEGATIVE", "comment": comment},
+            json={"vote_type": "NEGATIVE", "comment": comment, "reasons": []},
             headers=_headers(user_fixture),
         )
 
@@ -137,6 +146,121 @@ class TestUpsertDeliverableFeedback:
             .count()
             == 0
         )
+
+    def test_a_reason_alone_explains_a_negative_vote(
+        self,
+        deliverables_client: PrefixedTestClient,
+        meeting_client: PrefixedTestClient,
+        user_fixture: User,
+    ) -> None:
+        deliverable = _owned_deliverable(user_fixture)
+
+        put = deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={"vote_type": "NEGATIVE", "reasons": ["OFF_TOPIC", "FACTUAL_ERROR"]},
+            headers=_headers(user_fixture),
+        )
+
+        assert put.status_code == 200
+        assert put.json()["vote_type"] == "NEGATIVE"
+        assert sorted(put.json()["reasons"]) == ["FACTUAL_ERROR", "OFF_TOPIC"]
+
+        listed = meeting_client.get(
+            f"/{deliverable.meeting_id}/deliverables", headers=_headers(user_fixture)
+        )
+        (row,) = listed.json()["deliverables"]
+        assert sorted(row["feedback"]["reasons"]) == ["FACTUAL_ERROR", "OFF_TOPIC"]
+
+    def test_a_reason_offered_for_another_deliverable_type_is_refused(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+        db_session: Session,
+    ) -> None:
+        deliverable = _owned_deliverable(user_fixture)
+
+        response = deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={"vote_type": "NEGATIVE", "reasons": ["MISIDENTIFIED_SPEAKERS"]},
+            headers=_headers(user_fixture),
+        )
+
+        assert response.status_code == 422
+        assert (
+            db_session.query(DeliverableFeedback)
+            .filter(DeliverableFeedback.deliverable_id == deliverable.id)
+            .count()
+            == 0
+        )
+
+    def test_other_alone_is_refused_until_it_is_spelled_out(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+    ) -> None:
+        deliverable = _owned_deliverable(user_fixture)
+
+        unexplained = deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={"vote_type": "NEGATIVE", "reasons": ["OTHER"]},
+            headers=_headers(user_fixture),
+        )
+        spelled_out = deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={
+                "vote_type": "NEGATIVE",
+                "reasons": ["OTHER"],
+                "comment": "the tables lost their header row",
+            },
+            headers=_headers(user_fixture),
+        )
+
+        assert unexplained.status_code == 422
+        assert spelled_out.status_code == 200
+
+    def test_other_beside_another_reason_needs_no_comment(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+    ) -> None:
+        deliverable = _owned_deliverable(user_fixture)
+
+        response = deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={"vote_type": "NEGATIVE", "reasons": ["OFF_TOPIC", "OTHER"]},
+            headers=_headers(user_fixture),
+        )
+
+        assert response.status_code == 200
+
+    def test_switching_to_a_thumb_up_withdraws_the_reasons_of_the_thumb_down(
+        self,
+        deliverables_client: PrefixedTestClient,
+        meeting_client: PrefixedTestClient,
+        user_fixture: User,
+    ) -> None:
+        deliverable = _owned_deliverable(user_fixture)
+        deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={"vote_type": "NEGATIVE", "reasons": ["FACTUAL_ERROR"]},
+            headers=_headers(user_fixture),
+        )
+
+        deliverables_client.put(
+            f"/{deliverable.id}/feedback",
+            json={"vote_type": "POSITIVE", "comment": "regenerated, now spot on"},
+            headers=_headers(user_fixture),
+        )
+
+        listed = meeting_client.get(
+            f"/{deliverable.meeting_id}/deliverables", headers=_headers(user_fixture)
+        )
+        (row,) = listed.json()["deliverables"]
+        assert row["feedback"] == {
+            "vote_type": "POSITIVE",
+            "comment": "regenerated, now spot on",
+            "reasons": [],
+        }
 
     def test_a_reasons_field_is_rejected_rather_than_silently_dropped(
         self,
@@ -210,6 +334,54 @@ class TestUpsertDeliverableFeedback:
         )
 
         assert response.status_code == 404
+
+
+class TestReasonCatalogue:
+    def test_the_catalogue_answers_for_every_deliverable_type_a_card_can_show(
+        self,
+        deliverables_client: PrefixedTestClient,
+    ) -> None:
+        response = deliverables_client.get("/feedback-reasons")
+
+        assert response.status_code == 200
+        catalogue = response.json()
+        assert set(catalogue) == {
+            deliverable_type for deliverable_type in DeliverableType
+        }
+        for deliverable_type, entry in catalogue.items():
+            assert entry["reasons"][-1] == "OTHER", deliverable_type
+            assert len(entry["reasons"]) > 1, deliverable_type
+
+    def test_the_two_report_flavours_are_offered_the_same_list(
+        self,
+        deliverables_client: PrefixedTestClient,
+    ) -> None:
+        catalogue = deliverables_client.get("/feedback-reasons").json()
+
+        assert catalogue["DECISION_RECORD"] == catalogue["DETAILED_SYNTHESIS"]
+        assert catalogue["DECISION_RECORD"]["deliverable_group"] == "STRUCTURED"
+        assert catalogue["TRANSCRIPTION"]["deliverable_group"] == "TRANSCRIPTION"
+        assert catalogue["CUSTOM_REPORT"]["deliverable_group"] == "CUSTOM"
+
+    def test_every_offered_reason_is_one_the_api_accepts(
+        self,
+        deliverables_client: PrefixedTestClient,
+        user_fixture: User,
+    ) -> None:
+        offered = deliverables_client.get("/feedback-reasons").json()
+        deliverable = _owned_deliverable(user_fixture)
+
+        for reason in offered["DECISION_RECORD"]["reasons"]:
+            response = deliverables_client.put(
+                f"/{deliverable.id}/feedback",
+                json={
+                    "vote_type": "NEGATIVE",
+                    "reasons": [reason],
+                    "comment": "spelled out so OTHER passes too",
+                },
+                headers=_headers(user_fixture),
+            )
+            assert response.status_code == 200, reason
 
 
 class TestDeactivateDeliverableFeedback:
@@ -306,7 +478,11 @@ class TestDeactivateDeliverableFeedback:
             f"/{deliverable.meeting_id}/deliverables", headers=_headers(user_fixture)
         )
         (row,) = listed.json()["deliverables"]
-        assert row["feedback"] == {"vote_type": "POSITIVE", "comment": "still nice"}
+        assert row["feedback"] == {
+            "vote_type": "POSITIVE",
+            "comment": "still nice",
+            "reasons": [],
+        }
 
     def test_retracting_someone_elses_vote_does_not_disclose_the_deliverable(
         self,
@@ -343,5 +519,5 @@ def test_a_published_feedback_exposes_nothing_beyond_the_vote_and_its_comment(
     )
     (row,) = listed.json()["deliverables"]
 
-    assert set(put.json()) == {"vote_type", "comment"}
-    assert set(row["feedback"]) == {"vote_type", "comment"}
+    assert set(put.json()) == {"vote_type", "comment", "reasons"}
+    assert set(row["feedback"]) == {"vote_type", "comment", "reasons"}

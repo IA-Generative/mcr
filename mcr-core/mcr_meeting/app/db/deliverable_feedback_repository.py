@@ -13,7 +13,10 @@ def get_by_deliverable_id(deliverable_id: int) -> DeliverableFeedback | None:
 
 
 def upsert(
-    deliverable_id: int, vote_type: VoteType, comment: str | None
+    deliverable_id: int,
+    vote_type: VoteType,
+    comment: str | None,
+    reasons: list[str],
 ) -> DeliverableFeedback:
     db = get_db_session_ctx()
     feedback = get_by_deliverable_id(deliverable_id)
@@ -23,6 +26,7 @@ def upsert(
     feedback.vote_type = vote_type
     feedback.comment = comment
     feedback.is_active = True
+    feedback.reasons = list(dict.fromkeys(reasons))
     return feedback
 
 
