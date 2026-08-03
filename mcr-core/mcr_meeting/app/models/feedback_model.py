@@ -5,6 +5,7 @@ from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mcr_meeting.app.db.db import Base
+from mcr_meeting.app.models.types import StrEnumType
 
 # Drives BOTH the Pydantic validation (FeedbackRequest.comment) and the VARCHAR
 # length of the `comment` column below. Changing this value requires an Alembic
@@ -44,7 +45,7 @@ class Feedback(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
-    vote_type: Mapped[VoteType | None] = mapped_column(String)
+    vote_type: Mapped[VoteType | None] = mapped_column(StrEnumType(VoteType))
     comment: Mapped[str | None] = mapped_column(
         String(FEEDBACK_COMMENT_MAX_LENGTH), nullable=True, default=None
     )

@@ -6,6 +6,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, String, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mcr_meeting.app.db.db import Base
+from mcr_meeting.app.models.types import StrEnumType
 
 if TYPE_CHECKING:
     from mcr_meeting.app.models.deliverable_feedback_model import DeliverableFeedback
@@ -45,9 +46,13 @@ class Deliverable(Base):
     meeting_id: Mapped[int] = mapped_column(
         ForeignKey("meeting.id", ondelete="CASCADE")
     )
-    type: Mapped[DeliverableType] = mapped_column(String, nullable=False)
+    type: Mapped[DeliverableType] = mapped_column(
+        StrEnumType(DeliverableType), nullable=False
+    )
     status: Mapped[DeliverableStatus] = mapped_column(
-        String, nullable=False, default=DeliverableStatus.PENDING
+        StrEnumType(DeliverableStatus),
+        nullable=False,
+        default=DeliverableStatus.PENDING,
     )
     external_url: Mapped[str | None] = mapped_column(String)
     custom_prompt: Mapped[str | None] = mapped_column(

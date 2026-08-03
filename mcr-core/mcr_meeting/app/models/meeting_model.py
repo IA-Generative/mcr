@@ -12,6 +12,7 @@ from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mcr_meeting.app.db.db import Base
+from mcr_meeting.app.models.types import StrEnumType
 
 
 class MeetingPlatforms(StrEnum):
@@ -108,12 +109,14 @@ class Meeting(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True, autoincrement=True)
     name: Mapped[str | None] = mapped_column(String, index=True)
     url: Mapped[str | None] = mapped_column(String, index=True)
-    name_platform: Mapped[MeetingPlatforms] = mapped_column(String, nullable=False)
+    name_platform: Mapped[MeetingPlatforms] = mapped_column(
+        StrEnumType(MeetingPlatforms), nullable=False
+    )
     creation_date: Mapped[datetime | None] = mapped_column(DateTime, index=True)
     start_date: Mapped[datetime | None] = mapped_column(DateTime)
     end_date: Mapped[datetime | None] = mapped_column(DateTime)
     status: Mapped[MeetingStatus] = mapped_column(
-        String, default=MeetingStatus.NONE, nullable=False
+        StrEnumType(MeetingStatus), default=MeetingStatus.NONE, nullable=False
     )
     transcription_filename: Mapped[str | None] = mapped_column(String)
     report_filename: Mapped[str | None] = mapped_column(String)

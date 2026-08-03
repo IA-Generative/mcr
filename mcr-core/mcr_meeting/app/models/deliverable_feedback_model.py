@@ -7,6 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mcr_meeting.app.db.db import Base
 from mcr_meeting.app.models.feedback_model import VoteType
+from mcr_meeting.app.models.types import StrEnumType
 
 
 class DeliverableFeedbackGroup(StrEnum):
@@ -47,7 +48,7 @@ class DeliverableFeedback(Base):
     deliverable_id: Mapped[int] = mapped_column(
         ForeignKey("deliverable.id", ondelete="CASCADE"), unique=True, nullable=False
     )
-    vote_type: Mapped[VoteType] = mapped_column(String, nullable=False)
+    vote_type: Mapped[VoteType] = mapped_column(StrEnumType(VoteType), nullable=False)
     comment: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
