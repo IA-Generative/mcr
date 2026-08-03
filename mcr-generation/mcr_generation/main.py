@@ -22,6 +22,7 @@ Langfuse(
     public_key=langfuse_settings.LANGFUSE_PUBLIC_KEY,
     host=langfuse_settings.LANGFUSE_HOST,
     environment=langfuse_settings.ENV_MODE.lower(),  # only lowercase supported
+    tracing_enabled=langfuse_settings.LANGFUSE_TRACING_ENABLED,
 )
 
 

@@ -381,9 +381,19 @@ class LangfuseSettings(BaseSettings):
     Settings parameters for Langfuse monitoring
     """
 
-    LANGFUSE_PUBLIC_KEY: str = Field(description="Langfuse public key")
-    LANGFUSE_SECRET_KEY: str = Field(description="Langfuse secret key")
-    LANGFUSE_HOST: str = Field(description="Langfuse host URL")
+    # Langfuse is sunset: credentials are optional so the worker still boots once
+    # they are dropped from the env, and tracing is off by default so no OTLP
+    # exporter is ever built (a dead endpoint made every export fail).
+    LANGFUSE_TRACING_ENABLED: bool = Field(
+        default=False, description="Send traces to Langfuse"
+    )
+    LANGFUSE_PUBLIC_KEY: str | None = Field(
+        default=None, description="Langfuse public key"
+    )
+    LANGFUSE_SECRET_KEY: str | None = Field(
+        default=None, description="Langfuse secret key"
+    )
+    LANGFUSE_HOST: str | None = Field(default=None, description="Langfuse host URL")
 
 
 class LLMSettings(BaseSettings):
