@@ -6,6 +6,7 @@ from mcr_meeting.app.infrastructure.keycloak import (
     TokenRefreshResult,
     refresh_access_token,
 )
+from mcr_meeting.app.infrastructure.notify_upload import notify_upload
 from mcr_meeting.app.infrastructure.redis import (
     delete_refresh_token,
     get_refresh_token,
@@ -23,7 +24,11 @@ def try_upload_deliverable_to_drive(
         return None
 
     filename = build_deliverable_filename(deliverable_type, meeting.name or "")
-    return _try_post_drive(token, filename, file_bytes)
+    external_url = _try_post_drive(token, filename, file_bytes)
+    if external_url is not None:
+        _try_notify_upload(meeting, deliverable_type, external_url)
+
+    return external_url
 
 
 def _try_acquire_token(meeting: Meeting) -> TokenRefreshResult | None:
@@ -57,3 +62,12 @@ def _try_post_drive(
     except Exception:
         logger.warning("Drive upload failed")
         return None
+
+
+def _try_notify_upload(
+    meeting: Meeting, deliverable_type: DeliverableType, external_url: str
+) -> None:
+    try:
+        notify_upload(meeting.id, deliverable_type, external_url)
+    except Exception:
+        logger.warning("Upload notification failed")

@@ -525,6 +525,14 @@ class DriveSettings(BaseSettings):
     DRIVE_FRONTEND_URL: str = ""
 
 
+class NotifyUploadSettings(BaseSettings):
+    NOTIFY_UPLOAD_URL: str = Field(
+        default="",
+        description="External endpoint notified once a deliverable is posted to Drive. Empty disables the notification.",
+    )
+    NOTIFY_UPLOAD_TIMEOUT: float = 5.0
+
+
 class TranscriptionForbiddenSentences(BaseSettings):
     FORBIDDEN_SENTENCES: list[str] = Field(
         # Be careful, the order of the sentences matters. The first pattern to match will be the one removed.
