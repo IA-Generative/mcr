@@ -36,16 +36,11 @@ export default defineConfig(() => {
       AutoImport({
         include: [/\.[tj]sx?$/, /\.vue$/, /\.vue\?vue/],
         imports: [
-          // @ts-expect-error TS2322
           'vue',
-          // @ts-expect-error TS2322
           'vue-router',
-          // @ts-expect-error TS2322
           'vitest',
-          // @ts-expect-error TS2322
           vueDsfrAutoimportPreset,
           {
-            // @ts-expect-error TS2322
             '@sentry/vue': [
               'captureMessage',
               'captureException',

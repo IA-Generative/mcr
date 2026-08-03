@@ -38,7 +38,7 @@
           ? t('meetings_v2.tile-visio.subtitle-with-webex')!
           : t('meetings_v2.tile-visio.subtitle-without-webex')!
       "
-      @click="openVisioMeetingModal"
+      @click="openVideoConferenceModal"
     />
   </div>
 </template>
@@ -100,7 +100,7 @@ const { open: openRecordModal } = useModal({
   },
 });
 
-const { open: openVisioMeetingModal } = useModal({
+const { open: openVideoConferenceModal } = useModal({
   component: CreateVisioMeetingModal,
   attrs: {
     onCreateMeeting: (values: AddOnlineMeetingDto) => createMeetingStartCaptureAndRedirect(values),

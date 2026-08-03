@@ -130,6 +130,10 @@ const reasonTags = computed(() => {
     label: reasonLabel(entry.deliverable_group, reason),
     value: reason,
     selectable: true as const,
+    // The API between DSFRTags and DSFRTag differs. The first one selects the tags based on the model-value
+    // The second one uses props only.
+    // But the DSFRTags repackages the props of the DSFRTag as DSFRTagProps[] => Hence the need for this patch
+    selected: undefined,
   }));
 });
 
