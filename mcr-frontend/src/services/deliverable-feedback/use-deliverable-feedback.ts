@@ -19,6 +19,19 @@ interface Rollback {
   previous: DeliverableListResponse | undefined;
 }
 
+function withUpdatedFeedback(
+  current: DeliverableListResponse | undefined,
+  deliverableId: number,
+  feedback: DeliverableFeedbackDto | null,
+): DeliverableListResponse | undefined {
+  if (current === undefined) return current;
+  return {
+    deliverables: current.deliverables.map((deliverable) =>
+      deliverable.id === deliverableId ? { ...deliverable, feedback } : deliverable,
+    ),
+  };
+}
+
 export function useDeliverableFeedback(meetingId: number) {
   const queryClient = useQueryClient();
   const queryKey = [QUERY_KEYS.DELIVERABLES, meetingId];
@@ -32,13 +45,7 @@ export function useDeliverableFeedback(meetingId: number) {
     await queryClient.cancelQueries({ queryKey });
     const previous = queryClient.getQueryData<DeliverableListResponse>(queryKey);
     queryClient.setQueryData<DeliverableListResponse>(queryKey, (current) =>
-      current === undefined
-        ? current
-        : {
-            deliverables: current.deliverables.map((deliverable) =>
-              deliverable.id === deliverableId ? { ...deliverable, feedback } : deliverable,
-            ),
-          },
+      withUpdatedFeedback(current, deliverableId, feedback),
     );
     return { previous };
   }
