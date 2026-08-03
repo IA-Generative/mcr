@@ -9,6 +9,7 @@ import pytest
 from mcr_meeting.app.exceptions.exceptions import (
     DiarizationError,
     MCRException,
+    TransientInfraError,
     UnknownDiarizationStatus,
 )
 from mcr_meeting.app.infrastructure import diarization as dp
@@ -16,6 +17,7 @@ from mcr_meeting.app.infrastructure.diarization import (
     DiarizationProcessor,
     next_poll_interval,
 )
+from mcr_meeting.app.schemas.transcription_schema import DiarizationJobResponse
 
 FAST = dp.api_settings.DIARIZATION_POLL_FAST_INTERVAL_SECONDS
 SLOW = dp.api_settings.DIARIZATION_POLL_SLOW_INTERVAL_SECONDS
@@ -68,6 +70,48 @@ class TestSubmitDiarizationJob:
             pytest.raises(RuntimeError),
         ):
             processor._submit_diarization_job(BytesIO(b"audio"))
+
+    def _post_status_client(self, status_code: int) -> MagicMock:
+        response = MagicMock()
+        response.raise_for_status.side_effect = _status_error(status_code)
+        client = MagicMock()
+        client.post.return_value = response
+        return client
+
+    def test_submit_timeout_is_recoverable(self) -> None:
+        processor = DiarizationProcessor()
+        client = MagicMock()
+        client.post.side_effect = httpx.ReadTimeout("timeout")
+
+        with (
+            patch.object(processor, "_get_http_client", return_value=client),
+            patch.object(dp.time, "sleep"),
+            pytest.raises(TransientInfraError),
+        ):
+            processor._submit_diarization_job(BytesIO(b"audio"))
+
+    def test_submit_server_error_is_recoverable(self) -> None:
+        processor = DiarizationProcessor()
+        client = self._post_status_client(503)
+
+        with (
+            patch.object(processor, "_get_http_client", return_value=client),
+            patch.object(dp.time, "sleep"),
+            pytest.raises(TransientInfraError),
+        ):
+            processor._submit_diarization_job(BytesIO(b"audio"))
+
+    def test_submit_client_error_fails_loud(self) -> None:
+        processor = DiarizationProcessor()
+        client = self._post_status_client(400)
+
+        with (
+            patch.object(processor, "_get_http_client", return_value=client),
+            patch.object(dp.time, "sleep"),
+            pytest.raises(DiarizationError) as excinfo,
+        ):
+            processor._submit_diarization_job(BytesIO(b"audio"))
+        assert not isinstance(excinfo.value, TransientInfraError)
 
 
 class TestNextPollInterval:
@@ -144,11 +188,37 @@ class TestPollDiarizationJob:
             ("LOCUTEUR_01", 7.3, 12.7),
         ]
 
-    def test_failed_raises_diarization_error(self) -> None:
+    @pytest.mark.parametrize(
+        "error",
+        [
+            "corrupt audio",  # unknown reason
+            'inference: inference endpoint returned 400: {"detail":"bad audio"}',
+            "input file not found: 22591/input.wav",
+        ],
+    )
+    def test_failed_with_permanent_reason_fails_loud(self, error: str) -> None:
         processor = DiarizationProcessor()
-        client = _client_returning({"status": "failed", "error": "boom"})
+        client = _client_returning({"status": "failed", "error": error})
 
-        with pytest.raises(DiarizationError, match="boom"):
+        with pytest.raises(DiarizationError) as excinfo:
+            self._poll(processor, client)
+        assert not isinstance(excinfo.value, TransientInfraError)
+
+    # Retryable server failure reasons (kevent-ai vocabulary) — must be re-queued
+    # not kill the meeting.
+    @pytest.mark.parametrize(
+        "error",
+        [
+            "stale: pending too long",
+            'inference: inference endpoint returned 503: {"detail":"Model not loaded"}',
+            "inference: calling inference endpoint: connection refused",
+        ],
+    )
+    def test_failed_with_retryable_reason_is_recoverable(self, error: str) -> None:
+        processor = DiarizationProcessor()
+        client = _client_returning({"status": "failed", "error": error})
+
+        with pytest.raises(TransientInfraError):
             self._poll(processor, client)
 
     def test_unknown_status_is_fail_loud(self) -> None:
@@ -182,14 +252,14 @@ class TestPollDiarizationJob:
 
         assert [s.speaker for s in segments] == ["LOCUTEUR_00"]
 
-    def test_transient_errors_exceed_threshold(self) -> None:
+    def test_sustained_poll_outage_is_recoverable(self) -> None:
         processor = DiarizationProcessor()
         budget = dp.api_settings.DIARIZATION_POLL_MAX_TRANSIENT_ERRORS
         client = _client_returning(
             *[httpx.ReadTimeout("timeout") for _ in range(budget + 1)]
         )
 
-        with pytest.raises(DiarizationError, match="transient errors"):
+        with pytest.raises(TransientInfraError):
             self._poll(processor, client)
 
     def test_unauthorized_fails_fast_without_retrying(self) -> None:
@@ -225,34 +295,6 @@ class TestPollDiarizationJob:
 
         assert [s.speaker for s in segments] == ["LOCUTEUR_00"]
 
-    def test_adaptive_cadence_sequence(self) -> None:
-        """pending(qp=8, t>=Y) -> processing(phase reset, t<Y) -> processing(t>=Y)
-        -> completed must sleep SLOW, FAST, SLOW (processing reopens a FAST window)."""
-        processor = DiarizationProcessor()
-        client = _client_returning(
-            {"status": "pending", "queue_position": 8},
-            {"status": "processing"},
-            {"status": "processing"},
-            {
-                "status": "completed",
-                "result": {
-                    "segments": [{"speaker": "SPEAKER_00", "start": 0, "end": 1}]
-                },
-            },
-        )
-        # monotonic() calls, in order: started_at, then per iteration
-        # (deadline check, optional phase reset, phase_elapsed).
-        clock = [0, 0, Y, Y, Y, Y + 1, Y + 1, 2 * Y + 5, 2 * Y + 6]
-
-        with (
-            patch.object(processor, "_get_http_client", return_value=client),
-            patch.object(dp.time, "sleep") as mock_sleep,
-            patch.object(dp.time, "monotonic", side_effect=clock),
-        ):
-            processor._poll_diarization_job("job-1")
-
-        assert [c.args[0] for c in mock_sleep.call_args_list] == [SLOW, FAST, SLOW]
-
     def test_deadline_exceeded(self) -> None:
         processor = DiarizationProcessor()
         client = _client_returning({"status": "pending"})
@@ -265,6 +307,26 @@ class TestPollDiarizationJob:
         ):
             with pytest.raises(DiarizationError, match="deadline"):
                 processor._poll_diarization_job("job-1")
+
+
+class TestPollCadence:
+    def test_processing_transition_reopens_fast_window(self) -> None:
+        # A long-queued job polls SLOW; once it starts PROCESSING the phase
+        # clock resets so we poll FAST again, then SLOW as that phase ages.
+        cadence = dp._PollCadence(phase_started_at=0.0)
+        pending = DiarizationJobResponse(status="pending", queue_position=8)
+        processing = DiarizationJobResponse(status="processing")
+
+        with patch.object(
+            dp.time, "monotonic", side_effect=[Y, 100.0, 100.0, 100.0 + Y]
+        ):
+            intervals = [
+                cadence.next_interval(pending),
+                cadence.next_interval(processing),
+                cadence.next_interval(processing),
+            ]
+
+        assert intervals == [SLOW, FAST, SLOW]
 
 
 class TestDiarizeRouting:
