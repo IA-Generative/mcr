@@ -4,10 +4,15 @@ from langfuse import Langfuse
 import mcr_generation.app.services.report_generation_task_service  # noqa: F401
 from mcr_generation.app.configs.settings import LangfuseSettings, LLMConfig
 from mcr_generation.app.utils.celery_worker import celery_app
+from mcr_generation.app.utils.sentry_context import init_sentry
 from mcr_generation.setup.logger import setup_logging
 
 llm_config = LLMConfig()
 setup_logging()
+
+# IMPORTANT: after setup_logging() — it calls logger.remove(), which would strip
+# the loguru sink LoguruIntegration installs, and Sentry would get no breadcrumbs.
+init_sentry()
 
 langfuse_settings = LangfuseSettings()
 
