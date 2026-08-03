@@ -21,6 +21,9 @@ is violated. Decide the invariant *first*; deriving it from code you already wro
   library's internals to assert anything. For an observability/config change, test the *product*
   consequence (resilience, an API contract); if the only effect is a monitoring-config value, it is
   verified by review + post-deploy, not a unit test.
+- **Never let the TDD gate manufacture a test.** If you have to author a rationale for why an assertion
+  matters — or you derive the invariant from the diff you just wrote — there is no invariant, and the
+  honest output is no test.
 - **Classify the layer** (domain / use-case / infra / api) — it dictates what the test must prove.
 - **Failure-path tests must actually fail for the named reason.** Confirm the failure triggers in-window
   (mutant check: break the fix, watch the test go red). A path injected before the guarded code runs, or

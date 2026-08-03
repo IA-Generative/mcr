@@ -12,6 +12,7 @@ def init_langfuse() -> None:
         public_key=langfuse_settings.LANGFUSE_PUBLIC_KEY,
         host=langfuse_settings.LANGFUSE_HOST,
         environment=settings.ENV_MODE.lower(),
+        tracing_enabled=langfuse_settings.LANGFUSE_TRACING_ENABLED,
     )
 
 
