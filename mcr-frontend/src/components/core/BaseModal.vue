@@ -79,6 +79,7 @@ const onClickDsfrModal = (e: MouseEvent) => {
     <DsfrModal
       v-bind="props"
       :opened="true"
+      disable-outside-interaction
       :actions="$slots.footer ? [] : displayedActions"
       @click="(e: MouseEvent) => onClickDsfrModal(e)"
       @close="() => closeModal()"
