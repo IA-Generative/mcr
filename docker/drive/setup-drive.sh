@@ -98,9 +98,7 @@ touch "$MCR_ENV"
 
 write_or_replace "KEYCLOAK_CORE_CLIENT_ID" "mcr-core" "$MCR_ENV"
 write_or_replace "KEYCLOAK_CORE_CLIENT_SECRET" "mcr-core-local-secret" "$MCR_ENV"
-write_or_replace "DRIVE_API_BASE_URL" "http://app-dev:8000" "$MCR_ENV"
-write_or_replace "DRIVE_FRONTEND_URL" "http://localhost:3000" "$MCR_ENV"
-write_or_replace "VITE_DRIVE_URL" "http://localhost:3000" "$MCR_ENV"
+# Drive URLs are non-secret dev defaults and live in .env.local.docker.
 
 echo "MCR .env configured."
 

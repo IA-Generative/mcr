@@ -59,8 +59,8 @@ def _try_post_drive(
 ) -> str | None:
     try:
         return upload_file(token.access_token, filename, file_bytes)
-    except Exception:
-        logger.warning("Drive upload failed")
+    except Exception as e:
+        logger.warning("Drive upload failed: {}: {}", type(e).__name__, e)
         return None
 
 
@@ -69,5 +69,5 @@ def _try_notify_upload(
 ) -> None:
     try:
         notify_upload(meeting.id, deliverable_type, external_url)
-    except Exception:
-        logger.warning("Upload notification failed")
+    except Exception as e:
+        logger.warning("Upload notification failed: {}: {}", type(e).__name__, e)
