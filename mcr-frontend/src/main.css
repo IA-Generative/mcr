@@ -1,6 +1,86 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/*
+  IMPORTANT: the DSFR stylesheets ship no `@layer` of their own. Tailwind v4 puts all
+  of its own CSS in native cascade layers, and unlayered CSS always beats layered CSS
+  regardless of source order — so importing DSFR from `main.ts` (as before v4) would
+  make every DSFR rule win over every Tailwind utility. Importing DSFR here inside a
+  `dsfr` layer ordered between `base` and `utilities` reproduces the v3 balance:
+  preflight loses to DSFR, utilities win over DSFR.
+*/
+@layer theme, base, dsfr, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+
+@import 'tailwindcss/preflight.css' layer(base);
+
+@import '@gouvfr/dsfr/dist/core/core.main.min.css' layer(dsfr);
+@import '@gouvfr/dsfr/dist/component/component.main.min.css' layer(dsfr);
+@import '@gouvfr/dsfr/dist/utility/utility.main.min.css' layer(dsfr);
+@import '@gouvfr/dsfr/dist/scheme/scheme.min.css' layer(dsfr);
+@import 'vue-final-modal/style.css' layer(dsfr);
+@import '@gouvminint/vue-dsfr/dist/vue-dsfr.css' layer(dsfr);
+
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@layer dsfr {
+  blockquote,
+  dl,
+  dd,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  hr,
+  figure,
+  p,
+  pre {
+    margin: 0;
+  }
+}
+
+@theme inline {
+  --color-grey: var(--text-default-grey);
+  --color-grey-200: var(--grey-200-850);
+  --color-grey-625: var(--grey-625-425);
+  --color-grey-900: var(--grey-900-175);
+  --color-grey-950: var(--grey-950-100);
+  --color-grey-1000: var(--grey-1000-50);
+  --color-grey-mention: var(--text-mention-grey);
+
+  --color-blue-france-sun: var(--blue-france-sun-113-625);
+  --color-blue-france-975: var(--blue-france-975-75);
+
+  --color-primary: var(--background-action-high-blue-france);
+  --color-background-contrast-grey: var(--background-contrast-grey);
+
+  --color-info-425: var(--info-425-625);
+  --color-info-950: var(--info-950-100);
+
+  --color-success-425: var(--success-425-625);
+  --color-success-950: var(--success-950-100);
+
+  --color-warning-425: var(--warning-425-625);
+  --color-warning-950: var(--warning-950-100);
+
+  --color-error-425: var(--error-425-625);
+  --color-error-950: var(--error-950-100);
+
+  --color-yellow-tournesol-sun: var(--yellow-tournesol-sun-407-moon-922);
+  --color-yellow-tournesol-950: var(--yellow-tournesol-950-100);
+
+  --color-purple-glycine-sun: var(--purple-glycine-sun-319-moon-630);
+  --color-purple-glycine-925: var(--purple-glycine-925-125);
+
+  --color-beige-gris-galet-950: var(--beige-gris-galet-950-100);
+}
+
+@layer base {
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 :root {
   --sticky-corner-margin: 24px;

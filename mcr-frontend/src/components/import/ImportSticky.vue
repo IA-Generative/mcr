@@ -18,7 +18,7 @@
     </header>
     <p
       v-if="etaLabel"
-      class="m-0 border-t border-default-grey px-4 py-2 text-sm text-grey-mention"
+      class="m-0 border-t border-(--border-default-grey) px-4 py-2 text-sm text-grey-mention"
       role="status"
     >
       {{ etaLabel }}

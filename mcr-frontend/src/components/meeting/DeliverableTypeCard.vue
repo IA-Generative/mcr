@@ -7,9 +7,9 @@
       {{ title }}
     </p>
 
-    <p class="text-[var(--text-default-grey)] text-xs m-0 flex-1">{{ description }}</p>
+    <p class="text-(--text-default-grey) text-xs m-0 flex-1">{{ description }}</p>
 
-    <div class="flex items-center justify-between gap-1 min-h-[2.5rem]">
+    <div class="flex items-center justify-between gap-1 min-h-10">
       <div class="flex items-center gap-1">
         <DeliverableFeedbackThumbs
           v-if="isAvailable && deliverable"

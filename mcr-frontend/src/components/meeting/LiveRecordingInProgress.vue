@@ -4,8 +4,8 @@
       :label="statusLabel"
       :class="
         isRecording
-          ? 'bg-warning-950 text-warning-425 rounded'
-          : 'bg-info-950 text-info-425 rounded'
+          ? 'bg-warning-950 text-warning-425 rounded-sm'
+          : 'bg-info-950 text-info-425 rounded-sm'
       "
       icon="fr-icon-circle-fill"
     />

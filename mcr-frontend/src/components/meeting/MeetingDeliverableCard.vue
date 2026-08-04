@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white p-6 flex flex-col gap-4 border border-[var(--grey-975-75-hover)]">
+  <div class="bg-white p-6 flex flex-col gap-4 border border-(--grey-975-75-hover)">
     <h2 class="text-blue-france-sun font-bold text-2xl">
       {{ $t('meeting-v2.deliverable-card.title') }}
     </h2>
-    <p class="text-[var(--text-default-grey)] m-0">
+    <p class="text-(--text-default-grey) m-0">
       {{ $t('meeting-v2.deliverable-card.description') }}
     </p>
 

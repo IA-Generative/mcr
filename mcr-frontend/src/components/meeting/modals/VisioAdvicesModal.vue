@@ -88,7 +88,9 @@
       </DsfrCallout>
     </div>
     <template #footer>
-      <div class="flex w-full items-center justify-end border-t border-gray-300 pt-4">
+      <div
+        class="flex w-full items-center justify-end border-t border-(--border-default-grey) pt-4"
+      >
         <DsfrButton
           :label="$t('meeting-v2.visio-recording.advices.modal.confirm')"
           icon="ri-check-line"

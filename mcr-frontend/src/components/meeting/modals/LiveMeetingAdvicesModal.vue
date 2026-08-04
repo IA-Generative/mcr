@@ -66,7 +66,9 @@
       </ul>
     </div>
     <template #footer>
-      <div class="flex w-full items-center justify-between border-t border-gray-300 pt-4">
+      <div
+        class="flex w-full items-center justify-between border-t border-(--border-default-grey) pt-4"
+      >
         <a
           href="https://mirai.interieur.gouv.fr/conditions-generales-dutilisation/"
           target="_blank"

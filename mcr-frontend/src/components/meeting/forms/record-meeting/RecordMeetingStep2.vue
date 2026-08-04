@@ -25,7 +25,7 @@
       <DsfrButton
         tertiary
         no-outline
-        class="'max-sm:!hidden'"
+        class="max-sm:hidden!"
         @click="() => $emit('cancel')"
       >
         {{ $t('common.cancel') }}
@@ -33,7 +33,7 @@
       <DsfrButton
         tertiary
         no-outline
-        class="!mr-auto"
+        class="mr-auto!"
         @click="() => $emit('previousStep')"
       >
         {{ $t('meeting.record-form.actions.back') }}

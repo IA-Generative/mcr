@@ -1,7 +1,7 @@
 <template>
   <DsfrTag
     :label="$t('meeting-v2.visio-recording.in-progress.badge').toUpperCase()"
-    class="bg-success-950 text-success-425 rounded font-bold"
+    class="bg-success-950 text-success-425 rounded-sm font-bold"
     icon="fr-icon-circle-fill"
   />
   <h2

@@ -7,7 +7,7 @@
       class="fr-icon-mic-fill text-blue-france-sun"
       aria-hidden="true"
     ></span>
-    <div class="w-40 h-2 bg-grey-950 rounded overflow-hidden">
+    <div class="w-40 h-2 bg-grey-950 rounded-sm overflow-hidden">
       <div
         class="h-full bg-blue-france-sun"
         :style="{ width: `${props.level * 100}%` }"

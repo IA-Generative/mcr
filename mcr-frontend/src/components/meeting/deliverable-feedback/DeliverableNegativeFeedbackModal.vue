@@ -8,7 +8,7 @@
     @closed="emit('closed')"
   >
     <div class="flex flex-col gap-4">
-      <p class="text-[var(--text-default-grey)] m-0">
+      <p class="text-(--text-default-grey) m-0">
         {{ $t('meeting-v2.deliverable-feedback.negative-modal.description') }}
       </p>
 
@@ -19,7 +19,7 @@
 
         <p
           v-if="isLoadingReasons"
-          class="text-[var(--text-mention-grey)] text-sm m-0"
+          class="text-(--text-mention-grey) text-sm m-0"
         >
           {{ $t('meeting-v2.deliverable-feedback.negative-modal.reasons-loading') }}
         </p>

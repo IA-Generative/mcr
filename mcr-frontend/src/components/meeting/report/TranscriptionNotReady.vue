@@ -12,7 +12,7 @@
       <h3 class="text-xl font-bold mb-6 text-blue-france-sun">
         {{ $t('meeting.report.error.no-transcription.title') }}
       </h3>
-      <p class="text-gray-700 text-lg">
+      <p class="text-grey text-lg">
         {{ $t('meeting.report.error.no-transcription.description') }}
       </p>
     </div>

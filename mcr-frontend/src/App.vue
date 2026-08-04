@@ -32,7 +32,7 @@ onMounted(async () => {
 <template>
   <div class="flex flex-col h-screen">
     <AppHeader></AppHeader>
-    <main class="flex-grow flex flex-col">
+    <main class="grow flex flex-col">
       <router-view />
     </main>
     <AppFooter></AppFooter>

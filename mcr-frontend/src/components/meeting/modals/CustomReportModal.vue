@@ -14,7 +14,7 @@
         >
           {{ $t('meeting-v2.custom-report-modal.title') }}
         </h2>
-        <p class="text-[var(--text-default-grey)] m-0">
+        <p class="text-(--text-default-grey) m-0">
           {{ $t('meeting-v2.custom-report-modal.description') }}
         </p>
       </div>

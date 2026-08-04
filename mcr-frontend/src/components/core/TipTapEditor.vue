@@ -1,5 +1,5 @@
 <template>
-  <div class="tiptap-editor border border-grey-900 rounded">
+  <div class="tiptap-editor border border-grey-900 rounded-sm">
     <div
       v-if="editor"
       class="flex justify-end gap-1 border-b border-grey-900"
