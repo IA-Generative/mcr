@@ -7,7 +7,7 @@
       ]"
     />
     <h1
-      class="fr-text text-4xl font-bold text-grey-200 max-w-[50vw] overflow-hidden whitespace-nowrap text-ellipsis"
+      class="fr-text max-w-[50vw] overflow-hidden text-4xl font-bold text-ellipsis whitespace-nowrap text-grey-200"
     >
       {{ meeting.name }}
     </h1>
@@ -27,7 +27,7 @@
         </template>
       </i18n-t>
       <template v-if="meetingDuration">
-        <span class="ml-4 mr-4">{{ t('common.pipe') }}</span>
+        <span class="mr-4 ml-4">{{ t('common.pipe') }}</span>
         <i18n-t
           keypath="meeting-v2.duration-label"
           tag="span"

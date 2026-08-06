@@ -1,5 +1,5 @@
 <template>
-  <div class="tiptap-editor border border-grey-900 rounded-sm">
+  <div class="tiptap-editor rounded-sm border border-grey-900">
     <div
       v-if="editor"
       class="flex justify-end gap-1 border-b border-grey-900"
@@ -19,7 +19,7 @@
         />
       </button>
     </div>
-    <div class="p-3 mb-0 fr-text--sm">
+    <div class="fr-text--sm mb-0 p-3">
       <EditorContent :editor="editor" />
     </div>
   </div>

@@ -30,9 +30,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex flex-col h-screen">
+  <div class="flex h-screen flex-col">
     <AppHeader></AppHeader>
-    <main class="grow flex flex-col">
+    <main class="flex grow flex-col">
       <router-view />
     </main>
     <AppFooter></AppFooter>

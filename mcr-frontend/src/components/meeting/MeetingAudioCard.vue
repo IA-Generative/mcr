@@ -45,7 +45,7 @@
 
     <div
       v-else-if="audioSrc"
-      class="flex gap-4 items-center justify-between"
+      class="flex items-center justify-between gap-4"
     >
       <audio
         ref="audioEl"

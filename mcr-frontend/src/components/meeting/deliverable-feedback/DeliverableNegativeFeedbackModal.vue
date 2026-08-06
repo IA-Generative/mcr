@@ -8,7 +8,7 @@
     @closed="emit('closed')"
   >
     <div class="flex flex-col gap-4">
-      <p class="text-(--text-default-grey) m-0">
+      <p class="m-0 text-(--text-default-grey)">
         {{ $t('meeting-v2.deliverable-feedback.negative-modal.description') }}
       </p>
 
@@ -19,7 +19,7 @@
 
         <p
           v-if="isLoadingReasons"
-          class="text-(--text-mention-grey) text-sm m-0"
+          class="m-0 text-sm text-(--text-mention-grey)"
         >
           {{ $t('meeting-v2.deliverable-feedback.negative-modal.reasons-loading') }}
         </p>
@@ -28,7 +28,7 @@
           v-else-if="areReasonsUnavailable"
           class="flex flex-col items-start gap-2"
         >
-          <p class="text-error-425 text-sm m-0">
+          <p class="m-0 text-sm text-error-425">
             {{ $t('meeting-v2.deliverable-feedback.negative-modal.reasons-unavailable') }}
           </p>
           <DsfrButton
@@ -56,13 +56,13 @@
         <textarea
           id="deliverable-negative-feedback-comment"
           v-model="comment"
-          class="fr-input overflow-y-auto resize-y"
+          class="fr-input resize-y overflow-y-auto"
           rows="4"
           :placeholder="$t('meeting-v2.deliverable-feedback.negative-modal.comment-placeholder')"
         />
         <p
           v-if="violation"
-          class="text-error-425 text-sm m-0"
+          class="m-0 text-sm text-error-425"
         >
           {{ $t(`meeting-v2.deliverable-feedback.negative-modal.errors.${violation}`) }}
         </p>

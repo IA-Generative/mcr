@@ -29,7 +29,7 @@
         />
       </Transition>
 
-      <div class="flex justify-end mt-4">
+      <div class="mt-4 flex justify-end">
         <DsfrButton
           :label="t('feedback.submit')"
           :disabled="sentIsButtonDisabled"
@@ -39,7 +39,7 @@
     </template>
 
     <template v-else>
-      <p class="text-center fr-text--lg">{{ t('feedback.success.body') }}</p>
+      <p class="fr-text--lg text-center">{{ t('feedback.success.body') }}</p>
     </template>
   </BaseModal>
 </template>

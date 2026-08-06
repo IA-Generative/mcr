@@ -1,5 +1,5 @@
 <template>
-  <div class="flex justify-center items-center py-28 gap-4">
+  <div class="flex items-center justify-center gap-4 py-28">
     <DsfrButton
       type="button"
       secondary

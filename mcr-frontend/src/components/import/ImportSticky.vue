@@ -23,7 +23,7 @@
     >
       {{ etaLabel }}
     </p>
-    <ul class="m-0 list-none overflow-y-auto p-0 max-h-[40vh]">
+    <ul class="m-0 max-h-[40vh] list-none overflow-y-auto p-0">
       <ImportStickyRow
         v-for="item in items"
         :key="item.id"

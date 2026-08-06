@@ -4,20 +4,20 @@
       :label="statusLabel"
       :class="
         isRecording
-          ? 'bg-warning-950 text-warning-425 rounded-sm'
-          : 'bg-info-950 text-info-425 rounded-sm'
+          ? 'rounded-sm bg-warning-950 text-warning-425'
+          : 'rounded-sm bg-info-950 text-info-425'
       "
       icon="fr-icon-circle-fill"
     />
     <div class="flex flex-row items-center gap-2">
       <AudioLevelMeter :level="audioInputLevel" />
-      <h2 class="font-bold text-2xl/8">
+      <h2 class="text-2xl/8 font-bold">
         {{ leftPad(time.hours.value) }}:{{ leftPad(time.minutes.value) }}:{{
           leftPad(time.seconds.value)
         }}
       </h2>
     </div>
-    <div class="recording-actions flex flex-row w-full gap-4 justify-center">
+    <div class="recording-actions flex w-full flex-row justify-center gap-4">
       <DsfrButton
         v-if="isRecording"
         secondary

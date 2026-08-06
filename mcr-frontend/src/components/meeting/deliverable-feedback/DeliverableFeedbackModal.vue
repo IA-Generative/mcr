@@ -8,7 +8,7 @@
     @closed="emit('closed')"
   >
     <div class="flex flex-col gap-4">
-      <p class="text-(--text-default-grey) m-0">
+      <p class="m-0 text-(--text-default-grey)">
         {{ $t('meeting-v2.deliverable-feedback.modal.description') }}
       </p>
 
@@ -22,7 +22,7 @@
         <textarea
           id="deliverable-feedback-comment"
           v-model="comment"
-          class="fr-input overflow-y-auto resize-y"
+          class="fr-input resize-y overflow-y-auto"
           rows="4"
         />
       </div>

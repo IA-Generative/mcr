@@ -16,7 +16,7 @@
       <h3 class="fr-h6 mb-1">
         {{ $t('meeting-v2.visio-recording.advices.modal.section-1.title') }}
       </h3>
-      <ul class="list-disc pl-8 mb-6">
+      <ul class="mb-6 list-disc pl-8">
         <li>
           <i18n-t keypath="meeting-v2.visio-recording.advices.modal.section-1.advice-1.text">
             <template #bold>
@@ -57,7 +57,7 @@
       <h3 class="fr-h6 mb-1">
         {{ $t('meeting-v2.visio-recording.advices.modal.section-2.title') }}
       </h3>
-      <ul class="list-disc pl-8 mb-6">
+      <ul class="mb-6 list-disc pl-8">
         <li>
           <i18n-t keypath="meeting-v2.visio-recording.advices.modal.section-2.advice-1.text">
             <template #bold>

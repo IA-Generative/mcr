@@ -14,7 +14,7 @@
         >
           {{ $t('meeting-v2.custom-report-modal.title') }}
         </h2>
-        <p class="text-(--text-default-grey) m-0">
+        <p class="m-0 text-(--text-default-grey)">
           {{ $t('meeting-v2.custom-report-modal.description') }}
         </p>
       </div>
@@ -29,7 +29,7 @@
         <textarea
           id="custom-report-prompt"
           v-model="prompt"
-          class="fr-input overflow-y-auto resize-y"
+          class="fr-input resize-y overflow-y-auto"
           rows="5"
           :placeholder="$t('meeting-v2.custom-report-modal.prompt-placeholder')"
         />

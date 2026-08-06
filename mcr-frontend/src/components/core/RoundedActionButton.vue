@@ -1,7 +1,7 @@
 <template>
   <button
     class="flex flex-col items-center gap-2"
-    :class="disabled && 'cursor-not-allowed pointer-events-none'"
+    :class="disabled && 'pointer-events-none cursor-not-allowed'"
     :aria-disabled="disabled || undefined"
   >
     <VIcon
@@ -10,7 +10,7 @@
       :color="disabled ? 'var(--grey-625-425)' : 'var(--blue-france-sun-113-625)'"
     />
     <span
-      class="font-bold text-center flex-1 flex items-center"
+      class="flex flex-1 items-center text-center font-bold"
       :class="disabled ? 'text-grey-625' : 'text-blue-france-sun'"
     >
       <slot />

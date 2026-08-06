@@ -1,0 +1,16 @@
+/*
+  Entry point for prettier-plugin-tailwindcss ONLY — never imported by the application,
+  which loads `main.css`.
+
+  The plugin needs a stylesheet to learn the utility vocabulary (including our DSFR
+  tokens) before it can sort class attributes. It cannot be pointed at `main.css`
+  because it resolves every `@import` it finds there, and both `vue-final-modal` and
+  `@gouvminint/vue-dsfr` declare their CSS export under the `import`/`require`
+  conditions only — which a CSS resolver does not match, so the plugin errors out.
+  Vite's resolver is more lenient, hence the build works while the plugin does not.
+
+  The plugin needs no vendor CSS at all, so this exposes just Tailwind + our tokens.
+  Keep in sync with `main.css`: if a new `@theme` source appears, import it here too.
+*/
+@import 'tailwindcss';
+@import './theme.css';

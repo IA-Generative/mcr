@@ -1,15 +1,15 @@
 <template>
   <div class="deliverable-type-card">
     <p
-      class="text-blue-france-sun font-bold text-sm m-0"
+      class="m-0 text-sm font-bold text-blue-france-sun"
       :class="{ 'opacity-50': hasError }"
     >
       {{ title }}
     </p>
 
-    <p class="text-(--text-default-grey) text-xs m-0 flex-1">{{ description }}</p>
+    <p class="m-0 flex-1 text-xs text-(--text-default-grey)">{{ description }}</p>
 
-    <div class="flex items-center justify-between gap-1 min-h-10">
+    <div class="flex min-h-10 items-center justify-between gap-1">
       <div class="flex items-center gap-1">
         <DeliverableFeedbackThumbs
           v-if="isAvailable && deliverable"
