@@ -79,7 +79,7 @@
       v-else-if="state === 'generate'"
       icon="fr-icon-sparkling-2-line"
       size="sm"
-      class="generate-button"
+      class="rounded-full! shadow-[0_2px_6px_rgba(0,0,40,0.16)]"
       @click="$emit('action')"
     >
       {{ actionLabel }}
@@ -121,11 +121,6 @@ const isFichierEnabled = useFeatureFlag('fichier-integration');
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-}
-
-.generate-button {
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 40, 0.16);
 }
 
 a.fr-btn::after {

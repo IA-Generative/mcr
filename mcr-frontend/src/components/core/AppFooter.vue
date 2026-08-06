@@ -2,6 +2,7 @@
   <DsfrFooter
     :logo-text="logoText"
     home-link="/"
+    class="pb-4"
   />
 </template>
 
@@ -12,9 +13,3 @@ const { t } = useI18n();
 
 const logoText = computed(() => [t('header.logo.text1'), t('header.logo.text2')]);
 </script>
-
-<style scoped>
-.fr-footer {
-  padding-bottom: 1rem;
-}
-</style>

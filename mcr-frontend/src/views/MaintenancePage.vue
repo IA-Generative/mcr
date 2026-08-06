@@ -17,5 +17,3 @@
 <script setup lang="ts">
 import maintenanceArtwork from '@dsfr-artwork/pictograms/system/system.svg?url';
 </script>
-
-<style scoped></style>

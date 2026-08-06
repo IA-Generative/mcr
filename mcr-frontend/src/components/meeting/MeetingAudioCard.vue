@@ -1,10 +1,12 @@
 <template>
   <div
     v-if="isAudioAvailable"
-    class="audio-card"
+    class="flex flex-col gap-4 border border-(--grey-975-75-hover) bg-white p-6"
   >
-    <h2 class="audio-card__title">{{ $t('meeting-v2.audio-card.title') }}</h2>
-    <p class="audio-card__info">
+    <h2 class="text-2xl font-bold text-blue-france-sun">
+      {{ $t('meeting-v2.audio-card.title') }}
+    </h2>
+    <p class="flex items-center gap-2 text-grey">
       <VIcon
         name="ri-time-line"
         scale="0.9"
@@ -157,28 +159,3 @@ onBeforeUnmount(() => {
   }
 });
 </script>
-
-<style scoped>
-.audio-card {
-  background-color: white;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  border-width: 1px;
-  border-color: var(--grey-975-75-hover);
-}
-
-.audio-card__title {
-  color: var(--blue-france-sun-113-625);
-  font-weight: bold;
-  font-size: 1.5rem;
-}
-
-.audio-card__info {
-  color: var(--text-default-grey);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-</style>

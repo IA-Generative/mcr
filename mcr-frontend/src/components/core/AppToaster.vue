@@ -11,19 +11,20 @@ const close = (id: string) => emit('closeMessage', id);
 </script>
 
 <template>
-  <div class="toaster-container">
+  <!-- The stacking index matches .fr-modal's, so toasts stay above an open modal -->
+  <div class="pointer-events-none fixed bottom-4 z-[1750] w-full">
     <TransitionGroup
       mode="out-in"
       name="list"
       tag="div"
-      class="toasters"
+      class="flex flex-col items-center"
     >
       <template
         v-for="message in messages"
         :key="message.id"
       >
         <DsfrAlert
-          class="app-alert bg-grey-1000"
+          class="pointer-events-auto w-[90%] bg-grey-1000"
           v-bind="message"
           @close="close(message.id as string)"
         />
@@ -33,24 +34,6 @@ const close = (id: string) => emit('closeMessage', id);
 </template>
 
 <style scoped>
-.toaster-container {
-  pointer-events: none;
-  position: fixed;
-  bottom: 1rem;
-  width: 100%;
-  z-index: 1750; /* To be on top of .fr-modal which has z-index: 1750 */
-}
-.toasters {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.app-alert {
-  width: 90%;
-  pointer-events: all;
-}
-
 .list-move, /* apply transition to moving elements */
 .list-enter-active,
 .list-leave-active {

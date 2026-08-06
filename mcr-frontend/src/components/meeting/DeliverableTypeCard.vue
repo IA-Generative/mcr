@@ -1,5 +1,7 @@
 <template>
-  <div class="deliverable-type-card">
+  <div
+    class="deliverable-type-card flex flex-col gap-2 border border-b-[3px] border-[#dddddd] border-b-blue-france-sun bg-grey-1000 px-4 py-3"
+  >
     <p
       class="m-0 text-sm font-bold text-blue-france-sun"
       :class="{ 'opacity-50': hasError }"
@@ -133,15 +135,3 @@ function onAction(): void {
   else emit('generate');
 }
 </script>
-
-<style scoped>
-.deliverable-type-card {
-  border: 1px solid #dddddd;
-  border-bottom: 3px solid var(--blue-france-sun-113-625);
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background-color: var(--grey-1000-50);
-}
-</style>

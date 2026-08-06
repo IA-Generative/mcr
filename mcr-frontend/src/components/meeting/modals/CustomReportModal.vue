@@ -67,7 +67,7 @@
         <DsfrButton
           icon="fr-icon-sparkling-2-line"
           size="sm"
-          class="generate-button"
+          class="rounded-full! shadow-[0_2px_6px_rgba(0,0,40,0.16)]"
           :disabled="isGenerateDisabled"
           @click="handleGenerate"
         >
@@ -166,11 +166,6 @@ function handleGenerate() {
 <style scoped>
 :deep(.fr-modal__title) {
   color: var(--blue-france-sun-113-625);
-}
-
-.generate-button {
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 40, 0.16);
 }
 
 :deep(.fr-tile) {

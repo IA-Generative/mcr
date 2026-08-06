@@ -25,5 +25,3 @@ defineProps<{
   onEdit?: () => void;
 }>();
 </script>
-
-<style scoped></style>

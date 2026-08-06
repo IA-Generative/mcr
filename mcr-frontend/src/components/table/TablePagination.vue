@@ -89,5 +89,3 @@ const goLastPage = () => {
   emit('onPageChange', props.totalPages);
 };
 </script>
-
-<style scoped></style>
