@@ -54,7 +54,7 @@
 
     <span
       v-else-if="state === 'waiting'"
-      class="deliverable-tag bg-(--grey-925-125) text-(--text-mention-grey)"
+      class="deliverable-tag bg-(--grey-925-125) text-grey-mention"
     >
       <span
         class="fr-icon-time-line fr-icon--sm"

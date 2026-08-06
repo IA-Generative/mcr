@@ -8,7 +8,7 @@
     @closed="emit('closed')"
   >
     <div class="flex flex-col gap-4">
-      <p class="m-0 text-(--text-default-grey)">
+      <p class="m-0 text-grey">
         {{ $t('meeting-v2.deliverable-feedback.modal.description') }}
       </p>
 

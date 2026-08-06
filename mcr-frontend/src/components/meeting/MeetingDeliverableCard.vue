@@ -3,7 +3,7 @@
     <h2 class="text-2xl font-bold text-blue-france-sun">
       {{ $t('meeting-v2.deliverable-card.title') }}
     </h2>
-    <p class="m-0 text-(--text-default-grey)">
+    <p class="m-0 text-grey">
       {{ $t('meeting-v2.deliverable-card.description') }}
     </p>
 

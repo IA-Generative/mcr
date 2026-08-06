@@ -9,7 +9,7 @@
       {{ title }}
     </p>
 
-    <p class="m-0 flex-1 text-xs text-(--text-default-grey)">{{ description }}</p>
+    <p class="m-0 flex-1 text-xs text-grey">{{ description }}</p>
 
     <div class="flex min-h-10 items-center justify-between gap-1">
       <div class="flex items-center gap-1">

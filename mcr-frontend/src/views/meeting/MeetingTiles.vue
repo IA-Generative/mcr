@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-[18px] min-[1040px]:flex-row">
+  <div class="flex flex-col gap-4.5 min-[1040px]:flex-row">
     <div :class="tileClasses">
       <ActionTile
         class="size-full"

@@ -11,8 +11,7 @@ const close = (id: string) => emit('closeMessage', id);
 </script>
 
 <template>
-  <!-- The stacking index matches .fr-modal's, so toasts stay above an open modal -->
-  <div class="pointer-events-none fixed bottom-4 z-[1750] w-full">
+  <div class="pointer-events-none fixed bottom-4 z-1750 w-full">
     <TransitionGroup
       mode="out-in"
       name="list"
