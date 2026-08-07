@@ -12,7 +12,7 @@
   </span>
   <RouterLink
     :to="`${ROUTES.MEETINGS.path}/${meeting.id}`"
-    class="fr-link"
+    class="fr-link text-[0.875rem]"
   >
     {{ meetingTitle }}
   </RouterLink>
@@ -48,10 +48,6 @@ const meetingTitle = computed(() => {
 </script>
 
 <style scoped>
-.fr-link {
-  font-size: 0.875rem;
-}
-
 .tooltip-wrapper :deep(.fr-link) {
   font-size: 0.875rem;
 }

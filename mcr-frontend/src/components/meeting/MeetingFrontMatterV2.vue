@@ -1,6 +1,7 @@
 <template>
   <div class="flex flex-col gap-4">
     <DsfrBreadcrumb
+      class="m-0"
       :links="[
         { text: $t('home.text'), to: '/meetings' },
         { text: meeting.name, to: `/meetings/${meeting.id}` },
@@ -72,10 +73,6 @@ function getSubtitleFromPlatformName(namePlatform: AllMeetingPlatforms): string 
 </script>
 
 <style scoped>
-:deep(.fr-breadcrumb) {
-  margin: 0;
-}
-
 :deep(.fr-breadcrumb__link) {
   display: inline-block;
   max-width: 25vw;

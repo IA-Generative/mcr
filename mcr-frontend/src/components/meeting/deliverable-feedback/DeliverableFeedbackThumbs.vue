@@ -2,7 +2,7 @@
   <div class="flex items-center gap-1">
     <button
       type="button"
-      class="feedback-thumb fr-btn fr-btn--tertiary-no-outline"
+      class="fr-btn fr-btn--tertiary-no-outline after:hidden after:content-none"
       :class="isPositive ? 'fr-icon-thumb-up-fill text-success-425' : 'fr-icon-thumb-up-line'"
       :aria-pressed="isPositive"
       :title="$t('meeting-v2.deliverable-feedback.thumb-up')"
@@ -12,7 +12,7 @@
     </button>
     <button
       type="button"
-      class="feedback-thumb fr-btn fr-btn--tertiary-no-outline"
+      class="fr-btn fr-btn--tertiary-no-outline after:hidden after:content-none"
       :class="isNegative ? 'fr-icon-thumb-down-fill text-error-425' : 'fr-icon-thumb-down-line'"
       :aria-pressed="isNegative"
       :title="$t('meeting-v2.deliverable-feedback.thumb-down')"
@@ -138,10 +138,3 @@ function submitVote(payload: DeliverableFeedbackPayload): void {
   );
 }
 </script>
-
-<style scoped>
-.feedback-thumb::after {
-  display: none;
-  content: none;
-}
-</style>

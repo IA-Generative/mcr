@@ -1,18 +1,10 @@
 <template>
-  <div class="separator pt-2 pb-8">
+  <div class="separator flex items-center pt-2 pb-8 text-center font-medium text-black">
     <span>{{ $t('common.or') }}</span>
   </div>
 </template>
 
 <style scoped>
-.separator {
-  display: flex;
-  align-items: center;
-  text-align: center;
-  color: #000;
-  font-weight: 500;
-}
-
 .separator::before,
 .separator::after {
   content: '';

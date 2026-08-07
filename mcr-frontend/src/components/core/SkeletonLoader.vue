@@ -1,7 +1,7 @@
 <template>
-  <div class="skeleton-loader">
+  <div class="flex flex-col gap-2.5">
     <div
-      class="skeleton bg-grey-900"
+      class="skeleton relative overflow-hidden bg-grey-900"
       :style="{
         width: width + 'px',
         height: height + 'px',
@@ -29,17 +29,6 @@ defineProps({
 </script>
 
 <style scoped>
-.skeleton-loader {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.skeleton {
-  position: relative;
-  overflow: hidden;
-}
-
 .skeleton::before {
   content: '';
   display: block;
