@@ -15,7 +15,6 @@
     "form": {
       "update": "Mettre à jour"
     },
-    "or": "ou",
     "pipe": "{'|'}",
     "editor": {
       "bold": "Gras",
@@ -306,10 +305,6 @@
     "report": {
       "download": "Télécharger le compte-rendu",
       "reset": "Regénérer le compte-rendu",
-      "report-pending": {
-        "title": "L'écriture du compte-rendu est en cours...",
-        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte-rendu sera disponible au téléchargement une fois terminé."
-      },
       "error": {
         "no-transcription": {
           "title": "La transcription n'est pas terminée",
