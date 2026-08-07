@@ -94,7 +94,7 @@ watch(isActive, (newValue, oldValue) => {
 });
 </script>
 
-<style>
+<style scoped>
 .fr-dropdown-collapse {
   box-sizing: content-box;
   box-shadow: 0px 4px 12px rgba(0, 0, 18, 0.12);
@@ -106,35 +106,38 @@ watch(isActive, (newValue, oldValue) => {
   min-width: max-content;
 }
 
-.fr-dropdown-menu {
-  & .fr-btns-group {
-    display: flex;
-    flex-direction: column;
-    min-width: max-content;
+.fr-dropdown-menu :deep(.fr-btns-group) {
+  display: flex;
+  flex-direction: column;
+  min-width: max-content;
 
-    /* Property is defined inline in Dsfr component, hence !important is necessary to override */
-    margin-bottom: 0px !important;
-    margin-left: 2px;
+  /* Property is defined inline in Dsfr component, hence !important is necessary to override */
+  margin-bottom: 0px !important;
+  margin-left: 2px;
+}
 
-    & .fr-btn {
-      margin: 0;
-      padding: 1rem 1.5rem;
-      justify-content: flex-start;
-      text-align: start;
-      min-width: 100%;
-      max-width: 282px !important;
-    }
-  }
+.fr-dropdown-menu :deep(.fr-btns-group .fr-btn) {
+  margin: 0;
+  padding: 1rem 1.5rem;
+  justify-content: flex-start;
+  text-align: start;
+  min-width: 100%;
+  max-width: 282px !important;
+}
 
-  & .fr-accordion__btn[aria-expanded='true'] {
-    background-color: var(--background-action-high-blue-france);
-    color: var(--text-inverted-blue-france);
-    --hover: var(--background-action-high-blue-france-hover);
-    --active: var(--background-action-high-blue-france-active);
-  }
+/*
+  No `.fr-dropdown-menu` prefix on purpose: it would raise specificity to 0-4-0 and
+  steal these two rules from AppHeader's own `:deep(.fr-accordion__btn[aria-expanded])`,
+  which currently wins on equal specificity by source order. Keep them at 0-3-0.
+*/
+:deep(.fr-accordion__btn[aria-expanded='true']) {
+  background-color: var(--background-action-high-blue-france);
+  color: var(--text-inverted-blue-france);
+  --hover: var(--background-action-high-blue-france-hover);
+  --active: var(--background-action-high-blue-france-active);
+}
 
-  & .fr-accordion__btn[aria-expanded='true']:hover {
-    background-color: var(--background-action-high-blue-france-active);
-  }
+:deep(.fr-accordion__btn[aria-expanded='true']:hover) {
+  background-color: var(--background-action-high-blue-france-active);
 }
 </style>

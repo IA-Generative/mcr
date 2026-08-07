@@ -88,17 +88,17 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style>
-.tiptap-editor .ProseMirror {
+<style scoped>
+.tiptap-editor :deep(.ProseMirror) {
   min-height: 20vh;
   max-height: 60vh;
   overflow-y: auto;
   outline: none;
 }
-.tiptap-editor .ProseMirror p {
+.tiptap-editor :deep(.ProseMirror p) {
   font-size: inherit;
 }
-.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+.tiptap-editor :deep(.ProseMirror p.is-editor-empty:first-child::before) {
   content: attr(data-placeholder);
   color: var(--grey-625-425);
   pointer-events: none;
@@ -124,12 +124,12 @@ onBeforeUnmount(() => {
 }
 
 /* Restore list styles reset by Tailwind preflight */
-.tiptap-editor .ProseMirror ul {
+.tiptap-editor :deep(.ProseMirror ul) {
   list-style-type: disc;
   padding-left: 1.5rem;
   margin: 0.5rem 0;
 }
-.tiptap-editor .ProseMirror ol {
+.tiptap-editor :deep(.ProseMirror ol) {
   list-style-type: decimal;
   padding-left: 1.5rem;
   margin: 0.5rem 0;
