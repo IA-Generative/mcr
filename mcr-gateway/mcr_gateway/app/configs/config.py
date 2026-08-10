@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     ENV_MODE: str = "PROD"
 
 
+class SentrySettings(BaseSettings):
+    SENTRY_GATEWAY_DSN: str = Field(
+        default="", description="Sentry DSN for the gateway service"
+    )
+    SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
+    TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
+
+
 class LoggingSettings(BaseSettings):
     COLORIZE: bool = Field(default=False, description="Should log output be colored")
     LEVEL: int | str = Field(default="INFO")
