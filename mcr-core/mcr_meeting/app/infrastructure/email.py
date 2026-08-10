@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from loguru import logger
 
 from mcr_meeting.app.configs.base import SMTPSettings
+from mcr_meeting.app.infrastructure.sentry import span
 
 
 def _connect(settings: SMTPSettings) -> smtplib.SMTP:
@@ -45,46 +46,55 @@ def send_email(
 
     settings = SMTPSettings()
 
-    for attempt in range(1, max_retries + 1):
-        try:
-            msg = MIMEMultipart()
-            msg["From"] = settings.SMTP_SENDER
-            msg["To"] = to_email
-            msg["Subject"] = subject
-            msg.attach(MIMEText(html, "html", "utf-8"))
+    # One span for the whole send, so the blocking SMTP time — retries and
+    # backoff included — is a named span instead of dead space in the trace.
+    with span(
+        "smtp.send",
+        "send_email",
+        **{"smtp.recipient": to_email, "smtp.subject": subject},
+    ):
+        for attempt in range(1, max_retries + 1):
+            try:
+                msg = MIMEMultipart()
+                msg["From"] = settings.SMTP_SENDER
+                msg["To"] = to_email
+                msg["Subject"] = subject
+                msg.attach(MIMEText(html, "html", "utf-8"))
 
-            with _connect(settings) as server:
-                errors = server.sendmail(
-                    settings.SMTP_SENDER,
-                    [to_email],
-                    msg.as_string(),
+                with _connect(settings) as server:
+                    errors = server.sendmail(
+                        settings.SMTP_SENDER,
+                        [to_email],
+                        msg.as_string(),
+                    )
+
+                    if errors:
+                        logger.error("SMTP refused recipients: %s", errors)
+                        return False
+
+                logger.info("Email sent to %s", to_email)
+                return True
+
+            except Exception as exc:
+                retryable = _is_retryable_exception(exc)
+
+                logger.warning(
+                    "Email attempt %d/%d failed (retryable=%s): %s",
+                    attempt,
+                    max_retries,
+                    retryable,
+                    str(exc),
                 )
 
-                if errors:
-                    logger.error("SMTP refused recipients: %s", errors)
+                if not retryable or attempt == max_retries:
+                    logger.exception(
+                        "Email sending failed permanently for %s", to_email
+                    )
                     return False
 
-            logger.info("Email sent to %s", to_email)
-            return True
-
-        except Exception as exc:
-            retryable = _is_retryable_exception(exc)
-
-            logger.warning(
-                "Email attempt %d/%d failed (retryable=%s): %s",
-                attempt,
-                max_retries,
-                retryable,
-                str(exc),
-            )
-
-            if not retryable or attempt == max_retries:
-                logger.exception("Email sending failed permanently for %s", to_email)
-                return False
-
-            # Exponential backoff: 2s, 4s, 8s...
-            sleep_time = 2**attempt
-            time.sleep(sleep_time)
+                # Exponential backoff: 2s, 4s, 8s...
+                sleep_time = 2**attempt
+                time.sleep(sleep_time)
 
     return False
 
@@ -95,7 +105,7 @@ def _is_retryable_exception(exc: Exception) -> bool:
     """
 
     # Network-level issues
-    if isinstance(exc, (socket.timeout, OSError)):
+    if isinstance(exc, socket.timeout | OSError):
         return True
     # Generic SMTP exceptions
     if isinstance(exc, smtplib.SMTPServerDisconnected):
@@ -115,11 +125,9 @@ def _is_retryable_exception(exc: Exception) -> bool:
     # Authentication / permanent failures should NOT retry
     if isinstance(
         exc,
-        (
-            smtplib.SMTPAuthenticationError,
-            smtplib.SMTPSenderRefused,
-            smtplib.SMTPRecipientsRefused,
-        ),
+        smtplib.SMTPAuthenticationError
+        | smtplib.SMTPSenderRefused
+        | smtplib.SMTPRecipientsRefused,
     ):
         return False
 
