@@ -9,6 +9,7 @@ from pydantic import UUID4
 from mcr_gateway.app.configs.config import settings
 from mcr_gateway.app.schemas.feedback_schema import Feedback, FeedbackRequest
 from mcr_gateway.app.services.meeting_service import MCRCoreCustomAuth
+from mcr_gateway.app.utils.core_http_client import core_client
 
 
 @asynccontextmanager
@@ -16,7 +17,7 @@ async def get_feedback_http_client(
     user_keycloak_uuid: UUID4,
     access_token: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(
+    client = core_client(
         base_url=settings.FEEDBACK_SERVICE_URL,
         auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
     )

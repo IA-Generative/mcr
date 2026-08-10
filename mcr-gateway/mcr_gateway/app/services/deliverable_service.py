@@ -19,6 +19,7 @@ from mcr_gateway.app.services.meeting_service import (
     MCRCoreCustomAuth,
     get_meeting_http_client,
 )
+from mcr_gateway.app.utils.core_http_client import core_client
 from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 
 
@@ -27,7 +28,7 @@ async def get_deliverable_http_client(
     user_keycloak_uuid: UUID4,
     access_token: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(
+    client = core_client(
         base_url=settings.DELIVERABLE_SERVICE_URL,
         auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
     )

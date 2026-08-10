@@ -6,7 +6,7 @@ from fastapi import Request, Response
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from mcr_gateway.setup.sentry import tag_request_id
+from mcr_gateway.setup.sentry import tag_sentry_request_id
 
 REQUEST_ID_HEADER = "X-Request-ID"
 
@@ -24,7 +24,7 @@ class AddRequestIdMiddleware(BaseHTTPMiddleware):
         # Adopt an upstream id when present so a request keeps one id end to end.
         request_id = request.headers.get(REQUEST_ID_HEADER) or str(uuid.uuid4())
         token = _request_id_ctx.set(request_id)
-        tag_request_id(request_id)
+        tag_sentry_request_id(request_id)
         try:
             with logger.contextualize(request_id=request_id):
                 response = await call_next(request)

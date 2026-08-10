@@ -23,6 +23,6 @@ def setup_sentry() -> None:
         logger.warning("Sentry initialization failed, continuing without it: {}", e)
 
 
-def tag_request_id(request_id: str) -> None:
+def tag_sentry_request_id(request_id: str) -> None:
     # A no-op when Sentry is not initialized (e.g. tests), so callers stay simple.
     sentry_sdk.set_tag("request_id", request_id)
