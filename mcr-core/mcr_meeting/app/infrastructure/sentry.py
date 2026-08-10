@@ -60,7 +60,12 @@ def init_api_sentry() -> None:
     env_mode = settings.ENV_MODE
     if not env_mode or env_mode == "test":
         return
-    _init_sentry(sentry_settings.SENTRY_CORE_DSN)
+    # The API is a Celery producer: CeleryIntegration stamps the trace onto every
+    # enqueued task so workers continue it instead of starting a disconnected one.
+    _init_sentry(
+        sentry_settings.SENTRY_CORE_DSN,
+        extra_integrations=[CeleryIntegration()],
+    )
 
 
 class MeetingContext(TypedDict):
