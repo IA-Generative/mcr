@@ -16,6 +16,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     TranscriptionError,
     TranscriptionTransientError,
 )
+from mcr_meeting.app.infrastructure.sentry import span
 from mcr_meeting.app.schemas.transcription_schema import (
     TimeSpan,
     TranscriptionInput,
@@ -44,12 +45,6 @@ class TranscriptionProcessor:
         audio_bytes: BytesIO,
         chunk_spans: list[TimeSpan],
     ) -> list[TranscriptionSegment]:
-        transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
-
-        logger.debug(
-            "Starting transcription of {} input audio chunks", len(transcription_inputs)
-        )
-
         def transcribe_one(
             indexed_chunk: tuple[int, TranscriptionInput],
         ) -> list[TranscriptionSegment]:
@@ -73,10 +68,29 @@ class TranscriptionProcessor:
                 for segment in chunk_transcription_segments
             ]
 
-        with ThreadPoolExecutor(max_workers=api_settings.MAX_CONCURRENT_CHUNKS) as pool:
-            results = pool.map(transcribe_one, enumerate(transcription_inputs))
+        # A parent span for the whole fan-out. The per-chunk API calls run in
+        # worker threads whose spans don't nest here (Sentry's scope is
+        # thread-local), but this still turns total transcription time into one
+        # named span instead of scattered, orphaned child spans.
+        with span("transcription.transcribe", "transcribe") as transcribe_span:
+            transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
+            transcribe_span.set_data(
+                "transcription.chunk_count", len(transcription_inputs)
+            )
 
-            return [segment for chunk_segments in results for segment in chunk_segments]
+            logger.debug(
+                "Starting transcription of {} input audio chunks",
+                len(transcription_inputs),
+            )
+
+            with ThreadPoolExecutor(
+                max_workers=api_settings.MAX_CONCURRENT_CHUNKS
+            ) as pool:
+                results = pool.map(transcribe_one, enumerate(transcription_inputs))
+
+                return [
+                    segment for chunk_segments in results for segment in chunk_segments
+                ]
 
     def _transcribe_audio_chunk_api(
         self,
