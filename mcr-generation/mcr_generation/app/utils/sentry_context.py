@@ -6,6 +6,19 @@ from loguru import logger
 from mcr_generation.app.client.meeting_client import MeetingApiClient
 
 
+def current_trace_ids() -> tuple[str | None, str | None]:
+    # Read the active trace/span so each JSON log line can be joined to its
+    # Sentry trace in Grafana (and, here, to the Langfuse trace carrying the
+    # same id). Kept here because touching sentry_sdk is this file's job (one
+    # owner per SDK); logger.py consumes this rather than importing the SDK.
+    traceparent = sentry_sdk.get_traceparent()
+    if not traceparent:
+        return None, None
+    trace_id, _, rest = traceparent.partition("-")
+    span_id = rest.partition("-")[0] or None
+    return (trace_id or None), span_id
+
+
 class MeetingContext(TypedDict):
     meeting_id: int
     owner_keycloak_uuid: str | None
