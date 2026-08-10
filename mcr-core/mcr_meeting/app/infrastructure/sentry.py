@@ -71,6 +71,20 @@ def init_api_sentry() -> None:
     )
 
 
+def current_trace_ids() -> tuple[str | None, str | None]:
+    # Read the active trace/span so each JSON log line can be joined to its
+    # Sentry trace in Grafana. Kept here because touching sentry_sdk is this
+    # file's job (one owner per SDK); logger.py consumes this rather than
+    # importing the SDK. Uses the propagation context, so it resolves even
+    # between spans (e.g. a request handler outside any child span).
+    traceparent = sentry_sdk.get_traceparent()
+    if not traceparent:
+        return None, None
+    trace_id, _, rest = traceparent.partition("-")
+    span_id = rest.partition("-")[0] or None
+    return (trace_id or None), span_id
+
+
 @contextmanager
 def span(op: str, name: str, **data: object) -> Iterator[Span]:
     # The single seam for opening child spans, so `sentry_sdk` stays confined to
