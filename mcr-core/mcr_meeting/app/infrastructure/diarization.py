@@ -20,6 +20,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     DiarizationTransientError,
 )
 from mcr_meeting.app.infrastructure.retry import retry_transient
+from mcr_meeting.app.infrastructure.sentry import span
 from mcr_meeting.app.schemas.transcription_schema import (
     DiarizationJobResponse,
     DiarizationJobStatus,
@@ -166,8 +167,12 @@ class DiarizationProcessor:
         return job_id
 
     def _diarize_async_api(self, audio_bytes: BytesIO) -> list[DiarizationSegment]:
-        job_id = self._submit_diarization_job(audio_bytes)
-        return self._poll_diarization_job(job_id)
+        # The submit POST is auto-traced, but the poll loop waits minutes and
+        # shows as a gap; one span makes the whole job a measurable span.
+        with span("diarization.job", "diarize") as job_span:
+            job_id = self._submit_diarization_job(audio_bytes)
+            job_span.set_data("diarization.job_id", job_id)
+            return self._poll_diarization_job(job_id)
 
     def _poll_diarization_job(self, job_id: str) -> list[DiarizationSegment]:
         # This loop only inspects the job status and controls the clock; network
