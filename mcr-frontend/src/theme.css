@@ -2,6 +2,11 @@
   Kept in its own file so `tailwind-entry.css` can expose the token vocabulary to
   prettier-plugin-tailwindcss without dragging in main.css's vendor imports.
 */
+@theme {
+  --breakpoint-2xs: 28rem;
+  --breakpoint-xs: 32rem;
+}
+
 @theme inline {
   --color-grey: var(--text-default-grey);
   --color-grey-200: var(--grey-200-850);

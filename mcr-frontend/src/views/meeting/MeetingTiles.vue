@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-4.5 min-[1040px]:flex-row">
+  <div class="flex flex-col gap-4.5 lg:flex-row">
     <div :class="tileClasses">
       <ActionTile
         class="size-full"
@@ -64,8 +64,7 @@ import { useMeetings } from '@/services/meetings/use-meeting';
 import { ALLOWED_IMPORT_FORMATS_LABEL, IMPORT_ACCEPT_ATTR } from '@/utils/file';
 import { useModal } from 'vue-final-modal';
 
-const tileClasses =
-  'w-[95vw] h-[20vh] min-[440px]:h-[15vh] min-[1040px]:w-[30vw] min-[1040px]:h-[20vh]';
+const tileClasses = 'w-[95vw] h-[20vh] 2xs:h-[15vh] lg:h-[20vh] lg:w-[30vw]';
 
 const isWebexEnabled = useFeatureFlag('webex');
 const fileInput = ref<HTMLInputElement | null>(null);
