@@ -14,7 +14,7 @@
       <div class="fr-col-4 pt-2">
         <DsfrInput
           v-model="comuId"
-          class="w-full min-w-1/2 flex-1"
+          class="w-full flex-1"
           :label="$t('meeting-v2.visio-form.comu.meeting_id')"
           :error-message="comuIdError"
           label-visible
@@ -24,7 +24,8 @@
       <div class="fr-col-4 pt-2">
         <DsfrInputGroup
           v-model="comuPassword"
-          class="w-full min-w-1/2 flex-1"
+          class="w-full flex-1"
+          wrapper-class="min-w-1/2 grow"
           :label="$t('meeting-v2.visio-form.comu.access_code')"
           :error-message="comuPasswordError"
           label-visible
@@ -38,7 +39,7 @@
     >
       <DsfrInput
         v-model="comuUrl"
-        class="m-0 min-w-1/2 grow"
+        class="m-0"
         :label="$t('meeting-v2.visio-form.comu.url')"
         :hint="$t('meeting-v2.visio-form.comu.url_hint')"
         :error-message="comuUrlError"
