@@ -293,23 +293,8 @@
           "button": "Quitter"
         }
       },
-      "transcription-failed": {
-        "title": "Une erreur est survenue",
-        "description": "Un problème technique est survenu. Veuillez réessayer.",
-        "button": "Réessayer"
-      },
       "tab": {
         "members": "Participants"
-      }
-    },
-    "report": {
-      "download": "Télécharger le compte-rendu",
-      "reset": "Regénérer le compte-rendu",
-      "error": {
-        "no-transcription": {
-          "title": "La transcription n'est pas terminée",
-          "description": "Vous pourrez générer un compte-rendu lorsque la transcription de la réunion aura été générée."
-        }
       }
     },
     "members": {
