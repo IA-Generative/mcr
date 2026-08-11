@@ -12,7 +12,7 @@ Ce document décrit le processus de contribution et les règles à respecter afi
 2. Créez une branche depuis `dev` :
    - `feat/<description-courte>` pour une nouvelle fonctionnalité
    - `fix/<description-courte>` pour une correction
-3. Effectuez des commits clairs, atomiques et explicites. Nous utilisons [gitmoji](https://gitmoji.dev/) pour les commits.  
+3. Effectuez des commits clairs, atomiques et explicites. Nous utilisons [gitmoji](https://gitmoji.dev/) pour les commits.
    Exemple : `git commit -m "✨ ({number-issue}): add feature X "`
 4. Ouvrez une **Pull Request vers la branche** **dev**
 
@@ -57,7 +57,7 @@ Toute Pull Request qui échoue à la CI sera automatiquement bloquée.
 - ❌ Ne committez jamais de secrets (`.env`, clés API, tokens, credentials…) — `.env` (secrets résolus) est git-ignoré
 - ❌ Ne committez pas de données sensibles ou personnelles
 - Valeurs non secrètes : maintenez `.env.local.docker` (committé)
-- Secrets : leurs valeurs vivent dans 1Password (`MCR/mcr-local-secrets`) ; le manifeste `.env.template` (références `op://`, édité à la main) est committé et résolu dans `.env` par `op inject`
+- Secrets : leurs valeurs vivent dans 1Password (`MININT-SDID/mcr-local-secrets`) ; le manifeste `.env.template` (références `op://`, édité à la main) est committé et résolu dans `.env` par `op inject`
 
 Toute PR contenant des secrets sera refusée.
 

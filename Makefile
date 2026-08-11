@@ -4,7 +4,7 @@
 PACKAGES := mcr-gateway mcr-generation mcr-core mcr-capture-worker
 
 # -- Docker / local env --------------------------------------------------------
-# Secrets live in 1Password (item MCR/mcr-local-secrets) and are referenced by
+# Secrets live in 1Password (item MININT-SDID/mcr-local-secrets) and are referenced by
 # .env.template (committed). `op inject` resolves them into .env; compose reads
 # .env + .env.local.docker via each service's env_file (no --env-file, no shell
 # interpolation, so a stale shell export can't shadow them).
