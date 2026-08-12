@@ -50,6 +50,10 @@ class Settings(BaseSettings):
 class LoggingSettings(BaseSettings):
     COLORIZE: bool = Field(default=False, description="Should log output be colored")
     LEVEL: int | str = Field(default="INFO")
+    JSON_LOGS: bool = Field(
+        default=False,
+        description="Emit logs as JSON lines (for Loki) instead of human text",
+    )
     DISPLAY_REQUEST_ID: bool = Field(
         default=True, description="Should display request id in logs"
     )
