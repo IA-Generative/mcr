@@ -6,7 +6,7 @@
     class="visio-meeting-modal max-sm:p-4"
     no-actions
   >
-    <div class="absolute top-8 w-[16.67%] max-w-[16.67%]">
+    <div class="absolute top-8 w-1/6 max-w-1/6">
       <img src="@dsfr-artwork/pictograms/digital/self-training.svg?url" />
     </div>
     <CreateVisioMeetingForm @submit="(dto: AddOnlineMeetingDto) => onSubmit(dto)" />

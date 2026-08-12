@@ -13,7 +13,7 @@
       aria-hidden="true"
     >
       <circle
-        class="fill-none stroke-(--border-default-grey)"
+        class="fill-none stroke-border"
         cx="18"
         cy="18"
         :r="RADIUS"

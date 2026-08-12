@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-4 border border-(--grey-975-75-hover) bg-white p-6">
+  <div class="flex flex-col gap-4 border border-grey-975-hover bg-white p-6">
     <h2 class="text-2xl font-bold text-blue-france-sun">
       {{ $t('meeting-v2.deliverable-card.title') }}
     </h2>

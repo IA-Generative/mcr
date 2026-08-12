@@ -1,6 +1,6 @@
 <template>
   <div
-    class="deliverable-type-card flex flex-col gap-2 border border-b-[3px] border-[#dddddd] border-b-blue-france-sun bg-grey-1000 px-4 py-3"
+    class="deliverable-type-card flex flex-col gap-2 border border-b-[3px] border-border border-b-blue-france-sun bg-grey-1000 px-4 py-3"
   >
     <p
       class="m-0 text-sm font-bold text-blue-france-sun"

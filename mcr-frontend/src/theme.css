@@ -5,14 +5,25 @@
 @theme {
   --breakpoint-2xs: 28rem;
   --breakpoint-xs: 32rem;
+
+  --text-tag: 0.6875rem;
+  --text-tag--letter-spacing: 0.02em;
+
+  --shadow-raised: 0 2px 6px rgba(0, 0, 40, 0.16);
+  --shadow-overlay: 0 6px 18px rgba(0, 0, 0, 0.16);
 }
 
 @theme inline {
+  --color-border: var(--border-default-grey);
+  --color-background-default-grey: var(--background-default-grey, #fff);
+
   --color-grey: var(--text-default-grey);
   --color-grey-200: var(--grey-200-850);
   --color-grey-625: var(--grey-625-425);
   --color-grey-900: var(--grey-900-175);
   --color-grey-950: var(--grey-950-100);
+  --color-grey-925: var(--grey-925-125);
+  --color-grey-975-hover: var(--grey-975-75-hover);
   --color-grey-1000: var(--grey-1000-50);
   --color-grey-mention: var(--text-mention-grey);
 

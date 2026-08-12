@@ -1,5 +1,5 @@
 <template>
-  <li class="flex flex-col gap-1 border-t border-(--border-default-grey) px-4 py-3">
+  <li class="flex flex-col gap-1 border-t border-border px-4 py-3">
     <div class="flex items-center justify-between gap-4">
       <span class="truncate font-medium">{{ item.title }}</span>
       <ImportStatusIndicator :item="item" />

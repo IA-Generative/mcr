@@ -2,7 +2,7 @@
   <div class="flex items-center gap-1">
     <template v-if="state === 'error'">
       <span
-        class="inline-flex items-center gap-1 rounded-full bg-error-950 px-2.5 py-0.75 text-[0.6875rem] font-bold tracking-[0.02em] text-error-425 uppercase"
+        class="inline-flex items-center gap-1 rounded-full bg-error-950 px-2.5 py-0.75 text-tag font-bold text-error-425 uppercase"
       >
         <span
           class="fr-icon-error-fill fr-icon--sm"
@@ -56,7 +56,7 @@
 
     <span
       v-else-if="state === 'waiting'"
-      class="inline-flex items-center gap-1 rounded-full bg-(--grey-925-125) px-2.5 py-0.75 text-[0.6875rem] font-bold tracking-[0.02em] text-grey-mention uppercase"
+      class="inline-flex items-center gap-1 rounded-full bg-grey-925 px-2.5 py-0.75 text-tag font-bold text-grey-mention uppercase"
     >
       <span
         class="fr-icon-time-line fr-icon--sm"
@@ -67,7 +67,7 @@
 
     <span
       v-else-if="state === 'loading'"
-      class="inline-flex items-center gap-1 rounded-full bg-info-950 px-2.5 py-0.75 text-[0.6875rem] font-bold tracking-[0.02em] text-info-425 uppercase"
+      class="inline-flex items-center gap-1 rounded-full bg-info-950 px-2.5 py-0.75 text-tag font-bold text-info-425 uppercase"
     >
       <VIcon
         name="ri-loader-3-line"
@@ -81,7 +81,7 @@
       v-else-if="state === 'generate'"
       icon="fr-icon-sparkling-2-line"
       size="sm"
-      class="rounded-full! shadow-[0_2px_6px_rgba(0,0,40,0.16)]"
+      class="rounded-full! shadow-raised"
       @click="$emit('action')"
     >
       {{ actionLabel }}

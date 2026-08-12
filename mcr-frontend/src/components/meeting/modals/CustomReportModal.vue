@@ -67,7 +67,7 @@
         <DsfrButton
           icon="fr-icon-sparkling-2-line"
           size="sm"
-          class="rounded-full! shadow-[0_2px_6px_rgba(0,0,40,0.16)]"
+          class="rounded-full! shadow-raised"
           :disabled="isGenerateDisabled"
           @click="handleGenerate"
         >

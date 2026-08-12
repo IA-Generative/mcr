@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="isAudioAvailable"
-    class="flex flex-col gap-4 border border-(--grey-975-75-hover) bg-white p-6"
+    class="flex flex-col gap-4 border border-grey-975-hover bg-white p-6"
   >
     <h2 class="text-2xl font-bold text-blue-france-sun">
       {{ $t('meeting-v2.audio-card.title') }}

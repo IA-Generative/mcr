@@ -1,7 +1,7 @@
 <template>
   <section
     v-if="isOpen"
-    class="fixed right-(--sticky-corner-margin) bottom-(--sticky-corner-margin) z-1000 w-(--import-sticky-width) rounded-lg bg-(--background-default-grey,#fff) shadow-[0_6px_18px_rgba(0,0,0,0.16)]"
+    class="fixed right-(--sticky-corner-margin) bottom-(--sticky-corner-margin) z-1000 w-(--import-sticky-width) rounded-lg bg-background-default-grey shadow-overlay"
     :aria-label="t('meeting.import.sticky.label')"
   >
     <header class="flex items-center justify-between gap-2 px-4 py-3">
@@ -18,7 +18,7 @@
     </header>
     <p
       v-if="etaLabel"
-      class="m-0 border-t border-(--border-default-grey) px-4 py-2 text-sm text-grey-mention"
+      class="m-0 border-t border-border px-4 py-2 text-sm text-grey-mention"
       role="status"
     >
       {{ etaLabel }}

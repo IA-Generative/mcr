@@ -12,7 +12,7 @@
   </span>
   <RouterLink
     :to="`${ROUTES.MEETINGS.path}/${meeting.id}`"
-    class="fr-link text-[0.875rem]"
+    class="fr-link text-sm/6"
   >
     {{ meetingTitle }}
   </RouterLink>

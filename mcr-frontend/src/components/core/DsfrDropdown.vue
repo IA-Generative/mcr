@@ -33,7 +33,7 @@
         :buttons="buttonsDropdown"
         :size="dropdownSize"
         inline-layout-when="never"
-        class="divide-y divide-(--border-default-grey)"
+        class="divide-y divide-border"
         equisized
       />
     </div>
