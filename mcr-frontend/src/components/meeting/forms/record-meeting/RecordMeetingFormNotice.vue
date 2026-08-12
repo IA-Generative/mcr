@@ -72,11 +72,6 @@ const alertTitle = computed(() =>
 </script>
 
 <style scoped>
-/*
-  NOT named --spacing: that is Tailwind v4's own spacing-scale variable, and
-  redefining it here would silently halve/double every p-*, m-*, gap-* utility
-  used on these <li> or anything inside them.
-*/
 ul.mcr-li li {
   --icon-size: 1.5rem;
   --dot-size: 1ex;
