@@ -1,5 +1,7 @@
 import asyncio
 import logging  # noqa: TID251
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import TypedDict
 
 import sentry_sdk
@@ -8,6 +10,7 @@ from sentry_sdk.integrations import Integration
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.loguru import LoguruIntegration
+from sentry_sdk.tracing import Span
 
 from mcr_meeting.app.configs.base import SentrySettings, Settings
 from mcr_meeting.app.infrastructure.meeting_api_client import MeetingApiClient
@@ -66,6 +69,18 @@ def init_api_sentry() -> None:
         sentry_settings.SENTRY_CORE_DSN,
         extra_integrations=[CeleryIntegration()],
     )
+
+
+@contextmanager
+def span(op: str, name: str, **data: object) -> Iterator[Span]:
+    # The single seam for opening child spans, so `sentry_sdk` stays confined to
+    # this owner file and dependency wrappers instrument through this instead of
+    # importing the SDK. When Sentry is uninitialised start_span still returns a
+    # span that is simply never sent, so call sites stay unconditional.
+    with sentry_sdk.start_span(op=op, name=name) as current_span:
+        for key, value in data.items():
+            current_span.set_data(key, value)
+        yield current_span
 
 
 class MeetingContext(TypedDict):
