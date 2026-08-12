@@ -6,6 +6,7 @@
     :hint="$t('meeting-v2.visio-form.webconf.url_hint')"
     :error-message="webconfUrlError"
     label-visible
+    required
   />
 </template>
 

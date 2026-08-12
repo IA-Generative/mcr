@@ -6,6 +6,7 @@
     :hint="$t('meeting-v2.visio-form.webex.url_hint')"
     :error-message="webexUrlError"
     label-visible
+    required
   />
 </template>
 

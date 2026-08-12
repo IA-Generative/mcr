@@ -6,6 +6,7 @@
     :hint="$t('meeting-v2.visio-form.visio.url_hint')"
     :error-message="visioUrlError"
     label-visible
+    required
   />
 </template>
 

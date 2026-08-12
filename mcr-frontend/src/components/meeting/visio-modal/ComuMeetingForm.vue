@@ -19,6 +19,7 @@
           :error-message="comuIdError"
           label-visible
           :disabled="!isIdPasswordEnabled"
+          required
         />
       </div>
       <div class="fr-col-4 pt-2">
@@ -30,6 +31,7 @@
           :error-message="comuPasswordError"
           label-visible
           :disabled="!isIdPasswordEnabled"
+          required
         />
       </div>
     </template>
@@ -45,6 +47,7 @@
         :error-message="comuUrlError"
         label-visible
         :disabled="!isUrlEnabled"
+        required
       />
     </div>
   </div>

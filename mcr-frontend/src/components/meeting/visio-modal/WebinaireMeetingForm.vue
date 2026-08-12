@@ -6,6 +6,7 @@
     :hint="$t('meeting-v2.visio-form.webinaire.url_hint')"
     :error-message="webinaireUrlError"
     label-visible
+    required
   />
 </template>
 
