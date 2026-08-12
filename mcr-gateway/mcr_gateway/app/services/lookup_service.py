@@ -9,6 +9,7 @@ from mcr_gateway.app.schemas.lookup_schema import (
     ComuMeetingLookupResponse,
 )
 from mcr_gateway.app.services.meeting_service import MCRCoreCustomAuth
+from mcr_gateway.app.utils.core_http_client import core_client
 
 
 async def lookup_comu_meeting_service(
@@ -16,7 +17,7 @@ async def lookup_comu_meeting_service(
     user_keycloak_uuid: UUID4,
 ) -> ComuMeetingLookupResponse:
     try:
-        async with httpx.AsyncClient(
+        async with core_client(
             base_url=settings.LOOKUP_SERVICE_URL,
             auth=MCRCoreCustomAuth(user_keycloak_uuid),
         ) as client:

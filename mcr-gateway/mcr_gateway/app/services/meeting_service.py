@@ -18,6 +18,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
     PaginatedMeetingsResponse,
 )
 from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
+from mcr_gateway.app.utils.core_http_client import core_client
 from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 
 
@@ -47,7 +48,7 @@ async def get_meeting_http_client(
     access_token: str | None = None,
     bearer: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(
+    client = core_client(
         base_url=settings.MEETING_SERVICE_URL,
         auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token, bearer),
     )
