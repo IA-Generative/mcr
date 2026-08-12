@@ -14,7 +14,7 @@
         >
           {{ $t('meeting-v2.custom-report-modal.title') }}
         </h2>
-        <p class="text-[var(--text-default-grey)] m-0">
+        <p class="m-0 text-grey">
           {{ $t('meeting-v2.custom-report-modal.description') }}
         </p>
       </div>
@@ -29,7 +29,7 @@
         <textarea
           id="custom-report-prompt"
           v-model="prompt"
-          class="fr-input overflow-y-auto resize-y"
+          class="fr-input resize-y overflow-y-auto"
           rows="5"
           :placeholder="$t('meeting-v2.custom-report-modal.prompt-placeholder')"
         />
@@ -67,7 +67,7 @@
         <DsfrButton
           icon="fr-icon-sparkling-2-line"
           size="sm"
-          class="generate-button"
+          class="rounded-full! shadow-raised"
           :disabled="isGenerateDisabled"
           @click="handleGenerate"
         >
@@ -166,11 +166,6 @@ function handleGenerate() {
 <style scoped>
 :deep(.fr-modal__title) {
   color: var(--blue-france-sun-113-625);
-}
-
-.generate-button {
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 40, 0.16);
 }
 
 :deep(.fr-tile) {

@@ -1,0 +1,11 @@
+/*
+  Entry point for prettier-plugin-tailwindcss only — never imported by the app.
+
+  It cannot read `main.css`: `vue-final-modal` and `vue-dsfr` gate their CSS exports
+  behind the `import` condition, which a CSS resolver does not match.
+
+  Drop the `tailwindStylesheet` option and prettier still passes, but our tokens sort
+  as unknown classes — the failure is silent.
+*/
+@import 'tailwindcss';
+@import './theme.css';

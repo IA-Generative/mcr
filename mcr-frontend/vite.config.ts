@@ -5,6 +5,7 @@ import { fileURLToPath, URL } from 'node:url';
 
 import { vueDsfrAutoimportPreset, vueDsfrComponentResolver } from '@gouvminint/vue-dsfr/meta';
 
+import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import AutoImport from 'unplugin-auto-import/vite';
@@ -29,6 +30,7 @@ export default defineConfig(() => {
     plugins: [
       vue(),
       vueJsx(),
+      tailwindcss(),
       svgLoader(),
       VueI18nPlugin({
         include: resolve(dirname(fileURLToPath(import.meta.url)), './src/locales/**'),

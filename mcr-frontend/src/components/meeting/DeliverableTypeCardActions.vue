@@ -1,7 +1,9 @@
 <template>
   <div class="flex items-center gap-1">
     <template v-if="state === 'error'">
-      <span class="deliverable-tag bg-error-950 text-error-425">
+      <span
+        class="inline-flex items-center gap-1 rounded-full bg-error-950 px-2.5 py-0.75 text-tag font-bold text-error-425 uppercase"
+      >
         <span
           class="fr-icon-error-fill fr-icon--sm"
           aria-hidden="true"
@@ -37,7 +39,7 @@
         :href="deliverable.external_url"
         target="_blank"
         rel="noopener noreferrer"
-        class="fr-btn fr-btn--tertiary-no-outline fr-icon-eye-line"
+        class="fr-btn fr-btn--tertiary-no-outline fr-icon-eye-line after:hidden after:content-none"
         :title="$t('meeting-v2.deliverable-card.actions.open-external')"
       >
         <span class="sr-only">{{ $t('meeting-v2.deliverable-card.actions.open-external') }}</span>
@@ -54,7 +56,7 @@
 
     <span
       v-else-if="state === 'waiting'"
-      class="deliverable-tag bg-[var(--grey-925-125)] text-[var(--text-mention-grey)]"
+      class="inline-flex items-center gap-1 rounded-full bg-grey-925 px-2.5 py-0.75 text-tag font-bold text-grey-mention uppercase"
     >
       <span
         class="fr-icon-time-line fr-icon--sm"
@@ -65,7 +67,7 @@
 
     <span
       v-else-if="state === 'loading'"
-      class="deliverable-tag bg-info-950 text-info-425"
+      class="inline-flex items-center gap-1 rounded-full bg-info-950 px-2.5 py-0.75 text-tag font-bold text-info-425 uppercase"
     >
       <VIcon
         name="ri-loader-3-line"
@@ -79,7 +81,7 @@
       v-else-if="state === 'generate'"
       icon="fr-icon-sparkling-2-line"
       size="sm"
-      class="generate-button"
+      class="rounded-full! shadow-raised"
       @click="$emit('action')"
     >
       {{ actionLabel }}
@@ -109,27 +111,3 @@ defineEmits<{
 
 const isFichierEnabled = useFeatureFlag('fichier-integration');
 </script>
-
-<style scoped>
-.deliverable-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  border-radius: 9999px;
-  padding: 0.1875rem 0.625rem;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.generate-button {
-  border-radius: 9999px !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 40, 0.16);
-}
-
-a.fr-btn::after {
-  display: none;
-  content: none;
-}
-</style>

@@ -1,5 +1,5 @@
 <template>
-  <div class="tiptap-editor border border-grey-900 rounded">
+  <div class="tiptap-editor rounded-sm border border-grey-900">
     <div
       v-if="editor"
       class="flex justify-end gap-1 border-b border-grey-900"
@@ -19,7 +19,7 @@
         />
       </button>
     </div>
-    <div class="p-3 mb-0 fr-text--sm">
+    <div class="fr-text--sm mb-0 p-3">
       <EditorContent :editor="editor" />
     </div>
   </div>
@@ -88,17 +88,17 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style>
-.tiptap-editor .ProseMirror {
+<style scoped>
+.tiptap-editor :deep(.ProseMirror) {
   min-height: 20vh;
   max-height: 60vh;
   overflow-y: auto;
   outline: none;
 }
-.tiptap-editor .ProseMirror p {
+.tiptap-editor :deep(.ProseMirror p) {
   font-size: inherit;
 }
-.tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
+.tiptap-editor :deep(.ProseMirror p.is-editor-empty:first-child::before) {
   content: attr(data-placeholder);
   color: var(--grey-625-425);
   pointer-events: none;
@@ -124,12 +124,12 @@ onBeforeUnmount(() => {
 }
 
 /* Restore list styles reset by Tailwind preflight */
-.tiptap-editor .ProseMirror ul {
+.tiptap-editor :deep(.ProseMirror ul) {
   list-style-type: disc;
   padding-left: 1.5rem;
   margin: 0.5rem 0;
 }
-.tiptap-editor .ProseMirror ol {
+.tiptap-editor :deep(.ProseMirror ol) {
   list-style-type: decimal;
   padding-left: 1.5rem;
   margin: 0.5rem 0;

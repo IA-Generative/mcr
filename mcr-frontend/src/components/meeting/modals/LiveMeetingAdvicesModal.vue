@@ -14,7 +14,7 @@
         {{ $t('meeting-v2.recording.advices.modal.title') }}
       </h2>
       <h3 class="fr-h6 mb-1">{{ $t('meeting-v2.recording.advices.modal.section-1.title') }}</h3>
-      <ul class="list-disc pl-8 mb-6">
+      <ul class="mb-6 list-disc pl-8">
         <li>
           <i18n-t keypath="meeting-v2.recording.advices.modal.section-1.advice-1.text">
             <template #bold>
@@ -66,7 +66,7 @@
       </ul>
     </div>
     <template #footer>
-      <div class="flex w-full items-center justify-between border-t border-gray-300 pt-4">
+      <div class="flex w-full items-center justify-between border-t border-border pt-4">
         <a
           href="https://mirai.interieur.gouv.fr/conditions-generales-dutilisation/"
           target="_blank"

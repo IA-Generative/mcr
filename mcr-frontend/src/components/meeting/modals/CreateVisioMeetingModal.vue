@@ -6,7 +6,7 @@
     class="visio-meeting-modal max-sm:p-4"
     no-actions
   >
-    <div class="visio-meeting-modal-title-illustration">
+    <div class="absolute top-8 w-1/6 max-w-1/6">
       <img src="@dsfr-artwork/pictograms/digital/self-training.svg?url" />
     </div>
     <CreateVisioMeetingForm @submit="(dto: AddOnlineMeetingDto) => onSubmit(dto)" />
@@ -38,12 +38,5 @@ function onSubmit(dto: AddOnlineMeetingDto) {
   max-width: 83.33%;
   width: 83.33%;
   margin-left: 16.67%;
-}
-
-.visio-meeting-modal-title-illustration {
-  max-width: 16.67%;
-  width: 16.67%;
-  position: absolute;
-  top: 2rem;
 }
 </style>

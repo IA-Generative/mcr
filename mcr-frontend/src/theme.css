@@ -1,0 +1,55 @@
+/*
+  Kept in its own file so `tailwind-entry.css` can expose the token vocabulary to
+  prettier-plugin-tailwindcss without dragging in main.css's vendor imports.
+*/
+@theme {
+  --breakpoint-2xs: 28rem;
+  --breakpoint-xs: 32rem;
+
+  --text-tag: 0.6875rem;
+  --text-tag--letter-spacing: 0.02em;
+
+  --shadow-raised: 0 2px 6px rgba(0, 0, 40, 0.16);
+  --shadow-overlay: 0 6px 18px rgba(0, 0, 0, 0.16);
+}
+
+@theme inline {
+  --color-border: var(--border-default-grey);
+  --color-background-default-grey: var(--background-default-grey, #fff);
+
+  --color-grey: var(--text-default-grey);
+  --color-grey-200: var(--grey-200-850);
+  --color-grey-625: var(--grey-625-425);
+  --color-grey-900: var(--grey-900-175);
+  --color-grey-950: var(--grey-950-100);
+  --color-grey-925: var(--grey-925-125);
+  --color-grey-975-hover: var(--grey-975-75-hover);
+  --color-grey-1000: var(--grey-1000-50);
+  --color-grey-mention: var(--text-mention-grey);
+
+  --color-blue-france-sun: var(--blue-france-sun-113-625);
+  --color-blue-france-975: var(--blue-france-975-75);
+
+  --color-primary: var(--background-action-high-blue-france);
+  --color-background-contrast-grey: var(--background-contrast-grey);
+
+  --color-info-425: var(--info-425-625);
+  --color-info-950: var(--info-950-100);
+
+  --color-success-425: var(--success-425-625);
+  --color-success-950: var(--success-950-100);
+
+  --color-warning-425: var(--warning-425-625);
+  --color-warning-950: var(--warning-950-100);
+
+  --color-error-425: var(--error-425-625);
+  --color-error-950: var(--error-950-100);
+
+  --color-yellow-tournesol-sun: var(--yellow-tournesol-sun-407-moon-922);
+  --color-yellow-tournesol-950: var(--yellow-tournesol-950-100);
+
+  --color-purple-glycine-sun: var(--purple-glycine-sun-319-moon-630);
+  --color-purple-glycine-925: var(--purple-glycine-925-125);
+
+  --color-beige-gris-galet-950: var(--beige-gris-galet-950-100);
+}

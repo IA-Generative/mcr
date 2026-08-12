@@ -6,7 +6,7 @@
     class="max-sm:p-4"
   >
     <div>
-      <ul class="list-disc pl-8 mb-6">
+      <ul class="mb-6 list-disc pl-8">
         <li>
           {{ $t('meeting-v2.recording.ending.description') }}
         </li>

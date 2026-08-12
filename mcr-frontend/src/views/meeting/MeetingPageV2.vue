@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col flex-1">
-    <div class="fr-container py-5 flex flex-col">
+  <div class="flex flex-1 flex-col">
+    <div class="fr-container flex flex-col py-5">
       <div v-if="meeting">
         <div class="flex flex-row items-center justify-between">
           <MeetingFrontMatterV2 :meeting="meeting" />
@@ -26,7 +26,7 @@
 
       <div
         v-else-if="isLoading"
-        class="flex items-center justify-center h-full"
+        class="flex h-full items-center justify-center"
       >
         <VIcon
           name="ri-loader-3-line"
@@ -36,13 +36,13 @@
       </div>
     </div>
 
-    <div class="bg-beige-gris-galet-950 flex-1">
-      <div class="fr-container py-5 flex flex-col h-full">
+    <div class="flex-1 bg-beige-gris-galet-950">
+      <div class="fr-container flex h-full flex-col py-5">
         <div v-if="meeting">
           <MeetingPageAlert />
 
-          <div class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6 items-start">
-            <div class="grid gap-6 items-start">
+          <div class="mt-6 grid grid-cols-2 items-start gap-6 max-sm:grid-cols-1">
+            <div class="grid items-start gap-6">
               <MeetingAudioCard :meeting="meeting" />
               <MeetingNotesEditor
                 v-if="isMeetingNotesEnabled && !showRecordingCard"
@@ -60,7 +60,7 @@
         </div>
         <div
           v-if="meeting && showRecordingCard"
-          class="grid grid-cols-2 max-sm:grid-cols-1 gap-6 mt-6 items-start"
+          class="mt-6 grid grid-cols-2 items-start gap-6 max-sm:grid-cols-1"
         >
           <RecordingCard
             :meeting-id="meeting.id"

@@ -1,15 +1,17 @@
 <template>
-  <div class="deliverable-type-card">
+  <div
+    class="deliverable-type-card flex flex-col gap-2 border border-b-[3px] border-border border-b-blue-france-sun bg-grey-1000 px-4 py-3"
+  >
     <p
-      class="text-blue-france-sun font-bold text-sm m-0"
+      class="m-0 text-sm font-bold text-blue-france-sun"
       :class="{ 'opacity-50': hasError }"
     >
       {{ title }}
     </p>
 
-    <p class="text-[var(--text-default-grey)] text-xs m-0 flex-1">{{ description }}</p>
+    <p class="m-0 flex-1 text-xs text-grey">{{ description }}</p>
 
-    <div class="flex items-center justify-between gap-1 min-h-[2.5rem]">
+    <div class="flex min-h-10 items-center justify-between gap-1">
       <div class="flex items-center gap-1">
         <DeliverableFeedbackThumbs
           v-if="isAvailable && deliverable"
@@ -133,15 +135,3 @@ function onAction(): void {
   else emit('generate');
 }
 </script>
-
-<style scoped>
-.deliverable-type-card {
-  border: 1px solid #dddddd;
-  border-bottom: 3px solid var(--blue-france-sun-113-625);
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background-color: var(--grey-1000-50);
-}
-</style>

@@ -15,7 +15,6 @@
     "form": {
       "update": "Mettre à jour"
     },
-    "or": "ou",
     "pipe": "{'|'}",
     "editor": {
       "bold": "Gras",
@@ -294,27 +293,8 @@
           "button": "Quitter"
         }
       },
-      "transcription-failed": {
-        "title": "Une erreur est survenue",
-        "description": "Un problème technique est survenu. Veuillez réessayer.",
-        "button": "Réessayer"
-      },
       "tab": {
         "members": "Participants"
-      }
-    },
-    "report": {
-      "download": "Télécharger le compte-rendu",
-      "reset": "Regénérer le compte-rendu",
-      "report-pending": {
-        "title": "L'écriture du compte-rendu est en cours...",
-        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte-rendu sera disponible au téléchargement une fois terminé."
-      },
-      "error": {
-        "no-transcription": {
-          "title": "La transcription n'est pas terminée",
-          "description": "Vous pourrez générer un compte-rendu lorsque la transcription de la réunion aura été générée."
-        }
       }
     },
     "members": {

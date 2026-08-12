@@ -9,7 +9,7 @@
       class="mb-2"
     >
       <template #header="{ key, label }">
-        <div class="w-full flex gap-1 items-center">
+        <div class="flex w-full items-center gap-1">
           {{ label }}
           <DsfrTooltip
             v-if="key === 'report'"
@@ -28,7 +28,7 @@
     </DsfrDataTable>
     <DsfrPagination
       v-model:current-page="currentPageIndex"
-      class="self-center mb-6"
+      class="mb-6 self-center"
       :pages="pages"
       :prev-page-title="$t('meetings_v2.table.pagination.previous')"
       :next-page-title="$t('meetings_v2.table.pagination.next')"

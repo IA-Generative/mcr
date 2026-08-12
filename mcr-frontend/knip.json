@@ -3,5 +3,6 @@
   "entry": ["src/components/**/*.vue"],
   "project": ["src/**/*.{ts,vue}"],
   "ignore": ["src/auto-imports.d.ts", "src/components.d.ts", "src/env.d.ts"],
+  "ignoreDependencies": ["tailwindcss"],
   "tags": ["-lintignore"]
 }

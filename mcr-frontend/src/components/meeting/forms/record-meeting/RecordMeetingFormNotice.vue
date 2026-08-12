@@ -75,14 +75,14 @@ const alertTitle = computed(() =>
 ul.mcr-li li {
   --icon-size: 1.5rem;
   --dot-size: 1ex;
-  --spacing: calc((var(--icon-size) - var(--dot-size)) * 0.5);
+  --marker-gap: calc((var(--icon-size) - var(--dot-size)) * 0.5);
   list-style: disc;
   list-style-position: inside;
-  padding-left: var(--spacing);
+  padding-left: var(--marker-gap);
 }
 
 ul.mcr-li li::marker {
-  margin-right: var(--spacing);
+  margin-right: var(--marker-gap);
 }
 
 /* Because we display  */

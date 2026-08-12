@@ -1,7 +1,7 @@
 <template>
   <DsfrTag
     :label="$t('meeting-v2.visio-recording.error.badge').toUpperCase()"
-    class="bg-error-950 text-error-425 rounded font-bold"
+    class="rounded-sm bg-error-950 font-bold text-error-425"
     icon="fr-icon-error-fill"
   />
   <p>{{ $t('meeting-v2.visio-recording.error.description') }}</p>

@@ -25,6 +25,7 @@
         <DsfrInputGroup
           v-model="comuPassword"
           class="w-full flex-1"
+          wrapper-class="min-w-1/2 grow"
           :label="$t('meeting-v2.visio-form.comu.access_code')"
           :error-message="comuPasswordError"
           label-visible
@@ -71,11 +72,6 @@ const comuConnectionMode = ref<'idcode' | 'url'>('idcode');
 </script>
 
 <style scoped>
-:deep(.fr-input-group) {
-  flex-grow: 1;
-  min-width: 50%;
-}
-
 :deep(.fr-label) {
   color: unset;
 }

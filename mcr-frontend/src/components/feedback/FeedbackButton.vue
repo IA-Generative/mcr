@@ -9,7 +9,7 @@
     <img
       :src="communityIcon"
       role="presentation"
-      class="trigger-icon"
+      class="size-7.5 shrink-0 rounded-full bg-white p-0.5"
     />
     <span class="trigger-label">{{ t('feedback.button.label') }}</span>
   </button>
@@ -43,15 +43,6 @@ const modal = useModal({
     border-radius 0.3s ease,
     padding 0.3s ease,
     width 0.3s ease;
-}
-
-.trigger-icon {
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  background-color: #fff;
-  border-radius: 50%;
-  padding: 2px;
 }
 
 .trigger-label {

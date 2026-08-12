@@ -1,5 +1,5 @@
 <template>
-  <div class="fr-container py-5 flex w-full flex-col gap-10">
+  <div class="fr-container flex w-full flex-col gap-10 py-5">
     <PageFrontMatter
       :title="$t('meetings_v2.hero.title')"
       :subtitle="$t('meetings_v2.hero.subtitle')"
@@ -9,7 +9,7 @@
   </div>
 
   <div class="w-full bg-blue-france-975">
-    <div class="fr-container py-5 flex w-full flex-col gap-10">
+    <div class="fr-container flex w-full flex-col gap-10 py-5">
       <PageFrontMatter
         :title="$t('meetings_v2.table.new-title')"
         :subtitle="$t('meetings_v2.table.new-subtitle')"

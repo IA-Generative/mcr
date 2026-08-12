@@ -1,6 +1,6 @@
 <template>
   <div class="pagination-container">
-    <div class="flex justify-right">
+    <div class="justify-right flex">
       <div class="self-center">
         <span>Résultats par page : </span>
         <select
@@ -16,10 +16,10 @@
           </option>
         </select>
       </div>
-      <div class="flex ml-1">
+      <div class="ml-1 flex">
         <span class="self-center">Page {{ currentPage }} sur {{ totalPages }}</span>
       </div>
-      <div class="flex ml-1">
+      <div class="ml-1 flex">
         <button
           class="fr-icon-arrow-left-s-first-line"
           @click="goFirstPage()"
@@ -89,5 +89,3 @@ const goLastPage = () => {
   emit('onPageChange', props.totalPages);
 };
 </script>
-
-<style scoped></style>
