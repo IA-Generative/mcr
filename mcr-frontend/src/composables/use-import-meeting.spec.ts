@@ -582,6 +582,38 @@ describe('useImportMeeting.importFiles', () => {
     expect(deleteMeetingsAsync).toHaveBeenCalledWith([102]);
   });
 
+  it('deletes a meeting whose creation landed after its import was aborted', async () => {
+    const creations = deferCalls<{ id: number }>(createMeetingAsync);
+    const { importFiles } = await setup();
+
+    const run = importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+    expect(createMeetingAsync).toHaveBeenCalledTimes(1);
+
+    abortAll();
+    creations[0].resolve({ id: 101 });
+    await run;
+    await flush();
+
+    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+  });
+
+  it('deletes the meeting of a video whose transcode failed while it was being created', async () => {
+    const creations = deferCalls<{ id: number }>(createMeetingAsync);
+    transcodeToMp3.mockRejectedValue(new Error('bad codec'));
+    const { importFiles, batch } = await setup();
+
+    const run = importFiles([makeFile('demo.mp4', { duration: 60, type: 'video/mp4' })]);
+    await flush();
+    expect(batch.items.value[0].status).toBe('error');
+
+    creations[0].resolve({ id: 101 });
+    await run;
+    await flush();
+
+    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+  });
+
   it('a global abort stops creating meetings for the files still queued', async () => {
     const creations = deferCalls<{ id: number }>(createMeetingAsync);
     const { importFiles } = await setup();

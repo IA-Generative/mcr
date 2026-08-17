@@ -123,6 +123,7 @@ export function useImportMeeting(): Orchestrator {
       try {
         const meeting = await createMeetingAsync(dto);
         if (!runtimes.has(id)) {
+          void deleteMeetingsAsync([meeting.id]);
           continue;
         }
         writer.attachMeeting(id, meeting.id);
