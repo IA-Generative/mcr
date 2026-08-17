@@ -1,12 +1,23 @@
+import logging  # noqa: TID251
 import os
 from collections.abc import Iterator
 from contextlib import contextmanager
 
 import sentry_sdk
 from loguru import logger
+from sentry_sdk.integrations import Integration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.loguru import LoguruIntegration
 from sentry_sdk.tracing import Span
 
 from mcr_capture_worker.settings.settings import ApiSettings
+
+
+def _logging_integrations() -> list[Integration]:
+    return [
+        LoguruIntegration(event_level=None, level=logging.INFO),
+        LoggingIntegration(event_level=None, level=logging.INFO),
+    ]
 
 
 def setup_sentry() -> None:
@@ -20,6 +31,7 @@ def setup_sentry() -> None:
             # httpx is auto-instrumented, so scope trace propagation to core to
             # avoid leaking the trace onto the bot's third-party requests.
             trace_propagation_targets=[ApiSettings().CORE_SERVICE_BASE_URL],
+            integrations=_logging_integrations(),
         )
         logger.info("Sentry initialized")
     except Exception as e:
