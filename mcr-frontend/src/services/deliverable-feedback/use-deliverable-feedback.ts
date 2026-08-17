@@ -5,6 +5,7 @@ import {
   deleteDeliverableFeedback,
   upsertDeliverableFeedback,
 } from './deliverable-feedback.service';
+import { useDeliverableFeedbackDraft } from './use-deliverable-feedback-draft';
 import type {
   DeliverableFeedbackDto,
   DeliverableFeedbackPayload,
@@ -34,6 +35,7 @@ function withUpdatedFeedback(
 
 export function useDeliverableFeedback(meetingId: number) {
   const queryClient = useQueryClient();
+  const drafts = useDeliverableFeedbackDraft();
   const queryKey = [QUERY_KEYS.DELIVERABLES, meetingId];
 
   const invalidateDeliverables = () => queryClient.invalidateQueries({ queryKey });
@@ -64,6 +66,7 @@ export function useDeliverableFeedback(meetingId: number) {
         comment: payload.comment ?? null,
         reasons: payload.vote_type === 'NEGATIVE' ? payload.reasons : [],
       }),
+    onSuccess: (_data, { deliverableId }) => drafts.forget(deliverableId),
     onError: (_error, _variables, context) => rollback(context),
     onSettled: invalidateDeliverables,
   });

@@ -58,11 +58,21 @@ function modalAttrs(index: number) {
   return vi.mocked(useModal).mock.calls[index][0] as unknown as {
     attrs: {
       onSubmit: unknown;
+      onUpdateComment: (comment: string) => void;
+      onUpdateDraft: (draft: NegativeFeedbackDraft) => void;
       onClosed: () => void;
       initialComment?: string;
       initialReasons?: string[];
     };
   };
+}
+
+function typeInPositiveModal(comment: string) {
+  modalAttrs(0).attrs.onUpdateComment(comment);
+}
+
+function typeInNegativeModal(draft: NegativeFeedbackDraft) {
+  modalAttrs(1).attrs.onUpdateDraft(draft);
 }
 
 function positiveModalOpensOn() {
@@ -119,6 +129,52 @@ describe('DeliverableFeedbackThumbs', () => {
 
     expect(negativeModalOpensOn().initialComment).toBe('hors sujet');
     expect(negativeModalOpensOn().initialReasons).toEqual(['OFF_TOPIC']);
+  });
+
+  it('offers back the text the user typed and left without submitting', async () => {
+    renderThumbs(null);
+    await userEvent.click(thumbUp());
+
+    typeInPositiveModal('un brouillon en cours');
+
+    expect(positiveModalOpensOn().initialComment).toBe('un brouillon en cours');
+  });
+
+  it('offers back the reasons the user ticked and left without submitting', async () => {
+    renderThumbs(null);
+    await userEvent.click(thumbDown());
+
+    typeInNegativeModal({ reasons: ['OFF_TOPIC'], comment: 'à côté' });
+
+    expect(negativeModalOpensOn().initialReasons).toEqual(['OFF_TOPIC']);
+    expect(negativeModalOpensOn().initialComment).toBe('à côté');
+  });
+
+  it('stops offering the draft once the vote is recorded', async () => {
+    upsert.mockResolvedValue({ vote_type: 'POSITIVE', comment: 'un brouillon', reasons: [] });
+    renderThumbs(null);
+    await userEvent.click(thumbUp());
+    typeInPositiveModal('un brouillon');
+
+    submitPositiveModal('un brouillon');
+
+    await waitFor(() => expect(addSuccessMessage).toHaveBeenCalled());
+    expect(positiveModalOpensOn().initialComment).toBe('');
+  });
+
+  it('keeps offering the text after a retraction, so a misplaced double-click loses nothing', async () => {
+    const held: DeliverableDto['feedback'] = {
+      vote_type: 'POSITIVE',
+      comment: 'clair et fidèle',
+      reasons: [],
+    };
+    useDeliverableFeedbackDraft().seed([deliverable(held)]);
+    renderThumbs(held);
+
+    await userEvent.click(thumbUp());
+
+    await waitFor(() => expect(remove).toHaveBeenCalledWith(42));
+    expect(positiveModalOpensOn().initialComment).toBe('clair et fidèle');
   });
 
   it('never carries a positive opinion over into the thumb-down modal', () => {

@@ -53,8 +53,11 @@ describe('shouldPollDeliverables', () => {
 });
 
 describe('getDeliverablesQuery, seeding the feedback drafts', () => {
-  function rated(feedback: DeliverableDto['feedback']): DeliverableDto {
-    return deliverable('AVAILABLE', { id: 42, feedback });
+  function rated(
+    feedback: DeliverableDto['feedback'],
+    overrides: Partial<DeliverableDto> = {},
+  ): DeliverableDto {
+    return deliverable('AVAILABLE', { id: 42, feedback, ...overrides });
   }
 
   function renderHost() {
@@ -83,6 +86,30 @@ describe('getDeliverablesQuery, seeding the feedback drafts', () => {
     renderHost();
 
     await waitFor(() => expect(drafts.draftFor(42, 'POSITIVE')?.comment).toBe('bien'));
+  });
+
+  it('does not let a refetch overwrite what the user typed without submitting', async () => {
+    fetchDeliverables.mockResolvedValue({
+      deliverables: [rated({ vote_type: 'POSITIVE', comment: 'bien', reasons: [] })],
+    });
+    const drafts = useDeliverableFeedbackDraft();
+    const { refetch } = renderHost();
+    await waitFor(() => expect(drafts.draftFor(42, 'POSITIVE')).toBeDefined());
+    drafts.remember(42, { vote_type: 'POSITIVE', comment: 'bien, mais à nuancer', reasons: [] });
+
+    // A payload identical to the previous one keeps its object reference through the query's
+    // structural sharing, so nothing would be re-seeded and the test would prove nothing.
+    fetchDeliverables.mockResolvedValue({
+      deliverables: [
+        rated(
+          { vote_type: 'POSITIVE', comment: 'bien', reasons: [] },
+          { updated_at: '2026-07-11T00:00:00Z' },
+        ),
+      ],
+    });
+    await refetch();
+
+    expect(drafts.draftFor(42, 'POSITIVE')?.comment).toBe('bien, mais à nuancer');
   });
 
   it('keeps the memory across a refetch that no longer carries the feedback', async () => {

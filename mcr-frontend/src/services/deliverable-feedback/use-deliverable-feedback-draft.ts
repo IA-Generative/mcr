@@ -20,9 +20,11 @@ export const useDeliverableFeedbackDraft = defineStore('deliverable-feedback-dra
     return { ...draft, reasons: [...draft.reasons] };
   }
 
+  // Absent entries only. The deliverables list is polled every 10s, and overwriting would
+  // replace what the user is typing right now with the value already saved in base.
   function seed(deliverables: DeliverableDto[]): void {
     for (const { id, feedback } of deliverables) {
-      if (feedback === null) continue;
+      if (feedback === null || id in drafts.value) continue;
       drafts.value[id] = {
         vote_type: feedback.vote_type,
         comment: feedback.comment ?? '',
@@ -31,5 +33,13 @@ export const useDeliverableFeedbackDraft = defineStore('deliverable-feedback-dra
     }
   }
 
-  return { draftFor, seed };
+  function remember(deliverableId: number, draft: DeliverableFeedbackDraft): void {
+    drafts.value[deliverableId] = { ...draft, reasons: [...draft.reasons] };
+  }
+
+  function forget(deliverableId: number): void {
+    delete drafts.value[deliverableId];
+  }
+
+  return { draftFor, seed, remember, forget };
 });

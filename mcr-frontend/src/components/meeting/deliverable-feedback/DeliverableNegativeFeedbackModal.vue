@@ -100,6 +100,7 @@ const props = defineProps<{
   initialReasons?: string[];
   initialComment?: string;
   onSubmit: (draft: NegativeFeedbackDraft) => void;
+  onUpdateDraft: (draft: NegativeFeedbackDraft) => void;
 }>();
 
 const emit = defineEmits<{ closed: [] }>();
@@ -114,6 +115,10 @@ const {
 const selectedReasons = ref<string[]>([...(props.initialReasons ?? [])]);
 const comment = ref(props.initialComment ?? '');
 const hasTriedToSubmit = ref(false);
+
+watch([selectedReasons, comment], () =>
+  props.onUpdateDraft({ reasons: selectedReasons.value, comment: comment.value }),
+);
 
 const offered = computed(() => catalogue.value?.[props.deliverableType]);
 
