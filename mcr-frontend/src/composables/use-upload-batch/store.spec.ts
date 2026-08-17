@@ -8,6 +8,7 @@ import {
   getDisplayOrder,
   getExecutionOrder,
   getFailureMessageKey,
+  getPendingMeetingIds,
   getProgressRatio,
   getTranscodingItems,
   getUploadingItems,
@@ -530,5 +531,24 @@ describe('upload-batch aggregate title, flags and error messages', () => {
 
     expect(getFailureMessageKey(item(state, itemIds[0]))).toBeNull();
     expect(getFailureMessageKey(item(complete(state, itemIds[0]), itemIds[0]))).toBeNull();
+  });
+});
+
+describe('upload-batch meetings still owed a cleanup', () => {
+  it('lists the meetings of the imports that have neither completed nor failed', () => {
+    const { state, itemIds } = enqueueWithMeetings(createInitialState(), [
+      draft({ title: 'running' }),
+      draft({ title: 'completed' }),
+      draft({ title: 'failed' }),
+    ]);
+    const settled = fail(complete(state, itemIds[1]), itemIds[2], 'timeout');
+
+    expect(getPendingMeetingIds(settled)).toEqual([100 + itemIds[0]]);
+  });
+
+  it('ignores an import whose meeting does not exist yet', () => {
+    const { state } = enqueue(createInitialState(), [draft()]);
+
+    expect(getPendingMeetingIds(state)).toEqual([]);
   });
 });

@@ -37,6 +37,12 @@ export function isSoleItem(state: UploadState, id: number): boolean {
   return state.items.length === 1 && state.items[0].id === id;
 }
 
+export function getPendingMeetingIds(state: UploadState): number[] {
+  return state.items.flatMap((item) =>
+    !isSettledItem(item) && item.meetingId !== null ? [item.meetingId] : [],
+  );
+}
+
 export function hasActiveWork(state: UploadState): boolean {
   return state.items.some((item) => !isSettledItem(item));
 }

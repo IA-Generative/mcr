@@ -66,6 +66,7 @@ const derived = {
   batchTitle: computed(() => selectors.getBatchTitle(state.value)),
   batchEtaSeconds: computed(() => selectors.getBatchEtaSeconds(state.value)),
   hasActiveWork: computed(() => selectors.hasActiveWork(state.value)),
+  pendingMeetingIds: computed(() => selectors.getPendingMeetingIds(state.value)),
   isSettled: computed(() => selectors.isSettled(state.value)),
   getProgressRatio: selectors.getProgressRatio,
   getFailureMessageKey: selectors.getFailureMessageKey,
