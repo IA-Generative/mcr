@@ -2,13 +2,13 @@ import { renderWithPlugins } from '@/vitest.setup';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, ref } from 'vue';
 
-const { getAll } = vi.hoisted(() => ({ getAll: vi.fn() }));
+const { getAll, removeOne } = vi.hoisted(() => ({ getAll: vi.fn(), removeOne: vi.fn() }));
 
 vi.mock('./meetings.service', () => ({
   getAll,
+  removeOne,
   getOne: vi.fn(),
   create: vi.fn(),
-  removeOne: vi.fn(),
   update: vi.fn(),
   initCapture: vi.fn(),
   stopCapture: vi.fn(),
@@ -31,18 +31,21 @@ function page(names: string[]) {
   };
 }
 
-function mountListQuery() {
+function mountMeetings() {
   let query!: ReturnType<ReturnType<typeof useMeetings>['getAllMeetingsQuery']>;
+  let deleteMeetings!: ReturnType<ReturnType<typeof useMeetings>['deleteMeetingsMutation']>;
 
   const Probe = defineComponent({
     setup() {
-      query = useMeetings().getAllMeetingsQuery({ page: ref(1), pageSize: ref(10) });
+      const meetings = useMeetings();
+      query = meetings.getAllMeetingsQuery({ page: ref(1), pageSize: ref(10) });
+      deleteMeetings = meetings.deleteMeetingsMutation();
       return () => null;
     },
   });
   renderWithPlugins(Probe);
 
-  return query;
+  return { query, deleteMeetings };
 }
 
 describe('getAllMeetingsQuery', () => {
@@ -54,7 +57,7 @@ describe('getAllMeetingsQuery', () => {
     getAll
       .mockResolvedValueOnce(page(['first import']))
       .mockResolvedValueOnce(page(['first import', 'second import']));
-    const query = mountListQuery();
+    const { query } = mountMeetings();
     await vi.waitFor(() => expect(query.data.value).toBeDefined());
 
     await query.refetch();
@@ -63,5 +66,43 @@ describe('getAllMeetingsQuery', () => {
       'first import',
       'second import',
     ]);
+  });
+});
+
+describe('deleteMeetingsMutation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getAll.mockResolvedValue(page([]));
+  });
+
+  it('deletes the other meetings even when one of them cannot be deleted', async () => {
+    removeOne.mockRejectedValueOnce(new Error('boom')).mockResolvedValue(undefined);
+    const { deleteMeetings } = mountMeetings();
+
+    await expect(deleteMeetings.mutateAsync([101, 102, 103])).rejects.toThrow('boom');
+
+    expect(removeOne.mock.calls.map((call) => call[0])).toEqual([101, 102, 103]);
+  });
+
+  it('refreshes the list only once every deletion has settled', async () => {
+    let finishSecondDeletion!: () => void;
+    removeOne.mockRejectedValueOnce(new Error('boom')).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSecondDeletion = resolve;
+        }),
+    );
+    const { query, deleteMeetings } = mountMeetings();
+    await vi.waitFor(() => expect(query.data.value).toBeDefined());
+    expect(getAll).toHaveBeenCalledTimes(1);
+
+    const settled = deleteMeetings.mutateAsync([101, 102]).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(getAll).toHaveBeenCalledTimes(1);
+
+    finishSecondDeletion();
+    await settled;
+
+    await vi.waitFor(() => expect(getAll).toHaveBeenCalledTimes(2));
   });
 });
