@@ -4,6 +4,7 @@ const { addErrorMessage } = vi.hoisted(() => ({ addErrorMessage: vi.fn() }));
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 const {
   createMeetingAsync,
+  deleteMeetingsAsync,
   startTranscription,
   uploadFile,
   transcodeToMp3,
@@ -16,6 +17,7 @@ const {
   transcodeProgress,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
+  deleteMeetingsAsync: vi.fn(),
   startTranscription: vi.fn(),
   uploadFile: vi.fn(),
   transcodeToMp3: vi.fn(),
@@ -50,6 +52,7 @@ vi.mock('@/utils/video2audioConverter', () => ({
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
     addMeetingMutation: () => ({ mutateAsync: createMeetingAsync }),
+    deleteMeetingsMutation: () => ({ mutateAsync: deleteMeetingsAsync }),
     startTranscriptionMutation: () => ({ mutate: startTranscription }),
   }),
 }));
@@ -118,6 +121,7 @@ describe('useImportMeeting.importFiles', () => {
       return registeredAborts.length;
     });
     createMeetingAsync.mockImplementation(async () => ({ id: nextMeetingId++ }));
+    deleteMeetingsAsync.mockResolvedValue(undefined);
     uploadFile.mockResolvedValue(undefined);
     transcodeToMp3.mockResolvedValue(makeMp3());
     classifyUploadFailure.mockReturnValue('unknown');
@@ -529,6 +533,20 @@ describe('useImportMeeting.importFiles', () => {
     expect(stopTranscoding).toHaveBeenCalled();
     expect(addErrorMessage).not.toHaveBeenCalled();
     expect(reportError).not.toHaveBeenCalled();
+  });
+
+  it('an aborted import leaves no empty meeting behind', async () => {
+    deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+
+    registeredAborts.forEach((abort) => abort());
+    await flush();
+
+    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
   });
 
   it('a global abort stops creating meetings for the files still queued', async () => {

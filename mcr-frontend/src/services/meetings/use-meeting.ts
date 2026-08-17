@@ -87,6 +87,22 @@ function deleteMeetingMutation() {
   });
 }
 
+function deleteMeetingsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      const outcomes = await Promise.allSettled(ids.map(removeOne));
+      for (const outcome of outcomes) {
+        if (outcome.status === 'rejected') {
+          throw outcome.reason;
+        }
+      }
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] }),
+  });
+}
+
 function addMeetingMutation() {
   const queryClient = useQueryClient();
 
@@ -246,6 +262,7 @@ export function useMeetings() {
     getAllMeetingsQuery,
     addMeetingMutation,
     deleteMeetingMutation,
+    deleteMeetingsMutation,
     updateMeetingMutation,
     updateMeetingOptimistically,
     startCaptureMutation,

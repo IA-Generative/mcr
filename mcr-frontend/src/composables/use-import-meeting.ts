@@ -37,8 +37,9 @@ const startedTranscodes = new Set<number>();
 export function useImportMeeting(): Orchestrator {
   const router = useRouter();
   const toaster = useToaster();
-  const { addMeetingMutation, startTranscriptionMutation } = useMeetings();
+  const { addMeetingMutation, deleteMeetingsMutation, startTranscriptionMutation } = useMeetings();
   const { mutateAsync: createMeetingAsync } = addMeetingMutation();
+  const { mutateAsync: deleteMeetingsAsync } = deleteMeetingsMutation();
   const { mutate: startTranscription } = startTranscriptionMutation();
   const { uploadFile } = useMultipart();
   const { registerUpload, unregisterUpload } = useUploadStatus();
@@ -60,6 +61,7 @@ export function useImportMeeting(): Orchestrator {
         abort: () => {
           controller.abort();
           runtime.stopTranscoding?.();
+          discardMeetingOf(id);
           forget(id);
         },
       });
@@ -233,6 +235,15 @@ export function useImportMeeting(): Orchestrator {
   function redirectToMeeting(meetingId: number): void {
     writer.clearAll();
     void router.push(`${ROUTES.MEETINGS.path}/${meetingId}`);
+  }
+
+  function discardMeetingOf(id: number): void {
+    const meetingId = writer.getItem(id)?.meetingId ?? null;
+    if (meetingId === null) {
+      return;
+    }
+
+    void deleteMeetingsAsync([meetingId]);
   }
 
   function settle(id: number): void {
