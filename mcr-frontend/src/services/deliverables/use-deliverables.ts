@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import { QUERY_KEYS } from '@/plugins/vue-query';
+import { useDeliverableFeedbackDraft } from '@/services/deliverable-feedback/use-deliverable-feedback-draft';
 import {
   createDeliverable,
   downloadDeliverableFile,
@@ -17,13 +18,21 @@ export function shouldPollDeliverables(deliverables?: DeliverableDto[]): boolean
 }
 
 function getDeliverablesQuery(meetingId: number) {
-  return useQuery({
+  const drafts = useDeliverableFeedbackDraft();
+
+  const query = useQuery({
     queryKey: [QUERY_KEYS.DELIVERABLES, meetingId],
     queryFn: () => getMeetingDeliverables(meetingId),
     select: (data) => data.deliverables,
     refetchInterval: (query) =>
       shouldPollDeliverables(query.state.data?.deliverables) ? POLLING_INTERVAL : false,
   });
+
+  watch(query.data, (deliverables) => {
+    if (deliverables !== undefined) drafts.seed(deliverables);
+  });
+
+  return query;
 }
 
 function createDeliverableMutation(meetingId: number) {

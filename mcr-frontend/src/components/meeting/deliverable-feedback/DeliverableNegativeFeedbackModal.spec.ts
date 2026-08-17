@@ -81,6 +81,42 @@ describe('DeliverableNegativeFeedbackModal', () => {
     expect(commentBox()).toHaveValue('');
   });
 
+  it('opens on the reasons and the comment already given for this deliverable', async () => {
+    await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC'],
+      initialComment: 'globalement à côté',
+    });
+
+    expect(chip('Hors sujet')).toHaveAttribute('aria-pressed', 'true');
+    expect(chip('Informations manquantes')).toHaveAttribute('aria-pressed', 'false');
+    expect(commentBox()).toHaveValue('globalement à côté');
+  });
+
+  it('submits what it opened on when the user changes nothing', async () => {
+    const { onSubmit } = await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC'],
+      initialComment: 'globalement à côté',
+    });
+
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      reasons: ['OFF_TOPIC'],
+      comment: 'globalement à côté',
+    });
+  });
+
+  it('lets the user drop a reason it opened on', async () => {
+    const { onSubmit } = await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC', 'MISSING_INFORMATION'],
+    });
+
+    await userEvent.click(chip('Hors sujet'));
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith({ reasons: ['MISSING_INFORMATION'], comment: '' });
+  });
+
   it('lets the user report several reasons at once', async () => {
     const { onSubmit } = await renderWithCatalogue();
 

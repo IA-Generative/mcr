@@ -45,12 +45,13 @@ const MODAL_ID = 'deliverable-feedback-modal';
 
 const props = defineProps<{
   isSubmitting: boolean;
+  initialComment?: string;
   onSubmit: (comment: string) => void;
 }>();
 
 const emit = defineEmits<{ closed: [] }>();
 
-const comment = ref('');
+const comment = ref(props.initialComment ?? '');
 
 function onSubmitClick(): void {
   if (props.isSubmitting) return;

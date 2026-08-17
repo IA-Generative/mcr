@@ -39,6 +39,29 @@ describe('DeliverableFeedbackModal', () => {
     expect(commentBox()).toHaveValue('');
   });
 
+  it('opens on the comment already given for this deliverable', () => {
+    renderModal({ initialComment: 'clair et fidèle' });
+
+    expect(commentBox()).toHaveValue('clair et fidèle');
+  });
+
+  it('submits the comment it opened on when the user changes nothing', async () => {
+    const { onSubmit } = renderModal({ initialComment: 'clair et fidèle' });
+
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith('clair et fidèle');
+  });
+
+  it('lets the user amend that comment instead of retyping it', async () => {
+    const { onSubmit } = renderModal({ initialComment: 'clair' });
+
+    await userEvent.type(commentBox(), ' et fidèle');
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith('clair et fidèle');
+  });
+
   it('submits without a comment, because the comment is optional', async () => {
     const { onSubmit } = renderModal();
 
