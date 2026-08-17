@@ -2,18 +2,27 @@ import { i18n } from '@/plugins/i18n';
 import '@testing-library/jest-dom/vitest';
 import { render, type RenderOptions } from '@testing-library/vue';
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
+import { createPinia, getActivePinia, setActivePinia } from 'pinia';
 import { ref } from 'vue';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
+
+// Runs before any spec-level beforeEach, so a spec that activates its own pinia keeps it and
+// renderWithPlugins installs that very instance — one store, whether the spec declared it or not.
+beforeEach(() => {
+  setActivePinia(undefined);
+});
 
 export function renderWithPlugins<C>(component: C, options: RenderOptions<C> = {}) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
+  const pinia = getActivePinia() ?? createPinia();
+  setActivePinia(pinia);
   return render(component, {
     ...options,
     global: {
       ...options.global,
-      plugins: [i18n, [VueQueryPlugin, { queryClient }], ...(options.global?.plugins ?? [])],
+      plugins: [i18n, [VueQueryPlugin, { queryClient }], pinia, ...(options.global?.plugins ?? [])],
     },
   });
 }
