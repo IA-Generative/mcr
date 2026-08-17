@@ -4,7 +4,7 @@ const { addErrorMessage } = vi.hoisted(() => ({ addErrorMessage: vi.fn() }));
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 const {
   createMeetingAsync,
-  deleteMeetingsAsync,
+  deleteMeetings,
   startTranscription,
   uploadFile,
   transcodeToMp3,
@@ -14,7 +14,7 @@ const {
   transcodeProgress,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
-  deleteMeetingsAsync: vi.fn(),
+  deleteMeetings: vi.fn(),
   startTranscription: vi.fn(),
   uploadFile: vi.fn(),
   transcodeToMp3: vi.fn(),
@@ -68,7 +68,7 @@ vi.mock('@/utils/video2audioConverter', () => ({
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
     addMeetingMutation: () => ({ mutateAsync: createMeetingAsync }),
-    deleteMeetingsMutation: () => ({ mutateAsync: deleteMeetingsAsync }),
+    deleteMeetingsMutation: () => ({ mutate: deleteMeetings }),
     startTranscriptionMutation: () => ({ mutate: startTranscription }),
   }),
 }));
@@ -557,7 +557,7 @@ describe('useImportMeeting.importFiles', () => {
     abortAll();
     await flush();
 
-    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+    expect(deleteMeetings).toHaveBeenCalledWith([101]);
   });
 
   it('cancelling a batch deletes all its meetings in a single request', async () => {
@@ -574,8 +574,8 @@ describe('useImportMeeting.importFiles', () => {
     abortAll();
     await flush();
 
-    expect(deleteMeetingsAsync).toHaveBeenCalledTimes(1);
-    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101, 102, 103]);
+    expect(deleteMeetings).toHaveBeenCalledTimes(1);
+    expect(deleteMeetings).toHaveBeenCalledWith([101, 102, 103]);
   });
 
   it('an abort spares the meeting of an import that already completed', async () => {
@@ -595,8 +595,8 @@ describe('useImportMeeting.importFiles', () => {
     abortAll();
     await flush();
 
-    expect(deleteMeetingsAsync).toHaveBeenCalledTimes(1);
-    expect(deleteMeetingsAsync).toHaveBeenCalledWith([102]);
+    expect(deleteMeetings).toHaveBeenCalledTimes(1);
+    expect(deleteMeetings).toHaveBeenCalledWith([102]);
   });
 
   it('deletes a meeting whose creation landed after its import was aborted', async () => {
@@ -612,7 +612,7 @@ describe('useImportMeeting.importFiles', () => {
     await run;
     await flush();
 
-    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+    expect(deleteMeetings).toHaveBeenCalledWith([101]);
   });
 
   it('deletes the meeting of a video whose transcode failed while it was being created', async () => {
@@ -628,7 +628,8 @@ describe('useImportMeeting.importFiles', () => {
     await run;
     await flush();
 
-    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+    expect(deleteMeetings).toHaveBeenCalledTimes(1);
+    expect(deleteMeetings).toHaveBeenCalledWith([101]);
   });
 
   it('a global abort stops creating meetings for the files still queued', async () => {

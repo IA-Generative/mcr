@@ -40,7 +40,7 @@ export function useImportMeeting(): Orchestrator {
   const toaster = useToaster();
   const { addMeetingMutation, deleteMeetingsMutation, startTranscriptionMutation } = useMeetings();
   const { mutateAsync: createMeetingAsync } = addMeetingMutation();
-  const { mutateAsync: deleteMeetingsAsync } = deleteMeetingsMutation();
+  const { mutate: deleteMeetings } = deleteMeetingsMutation();
   const { mutate: startTranscription } = startTranscriptionMutation();
   const { uploadFile } = useMultipart();
   const { registerUpload, unregisterUpload } = useUploadStatus();
@@ -260,7 +260,7 @@ export function useImportMeeting(): Orchestrator {
 
     const meetingIds = [...pendingDiscards];
     pendingDiscards.clear();
-    void deleteMeetingsAsync(meetingIds);
+    deleteMeetings(meetingIds);
   }
 
   function settle(id: number): void {
