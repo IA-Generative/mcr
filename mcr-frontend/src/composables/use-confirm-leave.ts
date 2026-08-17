@@ -2,6 +2,7 @@ import BaseModal from '@/components/core/BaseModal.vue';
 import { useUploadBatch, useUploadBatchWriter } from '@/composables/use-upload-batch';
 import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
+import { requestMeetingRemovalDuringUnload } from '@/services/meetings/meetings.service';
 import { useModal } from 'vue-final-modal';
 
 let isConfirming = false;
@@ -16,7 +17,10 @@ export function dialogFor(namespace: string): ConfirmDialog {
   };
 }
 
-export async function confirmAbortActiveUploads(dialog: ConfirmDialog): Promise<boolean> {
+export async function confirmAbortActiveUploads(
+  dialog: ConfirmDialog,
+  { leavingPage = false } = {},
+): Promise<boolean> {
   const { hasActiveWork } = useUploadBatch();
   const { abortActiveUploads } = useUploadStatus();
   const { clearAll } = useUploadBatchWriter();
@@ -33,6 +37,9 @@ export async function confirmAbortActiveUploads(dialog: ConfirmDialog): Promise<
   try {
     const confirmed = await confirmLeave(dialog);
     if (confirmed) {
+      if (leavingPage) {
+        handOverCleanupToTheBrowser();
+      }
       abortActiveUploads();
       clearAll();
     }
@@ -43,8 +50,18 @@ export async function confirmAbortActiveUploads(dialog: ConfirmDialog): Promise<
   }
 }
 
+function handOverCleanupToTheBrowser(): void {
+  const { pendingMeetingIds } = useUploadBatch();
+  const { clearAll } = useUploadBatchWriter();
+
+  requestMeetingRemovalDuringUnload(pendingMeetingIds.value);
+  clearAll();
+}
+
 export function confirmLeaveIfUploading(): Promise<boolean> {
-  return confirmAbortActiveUploads(dialogFor('meeting.import.confirm-leave'));
+  return confirmAbortActiveUploads(dialogFor('meeting.import.confirm-leave'), {
+    leavingPage: true,
+  });
 }
 
 export function confirmLeave(dialog: ConfirmDialog): Promise<boolean> {

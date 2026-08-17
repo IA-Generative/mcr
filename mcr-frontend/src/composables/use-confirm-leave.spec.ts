@@ -8,11 +8,23 @@ const { useModal, open, destroy } = vi.hoisted(() => {
   const useModal = vi.fn((_options: { attrs: ModalAttrs }) => ({ open, destroy }));
   return { useModal, open, destroy };
 });
-const { work, abortActiveUploads, clearAll } = vi.hoisted(() => ({
-  work: { active: false },
-  abortActiveUploads: vi.fn(),
-  clearAll: vi.fn(),
-}));
+const { work, abortActiveUploads, clearAll, requestMeetingRemovalDuringUnload, seenAtAbort } =
+  vi.hoisted(() => {
+    const work = { active: false, pendingMeetingIds: [] as number[] };
+    const seenAtAbort = { meetingIds: [] as number[] };
+
+    return {
+      work,
+      seenAtAbort,
+      requestMeetingRemovalDuringUnload: vi.fn(),
+      clearAll: vi.fn(() => {
+        work.pendingMeetingIds = [];
+      }),
+      abortActiveUploads: vi.fn(() => {
+        seenAtAbort.meetingIds = [...work.pendingMeetingIds];
+      }),
+    };
+  });
 
 vi.mock('vue-final-modal', () => ({ useModal }));
 vi.mock('@/plugins/i18n', () => ({ t: (key: string) => key }));
@@ -24,9 +36,15 @@ vi.mock('@/composables/use-upload-batch', () => ({
         return work.active;
       },
     },
+    pendingMeetingIds: {
+      get value() {
+        return work.pendingMeetingIds;
+      },
+    },
   }),
   useUploadBatchWriter: () => ({ clearAll }),
 }));
+vi.mock('@/services/meetings/meetings.service', () => ({ requestMeetingRemovalDuringUnload }));
 vi.mock('@/composables/use-upload-status', () => ({
   useUploadStatus: () => ({ abortActiveUploads }),
 }));
@@ -92,6 +110,22 @@ describe('confirmAbortActiveUploads', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     work.active = false;
+    work.pendingMeetingIds = [];
+    seenAtAbort.meetingIds = [];
+  });
+
+  it('lets the app delete the meetings itself when the page is staying', async () => {
+    work.active = true;
+    work.pendingMeetingIds = [101, 102];
+
+    const result = confirmAbortActiveUploads(dialog);
+    const attrs = getModalAttrs();
+    attrs.onSuccess();
+    attrs.onClosed();
+    await result;
+
+    expect(requestMeetingRemovalDuringUnload).not.toHaveBeenCalled();
+    expect(seenAtAbort.meetingIds).toEqual([101, 102]);
   });
 
   it('lets the caller proceed without prompting or touching anything when nothing is running', async () => {
@@ -156,6 +190,8 @@ describe('confirmLeaveIfUploading', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     work.active = false;
+    work.pendingMeetingIds = [];
+    seenAtAbort.meetingIds = [];
   });
 
   it('aborts and empties the store when the user confirms leaving', async () => {
@@ -168,6 +204,43 @@ describe('confirmLeaveIfUploading', () => {
 
     await expect(result).resolves.toBe(true);
     expect(abortActiveUploads).toHaveBeenCalledTimes(1);
-    expect(clearAll).toHaveBeenCalledTimes(1);
+    expect(clearAll).toHaveBeenCalled();
+  });
+
+  it('has the browser delete the meetings, since the page will not survive to do it', async () => {
+    work.active = true;
+    work.pendingMeetingIds = [101, 102];
+
+    const result = confirmLeaveIfUploading();
+    const attrs = getModalAttrs();
+    attrs.onSuccess();
+    attrs.onClosed();
+    await result;
+
+    expect(requestMeetingRemovalDuringUnload).toHaveBeenCalledWith([101, 102]);
+  });
+
+  it('leaves the app nothing to delete, so it does not fire a request the page will cancel', async () => {
+    work.active = true;
+    work.pendingMeetingIds = [101, 102];
+
+    const result = confirmLeaveIfUploading();
+    const attrs = getModalAttrs();
+    attrs.onSuccess();
+    attrs.onClosed();
+    await result;
+
+    expect(seenAtAbort.meetingIds).toEqual([]);
+  });
+
+  it('deletes nothing when the user decides to stay', async () => {
+    work.active = true;
+    work.pendingMeetingIds = [101];
+
+    const result = confirmLeaveIfUploading();
+    getModalAttrs().onClosed();
+
+    await expect(result).resolves.toBe(false);
+    expect(requestMeetingRemovalDuringUnload).not.toHaveBeenCalled();
   });
 });
