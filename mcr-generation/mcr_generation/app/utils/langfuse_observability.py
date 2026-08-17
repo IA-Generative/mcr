@@ -1,5 +1,31 @@
-from langfuse import get_client
+from langfuse import Langfuse, get_client
 from loguru import logger
+
+from mcr_generation.app.configs.settings import LangfuseSettings
+
+
+def init_langfuse() -> None:
+    langfuse_settings = LangfuseSettings()
+    client = None
+    authenticated = False
+    try:
+        client = Langfuse(
+            secret_key=langfuse_settings.LANGFUSE_SECRET_KEY,
+            public_key=langfuse_settings.LANGFUSE_PUBLIC_KEY,
+            host=langfuse_settings.LANGFUSE_HOST,
+            environment=langfuse_settings.ENV_MODE.lower(),  # only lowercase supported
+        )
+        authenticated = client.auth_check()
+        if not authenticated:
+            logger.warning("Langfuse authentication failed, tracing disabled")
+    except Exception as e:
+        logger.warning("Langfuse initialization failed, tracing disabled: {}", e)
+
+    if not authenticated and client is not None:
+        try:
+            client.shutdown()
+        except Exception as e:
+            logger.warning("Langfuse shutdown failed: {}", e)
 
 
 def record_report_trace_context(
