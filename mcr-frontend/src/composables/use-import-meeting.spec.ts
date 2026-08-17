@@ -133,7 +133,6 @@ describe('useImportMeeting.importFiles', () => {
     nextMeetingId = 101;
 
     createMeetingAsync.mockImplementation(async () => ({ id: nextMeetingId++ }));
-    deleteMeetingsAsync.mockResolvedValue(undefined);
     uploadFile.mockResolvedValue(undefined);
     transcodeToMp3.mockResolvedValue(makeMp3());
     classifyUploadFailure.mockReturnValue('unknown');
@@ -559,6 +558,24 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
 
     expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+  });
+
+  it('cancelling a batch deletes all its meetings in a single request', async () => {
+    deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([
+      makeFile('a.mp3', { duration: 60 }),
+      makeFile('b.mp3', { duration: 120 }),
+      makeFile('c.mp3', { duration: 180 }),
+    ]);
+    await flush();
+
+    abortAll();
+    await flush();
+
+    expect(deleteMeetingsAsync).toHaveBeenCalledTimes(1);
+    expect(deleteMeetingsAsync).toHaveBeenCalledWith([101, 102, 103]);
   });
 
   it('an abort spares the meeting of an import that already completed', async () => {

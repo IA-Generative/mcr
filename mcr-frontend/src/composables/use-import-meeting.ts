@@ -33,6 +33,7 @@ type ValidatedFile = { file: File; draft: UploadDraft };
 const runtimes = new Map<number, ItemRuntime>();
 const startedUploads = new Set<number>();
 const startedTranscodes = new Set<number>();
+const pendingDiscards = new Set<number>();
 
 export function useImportMeeting(): Orchestrator {
   const router = useRouter();
@@ -123,7 +124,7 @@ export function useImportMeeting(): Orchestrator {
       try {
         const meeting = await createMeetingAsync(dto);
         if (!runtimes.has(id)) {
-          void deleteMeetingsAsync([meeting.id]);
+          discardMeeting(meeting.id);
           continue;
         }
         writer.attachMeeting(id, meeting.id);
@@ -240,11 +241,26 @@ export function useImportMeeting(): Orchestrator {
 
   function discardMeetingOf(id: number): void {
     const meetingId = writer.getItem(id)?.meetingId ?? null;
-    if (meetingId === null) {
+    if (meetingId !== null) {
+      discardMeeting(meetingId);
+    }
+  }
+
+  function discardMeeting(meetingId: number): void {
+    pendingDiscards.add(meetingId);
+    if (pendingDiscards.size === 1) {
+      queueMicrotask(flushDiscards);
+    }
+  }
+
+  function flushDiscards(): void {
+    if (pendingDiscards.size === 0) {
       return;
     }
 
-    void deleteMeetingsAsync([meetingId]);
+    const meetingIds = [...pendingDiscards];
+    pendingDiscards.clear();
+    void deleteMeetingsAsync(meetingIds);
   }
 
   function settle(id: number): void {
