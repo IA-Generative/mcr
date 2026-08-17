@@ -61,7 +61,6 @@ export function useImportMeeting(): Orchestrator {
           controller.abort();
           runtime.stopTranscoding?.();
           forget(id);
-          writer.clearAll();
         },
       });
       runtimes.set(id, runtime);

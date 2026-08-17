@@ -508,10 +508,10 @@ describe('useImportMeeting.importFiles', () => {
     expect(unregisterUpload).toHaveBeenCalledTimes(2);
   });
 
-  it('a global abort stops every in-flight work and empties the queue silently', async () => {
+  it('a global abort stops every in-flight work silently', async () => {
     const uploads = deferCalls<void>(uploadFile);
     const transcodes = deferCalls<File>(transcodeToMp3);
-    const { importFiles, batch, UploadAbortedError } = await setup();
+    const { importFiles, UploadAbortedError } = await setup();
 
     await importFiles([
       makeFile('audio.mp3', { duration: 60 }),
@@ -527,15 +527,13 @@ describe('useImportMeeting.importFiles', () => {
 
     expect(uploadSignal.aborted).toBe(true);
     expect(stopTranscoding).toHaveBeenCalled();
-    expect(batch.items.value).toHaveLength(0);
-    expect(batch.hasActiveWork.value).toBe(false);
     expect(addErrorMessage).not.toHaveBeenCalled();
     expect(reportError).not.toHaveBeenCalled();
   });
 
-  it('a global abort while files are still queued empties the queue and stops creating meetings', async () => {
+  it('a global abort stops creating meetings for the files still queued', async () => {
     const creations = deferCalls<{ id: number }>(createMeetingAsync);
-    const { importFiles, batch } = await setup();
+    const { importFiles } = await setup();
 
     const run = importFiles([
       makeFile('a.mp3', { duration: 60 }),
@@ -550,7 +548,6 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
 
     expect(createMeetingAsync).toHaveBeenCalledTimes(1);
-    expect(batch.items.value).toHaveLength(0);
     expect(uploadFile).not.toHaveBeenCalled();
   });
 
