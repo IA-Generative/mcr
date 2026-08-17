@@ -24,6 +24,10 @@ export function isRefreshTokenValid(keycloak: KeycloakInstance): boolean {
   return nowInSeconds - skew < refreshTokenExpirationDate - REFRESH_TOKEN_BUFFER_SECONDS;
 }
 
+export function getCurrentAccessToken(): string | undefined {
+  return useKeycloak().keycloak?.token;
+}
+
 export async function getValidToken(): Promise<string> {
   const { keycloak } = useKeycloak();
   if (!keycloak) throw new SessionExpiredError();

@@ -1,4 +1,5 @@
-import HttpService, { API_PATHS } from '../http/http.service';
+import HttpService, { API_PATHS, API_URL } from '../http/http.service';
+import { getCurrentAccessToken } from '@/services/auth/token-provider';
 import type { PaginatedResponse, PaginationQuery } from '../shared/pagination.type';
 import type { MultipartInitResponse } from './meetings.service.types';
 import type {
@@ -19,6 +20,21 @@ export async function getAll(params: PaginationQuery): Promise<PaginatedResponse
 
 export async function removeOne(id: number) {
   await HttpService.delete(`${API_PATHS.MEETINGS}/${id}`);
+}
+
+export function requestMeetingRemovalDuringUnload(ids: number[]): void {
+  const token = getCurrentAccessToken();
+  if (token === undefined) {
+    return;
+  }
+
+  for (const id of ids) {
+    void fetch(`${API_URL}/${API_PATHS.MEETINGS}/${id}`, {
+      method: 'DELETE',
+      keepalive: true,
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => undefined);
+  }
 }
 
 export async function create(payload: AddMeetingDto): Promise<MeetingDto> {

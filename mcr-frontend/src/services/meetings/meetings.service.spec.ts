@@ -1,11 +1,14 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import {
   initMultipartUploadService,
   signMultipartPartService,
   completeMultipartUploadService,
   abortMultipartUploadService,
+  requestMeetingRemovalDuringUnload,
 } from './meetings.service';
 import HttpService from '../http/http.service';
+
+const { getCurrentAccessToken } = vi.hoisted(() => ({ getCurrentAccessToken: vi.fn() }));
 
 vi.mock('../http/http.service', () => ({
   default: {
@@ -24,7 +27,9 @@ vi.mock('../http/http.service', () => ({
   API_PATHS: {
     MEETINGS: 'meetings',
   },
+  API_URL: '/api',
 }));
+vi.mock('@/services/auth/token-provider', () => ({ getCurrentAccessToken }));
 
 describe('initMultipartUploadService', () => {
   it('HttpService.post called with correct attributes', async () => {
@@ -165,5 +170,44 @@ describe('abortMultipartUploadService', () => {
         objectKey: 'k1',
       }),
     ).rejects.toThrow('API error');
+  });
+});
+
+describe('requestMeetingRemovalDuringUnload', () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchMock.mockResolvedValue(undefined);
+    vi.stubGlobal('fetch', fetchMock);
+    getCurrentAccessToken.mockReturnValue('a-token');
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('deletes every meeting with a request the browser keeps alive past the page', () => {
+    requestMeetingRemovalDuringUnload([101, 102]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/meetings/101', {
+      method: 'DELETE',
+      keepalive: true,
+      headers: { Authorization: 'Bearer a-token' },
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/meetings/102', {
+      method: 'DELETE',
+      keepalive: true,
+      headers: { Authorization: 'Bearer a-token' },
+    });
+  });
+
+  it('sends nothing when the session no longer holds a token', () => {
+    getCurrentAccessToken.mockReturnValue(undefined);
+
+    requestMeetingRemovalDuringUnload([101]);
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
