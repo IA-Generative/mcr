@@ -10,9 +10,6 @@ const {
   transcodeToMp3,
   stopTranscoding,
   classifyUploadFailure,
-  registerUpload,
-  unregisterUpload,
-  registeredAborts,
   push,
   transcodeProgress,
 } = vi.hoisted(() => ({
@@ -23,12 +20,31 @@ const {
   transcodeToMp3: vi.fn(),
   stopTranscoding: vi.fn(),
   classifyUploadFailure: vi.fn(),
-  registerUpload: vi.fn(),
-  unregisterUpload: vi.fn(),
-  registeredAborts: [] as (() => void)[],
   push: vi.fn(),
   transcodeProgress: { cb: undefined as ((ratio: number) => void) | undefined },
 }));
+
+const { registerUpload, unregisterUpload, abortAll, activeUploads } = vi.hoisted(() => {
+  const activeUploads = new Map<number, () => void>();
+  let nextRegistryId = 0;
+
+  return {
+    activeUploads,
+    registerUpload: vi.fn((upload: { abort: () => void }) => {
+      activeUploads.set(++nextRegistryId, upload.abort);
+      return nextRegistryId;
+    }),
+    unregisterUpload: vi.fn((registryId: number) => {
+      activeUploads.delete(registryId);
+    }),
+    abortAll: () => {
+      activeUploads.forEach((abort, registryId) => {
+        activeUploads.delete(registryId);
+        abort();
+      });
+    },
+  };
+});
 
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
 vi.mock('@/services/http/http.utils', () => ({ classifyUploadFailure }));
@@ -111,15 +127,11 @@ describe('useImportMeeting.importFiles', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    registeredAborts.length = 0;
+    activeUploads.clear();
     transcodeProgress.cb = undefined;
     fileDurations.clear();
     nextMeetingId = 101;
 
-    registerUpload.mockImplementation((upload: { abort: () => void }) => {
-      registeredAborts.push(upload.abort);
-      return registeredAborts.length;
-    });
     createMeetingAsync.mockImplementation(async () => ({ id: nextMeetingId++ }));
     deleteMeetingsAsync.mockResolvedValue(undefined);
     uploadFile.mockResolvedValue(undefined);
@@ -524,7 +536,7 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
     const uploadSignal = uploadFile.mock.calls[0][0].signal as AbortSignal;
 
-    registeredAborts.forEach((abort) => abort());
+    abortAll();
     uploads[0].reject(new UploadAbortedError());
     transcodes[0].reject(new Error('Transcoding failed: called FFmpeg.terminate()'));
     await flush();
@@ -543,10 +555,31 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
     expect(uploadFile).toHaveBeenCalledTimes(1);
 
-    registeredAborts.forEach((abort) => abort());
+    abortAll();
     await flush();
 
     expect(deleteMeetingsAsync).toHaveBeenCalledWith([101]);
+  });
+
+  it('an abort spares the meeting of an import that already completed', async () => {
+    const uploads = deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([
+      makeFile('finished.mp3', { duration: 60 }),
+      makeFile('running.mp3', { duration: 120 }),
+    ]);
+    await flush();
+
+    uploads[0].resolve();
+    await flush();
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+
+    abortAll();
+    await flush();
+
+    expect(deleteMeetingsAsync).toHaveBeenCalledTimes(1);
+    expect(deleteMeetingsAsync).toHaveBeenCalledWith([102]);
   });
 
   it('a global abort stops creating meetings for the files still queued', async () => {
@@ -560,7 +593,7 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
     expect(createMeetingAsync).toHaveBeenCalledTimes(1);
 
-    registeredAborts.forEach((abort) => abort());
+    abortAll();
     creations[0].resolve({ id: 101 });
     await run;
     await flush();
