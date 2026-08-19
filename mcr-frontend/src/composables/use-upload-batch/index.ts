@@ -40,6 +40,10 @@ function fail(id: number, failureType: UploadFailureType): void {
   dispatch((current) => store.fail(current, id, failureType));
 }
 
+function retry(id: number): void {
+  dispatch((current) => store.retry(current, id));
+}
+
 function clearAll(): void {
   dispatch(store.clearAll);
 }
@@ -70,6 +74,7 @@ const derived = {
   isSettled: computed(() => selectors.isSettled(state.value)),
   getProgressRatio: selectors.getProgressRatio,
   getFailureMessageKey: selectors.getFailureMessageKey,
+  isRetryableItem: selectors.isRetryableItem,
 };
 
 export function useUploadBatch() {
@@ -85,6 +90,7 @@ export function useUploadBatchWriter() {
     recordTranscodeProgress,
     complete,
     fail,
+    retry,
     clearAll,
     getUploadingItems,
     getTranscodingItems,

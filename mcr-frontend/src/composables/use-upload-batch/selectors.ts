@@ -51,6 +51,17 @@ export function isSettled(state: UploadState): boolean {
   return state.items.length > 0 && state.items.every(isSettledItem);
 }
 
+const RETRYABLE_FAILURES: UploadFailureType[] = ['timeout', 'offline', 'blocked'];
+
+export function isRetryableItem(item: UploadItem): boolean {
+  return (
+    item.status === 'error' &&
+    item.failureType !== null &&
+    RETRYABLE_FAILURES.includes(item.failureType) &&
+    item.meetingId !== null
+  );
+}
+
 export function isSettledItem(item: UploadItem): boolean {
   return item.status === 'done' || item.status === 'error';
 }

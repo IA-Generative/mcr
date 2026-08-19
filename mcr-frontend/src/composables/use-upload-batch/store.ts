@@ -4,6 +4,7 @@ import {
   getItem,
   getTranscodingItems,
   getUploadingItems,
+  isRetryableItem,
   isSettledItem,
 } from './selectors';
 
@@ -208,6 +209,15 @@ export function fail(state: UploadState, id: number, failureType: UploadFailureT
   }
 
   return replaceItem(state, { ...item, status: 'error', failureType });
+}
+
+export function retry(state: UploadState, id: number): UploadState {
+  const item = getItem(state, id);
+  if (!item || !isRetryableItem(item)) {
+    return state;
+  }
+
+  return replaceItem(state, { ...item, status: 'upload-pending', failureType: null, sentBytes: 0 });
 }
 
 export function clearAll(state: UploadState): UploadState {
