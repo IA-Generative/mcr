@@ -243,7 +243,9 @@ describe('ImportSticky', () => {
     writer.fail(id, 'timeout');
 
     expect(
-      within(await findRowByTitle('coupé')).getByRole('button', { name: "Réessayer l'importation" }),
+      within(await findRowByTitle('coupé')).getByRole('button', {
+        name: "Réessayer l'importation",
+      }),
     ).toBeInTheDocument();
   });
 
@@ -265,7 +267,9 @@ describe('ImportSticky', () => {
     writer.fail(id, 'timeout');
 
     await fireEvent.click(
-      within(await findRowByTitle('coupé')).getByRole('button', { name: "Réessayer l'importation" }),
+      within(await findRowByTitle('coupé')).getByRole('button', {
+        name: "Réessayer l'importation",
+      }),
     );
 
     expect(retryImport).toHaveBeenCalledWith(id);
