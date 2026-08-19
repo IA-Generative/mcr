@@ -239,12 +239,15 @@ resolve-images:
     - |
       set -eu
 
-      BUILD_SHA=$(git log -1 --format=%h --first-parent "$CI_COMMIT_SHA" -- \
+      BUILD_SHA_FULL=$(git log -1 --format=%H --first-parent "$CI_COMMIT_SHA" -- \
         mcr-core mcr-frontend mcr-gateway mcr-generation mcr-capture-worker)
-      if [ -z "$BUILD_SHA" ]; then
+      if [ -z "$BUILD_SHA_FULL" ]; then
         echo "No service change is reachable from $CI_COMMIT_TAG, so no image was ever built for it." >&2
         exit 1
       fi
+      # Image tags come from CI_COMMIT_SHORT_SHA, which GitLab always cuts to 8; %h follows
+      # core.abbrev and can disagree, so truncate explicitly instead of trusting the default.
+      BUILD_SHA=$(printf '%.8s' "$BUILD_SHA_FULL")
       SRC_TAG="staging-${BUILD_SHA}"
       echo "release ${CI_COMMIT_TAG} (${CI_COMMIT_SHORT_SHA}) -> image set ${SRC_TAG}"
 
@@ -284,8 +287,9 @@ resolve-images:
       MAIN_HEAD=""
       superseded() {
         git fetch -q origin main 2>/dev/null || return 1
-        MAIN_HEAD=$(git rev-parse --short FETCH_HEAD 2>/dev/null) || return 1
-        [ "$MAIN_HEAD" != "$CI_COMMIT_SHORT_SHA" ] && git merge-base --is-ancestor "$CI_COMMIT_SHA" FETCH_HEAD
+        main_sha=$(git rev-parse FETCH_HEAD 2>/dev/null) || return 1
+        MAIN_HEAD=$(printf '%.8s' "$main_sha")
+        [ "$main_sha" != "$CI_COMMIT_SHA" ] && git merge-base --is-ancestor "$CI_COMMIT_SHA" "$main_sha"
       }
 
       waited=0
