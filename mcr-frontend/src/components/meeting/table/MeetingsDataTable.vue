@@ -8,17 +8,6 @@
       :sortable-rows="['date', 'title']"
       class="mb-2"
     >
-      <template #header="{ key, label }">
-        <div class="flex w-full items-center gap-1">
-          {{ label }}
-          <DsfrTooltip
-            v-if="key === 'report'"
-            :content="t('meetings_v2.table.columns.report.tooltip')"
-          >
-          </DsfrTooltip>
-        </div>
-      </template>
-
       <template #cell="{ colKey, cell }">
         <MeetingCellDispatcher
           :col-key="colKey as ColKey"
@@ -61,7 +50,7 @@ const headers = [
   },
   {
     key: 'report',
-    label: t('meetings_v2.table.columns.report.label'),
+    label: t('meetings_v2.table.columns.report'),
     headerAttrs: { class: 'w-40' },
   },
   {
