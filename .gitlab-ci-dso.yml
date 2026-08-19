@@ -1,5 +1,5 @@
 # When pushing to main or a test-xxx branch, we need to build new images.
-# When deploying to prod (tag) we can "promote" the existing images
+# When deploying to prod (tag) we resolve the images already built for that commit.
 .is-build-mode: &is-build-mode '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH =~ /^test-.*$/'
 .is-manual-trigger: &is-manual-trigger '$CI_PIPELINE_SOURCE == "web"'
 .is-mep-tag: &is-mep-tag $CI_COMMIT_TAG =~ /^[0-9]{1,2}\.[0-9]{1,2}\.[0-9]{1,2}$/
@@ -38,7 +38,7 @@ stages:
   - read-secret
   - get-image-tag
   - docker-build
-  - filter-modules
+  - resolve-images
   - rollout-infra
 
 # Extends the catalog .kaniko:build-push with extra kaniko flags injected at runtime via before_script.
@@ -205,6 +205,97 @@ docker-build-capture-worker:
     reports:
       dotenv: digest.env
     expire_in: 30 min
+
+# A release deploys the image set of ONE commit: the newest first-parent ancestor of the tag
+# that touched a service (the tag itself, unless it only carries docs or CI). Waiting for that
+# exact set is what stops a release from promoting whatever staging happens to hold at that
+# instant instead of the set the release actually names.
+resolve-images:
+  stage: resolve-images
+  rules:
+    - if: *is-mep-tag
+  timeout: 45m
+  variables:
+    GIT_DEPTH: 0
+    RESOLVE_TIMEOUT: 1800
+  before_script:
+    - apk add --no-cache curl git jq
+  script:
+    - |
+      set -eu
+
+      BUILD_SHA=$(git log -1 --format=%h --first-parent "$CI_COMMIT_SHA" -- \
+        mcr-core mcr-frontend mcr-gateway mcr-generation mcr-capture-worker)
+      if [ -z "$BUILD_SHA" ]; then
+        echo "No service change is reachable from $CI_COMMIT_TAG, so no image was ever built for it." >&2
+        exit 1
+      fi
+      SRC_TAG="staging-${BUILD_SHA}"
+      echo "release ${CI_COMMIT_TAG} (${CI_COMMIT_SHORT_SHA}) -> image set ${SRC_TAG}"
+
+      # Harbor read credentials come from read_secret's dotenv: the rw-robot kaniko pushes with.
+      BASIC=$(echo "$DOCKER_AUTH" | jq -r --arg h "$REGISTRY_HOST" \
+        '.auths[$h].auth // (.auths | to_entries[0].value.auth)')
+      ACCEPT='Accept: application/vnd.oci.image.manifest.v1+json,application/vnd.docker.distribution.manifest.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json'
+
+      probe() {
+        curl -sS -I -o "$hdr" -w '%{http_code}' -H "$2" -H "$ACCEPT" \
+          "https://${REGISTRY_HOST}/v2/${PROJECT_PATH}/${1}/manifests/${SRC_TAG}" || echo 000
+      }
+
+      # Prints the manifest digest. Returns 10 when the image is simply not pushed yet; any
+      # other status is fatal, so a broken credential can never masquerade as a slow build.
+      digest_of() {
+        hdr=$(mktemp)
+        code=$(probe "$1" "Authorization: Basic ${BASIC}")
+        if [ "$code" = 401 ]; then
+          # Harbor takes Basic on /v2/, but fall back to the token service if it insists.
+          tok=$(curl -sS -H "Authorization: Basic ${BASIC}" \
+            "https://${REGISTRY_HOST}/service/token?service=harbor-registry&scope=repository:${PROJECT_PATH}/${1}:pull" \
+            | jq -r '.token // empty')
+          if [ -n "$tok" ]; then
+            code=$(probe "$1" "Authorization: Bearer ${tok}")
+          fi
+        fi
+        case "$code" in
+          200) tr -d '\r' < "$hdr" | awk 'tolower($1)=="docker-content-digest:"{print $2}' | grep . ;;
+          404) return 10 ;;
+          *) echo "Harbor answered HTTP ${code} for ${1}:${SRC_TAG}" >&2; return 1 ;;
+        esac
+      }
+
+      waited=0
+      resolve() {
+        while :; do
+          if digest=$(digest_of "$1"); then
+            echo "$2=$digest" >> digests.env
+            echo "  ${1} -> ${digest}"
+            return 0
+          else
+            [ "$?" = 10 ] || exit 1
+          fi
+          if [ "$waited" -ge "$RESOLVE_TIMEOUT" ]; then
+            echo "Timed out after ${RESOLVE_TIMEOUT}s waiting for ${1}:${SRC_TAG}." >&2
+            echo "The pipeline for ${BUILD_SHA} never pushed it: still running, failed or cancelled." >&2
+            exit 1
+          fi
+          sleep 20
+          waited=$((waited + 20))
+        done
+      }
+
+      resolve "${CI_PROJECT_NAME}-core" CORE_IMAGE_SHA
+      resolve "${CI_PROJECT_NAME}-frontend" FRONTEND_IMAGE_SHA
+      resolve "${CI_PROJECT_NAME}-orchestrator" GATEWAY_IMAGE_SHA
+      resolve "${CI_PROJECT_NAME}-generation" GENERATION_IMAGE_SHA
+      resolve "${CI_PROJECT_NAME}-capture-worker" CP_WORKER_IMAGE_SHA
+
+      # Recorded in the values repo so "which commit is in prod" is readable from the file.
+      echo "MCR_COMMIT=${BUILD_SHA}" >> digests.env
+  artifacts:
+    reports:
+      dotenv: digests.env
+    expire_in: 60 min
 
 rollout-infra:
   stage: rollout-infra
