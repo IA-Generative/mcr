@@ -50,6 +50,11 @@ stages:
   before_script:
     - |
       MCR_EXTRA="--skip-unused-stages --digest-file=digest.txt --ignore-path=/workspace"
+      # Layer caching, which the Dockerfiles are already written for (deps installed before the
+      # source is copied). --single-snapshot comes from the catalog template and collapses the
+      # build into one layer, leaving nothing per-command to cache; kaniko uses pflag, so the
+      # later occurrence here wins. Cache repo is written with the same rw-robot as the images.
+      MCR_EXTRA="${MCR_EXTRA} --single-snapshot=false --cache=true --cache-repo=${IMAGE_REPOSITORY}/cache --cache-ttl=336h"
       if [ -n "${DOCKERHUB_MIRROR_URL:-}" ]; then
         MCR_EXTRA="${MCR_EXTRA} --registry-mirror=${DOCKERHUB_MIRROR_URL}"
       fi
