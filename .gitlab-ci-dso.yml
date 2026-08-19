@@ -88,6 +88,10 @@ get-image-tag:
       dotenv: vault.env
     expire_in: 60 min
 
+# No per-job `changes:` filter on purpose: every pipeline builds all five services so a
+# main commit yields a COMPLETE `staging-<sha>` set. A release then resolves one whole set
+# from one commit, and a superseded pipeline can be cancelled without destroying the only
+# build of a service its successor won't rebuild.
 docker-build-frontend:
   variables:
     WORKING_DIR: mcr-frontend
@@ -98,8 +102,6 @@ docker-build-frontend:
   rules:
     - if: *is-manual-trigger
     - if: *is-build-mode
-      changes:
-        - mcr-frontend/**/*
   extends:
     - .mcr-kaniko-build
   after_script:
@@ -125,8 +127,6 @@ docker-build-core:
   rules:
     - if: *is-manual-trigger
     - if: *is-build-mode
-      changes:
-        - mcr-core/**/*
   stage: docker-build
   extends:
     - .mcr-kaniko-build
@@ -149,14 +149,12 @@ docker-build-gateway:
   rules:
     - if: *is-manual-trigger
     - if: *is-build-mode
-      changes:
-        - mcr-gateway/**/*
   stage: docker-build
   extends:
     - .mcr-kaniko-build
   after_script:
     - |
-      set -x 
+      set -x
       echo "Built gateway with image tag - ${IMAGE_TAG}"
       echo "GATEWAY_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
   artifacts:
@@ -173,14 +171,12 @@ docker-build-generation:
   rules:
     - if: *is-manual-trigger
     - if: *is-build-mode
-      changes:
-        - mcr-generation/**/*
   stage: docker-build
   extends:
     - .mcr-kaniko-build
   after_script:
     - |
-      set -x 
+      set -x
       echo "Built generaion with image tag - ${IMAGE_TAG}"
       echo "GENERATION_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
   artifacts:
@@ -197,14 +193,12 @@ docker-build-capture-worker:
   rules:
     - if: *is-manual-trigger
     - if: *is-build-mode
-      changes:
-        - mcr-capture-worker/**/*
   stage: docker-build
   extends:
     - .mcr-kaniko-build
   after_script:
     - |
-      set -x 
+      set -x
       echo "Built capture-worker with image tag - ${IMAGE_TAG}"
       echo "CP_WORKER_IMAGE_SHA=$(cat ./digest.txt)" >> digest.env
   artifacts:
