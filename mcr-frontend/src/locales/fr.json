@@ -7,8 +7,8 @@
     "no": "Non",
     "modal": {
       "confirm-title": {
-        "default": "Êtes vous sûr\u00a0?",
-        "delete": "Voulez vous vraiment supprimer cet élément\u00a0?",
+        "default": "Êtes vous sûr ?",
+        "delete": "Voulez vous vraiment supprimer cet élément ?",
         "delete-button": "Supprimer"
       }
     },
@@ -157,7 +157,7 @@
   },
   "meeting": {
     "confirm-delete": {
-      "title": "Êtes-vous sûr de vouloir supprimer la réunion\u00a0?"
+      "title": "Êtes-vous sûr de vouloir supprimer la réunion ?"
     },
     "subtitle": {
       "scheduled": "Programmée le",
@@ -177,7 +177,7 @@
         "name": "Titre de la réunion",
         "devices": "Microphone",
         "notice": {
-          "title": "Pour garantir une bonne qualité de la transcription\u00a0:",
+          "title": "Pour garantir une bonne qualité de la transcription :",
           "mic": {
             "bold": "Placez le micro au centre de la table",
             "text": "{bold}, à proximité des intervenants."
@@ -192,7 +192,7 @@
           }
         },
         "notice-2": {
-          "title": "Avant de démarrer l'enregistrement, pensez à\u00a0:",
+          "title": "Avant de démarrer l'enregistrement, pensez à :",
           "warning": "Informer les participants de l'utilisation de MIrAI Compte-Rendu pour cette réunion."
         }
       },
@@ -230,6 +230,7 @@
       "sticky": {
         "label": "Suivi des importations",
         "close": "Fermer le suivi des importations",
+        "retry": "Réessayer l'importation",
         "eta": "~{time} restantes",
         "status": {
           "pending": "En attente",
@@ -288,7 +289,7 @@
           }
         },
         "confirm-quit": {
-          "title": "Êtes-vous sûr de vouloir quitter la page\u00a0?",
+          "title": "Êtes-vous sûr de vouloir quitter la page ?",
           "description": "Cela mettra fin à l'enregistrement.",
           "button": "Quitter"
         }
@@ -388,7 +389,7 @@
         "submit": "Envoyer"
       },
       "negative-modal": {
-        "title": "Qu'est-ce qui n'a pas fonctionné\u00a0?",
+        "title": "Qu'est-ce qui n'a pas fonctionné ?",
         "description": "Votre retour nous aide à améliorer les générations.",
         "reasons-label": "Motif",
         "comment-label": "Commentaire",

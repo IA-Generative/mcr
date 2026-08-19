@@ -2,7 +2,13 @@ import ImportSticky from '@/components/import/ImportSticky.vue';
 import { useUploadBatchWriter, type UploadDraft } from '@/composables/use-upload-batch';
 import { renderWithPlugins } from '@/vitest.setup';
 import { fireEvent, screen, within } from '@testing-library/vue';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { retryImport } = vi.hoisted(() => ({ retryImport: vi.fn() }));
+
+vi.mock('@/composables/use-import-meeting', () => ({
+  useImportMeeting: () => ({ importFiles: vi.fn(), retryImport }),
+}));
 import { createMemoryHistory, createRouter } from 'vue-router';
 
 function draft(overrides: Partial<UploadDraft> = {}): UploadDraft {
@@ -34,6 +40,7 @@ async function findRowByTitle(title: string): Promise<HTMLElement> {
 
 describe('ImportSticky', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     writer.clearAll();
   });
 
@@ -228,5 +235,39 @@ describe('ImportSticky', () => {
     await router.push('/ailleurs');
 
     expect(screen.getByText('persistant')).toBeInTheDocument();
+  });
+
+  it('offers to try again on an import the network cut short', async () => {
+    renderWithPlugins(ImportSticky);
+    const [id] = enqueueWithMeetings([draft({ title: 'coupé' })]);
+    writer.fail(id, 'timeout');
+
+    expect(
+      within(await findRowByTitle('coupé')).getByRole('button', { name: "Réessayer l'importation" }),
+    ).toBeInTheDocument();
+  });
+
+  it('offers no retry on an import a second attempt would not fix', async () => {
+    renderWithPlugins(ImportSticky);
+    const [id] = enqueueWithMeetings([draft({ title: 'illisible' })]);
+    writer.fail(id, 'http-client');
+
+    expect(
+      within(await findRowByTitle('illisible')).queryByRole('button', {
+        name: "Réessayer l'importation",
+      }),
+    ).toBeNull();
+  });
+
+  it('sends the import off again when the user asks to try again', async () => {
+    renderWithPlugins(ImportSticky);
+    const [id] = enqueueWithMeetings([draft({ title: 'coupé' })]);
+    writer.fail(id, 'timeout');
+
+    await fireEvent.click(
+      within(await findRowByTitle('coupé')).getByRole('button', { name: "Réessayer l'importation" }),
+    );
+
+    expect(retryImport).toHaveBeenCalledWith(id);
   });
 });
