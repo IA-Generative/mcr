@@ -523,6 +523,57 @@ describe('useImportMeeting.importFiles', () => {
     expect(unregisterUpload).toHaveBeenCalledTimes(2);
   });
 
+  it('retrying a network failure sends the same file to the same meeting', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('timeout');
+    const { importFiles, retryImport, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+    expect(batch.items.value[0].status).toBe('error');
+
+    retryImport(batch.items.value[0].id);
+    await flush();
+
+    expect(createMeetingAsync).toHaveBeenCalledTimes(1);
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    expect(uploadFile.mock.calls[1][0].meetingId).toBe(101);
+    expect(push).toHaveBeenCalledWith('/meetings/101');
+  });
+
+  it('does not retry a failure that a second attempt would not fix', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('http-client');
+    const { importFiles, retryImport, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+
+    retryImport(batch.items.value[0].id);
+    await flush();
+
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(batch.items.value[0]).toMatchObject({ status: 'error', failureType: 'http-client' });
+  });
+
+  it('a retried import can be interrupted like any other', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('timeout');
+    const { importFiles, retryImport, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+
+    deferCalls<void>(uploadFile);
+    retryImport(batch.items.value[0].id);
+    await flush();
+
+    abortAll();
+    await flush();
+
+    expect((uploadFile.mock.calls[1][0].signal as AbortSignal).aborted).toBe(true);
+  });
+
   it('a global abort stops every in-flight work silently', async () => {
     const uploads = deferCalls<void>(uploadFile);
     const transcodes = deferCalls<File>(transcodeToMp3);
