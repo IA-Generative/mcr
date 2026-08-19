@@ -5,10 +5,7 @@ import {
   type DeliverableDto,
   type DeliverableListResponse,
   type DeliverableStatus,
-  type DeliverableType,
 } from './deliverables.types';
-
-const REPORT_TYPES: DeliverableType[] = ['DECISION_RECORD', 'DETAILED_SYNTHESIS', 'CUSTOM_REPORT'];
 
 export async function getMeetingDeliverables(meetingId: number): Promise<DeliverableListResponse> {
   const { data } = await HttpService.get<DeliverableListResponse>(
@@ -41,18 +38,6 @@ export function getTranscriptionStatus(
 export function getReportStatus(
   deliverables: Pick<DeliverableDto, 'type' | 'status'>[],
 ): DeliverableStatus | null {
-  const statuses = deliverables.filter((d) => REPORT_TYPES.includes(d.type)).map((d) => d.status);
-  if (statuses.length === 0) {
-    return 'PENDING';
-  }
-  if (statuses.includes('AVAILABLE')) {
-    return 'AVAILABLE';
-  }
-  if (statuses.includes('FAILED')) {
-    return 'FAILED';
-  }
-  if (statuses.includes('IN_PROGRESS')) {
-    return 'IN_PROGRESS';
-  }
-  return 'PENDING';
+  const structuredMinutes = deliverables.find((d) => d.type === 'STRUCTURED_MINUTES');
+  return structuredMinutes ? structuredMinutes.status : 'PENDING';
 }
