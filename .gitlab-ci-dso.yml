@@ -79,6 +79,9 @@ get-image-tag:
         TARGET_ENV="prod"
       else
         IMAGE_TAG="${TARGET_ENV}-${CI_COMMIT_SHORT_SHA}"
+        # Provenance for the staging write. A release gets it from resolve-images instead,
+        # which is why it is not set here for tags: the two would collide as dotenv vars.
+        echo "MCR_COMMIT=${CI_COMMIT_SHORT_SHA}" >> vault.env
       fi
 
       echo "IMAGE_TAG=$IMAGE_TAG" >> vault.env
@@ -335,6 +338,7 @@ rollout-infra:
             \"TR_WORKER_IMAGE_SHA\": \"${CORE_IMAGE_SHA}\",
             \"GATEWAY_IMAGE_SHA\": \"${GATEWAY_IMAGE_SHA}\",
             \"GENERATION_IMAGE_SHA\": \"${GENERATION_IMAGE_SHA}\",
-            \"CP_WORKER_IMAGE_SHA\": \"${CP_WORKER_IMAGE_SHA}\"
+            \"CP_WORKER_IMAGE_SHA\": \"${CP_WORKER_IMAGE_SHA}\",
+            \"MCR_COMMIT\": \"${MCR_COMMIT}\"
           }
         }"
