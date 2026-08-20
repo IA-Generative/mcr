@@ -451,7 +451,6 @@ def test_update_meeting_notes_only(
 
 
 def test_delete_meetings_removes_every_meeting_of_the_list(
-    mock_minio: Mock,
     meeting_client: PrefixedTestClient,
     meeting_fixture: Meeting,
     meeting_2_fixture: Meeting,
@@ -478,7 +477,6 @@ def test_delete_meetings_removes_every_meeting_of_the_list(
 
 
 def test_delete_meetings_spares_them_all_when_one_belongs_to_someone_else(
-    mock_minio: Mock,
     meeting_client: PrefixedTestClient,
     meeting_fixture: Meeting,
     meeting_2_fixture: Meeting,
