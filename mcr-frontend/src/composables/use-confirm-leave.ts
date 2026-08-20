@@ -3,7 +3,8 @@ import { useUploadBatch, useUploadBatchWriter } from '@/composables/use-upload-b
 import { useImportRuntimes } from '@/composables/use-import-runtimes';
 import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
-import { requestMeetingRemovalDuringUnload } from '@/services/meetings/meetings.service';
+import { removeMany } from '@/services/meetings/meetings.service';
+import { reportError } from '@/services/observability/sentry';
 import { useModal } from 'vue-final-modal';
 
 let isConfirming = false;
@@ -39,12 +40,11 @@ export async function confirmAbortActiveUploads(
   try {
     const confirmed = await confirmLeave(dialog);
     if (confirmed) {
-      if (leavingPage) {
-        handOverCleanupToTheBrowser();
-      }
+      const abandonedMeetingIds = leavingPage ? standAppDown() : [];
       abortActiveUploads();
       forgetAll();
       clearAll();
+      await deleteAbandonedMeetings(abandonedMeetingIds);
     }
 
     return confirmed;
@@ -53,15 +53,33 @@ export async function confirmAbortActiveUploads(
   }
 }
 
-function handOverCleanupToTheBrowser(): void {
+function standAppDown(): number[] {
   const { pendingMeetingIds } = useUploadBatch();
   const { clearAll } = useUploadBatchWriter();
 
-  requestMeetingRemovalDuringUnload(pendingMeetingIds.value);
+  const abandoned = [...pendingMeetingIds.value];
   // Emptying the store before the abort matters: the abort callbacks read it
-  // synchronously to delete the meetings themselves, and that request would be
-  // cancelled by the unloading page. The keepalive request above owns it now.
+  // synchronously and would fire a second delete, unawaited, that the sign-out
+  // redirect could cancel. This flow deletes them itself, below.
   clearAll();
+  return abandoned;
+}
+
+async function deleteAbandonedMeetings(meetingIds: number[]): Promise<void> {
+  if (meetingIds.length === 0) {
+    return;
+  }
+
+  // Signing out is never blocked by a failed cleanup: the meetings simply stay.
+  try {
+    await removeMany(meetingIds);
+  } catch (error) {
+    reportError(error, {
+      feature: 'meeting.import',
+      tags: { 'import.phase': 'sign-out-cleanup' },
+      contexts: { import: { meetingIds } },
+    });
+  }
 }
 
 export function confirmLeaveIfUploading(): Promise<boolean> {
