@@ -15,6 +15,7 @@ from mcr_meeting.app.schemas.meeting_schema import (
     MeetingCreate,
     MeetingDetailResponse,
     MeetingResponse,
+    MeetingsDelete,
     MeetingUpdate,
     PaginatedMeetingsResponse,
 )
@@ -26,6 +27,9 @@ from mcr_meeting.app.use_cases.create_meeting import (
 )
 from mcr_meeting.app.use_cases.delete_meeting import (
     delete_meeting as delete_meeting_use_case,
+)
+from mcr_meeting.app.use_cases.delete_meetings import (
+    delete_meetings as delete_meetings_use_case,
 )
 from mcr_meeting.app.use_cases.generate_presigned_audio_upload_url import (
     generate_presigned_audio_upload_url as generate_presigned_audio_upload_url_use_case,
@@ -140,6 +144,29 @@ def update_meeting(
         user_keycloak_uuid=x_user_keycloak_uuid,
     )
     return MeetingResponse.model_validate(meeting)
+
+
+@router.delete("/")
+def delete_meetings(
+    meetings_delete: MeetingsDelete,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> Response:
+    """
+    Delete several meetings at once.
+
+    Args:
+        meetings_delete (MeetingsDelete): The IDs of the meetings to delete.
+
+    Returns:
+        HTTP 204 status code if successful
+    """
+
+    delete_meetings_use_case(
+        meeting_ids=meetings_delete.ids,
+        user_keycloak_uuid=x_user_keycloak_uuid,
+    )
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.delete("/{meeting_id}")

@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 from unittest.mock import Mock
@@ -9,7 +10,10 @@ from fastapi import status
 from pydantic import UUID4
 
 from mcr_meeting.app.models import Meeting, User
-from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, MeetingUpdate
+from mcr_meeting.app.schemas.meeting_schema import (
+    MeetingCreate,
+    MeetingUpdate,
+)
 from tests.api.conftest import PrefixedTestClient
 
 
@@ -444,3 +448,80 @@ def test_update_meeting_notes_only(
     json_data = response.json()
     assert json_data["notes"] == "Notes de test"
     assert json_data["name"] == original_name
+
+
+def test_delete_meetings_removes_every_meeting_of_the_list(
+    mock_minio: Mock,
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    meeting_2_fixture: Meeting,
+    user_fixture: User,
+) -> None:
+    # Arrange
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+
+    # Act
+    response = meeting_client.request(
+        "DELETE",
+        "/",
+        json={"ids": [meeting_fixture.id, meeting_2_fixture.id]},
+        headers=headers,
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    for meeting_id in (meeting_fixture.id, meeting_2_fixture.id):
+        assert (
+            meeting_client.get(f"/{meeting_id}", headers=headers).status_code
+            == status.HTTP_404_NOT_FOUND
+        )
+
+
+def test_delete_meetings_spares_them_all_when_one_belongs_to_someone_else(
+    mock_minio: Mock,
+    meeting_client: PrefixedTestClient,
+    meeting_fixture: Meeting,
+    meeting_2_fixture: Meeting,
+    user_fixture: User,
+) -> None:
+    # Arrange
+    someone_else = get_user_auth_header(UUID("11111111-1111-1111-1111-111111111111"))
+
+    # Act
+    response = meeting_client.request(
+        "DELETE",
+        "/",
+        json={"ids": [meeting_fixture.id, meeting_2_fixture.id]},
+        headers=someone_else,
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    owner = get_user_auth_header(user_fixture.keycloak_uuid)
+    for meeting_id in (meeting_fixture.id, meeting_2_fixture.id):
+        assert (
+            meeting_client.get(f"/{meeting_id}", headers=owner).status_code
+            == status.HTTP_200_OK
+        )
+
+
+def test_delete_meetings_refuses_no_batch_for_its_size(
+    meeting_client: PrefixedTestClient,
+    user_fixture: User,
+    meeting_factory: Callable[..., Meeting],
+) -> None:
+    # Arrange
+    meetings = [meeting_factory() for _ in range(250)]
+    headers = get_user_auth_header(user_fixture.keycloak_uuid)
+
+    # Act
+    response = meeting_client.request(
+        "DELETE",
+        "/",
+        json={"ids": [meeting.id for meeting in meetings]},
+        headers=headers,
+    )
+
+    # Assert
+    assert response.status_code == status.HTTP_204_NO_CONTENT
