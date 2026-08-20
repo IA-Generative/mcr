@@ -211,6 +211,36 @@ async def delete_meeting_service(
         )
 
 
+async def delete_meetings_service(
+    meeting_ids: list[int],
+    user_keycloak_uuid: UUID4,
+) -> None:
+    """
+    Service to delete several meetings at once.
+
+    Args:
+        meeting_ids (list[int]): The IDs of the meetings to delete.
+    """
+    try:
+        async with get_meeting_http_client(user_keycloak_uuid) as client:
+            # `delete()` carries no body, so the id list goes through `request()`
+            response = await client.request("DELETE", "", json={"ids": meeting_ids})
+            response.raise_for_status()
+            return None
+
+    except httpx.HTTPStatusError as e:
+        logger.error(
+            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
+        )
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error("Unexpected error occurred: {}", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
+
+
 async def init_meeting_capture_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
