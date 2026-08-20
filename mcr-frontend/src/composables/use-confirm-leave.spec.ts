@@ -49,6 +49,7 @@ vi.mock('@/composables/use-upload-status', () => ({
   useUploadStatus: () => ({ abortActiveUploads }),
 }));
 
+import { useImportRuntimes } from './use-import-runtimes';
 import {
   confirmAbortActiveUploads,
   confirmLeave,
@@ -146,6 +147,24 @@ describe('confirmAbortActiveUploads', () => {
     await expect(result).resolves.toBe(true);
     expect(abortActiveUploads).toHaveBeenCalledTimes(1);
     expect(clearAll).toHaveBeenCalledTimes(1);
+  });
+
+  it('releases the files it was holding for a retry', async () => {
+    work.active = true;
+    const { runtimes } = useImportRuntimes();
+    runtimes.set(1, {
+      file: new File(['audio'], 'rec.mp3'),
+      controller: new AbortController(),
+      registryId: 1,
+    });
+
+    const result = confirmAbortActiveUploads(dialog);
+    const attrs = getModalAttrs();
+    attrs.onSuccess();
+    attrs.onClosed();
+    await result;
+
+    expect(runtimes.size).toBe(0);
   });
 
   it('changes nothing when the user refuses', async () => {

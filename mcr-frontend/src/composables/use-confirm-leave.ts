@@ -1,5 +1,6 @@
 import BaseModal from '@/components/core/BaseModal.vue';
 import { useUploadBatch, useUploadBatchWriter } from '@/composables/use-upload-batch';
+import { useImportRuntimes } from '@/composables/use-import-runtimes';
 import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
 import { requestMeetingRemovalDuringUnload } from '@/services/meetings/meetings.service';
@@ -23,6 +24,7 @@ export async function confirmAbortActiveUploads(
 ): Promise<boolean> {
   const { hasActiveWork } = useUploadBatch();
   const { abortActiveUploads } = useUploadStatus();
+  const { forgetAll } = useImportRuntimes();
   const { clearAll } = useUploadBatchWriter();
 
   if (!hasActiveWork.value) {
@@ -41,6 +43,7 @@ export async function confirmAbortActiveUploads(
         handOverCleanupToTheBrowser();
       }
       abortActiveUploads();
+      forgetAll();
       clearAll();
     }
 
