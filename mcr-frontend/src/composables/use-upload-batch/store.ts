@@ -7,49 +7,15 @@ import {
   isRetryableItem,
   isSettledItem,
 } from './selectors';
-
-export const MAX_CONCURRENT_UPLOADS = 1;
-export const MAX_CONCURRENT_TRANSCODES = 1;
-export const ETA_SMOOTHING_ALPHA = 0.3;
-
-export type UploadKind = 'audio' | 'video';
-
-export type UploadItemStatus =
-  | 'transcode-pending'
-  | 'transcoding'
-  | 'upload-pending'
-  | 'uploading'
-  | 'done'
-  | 'error';
-
-export type UploadDraft = {
-  title: string;
-  kind: UploadKind;
-  durationSeconds: number | null;
-  totalBytes: number;
-};
-
-export type UploadItem = {
-  id: number;
-  batchId: number;
-  title: string;
-  kind: UploadKind;
-  durationSeconds: number | null;
-  totalBytes: number;
-  sentBytes: number;
-  meetingId: number | null;
-  status: UploadItemStatus;
-  failureType: UploadFailureType | null;
-  transcodeRatio: number;
-};
-
-export type UploadState = {
-  items: UploadItem[];
-  nextId: number;
-  nextBatchId: number;
-  bytesPerSecond: number | null;
-  transcodeSecondsPerSecond: number | null;
-};
+import {
+  ETA_SMOOTHING_ALPHA,
+  MAX_CONCURRENT_TRANSCODES,
+  MAX_CONCURRENT_UPLOADS,
+  type UploadDraft,
+  type UploadItem,
+  type UploadItemStatus,
+  type UploadState,
+} from './types';
 
 export function createInitialState(): UploadState {
   return {

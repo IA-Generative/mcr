@@ -2,8 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { UploadFailureType } from '@/services/http/http.utils';
 
 import {
-  ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
-  ESTIMATED_MP3_BYTES_PER_SECOND,
   getBatchEtaSeconds,
   getBatchTitle,
   getDisplayOrder,
@@ -19,8 +17,6 @@ import {
   isSoleItem,
 } from './selectors';
 import {
-  MAX_CONCURRENT_TRANSCODES,
-  MAX_CONCURRENT_UPLOADS,
   attachMeeting,
   clearAll,
   complete,
@@ -32,10 +28,16 @@ import {
   recordProgress,
   retry,
   recordTranscodeProgress,
+} from './store';
+import {
+  ESTIMATED_MP3_BYTES_PER_SECOND,
+  ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
+  MAX_CONCURRENT_TRANSCODES,
+  MAX_CONCURRENT_UPLOADS,
   type UploadDraft,
   type UploadItem,
   type UploadState,
-} from './store';
+} from './types';
 
 function draft(overrides: Partial<UploadDraft> = {}): UploadDraft {
   return {

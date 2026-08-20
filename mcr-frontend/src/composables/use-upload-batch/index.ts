@@ -1,16 +1,17 @@
 import type { UploadFailureType } from '@/services/http/http.utils';
 import * as selectors from './selectors';
 import * as store from './store';
+import type { UploadDraft, UploadItem, UploadState } from './types';
 
-export type { UploadDraft, UploadItem } from './store';
+export type { UploadDraft, UploadItem } from './types';
 
-const state = shallowRef<store.UploadState>(store.createInitialState());
+const state = shallowRef<UploadState>(store.createInitialState());
 
-function dispatch(update: (current: store.UploadState) => store.UploadState): void {
+function dispatch(update: (current: UploadState) => UploadState): void {
   state.value = store.promote(update(state.value));
 }
 
-function enqueue(drafts: store.UploadDraft[]): number[] {
+function enqueue(drafts: UploadDraft[]): number[] {
   const { state: next, itemIds } = store.enqueue(state.value, drafts);
   state.value = store.promote(next);
   return itemIds;
@@ -48,15 +49,15 @@ function clearAll(): void {
   dispatch(store.clearAll);
 }
 
-function getUploadingItems(): store.UploadItem[] {
+function getUploadingItems(): UploadItem[] {
   return selectors.getUploadingItems(state.value);
 }
 
-function getTranscodingItems(): store.UploadItem[] {
+function getTranscodingItems(): UploadItem[] {
   return selectors.getTranscodingItems(state.value);
 }
 
-function getItem(id: number): store.UploadItem | undefined {
+function getItem(id: number): UploadItem | undefined {
   return selectors.getItem(state.value, id);
 }
 
