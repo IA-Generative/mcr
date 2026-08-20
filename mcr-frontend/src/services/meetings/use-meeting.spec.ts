@@ -2,11 +2,12 @@ import { renderWithPlugins } from '@/vitest.setup';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, ref } from 'vue';
 
-const { getAll, removeOne } = vi.hoisted(() => ({ getAll: vi.fn(), removeOne: vi.fn() }));
+const { getAll, removeMany } = vi.hoisted(() => ({ getAll: vi.fn(), removeMany: vi.fn() }));
 
 vi.mock('./meetings.service', () => ({
   getAll,
-  removeOne,
+  removeMany,
+  removeOne: vi.fn(),
   getOne: vi.fn(),
   create: vi.fn(),
   update: vi.fn(),
@@ -73,23 +74,31 @@ describe('deleteMeetingsMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     getAll.mockResolvedValue(page([]));
+    removeMany.mockResolvedValue(undefined);
   });
 
-  it('deletes the other meetings even when one of them cannot be deleted', async () => {
-    removeOne.mockRejectedValueOnce(new Error('boom')).mockResolvedValue(undefined);
+  it('asks for the whole batch with a single request', async () => {
+    const { deleteMeetings } = mountMeetings();
+
+    await deleteMeetings.mutateAsync([101, 102, 103]);
+
+    expect(removeMany).toHaveBeenCalledTimes(1);
+    expect(removeMany).toHaveBeenCalledWith([101, 102, 103]);
+  });
+
+  it('reports a batch the server refused', async () => {
+    removeMany.mockRejectedValueOnce(new Error('boom'));
     const { deleteMeetings } = mountMeetings();
 
     await expect(deleteMeetings.mutateAsync([101, 102, 103])).rejects.toThrow('boom');
-
-    expect(removeOne.mock.calls.map((call) => call[0])).toEqual([101, 102, 103]);
   });
 
-  it('refreshes the list only once every deletion has settled', async () => {
-    let finishSecondDeletion!: () => void;
-    removeOne.mockRejectedValueOnce(new Error('boom')).mockImplementationOnce(
+  it('refreshes the list only once the deletion has settled', async () => {
+    let finishDeletion!: () => void;
+    removeMany.mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
-          finishSecondDeletion = resolve;
+          finishDeletion = resolve;
         }),
     );
     const { query, deleteMeetings } = mountMeetings();
@@ -100,7 +109,7 @@ describe('deleteMeetingsMutation', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(getAll).toHaveBeenCalledTimes(1);
 
-    finishSecondDeletion();
+    finishDeletion();
     await settled;
 
     await vi.waitFor(() => expect(getAll).toHaveBeenCalledTimes(2));

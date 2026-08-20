@@ -22,19 +22,23 @@ export async function removeOne(id: number) {
   await HttpService.delete(`${API_PATHS.MEETINGS}/${id}`);
 }
 
+export async function removeMany(ids: number[]): Promise<void> {
+  await HttpService.delete(API_PATHS.MEETINGS, { data: { ids } });
+}
+
 export function requestMeetingRemovalDuringUnload(ids: number[]): void {
   const token = getCurrentAccessToken();
   if (token === undefined) {
     return;
   }
 
-  for (const id of ids) {
-    void fetch(`${API_URL}/${API_PATHS.MEETINGS}/${id}`, {
-      method: 'DELETE',
-      keepalive: true,
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => undefined);
-  }
+  // A single request has a better chance of outliving the page than the last of many
+  void fetch(`${API_URL}/${API_PATHS.MEETINGS}`, {
+    method: 'DELETE',
+    keepalive: true,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  }).catch(() => undefined);
 }
 
 export async function create(payload: AddMeetingDto): Promise<MeetingDto> {

@@ -4,6 +4,7 @@ import {
   signMultipartPartService,
   completeMultipartUploadService,
   abortMultipartUploadService,
+  removeMany,
   requestMeetingRemovalDuringUnload,
 } from './meetings.service';
 import HttpService from '../http/http.service';
@@ -23,6 +24,7 @@ vi.mock('../http/http.service', () => ({
 
       return;
     }),
+    delete: vi.fn(),
   },
   API_PATHS: {
     MEETINGS: 'meetings',
@@ -187,19 +189,15 @@ describe('requestMeetingRemovalDuringUnload', () => {
     vi.unstubAllGlobals();
   });
 
-  it('deletes every meeting with a request the browser keeps alive past the page', () => {
+  it('deletes every meeting with a single request the browser keeps alive past the page', () => {
     requestMeetingRemovalDuringUnload([101, 102]);
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/meetings/101', {
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith('/api/meetings', {
       method: 'DELETE',
       keepalive: true,
-      headers: { Authorization: 'Bearer a-token' },
-    });
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/meetings/102', {
-      method: 'DELETE',
-      keepalive: true,
-      headers: { Authorization: 'Bearer a-token' },
+      headers: { Authorization: 'Bearer a-token', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids: [101, 102] }),
     });
   });
 
@@ -209,5 +207,16 @@ describe('requestMeetingRemovalDuringUnload', () => {
     requestMeetingRemovalDuringUnload([101]);
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('removeMany', () => {
+  it('asks for every meeting of the list in a single request', async () => {
+    await removeMany([101, 102, 103]);
+
+    expect(HttpService.delete).toHaveBeenCalledTimes(1);
+    expect(HttpService.delete).toHaveBeenCalledWith('meetings', {
+      data: { ids: [101, 102, 103] },
+    });
   });
 });

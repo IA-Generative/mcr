@@ -6,6 +6,7 @@ import {
   getAll,
   getOne,
   initCapture,
+  removeMany,
   removeOne,
   startTranscription,
   stopCapture,
@@ -89,14 +90,7 @@ function deleteMeetingsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (ids: number[]) => {
-      const outcomes = await Promise.allSettled(ids.map(removeOne));
-      for (const outcome of outcomes) {
-        if (outcome.status === 'rejected') {
-          throw outcome.reason;
-        }
-      }
-    },
+    mutationFn: (ids: number[]) => removeMany(ids),
     onSettled: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] }),
   });
 }
