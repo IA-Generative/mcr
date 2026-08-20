@@ -59,8 +59,8 @@ function standAppDown(): number[] {
 
   const abandoned = [...pendingMeetingIds.value];
   // Emptying the store before the abort matters: the abort callbacks read it
-  // synchronously and would fire a second delete, unawaited, that the sign-out
-  // redirect could cancel. This flow deletes them itself, below.
+  // synchronously and would queue a second delete for the very meetings this
+  // flow deletes itself below.
   clearAll();
   return abandoned;
 }

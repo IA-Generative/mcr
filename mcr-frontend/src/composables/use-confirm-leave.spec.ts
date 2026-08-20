@@ -264,7 +264,7 @@ describe('confirmLeaveIfUploading', () => {
     await expect(result).resolves.toBe(true);
   });
 
-  it('leaves the app nothing to delete, so it does not fire a request the page will cancel', async () => {
+  it('leaves the app nothing to delete, so it asks twice for no meeting', async () => {
     work.active = true;
     work.pendingMeetingIds = [101, 102];
 
