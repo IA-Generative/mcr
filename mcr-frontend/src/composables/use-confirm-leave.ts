@@ -55,6 +55,9 @@ function handOverCleanupToTheBrowser(): void {
   const { clearAll } = useUploadBatchWriter();
 
   requestMeetingRemovalDuringUnload(pendingMeetingIds.value);
+  // Emptying the store before the abort matters: the abort callbacks read it
+  // synchronously to delete the meetings themselves, and that request would be
+  // cancelled by the unloading page. The keepalive request above owns it now.
   clearAll();
 }
 
