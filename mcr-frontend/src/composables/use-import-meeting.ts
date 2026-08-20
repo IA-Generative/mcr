@@ -5,6 +5,7 @@ import {
   useUploadBatchWriter,
   type UploadDraft,
 } from '@/composables/use-upload-batch';
+import { useImportRuntimes, type ItemRuntime } from '@/composables/use-import-runtimes';
 import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
 import { classifyUploadFailure, type UploadFailureType } from '@/services/http/http.utils';
@@ -28,18 +29,8 @@ type Orchestrator = {
   retryImport: (id: number) => void;
 };
 
-type ItemRuntime = {
-  file: File;
-  controller: AbortController;
-  stopTranscoding?: () => void;
-  registryId: number;
-};
-
 type ValidatedFile = { file: File; draft: UploadDraft };
 
-const runtimes = new Map<number, ItemRuntime>();
-const startedUploads = new Set<number>();
-const startedTranscodes = new Set<number>();
 const pendingDiscards = new Set<number>();
 
 export function useImportMeeting(): Orchestrator {
@@ -51,6 +42,8 @@ export function useImportMeeting(): Orchestrator {
   const { mutate: startTranscription } = startTranscriptionMutation();
   const { uploadFile } = useMultipart();
   const { registerUpload, unregisterUpload } = useUploadStatus();
+  const { runtimes, startedUploads, startedTranscodes, forget, forgetStarted } =
+    useImportRuntimes();
   const writer = useUploadBatchWriter();
   const batch = useUploadBatch();
 
@@ -282,16 +275,6 @@ export function useImportMeeting(): Orchestrator {
         forget(id);
       },
     });
-  }
-
-  function forgetStarted(id: number): void {
-    startedTranscodes.delete(id);
-    startedUploads.delete(id);
-  }
-
-  function forget(id: number): void {
-    runtimes.delete(id);
-    forgetStarted(id);
   }
 
   function settleAsFailed(id: number, failureType: UploadFailureType): void {
