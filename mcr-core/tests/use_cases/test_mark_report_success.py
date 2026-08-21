@@ -367,7 +367,9 @@ class TestConflict:
         assert pending_deliverable.status == DeliverableStatus.PENDING
         assert in_memory_email.sent == []
 
-    def test_raises_when_already_available(
+
+class TestIdempotentReplay:
+    def test_replay_when_already_available_is_a_noop(
         self,
         db_session: Session,
         in_memory_s3: InMemoryS3,
@@ -377,16 +379,19 @@ class TestConflict:
             status=MeetingStatus.TRANSCRIPTION_DONE,
             name_platform=MeetingPlatforms.COMU,
         )
-        existing = DeliverableFactory.create(
+        already_delivered = DeliverableFactory.create(
             meeting=meeting,
             type=DeliverableType.DECISION_RECORD,
             status=DeliverableStatus.AVAILABLE,
+            external_url="https://drive.example.com/documents/42/",
         )
 
-        with pytest.raises(DeliverableStateConflictException):
-            mark_report_success(
-                deliverable_id=existing.id,
-                report_response=_decision_record_response(),
-            )
+        result = mark_report_success(
+            deliverable_id=already_delivered.id,
+            report_response=_decision_record_response(),
+        )
 
+        assert result.status == DeliverableStatus.AVAILABLE
+        assert result.external_url == "https://drive.example.com/documents/42/"
+        assert in_memory_s3.calls[S3Op.PUT] == 0
         assert in_memory_email.sent == []
