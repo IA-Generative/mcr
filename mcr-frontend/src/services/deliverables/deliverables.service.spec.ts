@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getTranscriptionStatus, getReportStatus } from './deliverables.service';
-import type { DeliverableStatus, DeliverableType } from './deliverables.types';
+import { DeliverableStatus, type DeliverableType } from './deliverables.types';
 
 vi.mock('@/plugins/i18n', () => ({ t: vi.fn((key: string) => key) }));
 
@@ -27,39 +27,32 @@ describe('getTranscriptionStatus', () => {
 });
 
 describe('getReportStatus', () => {
-  it('defaults to PENDING when no report deliverable exists', () => {
+  it.each(DeliverableStatus)('mirrors the STRUCTURED_MINUTES status %s', (status) => {
+    expect(getReportStatus([fakeDeliverable('STRUCTURED_MINUTES', status)])).toBe(status);
+  });
+
+  it('defaults to PENDING when no STRUCTURED_MINUTES deliverable exists', () => {
     expect(getReportStatus([])).toBe('PENDING');
     expect(getReportStatus([fakeDeliverable('TRANSCRIPTION', 'AVAILABLE')])).toBe('PENDING');
   });
 
-  it('prioritises AVAILABLE over the rest', () => {
+  it('stays PENDING when only the other reports are available', () => {
     expect(
       getReportStatus([
-        fakeDeliverable('DECISION_RECORD', 'FAILED'),
+        fakeDeliverable('DECISION_RECORD', 'AVAILABLE'),
         fakeDeliverable('DETAILED_SYNTHESIS', 'AVAILABLE'),
+        fakeDeliverable('CUSTOM_REPORT', 'AVAILABLE'),
       ]),
-    ).toBe('AVAILABLE');
+    ).toBe('PENDING');
   });
 
-  it('prioritises FAILED over IN_PROGRESS', () => {
+  it('ignores the other reports when the STRUCTURED_MINUTES deliverable exists', () => {
     expect(
       getReportStatus([
-        fakeDeliverable('DECISION_RECORD', 'FAILED'),
-        fakeDeliverable('DETAILED_SYNTHESIS', 'IN_PROGRESS'),
-      ]),
-    ).toBe('FAILED');
-  });
-
-  it('prioritises IN_PROGRESS over PENDING', () => {
-    expect(
-      getReportStatus([
-        fakeDeliverable('DECISION_RECORD', 'IN_PROGRESS'),
-        fakeDeliverable('DETAILED_SYNTHESIS', 'PENDING'),
+        fakeDeliverable('DECISION_RECORD', 'AVAILABLE'),
+        fakeDeliverable('CUSTOM_REPORT', 'FAILED'),
+        fakeDeliverable('STRUCTURED_MINUTES', 'IN_PROGRESS'),
       ]),
     ).toBe('IN_PROGRESS');
-  });
-
-  it('falls back to PENDING', () => {
-    expect(getReportStatus([fakeDeliverable('CUSTOM_REPORT', 'PENDING')])).toBe('PENDING');
   });
 });
