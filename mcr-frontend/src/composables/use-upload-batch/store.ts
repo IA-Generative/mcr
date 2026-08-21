@@ -4,51 +4,18 @@ import {
   getItem,
   getTranscodingItems,
   getUploadingItems,
+  isRetryableItem,
   isSettledItem,
 } from './selectors';
-
-export const MAX_CONCURRENT_UPLOADS = 1;
-export const MAX_CONCURRENT_TRANSCODES = 1;
-export const ETA_SMOOTHING_ALPHA = 0.3;
-
-export type UploadKind = 'audio' | 'video';
-
-export type UploadItemStatus =
-  | 'transcode-pending'
-  | 'transcoding'
-  | 'upload-pending'
-  | 'uploading'
-  | 'done'
-  | 'error';
-
-export type UploadDraft = {
-  title: string;
-  kind: UploadKind;
-  durationSeconds: number | null;
-  totalBytes: number;
-};
-
-export type UploadItem = {
-  id: number;
-  batchId: number;
-  title: string;
-  kind: UploadKind;
-  durationSeconds: number | null;
-  totalBytes: number;
-  sentBytes: number;
-  meetingId: number | null;
-  status: UploadItemStatus;
-  failureType: UploadFailureType | null;
-  transcodeRatio: number;
-};
-
-export type UploadState = {
-  items: UploadItem[];
-  nextId: number;
-  nextBatchId: number;
-  bytesPerSecond: number | null;
-  transcodeSecondsPerSecond: number | null;
-};
+import {
+  ETA_SMOOTHING_ALPHA,
+  MAX_CONCURRENT_TRANSCODES,
+  MAX_CONCURRENT_UPLOADS,
+  type UploadDraft,
+  type UploadItem,
+  type UploadItemStatus,
+  type UploadState,
+} from './types';
 
 export function createInitialState(): UploadState {
   return {
@@ -208,6 +175,15 @@ export function fail(state: UploadState, id: number, failureType: UploadFailureT
   }
 
   return replaceItem(state, { ...item, status: 'error', failureType });
+}
+
+export function retry(state: UploadState, id: number): UploadState {
+  const item = getItem(state, id);
+  if (!item || !isRetryableItem(item)) {
+    return state;
+  }
+
+  return replaceItem(state, { ...item, status: 'upload-pending', failureType: null, sentBytes: 0 });
 }
 
 export function clearAll(state: UploadState): UploadState {

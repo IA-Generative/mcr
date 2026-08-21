@@ -28,6 +28,7 @@
         v-for="item in items"
         :key="item.id"
         :item="item"
+        @retry="retryImport(item.id)"
       />
     </ul>
   </section>
@@ -35,6 +36,7 @@
 
 <script setup lang="ts">
 import ImportStickyRow from '@/components/import/ImportStickyRow.vue';
+import { useImportMeeting } from '@/composables/use-import-meeting';
 import { useImportStickyClose } from '@/composables/use-import-sticky-close';
 import { useUploadBatch } from '@/composables/use-upload-batch';
 import { t } from '@/plugins/i18n';
@@ -42,6 +44,7 @@ import { formatDurationLabel } from '@/utils/timeFormatting';
 
 const { isOpen, items, batchTitle, batchEtaSeconds } = useUploadBatch();
 const { close } = useImportStickyClose();
+const { retryImport } = useImportMeeting();
 
 const title = computed(() =>
   batchTitle.value ? t(batchTitle.value.key, batchTitle.value.params) : '',

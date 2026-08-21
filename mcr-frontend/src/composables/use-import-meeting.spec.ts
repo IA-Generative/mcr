@@ -4,29 +4,47 @@ const { addErrorMessage } = vi.hoisted(() => ({ addErrorMessage: vi.fn() }));
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }));
 const {
   createMeetingAsync,
+  deleteMeetings,
   startTranscription,
   uploadFile,
   transcodeToMp3,
   stopTranscoding,
   classifyUploadFailure,
-  registerUpload,
-  unregisterUpload,
-  registeredAborts,
   push,
   transcodeProgress,
 } = vi.hoisted(() => ({
   createMeetingAsync: vi.fn(),
+  deleteMeetings: vi.fn(),
   startTranscription: vi.fn(),
   uploadFile: vi.fn(),
   transcodeToMp3: vi.fn(),
   stopTranscoding: vi.fn(),
   classifyUploadFailure: vi.fn(),
-  registerUpload: vi.fn(),
-  unregisterUpload: vi.fn(),
-  registeredAborts: [] as (() => void)[],
   push: vi.fn(),
   transcodeProgress: { cb: undefined as ((ratio: number) => void) | undefined },
 }));
+
+const { registerUpload, unregisterUpload, abortAll, activeUploads } = vi.hoisted(() => {
+  const activeUploads = new Map<number, () => void>();
+  let nextRegistryId = 0;
+
+  return {
+    activeUploads,
+    registerUpload: vi.fn((upload: { abort: () => void }) => {
+      activeUploads.set(++nextRegistryId, upload.abort);
+      return nextRegistryId;
+    }),
+    unregisterUpload: vi.fn((registryId: number) => {
+      activeUploads.delete(registryId);
+    }),
+    abortAll: () => {
+      activeUploads.forEach((abort, registryId) => {
+        activeUploads.delete(registryId);
+        abort();
+      });
+    },
+  };
+});
 
 vi.mock('@/services/observability/sentry', () => ({ reportError }));
 vi.mock('@/services/http/http.utils', () => ({ classifyUploadFailure }));
@@ -50,6 +68,7 @@ vi.mock('@/utils/video2audioConverter', () => ({
 vi.mock('@/services/meetings/use-meeting', () => ({
   useMeetings: () => ({
     addMeetingMutation: () => ({ mutateAsync: createMeetingAsync }),
+    deleteMeetingsMutation: () => ({ mutate: deleteMeetings }),
     startTranscriptionMutation: () => ({ mutate: startTranscription }),
   }),
 }));
@@ -108,15 +127,11 @@ describe('useImportMeeting.importFiles', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    registeredAborts.length = 0;
+    activeUploads.clear();
     transcodeProgress.cb = undefined;
     fileDurations.clear();
     nextMeetingId = 101;
 
-    registerUpload.mockImplementation((upload: { abort: () => void }) => {
-      registeredAborts.push(upload.abort);
-      return registeredAborts.length;
-    });
     createMeetingAsync.mockImplementation(async () => ({ id: nextMeetingId++ }));
     uploadFile.mockResolvedValue(undefined);
     transcodeToMp3.mockResolvedValue(makeMp3());
@@ -508,10 +523,61 @@ describe('useImportMeeting.importFiles', () => {
     expect(unregisterUpload).toHaveBeenCalledTimes(2);
   });
 
-  it('a global abort stops every in-flight work and empties the queue silently', async () => {
+  it('retrying a network failure sends the same file to the same meeting', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('timeout');
+    const { importFiles, retryImport, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+    expect(batch.items.value[0].status).toBe('error');
+
+    retryImport(batch.items.value[0].id);
+    await flush();
+
+    expect(createMeetingAsync).toHaveBeenCalledTimes(1);
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    expect(uploadFile.mock.calls[1][0].meetingId).toBe(101);
+    expect(push).toHaveBeenCalledWith('/meetings/101');
+  });
+
+  it('does not retry a failure that a second attempt would not fix', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('http-client');
+    const { importFiles, retryImport, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+
+    retryImport(batch.items.value[0].id);
+    await flush();
+
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(batch.items.value[0]).toMatchObject({ status: 'error', failureType: 'http-client' });
+  });
+
+  it('a retried import can be interrupted like any other', async () => {
+    uploadFile.mockRejectedValueOnce(new Error('boom'));
+    classifyUploadFailure.mockReturnValue('timeout');
+    const { importFiles, retryImport, batch } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+
+    deferCalls<void>(uploadFile);
+    retryImport(batch.items.value[0].id);
+    await flush();
+
+    abortAll();
+    await flush();
+
+    expect((uploadFile.mock.calls[1][0].signal as AbortSignal).aborted).toBe(true);
+  });
+
+  it('a global abort stops every in-flight work silently', async () => {
     const uploads = deferCalls<void>(uploadFile);
     const transcodes = deferCalls<File>(transcodeToMp3);
-    const { importFiles, batch, UploadAbortedError } = await setup();
+    const { importFiles, UploadAbortedError } = await setup();
 
     await importFiles([
       makeFile('audio.mp3', { duration: 60 }),
@@ -520,22 +586,106 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
     const uploadSignal = uploadFile.mock.calls[0][0].signal as AbortSignal;
 
-    registeredAborts.forEach((abort) => abort());
+    abortAll();
     uploads[0].reject(new UploadAbortedError());
     transcodes[0].reject(new Error('Transcoding failed: called FFmpeg.terminate()'));
     await flush();
 
     expect(uploadSignal.aborted).toBe(true);
     expect(stopTranscoding).toHaveBeenCalled();
-    expect(batch.items.value).toHaveLength(0);
-    expect(batch.hasActiveWork.value).toBe(false);
     expect(addErrorMessage).not.toHaveBeenCalled();
     expect(reportError).not.toHaveBeenCalled();
   });
 
-  it('a global abort while files are still queued empties the queue and stops creating meetings', async () => {
+  it('an aborted import leaves no empty meeting behind', async () => {
+    deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+
+    abortAll();
+    await flush();
+
+    expect(deleteMeetings).toHaveBeenCalledWith([101]);
+  });
+
+  it('cancelling a batch deletes all its meetings in a single request', async () => {
+    deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([
+      makeFile('a.mp3', { duration: 60 }),
+      makeFile('b.mp3', { duration: 120 }),
+      makeFile('c.mp3', { duration: 180 }),
+    ]);
+    await flush();
+
+    abortAll();
+    await flush();
+
+    expect(deleteMeetings).toHaveBeenCalledTimes(1);
+    expect(deleteMeetings).toHaveBeenCalledWith([101, 102, 103]);
+  });
+
+  it('an abort spares the meeting of an import that already completed', async () => {
+    const uploads = deferCalls<void>(uploadFile);
+    const { importFiles } = await setup();
+
+    await importFiles([
+      makeFile('finished.mp3', { duration: 60 }),
+      makeFile('running.mp3', { duration: 120 }),
+    ]);
+    await flush();
+
+    uploads[0].resolve();
+    await flush();
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+
+    abortAll();
+    await flush();
+
+    expect(deleteMeetings).toHaveBeenCalledTimes(1);
+    expect(deleteMeetings).toHaveBeenCalledWith([102]);
+  });
+
+  it('deletes a meeting whose creation landed after its import was aborted', async () => {
     const creations = deferCalls<{ id: number }>(createMeetingAsync);
+    const { importFiles } = await setup();
+
+    const run = importFiles([makeFile('rec.mp3', { duration: 60 })]);
+    await flush();
+    expect(createMeetingAsync).toHaveBeenCalledTimes(1);
+
+    abortAll();
+    creations[0].resolve({ id: 101 });
+    await run;
+    await flush();
+
+    expect(deleteMeetings).toHaveBeenCalledWith([101]);
+  });
+
+  it('deletes the meeting of a video whose transcode failed while it was being created', async () => {
+    const creations = deferCalls<{ id: number }>(createMeetingAsync);
+    transcodeToMp3.mockRejectedValue(new Error('bad codec'));
     const { importFiles, batch } = await setup();
+
+    const run = importFiles([makeFile('demo.mp4', { duration: 60, type: 'video/mp4' })]);
+    await flush();
+    expect(batch.items.value[0].status).toBe('error');
+
+    creations[0].resolve({ id: 101 });
+    await run;
+    await flush();
+
+    expect(deleteMeetings).toHaveBeenCalledTimes(1);
+    expect(deleteMeetings).toHaveBeenCalledWith([101]);
+  });
+
+  it('a global abort stops creating meetings for the files still queued', async () => {
+    const creations = deferCalls<{ id: number }>(createMeetingAsync);
+    const { importFiles } = await setup();
 
     const run = importFiles([
       makeFile('a.mp3', { duration: 60 }),
@@ -544,13 +694,12 @@ describe('useImportMeeting.importFiles', () => {
     await flush();
     expect(createMeetingAsync).toHaveBeenCalledTimes(1);
 
-    registeredAborts.forEach((abort) => abort());
+    abortAll();
     creations[0].resolve({ id: 101 });
     await run;
     await flush();
 
     expect(createMeetingAsync).toHaveBeenCalledTimes(1);
-    expect(batch.items.value).toHaveLength(0);
     expect(uploadFile).not.toHaveBeenCalled();
   });
 

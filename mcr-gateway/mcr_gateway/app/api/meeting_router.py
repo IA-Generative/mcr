@@ -12,6 +12,7 @@ from loguru import logger
 from mcr_gateway.app.schemas.meeting_schema import (
     Meeting,
     MeetingCreate,
+    MeetingsDelete,
     MeetingUpdate,
     MeetingWithDetails,
     PaginatedMeetingsResponse,
@@ -25,6 +26,7 @@ from mcr_gateway.app.services.authentification_service import authorize_user, se
 from mcr_gateway.app.services.meeting_service import (
     create_meeting_service,
     delete_meeting_service,
+    delete_meetings_service,
     generate_meeting_transcription_document,
     generate_presigned_url_service,
     get_meeting_audio_service,
@@ -176,6 +178,30 @@ async def update_meeting(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
+
+
+@router.delete(
+    "/meetings",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["Meetings"],
+)
+async def delete_meetings(
+    meetings_delete: MeetingsDelete,
+    current_user: TokenUser = Depends(authorize_user(Role.USER.value)),
+) -> None:
+    """
+    API endpoint to delete several meetings at once
+
+    Args:
+        meetings_delete (MeetingsDelete): The IDs of the meetings to delete.
+
+    Returns:
+        Response: HTTP 204 status code if successful, no content.
+    """
+    await delete_meetings_service(
+        meeting_ids=meetings_delete.ids,
+        user_keycloak_uuid=current_user.keycloak_uuid,
+    )
 
 
 @router.delete(

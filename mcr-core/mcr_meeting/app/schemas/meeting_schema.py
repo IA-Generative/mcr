@@ -118,6 +118,14 @@ class MeetingUpdate(MeetingWriteBase):
     creation_date: datetime | None = None  # type: ignore[assignment]
 
 
+class MeetingsDelete(BaseModel):
+    """
+    Schema for a bulk meeting deletion.
+    """
+
+    ids: list[int]
+
+
 class PaginatedMeetingsResponse(BaseModel):
     total_items: int
     total_pages: int

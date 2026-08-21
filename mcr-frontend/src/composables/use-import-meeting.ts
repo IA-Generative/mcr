@@ -1,6 +1,11 @@
 import { UploadAbortedError, useMultipart } from '@/composables/use-multipart';
 import useToaster from '@/composables/use-toaster';
-import { useUploadBatchWriter, type UploadDraft } from '@/composables/use-upload-batch';
+import {
+  useUploadBatch,
+  useUploadBatchWriter,
+  type UploadDraft,
+} from '@/composables/use-upload-batch';
+import { useImportRuntimes, type ItemRuntime } from '@/composables/use-import-runtimes';
 import { useUploadStatus } from '@/composables/use-upload-status';
 import { t } from '@/plugins/i18n';
 import { classifyUploadFailure, type UploadFailureType } from '@/services/http/http.utils';
@@ -19,30 +24,28 @@ import { formatDurationLabel } from '@/utils/timeFormatting';
 import { useVideo2audioConverter } from '@/utils/video2audioConverter';
 import { useRouter } from 'vue-router';
 
-type Orchestrator = { importFiles: (files: File[]) => Promise<void> };
-
-type ItemRuntime = {
-  file: File;
-  controller: AbortController;
-  stopTranscoding?: () => void;
-  registryId: number;
+type Orchestrator = {
+  importFiles: (files: File[]) => Promise<void>;
+  retryImport: (id: number) => void;
 };
 
 type ValidatedFile = { file: File; draft: UploadDraft };
 
-const runtimes = new Map<number, ItemRuntime>();
-const startedUploads = new Set<number>();
-const startedTranscodes = new Set<number>();
+const pendingDiscards = new Set<number>();
 
 export function useImportMeeting(): Orchestrator {
   const router = useRouter();
   const toaster = useToaster();
-  const { addMeetingMutation, startTranscriptionMutation } = useMeetings();
+  const { addMeetingMutation, deleteMeetingsMutation, startTranscriptionMutation } = useMeetings();
   const { mutateAsync: createMeetingAsync } = addMeetingMutation();
+  const { mutate: deleteMeetings } = deleteMeetingsMutation();
   const { mutate: startTranscription } = startTranscriptionMutation();
   const { uploadFile } = useMultipart();
   const { registerUpload, unregisterUpload } = useUploadStatus();
+  const { runtimes, startedUploads, startedTranscodes, forget, forgetStarted } =
+    useImportRuntimes();
   const writer = useUploadBatchWriter();
+  const batch = useUploadBatch();
 
   async function importFiles(files: File[]): Promise<void> {
     const candidates = await Promise.all(files.map(validateFile));
@@ -56,14 +59,7 @@ export function useImportMeeting(): Orchestrator {
     itemIds.forEach((id, index) => {
       const controller = new AbortController();
       const runtime: ItemRuntime = { file: validated[index].file, controller, registryId: 0 };
-      runtime.registryId = registerUpload({
-        abort: () => {
-          controller.abort();
-          runtime.stopTranscoding?.();
-          forget(id);
-          writer.clearAll();
-        },
-      });
+      registerAbort(id, runtime);
       runtimes.set(id, runtime);
     });
 
@@ -122,6 +118,7 @@ export function useImportMeeting(): Orchestrator {
       try {
         const meeting = await createMeetingAsync(dto);
         if (!runtimes.has(id)) {
+          discardMeeting(meeting.id);
           continue;
         }
         writer.attachMeeting(id, meeting.id);
@@ -236,6 +233,30 @@ export function useImportMeeting(): Orchestrator {
     void router.push(`${ROUTES.MEETINGS.path}/${meetingId}`);
   }
 
+  function discardMeetingOf(id: number): void {
+    const meetingId = writer.getItem(id)?.meetingId ?? null;
+    if (meetingId !== null) {
+      discardMeeting(meetingId);
+    }
+  }
+
+  function discardMeeting(meetingId: number): void {
+    pendingDiscards.add(meetingId);
+    if (pendingDiscards.size === 1) {
+      queueMicrotask(flushDiscards);
+    }
+  }
+
+  function flushDiscards(): void {
+    if (pendingDiscards.size === 0) {
+      return;
+    }
+
+    const meetingIds = [...pendingDiscards];
+    pendingDiscards.clear();
+    deleteMeetings(meetingIds);
+  }
+
   function settle(id: number): void {
     const runtime = runtimes.get(id);
     if (!runtime) {
@@ -245,10 +266,15 @@ export function useImportMeeting(): Orchestrator {
     forget(id);
   }
 
-  function forget(id: number): void {
-    runtimes.delete(id);
-    startedTranscodes.delete(id);
-    startedUploads.delete(id);
+  function registerAbort(id: number, runtime: ItemRuntime): void {
+    runtime.registryId = registerUpload({
+      abort: () => {
+        runtime.controller.abort();
+        runtime.stopTranscoding?.();
+        discardMeetingOf(id);
+        forget(id);
+      },
+    });
   }
 
   function settleAsFailed(id: number, failureType: UploadFailureType): void {
@@ -258,12 +284,32 @@ export function useImportMeeting(): Orchestrator {
     if (runtime) {
       runtime.controller.abort();
       runtime.stopTranscoding?.();
+      unregisterUpload(runtime.registryId);
     }
-    settle(id);
+
+    const item = writer.getItem(id);
+    if (item && batch.isRetryableItem(item)) {
+      forgetStarted(id);
+    } else {
+      forget(id);
+    }
     pump();
   }
 
-  return { importFiles };
+  function retryImport(id: number): void {
+    const runtime = runtimes.get(id);
+    const item = writer.getItem(id);
+    if (!runtime || !item || !batch.isRetryableItem(item)) {
+      return;
+    }
+
+    runtime.controller = new AbortController();
+    registerAbort(id, runtime);
+    writer.retry(id);
+    pump();
+  }
+
+  return { importFiles, retryImport };
 }
 
 function createSampleClock(): () => number {

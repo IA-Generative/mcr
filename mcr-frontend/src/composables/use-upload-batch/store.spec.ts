@@ -1,23 +1,22 @@
 import { describe, expect, it } from 'vitest';
+import type { UploadFailureType } from '@/services/http/http.utils';
 
 import {
-  ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
-  ESTIMATED_MP3_BYTES_PER_SECOND,
   getBatchEtaSeconds,
   getBatchTitle,
   getDisplayOrder,
   getExecutionOrder,
   getFailureMessageKey,
+  getPendingMeetingIds,
   getProgressRatio,
   getTranscodingItems,
   getUploadingItems,
   hasActiveWork,
+  isRetryableItem,
   isSettled,
   isSoleItem,
 } from './selectors';
 import {
-  MAX_CONCURRENT_TRANSCODES,
-  MAX_CONCURRENT_UPLOADS,
   attachMeeting,
   clearAll,
   complete,
@@ -27,11 +26,18 @@ import {
   finishTranscode,
   promote,
   recordProgress,
+  retry,
   recordTranscodeProgress,
+} from './store';
+import {
+  ESTIMATED_MP3_BYTES_PER_SECOND,
+  ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
+  MAX_CONCURRENT_TRANSCODES,
+  MAX_CONCURRENT_UPLOADS,
   type UploadDraft,
   type UploadItem,
   type UploadState,
-} from './store';
+} from './types';
 
 function draft(overrides: Partial<UploadDraft> = {}): UploadDraft {
   return {
@@ -530,5 +536,89 @@ describe('upload-batch aggregate title, flags and error messages', () => {
 
     expect(getFailureMessageKey(item(state, itemIds[0]))).toBeNull();
     expect(getFailureMessageKey(item(complete(state, itemIds[0]), itemIds[0]))).toBeNull();
+  });
+});
+
+describe('upload-batch meetings still owed a cleanup', () => {
+  it('lists the meetings of the imports that have neither completed nor failed', () => {
+    const { state, itemIds } = enqueueWithMeetings(createInitialState(), [
+      draft({ title: 'running' }),
+      draft({ title: 'completed' }),
+      draft({ title: 'failed' }),
+    ]);
+    const settled = fail(complete(state, itemIds[1]), itemIds[2], 'timeout');
+
+    expect(getPendingMeetingIds(settled)).toEqual([100 + itemIds[0]]);
+  });
+
+  it('ignores an import whose meeting does not exist yet', () => {
+    const { state } = enqueue(createInitialState(), [draft()]);
+
+    expect(getPendingMeetingIds(state)).toEqual([]);
+  });
+});
+
+describe('upload-batch retry of a failed import', () => {
+  function failedWith(failureType: UploadFailureType, options: { withMeeting?: boolean } = {}) {
+    const { withMeeting = true } = options;
+    const created = withMeeting
+      ? enqueueWithMeetings(createInitialState(), [draft()])
+      : enqueue(createInitialState(), [draft()]);
+    const failed = fail(promote(created.state), created.itemIds[0], failureType);
+    return { state: failed, id: created.itemIds[0] };
+  }
+
+  it.each(['timeout', 'offline', 'blocked'] as const)(
+    'offers a retry when the import failed on a %s the network could recover from',
+    (failureType) => {
+      const { state, id } = failedWith(failureType);
+
+      expect(isRetryableItem(item(state, id))).toBe(true);
+    },
+  );
+
+  it.each(['http-client', 'http-server', 'unknown'] as const)(
+    'offers no retry on a %s failure, which a second attempt would not fix',
+    (failureType) => {
+      const { state, id } = failedWith(failureType);
+
+      expect(isRetryableItem(item(state, id))).toBe(false);
+    },
+  );
+
+  it('offers no retry to an import that never got a meeting to upload to', () => {
+    const { state, id } = failedWith('timeout', { withMeeting: false });
+
+    expect(isRetryableItem(item(state, id))).toBe(false);
+  });
+
+  it('offers no retry to an import that is still running or already succeeded', () => {
+    const { state, itemIds } = enqueueWithMeetings(createInitialState(), [draft()]);
+    const uploading = promote(state);
+
+    expect(isRetryableItem(item(uploading, itemIds[0]))).toBe(false);
+    expect(isRetryableItem(item(complete(uploading, itemIds[0]), itemIds[0]))).toBe(false);
+  });
+
+  it('a retried import queues again and starts over from the first byte', () => {
+    const { state, id } = failedWith('timeout');
+    const withProgress = { ...state, items: [{ ...item(state, id), sentBytes: 400 }] };
+
+    const retried = retry(withProgress, id);
+
+    expect(item(retried, id)).toMatchObject({
+      status: 'upload-pending',
+      failureType: null,
+      sentBytes: 0,
+    });
+  });
+
+  it('retrying an import that cannot be retried leaves it in error', () => {
+    const { state, id } = failedWith('http-client');
+
+    expect(item(retry(state, id), id)).toMatchObject({
+      status: 'error',
+      failureType: 'http-client',
+    });
   });
 });

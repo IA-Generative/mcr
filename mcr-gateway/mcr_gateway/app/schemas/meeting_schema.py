@@ -115,6 +115,14 @@ class MeetingWithDetails(Meeting):
     deliverables: list[DeliverableResponse] = []
 
 
+class MeetingsDelete(BaseModel):
+    """
+    Schema for a bulk meeting deletion.
+    """
+
+    ids: list[int]
+
+
 class PaginatedMeetingsResponse(BaseModel):
     total_items: int
     total_pages: int

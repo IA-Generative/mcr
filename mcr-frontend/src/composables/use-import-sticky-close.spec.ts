@@ -25,12 +25,24 @@ vi.mock('@/composables/use-upload-batch', () => ({
   useUploadBatchWriter: () => ({ clearAll }),
 }));
 
+import { useImportRuntimes } from './use-import-runtimes';
 import { useImportStickyClose } from './use-import-sticky-close';
+
+const { runtimes } = useImportRuntimes();
+
+function heldImport(id: number): void {
+  runtimes.set(id, {
+    file: new File(['audio'], 'rec.mp3'),
+    controller: new AbortController(),
+    registryId: id,
+  });
+}
 
 describe('useImportStickyClose', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     work.active = false;
+    runtimes.clear();
     confirmAbortActiveUploads.mockResolvedValue(true);
   });
 
@@ -55,5 +67,14 @@ describe('useImportStickyClose', () => {
       text: 'meeting.import.confirm-close.description',
       ctaLabel: 'meeting.import.confirm-close.button',
     });
+  });
+
+  it('releases the files it was holding for a retry', async () => {
+    heldImport(1);
+    const { close } = useImportStickyClose();
+
+    await close();
+
+    expect(runtimes.size).toBe(0);
   });
 });

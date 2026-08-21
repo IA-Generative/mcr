@@ -1,13 +1,12 @@
-import type { UploadFailureType } from '@/services/http/http.utils';
-import type { UploadItem, UploadState } from './store';
-
-export const ESTIMATED_MP3_BYTES_PER_SECOND = (1024 * 1024) / 60;
-export const ESTIMATED_TRANSCODE_SECONDS_PER_SECOND = 5;
-
-export type BatchTitle = {
-  key: string;
-  params: Record<string, number>;
-};
+import {
+  ESTIMATED_MP3_BYTES_PER_SECOND,
+  ESTIMATED_TRANSCODE_SECONDS_PER_SECOND,
+  FAILURE_MESSAGE_KEYS,
+  RETRYABLE_FAILURES,
+  type BatchTitle,
+  type UploadItem,
+  type UploadState,
+} from './types';
 
 export function getItem(state: UploadState, id: number): UploadItem | undefined {
   return state.items.find((item) => item.id === id);
@@ -37,12 +36,27 @@ export function isSoleItem(state: UploadState, id: number): boolean {
   return state.items.length === 1 && state.items[0].id === id;
 }
 
+export function getPendingMeetingIds(state: UploadState): number[] {
+  return state.items.flatMap((item) =>
+    !isSettledItem(item) && item.meetingId !== null ? [item.meetingId] : [],
+  );
+}
+
 export function hasActiveWork(state: UploadState): boolean {
   return state.items.some((item) => !isSettledItem(item));
 }
 
 export function isSettled(state: UploadState): boolean {
   return state.items.length > 0 && state.items.every(isSettledItem);
+}
+
+export function isRetryableItem(item: UploadItem): boolean {
+  return (
+    item.status === 'error' &&
+    item.failureType !== null &&
+    RETRYABLE_FAILURES.includes(item.failureType) &&
+    item.meetingId !== null
+  );
 }
 
 export function isSettledItem(item: UploadItem): boolean {
@@ -91,15 +105,6 @@ export function getBatchTitle(state: UploadState): BatchTitle | null {
       }
     : { key: 'meeting.import.batch.title-settled', params: { success: successCount } };
 }
-
-const FAILURE_MESSAGE_KEYS: Record<UploadFailureType, string> = {
-  offline: 'meeting.import.errors.connection',
-  blocked: 'meeting.import.errors.connection',
-  timeout: 'meeting.import.errors.server',
-  'http-server': 'meeting.import.errors.server',
-  unknown: 'meeting.import.errors.server',
-  'http-client': 'meeting.import.errors.file-unprocessable',
-};
 
 export function getFailureMessageKey(item: UploadItem): string | null {
   if (item.status !== 'error' || item.failureType === null) {

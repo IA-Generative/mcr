@@ -63,6 +63,11 @@ class PrefixedTestClient:
         self._expire_session()
         return self.client.delete(f"{self.prefix}{path}", **kwargs)
 
+    def request(self, method: str, path: str, **kwargs: Any) -> Response:
+        # httpx's `delete()` takes no body, so a DELETE with one goes through here
+        self._expire_session()
+        return self.client.request(method, f"{self.prefix}{path}", **kwargs)
+
 
 @pytest.fixture
 def user_client() -> PrefixedTestClient:

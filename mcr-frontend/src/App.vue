@@ -8,6 +8,7 @@ import { useAuth } from './components/sign-in/use-auth';
 import { ModalsContainer } from 'vue-final-modal';
 import { useAudioChunkCleanup } from './composables/use-audio-chunk-cleanup';
 import { useUnloadWarning } from './composables/use-unload-warning';
+import { useDiscardImportsOnPageHide } from './composables/use-discard-imports-on-page-hide';
 import { useUploadBatch } from './composables/use-upload-batch';
 
 useScheme({ scheme: 'light' });
@@ -22,6 +23,7 @@ const { cleanupStaleChunks } = useAudioChunkCleanup();
 const uploadBatch = useUploadBatch();
 
 useUnloadWarning(uploadBatch.hasActiveWork);
+useDiscardImportsOnPageHide();
 
 onMounted(async () => {
   await auth.currentUserQuery.refetch();

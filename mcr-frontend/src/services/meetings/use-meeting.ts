@@ -6,6 +6,7 @@ import {
   getAll,
   getOne,
   initCapture,
+  removeMany,
   removeOne,
   startTranscription,
   stopCapture,
@@ -31,8 +32,6 @@ const POLLING_INTERVAL = 10 * 1000; // 10 seconds
 const THROTTLING_INTERVAL = 200; // 200 milliseconds
 const STOP_CAPTURE_SKIPPED = Symbol('STOP_CAPTURE_SKIPPED');
 
-const throttledGetAll = throttle(getAll, THROTTLING_INTERVAL, { leading: true, trailing: true });
-
 function getAllMeetingsQuery(params: {
   search?: Ref<string | undefined>;
   page: Ref<number>;
@@ -41,7 +40,7 @@ function getAllMeetingsQuery(params: {
   return useQuery({
     queryKey: [QUERY_KEYS.MEETINGS, params.search, params.page, params.pageSize],
     queryFn: () =>
-      throttledGetAll({
+      getAll({
         search: params.search?.value,
         page: params.page.value,
         page_size: params.pageSize.value,
@@ -84,6 +83,15 @@ function deleteMeetingMutation() {
       queryClient.removeQueries({ queryKey: [QUERY_KEYS.MEETINGS, id] });
       queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] });
     },
+  });
+}
+
+function deleteMeetingsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (ids: number[]) => removeMany(ids),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.MEETINGS] }),
   });
 }
 
@@ -246,6 +254,7 @@ export function useMeetings() {
     getAllMeetingsQuery,
     addMeetingMutation,
     deleteMeetingMutation,
+    deleteMeetingsMutation,
     updateMeetingMutation,
     updateMeetingOptimistically,
     startCaptureMutation,
