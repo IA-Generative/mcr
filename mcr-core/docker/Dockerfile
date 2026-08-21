@@ -1,4 +1,4 @@
-FROM python:3.12.10-slim AS build
+FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS build
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -35,7 +35,7 @@ ENV VENV_LOCATION="/app/.venv"
 ENV PATH="${VENV_LOCATION}/bin:$PATH"
 
 # Runtime image — the venv and the app, nothing else: no uv, no compiler, no caches.
-FROM python:3.12.10-slim AS prod
+FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS prod
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
