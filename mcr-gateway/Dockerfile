@@ -1,6 +1,6 @@
-FROM python:3.12.10-slim AS build
+FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS build
 
-RUN apt-get update && apt-get install -y curl 
+RUN apt-get update && apt-get install -y curl
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Download the latest installer, install it and then remove it
@@ -23,7 +23,7 @@ RUN uv sync --group dev
 
 EXPOSE 5678
 EXPOSE 8000
-CMD ["uv", "run", "debugpy", "--listen", "0.0.0.0:5678", "-m", "uvicorn", "mcr_gateway.main:app", "--host", "0.0.0.0", "--port" ,"8000", "--reload"]  
+CMD ["uv", "run", "debugpy", "--listen", "0.0.0.0:5678", "-m", "uvicorn", "mcr_gateway.main:app", "--host", "0.0.0.0", "--port" ,"8000", "--reload"]
 
 
 FROM build AS production

@@ -22,7 +22,15 @@ A service package keeps its docker assets in `<package>/docker/` (`mcr-core/dock
 - **Build against the lockfile**: `uv sync --locked` with `uv.lock` in the build context. A bare
   `uv sync` resolves fresh at build time, so images drift from each other and from local.
 - **Copy `pyproject.toml` + `uv.lock` and install deps *before* copying source.** Layer order is the
-  caching mechanism; source ahead of deps invalidates the dependency layer on every commit.
+  caching mechanism; source ahead of deps invalidates the dependency layer on every commit. The
+  pipeline passes `--cache=true --cache-repo=$IMAGE_REPOSITORY/cache`, so that order is what makes a
+  source-only commit skip the dependency install instead of paying for it again.
+- **Pin every `FROM` by digest**, keeping the tag for readability
+  (`FROM python:3.12.10-slim@sha256:…`). A tag is mutable: when upstream moves it, every cache key
+  derived from it changes and an image rebuilt for a release stops matching the one staging tested.
+  There is no Renovate/Dependabot here, so bumps are deliberate — refresh with
+  `docker buildx imagetools inspect <image>:<tag> --format '{{.Manifest.Digest}}'` and commit the
+  new digest.
 - **Keep build tooling out of the runtime image** with named-stage `COPY --from=builder`.
 - **One runtime image per service package, role dispatched at run time.**
   `docker/docker-entrypoint.sh` maps a role (`api` | `worker` | `migrate`, plus arbitrary-command
