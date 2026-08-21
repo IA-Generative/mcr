@@ -21,6 +21,10 @@ class PgSettings(BaseSettings):
 class LoggingSettings(BaseSettings):
     COLORIZE: bool = Field(default=False, description="Should log output be colored")
     LEVEL: int | str = Field(default="INFO")
+    JSON_LOGS: bool = Field(
+        default=False,
+        description="Emit logs as JSON lines (for Loki) instead of human text",
+    )
     DISPLAY_TIMESTAMP: bool = Field(
         default=False, description="Should display log timestamp"
     )

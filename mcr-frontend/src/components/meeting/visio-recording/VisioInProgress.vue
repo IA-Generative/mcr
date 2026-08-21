@@ -1,12 +1,12 @@
 <template>
   <DsfrTag
     :label="$t('meeting-v2.visio-recording.in-progress.badge').toUpperCase()"
-    class="bg-success-950 text-success-425 rounded font-bold"
+    class="rounded-sm bg-success-950 font-bold text-success-425"
     icon="fr-icon-circle-fill"
   />
   <h2
     v-if="showTimer"
-    class="font-bold text-2xl/8"
+    class="text-2xl/8 font-bold"
   >
     {{ leftPad(time.hours.value) }}:{{ leftPad(time.minutes.value) }}:{{
       leftPad(time.seconds.value)

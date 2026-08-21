@@ -2,7 +2,6 @@ import asyncio
 import os
 from time import sleep
 
-import sentry_sdk
 from loguru import logger
 
 from mcr_capture_worker.clients.meeting_transition_client import MeetingApiClient
@@ -11,7 +10,7 @@ from mcr_capture_worker.meeting_repository import (
     get_next_element_for_capture_and_mark_as_bot_is_connecting,
 )
 from mcr_capture_worker.setup.logger import setup_logging
-from mcr_capture_worker.setup.sentry import setup_sentry
+from mcr_capture_worker.setup.sentry import capture_exception, setup_sentry
 
 from .services.meeting_audio_recorder import MeetingAudioRecorder
 
@@ -32,7 +31,7 @@ def process_meeting() -> None:
         logger.info("Meeting {} processed successfully.", meeting.id)
     except Exception as e:
         logger.error("Error processing meeting {}: {}", meeting.id, e)
-        sentry_sdk.capture_exception(e)
+        capture_exception(e)
         asyncio.run(meeting_transition_client.fail_capture_bot(meeting.id))
 
 

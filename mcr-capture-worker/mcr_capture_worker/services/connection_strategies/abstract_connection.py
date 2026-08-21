@@ -8,6 +8,7 @@ from playwright.async_api import BrowserContext, Page
 
 from mcr_capture_worker.models.meeting_model import Meeting
 from mcr_capture_worker.services.s3_service import put_file_in_trace_folder
+from mcr_capture_worker.setup.sentry import span, transaction
 
 MAX_RETRIES = 30
 MAX_WAIT_FOR_OR_VIDEO_AUDIO = 60_000
@@ -20,15 +21,28 @@ class ConnectionStrategy(ABC):
         try:
             await context.tracing.start(screenshots=True, snapshots=True)
 
-            await self.connect_to_meeting(page, meeting)
-            logger.info("Connected to the page")
+            # Scope the transaction to the join, not the whole capture: the join
+            # is the short, flaky part worth a trace, whereas the recording loop
+            # would flood one long transaction with per-second poll spans.
+            # Playwright browser steps are uninstrumented; span each so a stalled
+            # join points at the exact step (navigation, waiting room, WebRTC).
+            with transaction("capture", "capture.join", **{"meeting.id": meeting.id}):
+                with span("meeting.navigate", "connect_to_meeting"):
+                    await self.connect_to_meeting(page, meeting)
+                logger.info("Connected to the page")
 
-            await self.set_bot_name(page, meeting)
-            logger.info("Bot name has been set")
+                with span("meeting.set_bot_name", "set_bot_name"):
+                    await self.set_bot_name(page, meeting)
+                logger.info("Bot name has been set")
 
-            await self.join_waiting_room_and_set_devices(page)
-            await self.wait_for_webRTC_connection(page)
-            logger.info("Bot ready!")
+                with span(
+                    "meeting.join_waiting_room", "join_waiting_room_and_set_devices"
+                ):
+                    await self.join_waiting_room_and_set_devices(page)
+
+                with span("meeting.webrtc_wait", "wait_for_webRTC_connection"):
+                    await self.wait_for_webRTC_connection(page)
+                logger.info("Bot ready!")
         except Exception:
             logger.error(
                 "Couldn't connect to meeting {}, on platform: {}",

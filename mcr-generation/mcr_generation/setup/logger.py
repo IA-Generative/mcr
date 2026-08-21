@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 import sys
+import traceback
 
 import loguru
 from loguru import logger
@@ -10,6 +12,8 @@ from loguru import logger
 from mcr_generation.app.configs.settings import LoggingSettings
 
 log_settings = LoggingSettings()
+
+_SERVICE_NAME = "mcr-generation"
 
 
 def setup_logging() -> None:
@@ -73,7 +77,47 @@ def loguru_filter(record: loguru.Record) -> bool:
     return True
 
 
+def _serialize_record(
+    record: loguru.Record, trace_id: str | None, span_id: str | None
+) -> str:
+    payload = {
+        "timestamp": record["time"].isoformat(),
+        "level": record["level"].name,
+        "message": record["message"],
+        "service": _SERVICE_NAME,
+        "logger": record["name"],
+        "file": record["file"].name,
+        "line": record["line"],
+        "trace_id": trace_id,
+        "span_id": span_id,
+        "request_id": record["extra"].get("request_id"),
+    }
+    exception = record["exception"]
+    if exception is not None:
+        payload["exception"] = "".join(
+            traceback.format_exception(
+                exception.type, exception.value, exception.traceback
+            )
+        )
+    user_extra = {k: v for k, v in record["extra"].items() if k != "request_id"}
+    if user_extra:
+        payload["extra"] = user_extra
+    return json.dumps(payload, default=str)
+
+
+def _json_sink(message: loguru.Message) -> None:
+    # Resolve trace ids through the Sentry owner file so this file never imports
+    # sentry_sdk (one owner per SDK).
+    from mcr_generation.app.utils.sentry_context import current_trace_ids
+
+    trace_id, span_id = current_trace_ids()
+    sys.stderr.write(_serialize_record(message.record, trace_id, span_id) + "\n")
+
+
 def create_loguru_handler() -> None:
+    if log_settings.JSON_LOGS:
+        logger.add(_json_sink, level=log_settings.LEVEL, filter=loguru_filter)
+        return
     logger.add(
         sys.stderr,
         format=get_log_format(),

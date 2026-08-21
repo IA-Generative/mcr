@@ -11,7 +11,7 @@
       />
 
       <span class="flex flex-col gap-1 text-left">
-        <span class="text-base font-bold leading-6 text-primary">
+        <span class="text-base leading-6 font-bold text-primary">
           {{ title }}
         </span>
 

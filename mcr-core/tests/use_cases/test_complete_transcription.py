@@ -489,6 +489,33 @@ class TestCompleteTranscriptionDrain:
         call = mock_drain_celery.send_task.call_args
         assert call.kwargs["kwargs"]["custom_prompt"] == "Analyse les risques"
 
+    def test_dispatches_the_auto_requested_structured_minutes(
+        self,
+        transcription_in_progress_meeting: Meeting,
+        sample_transcriptions: list[SpeakerTranscription],
+        mock_generate_docx: MagicMock,
+        mock_drain_celery: MagicMock,
+        in_memory_s3: InMemoryS3,
+        in_memory_email: InMemoryEmailClient,
+        db_session: Session,
+    ) -> None:
+        meeting = transcription_in_progress_meeting
+        minutes = DeliverableFactory.create(
+            meeting=meeting,
+            type=DeliverableType.STRUCTURED_MINUTES,
+            status=DeliverableStatus.REQUESTED,
+        )
+
+        complete_transcription(
+            meeting_id=meeting.id, transcriptions=sample_transcriptions
+        )
+
+        db_session.refresh(minutes)
+        assert minutes.status == DeliverableStatus.PENDING
+        mock_drain_celery.send_task.assert_called_once()
+        call = mock_drain_celery.send_task.call_args
+        assert call.kwargs["kwargs"]["deliverable_id"] == minutes.id
+
     def test_empty_drain_sends_no_task(
         self,
         transcription_in_progress_meeting: Meeting,

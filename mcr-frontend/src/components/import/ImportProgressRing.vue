@@ -13,14 +13,14 @@
       aria-hidden="true"
     >
       <circle
-        class="fill-none stroke-[var(--border-default-grey)]"
+        class="fill-none stroke-border"
         cx="18"
         cy="18"
         :r="RADIUS"
         stroke-width="3"
       />
       <circle
-        class="fill-none transition-all duration-[400ms] ease-linear"
+        class="fill-none transition-all duration-400 ease-linear"
         :class="complete ? 'stroke-success-425' : 'stroke-blue-france-sun'"
         cx="18"
         cy="18"
@@ -33,7 +33,7 @@
     </svg>
     <svg
       viewBox="0 0 36 36"
-      class="absolute inset-0 size-full stroke-success-425 opacity-0 transition-opacity delay-[400ms] duration-200"
+      class="absolute inset-0 size-full stroke-success-425 opacity-0 transition-opacity delay-400 duration-200"
       :class="{ 'opacity-100': complete }"
       aria-hidden="true"
     >

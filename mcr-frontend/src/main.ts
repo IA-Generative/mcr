@@ -1,9 +1,5 @@
-import '@gouvfr/dsfr/dist/core/core.main.min.css'; // Le CSS minimal du DSFR
-import '@gouvfr/dsfr/dist/component/component.main.min.css'; // Styles de tous les composants du DSFR
-import '@gouvfr/dsfr/dist/utility/utility.main.min.css'; // Classes utilitaires: les composants de VueDsfr en ont besoin
-import '@gouvfr/dsfr/dist/scheme/scheme.min.css'; // Facultatif: Si les thèmes sont utilisés (thème sombre, thème clair)
-import 'vue-final-modal/style.css'; // Small CSS bundle required for vfm, all styles are prefixed with `.vfm-`
-import '@gouvminint/vue-dsfr/styles'; // Les styles propres aux composants de VueDsfr
+// Tous les CSS tiers (DSFR, vue-final-modal, vue-dsfr) sont importés depuis main.css
+// pour pouvoir les placer dans une cascade layer — voir le commentaire en tête du fichier.
 import '@/main.css';
 
 import { createApp } from 'vue';

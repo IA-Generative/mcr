@@ -2,6 +2,7 @@ from fastapi import (
     APIRouter,
     Depends,
     HTTPException,
+    status,
 )
 from loguru import logger
 
@@ -37,7 +38,8 @@ async def create_feedback(
         )
         if result is None:
             raise HTTPException(
-                status_code=500, detail="Service did not return a valid response"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Service did not return a valid response",
             )
         return result
     except HTTPException as e:

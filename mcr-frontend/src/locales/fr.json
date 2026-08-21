@@ -15,7 +15,6 @@
     "form": {
       "update": "Mettre à jour"
     },
-    "or": "ou",
     "pipe": "{'|'}",
     "editor": {
       "bold": "Gras",
@@ -294,37 +293,8 @@
           "button": "Quitter"
         }
       },
-      "transcription-failed": {
-        "title": "Une erreur est survenue",
-        "description": "Un problème technique est survenu. Veuillez réessayer.",
-        "button": "Réessayer"
-      },
       "tab": {
         "members": "Participants"
-      }
-    },
-    "report": {
-      "generate": "Générer le compte-rendu",
-      "download": "Télécharger le compte-rendu",
-      "reset": "Regénérer le compte-rendu",
-      "disclaimer": {
-        "title": "Choisissez le format",
-        "description": "L'outil MCR génère des comptes-rendus à partir d'analyses statistiques. Il est recommandé de vérifier systématiquement les informations fournies avant partage."
-      },
-      "type": {
-        "cr1": "Relevé de décisions",
-        "cr2": "Synthèse détaillée",
-        "cr3": "Format à venir"
-      },
-      "report-pending": {
-        "title": "L'écriture du compte-rendu est en cours...",
-        "description": "Cela peut prendre un certain temps (de quelques minutes à quelques heures selon la longueur de la réunion). Vous pouvez continuer à utiliser l'application ou quitter la page pendant ce temps.  Votre compte-rendu sera disponible au téléchargement une fois terminé."
-      },
-      "error": {
-        "no-transcription": {
-          "title": "La transcription n'est pas terminée",
-          "description": "Vous pourrez générer un compte-rendu lorsque la transcription de la réunion aura été générée."
-        }
       }
     },
     "members": {
@@ -375,6 +345,11 @@
         "auto-when-ready": "Se lance automatiquement dès que la transcription est prête."
       },
       "type": {
+        "structured-minutes": {
+          "label": "Compte-rendu structuré",
+          "hint": "Compte-rendu par thèmes avec décisions (responsable, échéance), points en suspens et recommandations.",
+          "title": "Compte-rendu structuré"
+        },
         "decision-record": {
           "label": "Relevé de décisions",
           "hint": "Synthèse rédigée des échanges et décisions prises lors de la réunion.",
@@ -399,6 +374,60 @@
         "download": "Télécharger",
         "open-external": "Consulter",
         "regenerate": "Régénérer"
+      }
+    },
+    "deliverable-feedback": {
+      "thumb-up": "Ce livrable est utile",
+      "thumb-down": "Ce livrable n'est pas satisfaisant",
+      "success": "Merci, votre retour a été pris en compte",
+      "error": "Votre retour n'a pas pu être enregistré, veuillez réessayer",
+      "modal": {
+        "title": "Merci pour votre retour !",
+        "description": "Dites-nous ce qui vous a plu dans ce livrable.",
+        "comment-label": "Commentaire (facultatif)",
+        "submit": "Envoyer"
+      },
+      "negative-modal": {
+        "title": "Qu'est-ce qui n'a pas fonctionné\u00a0?",
+        "description": "Votre retour nous aide à améliorer les générations.",
+        "reasons-label": "Motif",
+        "comment-label": "Commentaire",
+        "comment-placeholder": "Un exemple précis nous aidera à améliorer l'outil.",
+        "submit": "Envoyer",
+        "reasons-loading": "Chargement des motifs…",
+        "reasons-unavailable": "Les motifs n'ont pas pu être chargés. Sans eux, votre retour ne peut pas être envoyé.",
+        "retry": "Réessayer",
+        "errors": {
+          "no-signal": "Vous devez sélectionner un motif ou laisser un commentaire",
+          "other-needs-comment": "Précisez ce qui n'allait pas"
+        }
+      },
+      "reasons": {
+        "shared": {
+          "OTHER": "Autre"
+        },
+        "TRANSCRIPTION": {
+          "WORD_ERRORS": "Erreurs de mots",
+          "MISIDENTIFIED_SPEAKERS": "Locuteurs mal identifiés",
+          "MISSING_PASSAGES": "Passages manquants",
+          "PUNCTUATION_OR_FORMATTING": "Ponctuation ou mise en forme",
+          "UNRECOGNIZED_ACRONYMS": "Sigles et acronymes du MI mal reconnus"
+        },
+        "STRUCTURED": {
+          "MISSING_INFORMATION": "Informations manquantes",
+          "FACTUAL_ERROR": "Erreur factuelle",
+          "OFF_TOPIC": "Hors sujet",
+          "TOO_SHORT_OR_INCOMPLETE": "Trop court ou incomplet",
+          "TOO_LONG_OR_DETAILED": "Trop long ou trop détaillé",
+          "POOR_STRUCTURE": "Mauvaise structure"
+        },
+        "CUSTOM": {
+          "PROMPT_NOT_FOLLOWED": "Prompt mal suivi",
+          "FORMAT_NOT_SUITABLE": "Format inadapté à la demande",
+          "MISSING_INFORMATION": "Informations manquantes",
+          "FACTUAL_ERROR": "Erreur factuelle",
+          "TONE_OR_STYLE_NOT_SUITABLE": "Ton ou style inadapté"
+        }
       }
     },
     "custom-report-modal": {
@@ -440,6 +469,8 @@
     },
     "visio-form": {
       "comu": {
+        "radio-id": "Identifiants",
+        "radio-url": "URL modérateur",
         "access_code": "Code d'accès",
         "meeting_id": "ID de la réunion",
         "meeting_id_error": "Un identifiant de réunion COMU doit être composé uniquement de chiffres",
@@ -456,6 +487,10 @@
         "id-no-password": "Un mot de passe est nécessaire quand un identifiant de réunion est fourni",
         "no-field": "Veuillez fournir un URL de réunion ou un identifiant et un mot de passe",
         "password-no-id": "Un identifiant de réunion est nécessaire quand un mot de passe est fourni"
+      },
+      "meeting-notice": {
+        "title": "Pour localiser votre URL ou vos identifiants modérateur,",
+        "link": "consultez cet article"
       },
       "meeting-title": {
         "title": "Titre de votre réunion dans MCR*",

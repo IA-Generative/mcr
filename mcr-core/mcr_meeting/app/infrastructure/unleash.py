@@ -20,8 +20,6 @@ class FeatureFlag(StrEnum):
 
     AUDIO_NOISE_FILTERING = "audio_noise_filtering"
     AUDIO_PHASE_AWARE_DOWNMIX = "audio_phase_aware_downmix"
-    API_BASED_DIARIZATION = "api_based_diarization"
-    API_BASED_TRANSCRIPTION = "api_based_transcription"
     SPELLING_CORRECTION = "spelling_correction"
     STRUCTURAL_SPLIT_ENABLED = "structural_split_enabled"
 
@@ -104,6 +102,6 @@ def get_feature_flag_client() -> FeatureFlagClient:
     return FeatureFlagSingleton().get_feature_flag_client()
 
 
-def is_enabled(feature_flag_name: str) -> bool:
+def is_enabled(feature_flag_name: FeatureFlag) -> bool:
     """Check whether a feature flag is enabled."""
     return get_feature_flag_client().is_enabled(feature_flag_name)

@@ -60,6 +60,11 @@ class DataConflictException(MCRException):
     a table constraint (unique, foreign key, ...). Mapped to HTTP 409."""
 
 
+class DeliverableFeedbackValidationException(MCRException):
+    """Raised when a deliverable feedback breaks a content rule — e.g. a negative
+    vote with no comment to explain it. Mapped to HTTP 422."""
+
+
 class DeliverableConcurrentlyCreatedException(MCRException):
     """Raised when a concurrent INSERT trips the partial unique index that
     forbids more than one active deliverable per (meeting, type)."""
@@ -85,7 +90,8 @@ class UnknownDiarizationStatus(MCRException):
 
 
 class TranscriptionError(MCRException):
-    """Raised when the transcription fails"""
+    """Raised when the transcription fails definitively (4xx rejection, empty
+    result, unknown fault) — no replay helps, fail loud."""
 
 
 class DeliverableStateConflictException(MCRException):
@@ -110,6 +116,33 @@ class TransientInfraError(MCRException):
 
 class S3TransientError(TransientInfraError):
     """Transient S3 error"""
+
+
+class DiarizationTransientError(TransientInfraError):
+    """Fleeting, idempotent diarization-API fault (connect blip, 5xx, poll GET
+    error) — retried both in-process (tenacity) and at the task level.
+
+    A TransientInfraError (not a DiarizationError) so it feeds the task-level
+    autoretry and is never swallowed by an ``except DiarizationError``."""
+
+
+class DiarizationRetryableError(TransientInfraError):
+    """Diarization fault safe to re-run as a whole operation but NOT to replay
+    fast in-process — ambiguous submit timeout, or a server-declared transient
+    job failure (queue-stale / model cold-start). Retried at the task level only
+    (backoff), so it is deliberately absent from the in-process tenacity set."""
+
+
+class TranscriptionTransientError(TransientInfraError):
+    """Fleeting, idempotent transcription-API fault (connect blip, timeout, 5xx,
+    or 429 overload). A TransientInfraError (not a TranscriptionError) so it feeds
+    the task-level autoretry instead of killing the meeting, and is never swallowed
+    by an ``except TranscriptionError``.
+
+    In-process retry is already provided by the OpenAI client's ``max_retries``
+    (bounded exponential backoff, honouring Retry-After); the whole-operation
+    replay is safe because a transcription request is a stateless synchronous POST
+    — no job id, so a re-run creates no duplicate."""
 
 
 class TokenValidationError(Exception):

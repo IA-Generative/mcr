@@ -4,6 +4,10 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from mcr_gateway.app.schemas.deliverable_feedback_schema import (
+    DeliverableFeedbackResponse,
+)
+
 
 class DeliverableType(StrEnum):
     TRANSCRIPTION = "TRANSCRIPTION"
@@ -30,6 +34,7 @@ class DeliverableResponse(BaseModel):
     external_url: str | None = None
     created_at: datetime
     updated_at: datetime
+    feedback: DeliverableFeedbackResponse | None = None
 
 
 class DeliverableListResponse(BaseModel):

@@ -7,6 +7,7 @@ from email.mime.text import MIMEText
 from loguru import logger
 
 from mcr_meeting.app.configs.base import SMTPSettings
+from mcr_meeting.app.infrastructure.sentry import span
 
 
 def _connect(settings: SMTPSettings) -> smtplib.SMTP:
@@ -45,6 +46,23 @@ def send_email(
 
     settings = SMTPSettings()
 
+    # One span for the whole send, so the blocking SMTP time — retries and
+    # backoff included — is a named span instead of dead space in the trace.
+    with span(
+        "smtp.send",
+        "send_email",
+        **{"smtp.recipient": to_email, "smtp.subject": subject},
+    ):
+        return _send_with_retries(settings, to_email, subject, html, max_retries)
+
+
+def _send_with_retries(
+    settings: SMTPSettings,
+    to_email: str,
+    subject: str,
+    html: str,
+    max_retries: int,
+) -> bool:
     for attempt in range(1, max_retries + 1):
         try:
             msg = MIMEMultipart()
@@ -95,7 +113,7 @@ def _is_retryable_exception(exc: Exception) -> bool:
     """
 
     # Network-level issues
-    if isinstance(exc, (socket.timeout, OSError)):
+    if isinstance(exc, socket.timeout | OSError):
         return True
     # Generic SMTP exceptions
     if isinstance(exc, smtplib.SMTPServerDisconnected):
@@ -115,11 +133,9 @@ def _is_retryable_exception(exc: Exception) -> bool:
     # Authentication / permanent failures should NOT retry
     if isinstance(
         exc,
-        (
-            smtplib.SMTPAuthenticationError,
-            smtplib.SMTPSenderRefused,
-            smtplib.SMTPRecipientsRefused,
-        ),
+        smtplib.SMTPAuthenticationError
+        | smtplib.SMTPSenderRefused
+        | smtplib.SMTPRecipientsRefused,
     ):
         return False
 

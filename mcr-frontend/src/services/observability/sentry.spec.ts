@@ -1,12 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { App } from 'vue';
 
-const { init, consoleLoggingIntegration, captureException } = vi.hoisted(() => ({
-  init: vi.fn(),
-  consoleLoggingIntegration: vi.fn(() => ({ name: 'console' })),
-  captureException: vi.fn(),
+const { init, consoleLoggingIntegration, browserTracingIntegration, captureException } = vi.hoisted(
+  () => ({
+    init: vi.fn(),
+    consoleLoggingIntegration: vi.fn(() => ({ name: 'console' })),
+    browserTracingIntegration: vi.fn(() => ({ name: 'browserTracing' })),
+    captureException: vi.fn(),
+  }),
+);
+vi.mock('@sentry/vue', () => ({
+  init,
+  consoleLoggingIntegration,
+  browserTracingIntegration,
+  captureException,
 }));
-vi.mock('@sentry/vue', () => ({ init, consoleLoggingIntegration, captureException }));
 
 import { initSentry, reportError } from './sentry';
 

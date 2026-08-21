@@ -12,6 +12,9 @@ Before writing or changing a test, decide the **business invariant** it defends 
 Manager would recognize the product must uphold — then write the test to fail exactly when that rule
 is violated. Decide the invariant *first*; deriving it from code you already wrote yields mechanism tests.
 
+- **Never add a production seam just to make a test mockable.** A `_now()` wrapper introduced only to
+  dodge a library's internal clock reads is a trick that distorts prod code and usually means the test is
+  at the wrong level — move the assertion to the unit that owns the behavior instead of reshaping prod.
 - **Test the invariant, not the mechanism.** Never assert the mechanism a diff just touched. Tells of a
   worthless mechanism test: it asserts a config value, `assert_called_once` alone, a wiring fact
   ("the handler is registered", "a log doesn't create a Sentry event"), or you must drive a third-party
@@ -25,8 +28,15 @@ is violated. Decide the invariant *first*; deriving it from code you already wro
 - **Assert every side effect in both directions** (created on success; absent after rollback/guard-reject),
   including secondary bookkeeping writes.
 
-TDD is mandatory: the failing test is written and seen red before the implementation.
+TDD is mandatory: the failing test is written and seen red before the implementation. A collection
+error, an `ImportError` or a signature mismatch is **not** a red — the assertion never ran, so nothing
+proved it can fail for the reason it names. Write the test against the intended signature, stub the
+symbol if needed, and watch the assertion itself fail.
 
-For planning, writing, or reviewing tests in depth — the full rubric (fatal flags, D1–D8 scoring, review
-output) lives in the `testing-standard` skill (`/testing-standard`).
+When your change turns an existing test red, that red is a diagnostic: a test that breaks because a
+collaborator gained an internal step was coupled to that collaborator's internals. Fix the coupling —
+extending its mocks to restore green converts a diagnostic into debt.
+
+For planning, writing, or reviewing tests in depth — the full rubric (fatal flags, scored dimensions,
+review output) lives in the `testing-standard` skill (`/testing-standard`).
 </content>

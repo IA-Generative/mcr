@@ -2,13 +2,14 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from loguru import logger
 from pydantic import UUID4
 
 from mcr_gateway.app.configs.config import settings
 from mcr_gateway.app.schemas.feedback_schema import Feedback, FeedbackRequest
 from mcr_gateway.app.services.meeting_service import MCRCoreCustomAuth
+from mcr_gateway.app.utils.core_http_client import core_client
 
 
 @asynccontextmanager
@@ -16,7 +17,7 @@ async def get_feedback_http_client(
     user_keycloak_uuid: UUID4,
     access_token: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(
+    client = core_client(
         base_url=settings.FEEDBACK_SERVICE_URL,
         auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
     )
@@ -55,4 +56,7 @@ async def create_feedback_service(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )

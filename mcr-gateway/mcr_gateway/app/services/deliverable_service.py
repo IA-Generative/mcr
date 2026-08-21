@@ -2,12 +2,15 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from fastapi.responses import Response, StreamingResponse
 from loguru import logger
 from pydantic import UUID4
 
 from mcr_gateway.app.configs.config import settings
+from mcr_gateway.app.schemas.deliverable_feedback_schema import (
+    DeliverableFeedbackUpsertRequest,
+)
 from mcr_gateway.app.schemas.deliverable_schema import (
     DeliverableCreateRequest,
     DeliverableListResponse,
@@ -16,6 +19,7 @@ from mcr_gateway.app.services.meeting_service import (
     MCRCoreCustomAuth,
     get_meeting_http_client,
 )
+from mcr_gateway.app.utils.core_http_client import core_client
 from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
 
 
@@ -24,7 +28,7 @@ async def get_deliverable_http_client(
     user_keycloak_uuid: UUID4,
     access_token: str | None = None,
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
-    client = httpx.AsyncClient(
+    client = core_client(
         base_url=settings.DELIVERABLE_SERVICE_URL,
         auth=MCRCoreCustomAuth(user_keycloak_uuid, access_token),
     )
@@ -46,7 +50,10 @@ async def list_deliverables_for_meeting(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error listing deliverables: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def request_deliverable(
@@ -69,7 +76,10 @@ async def request_deliverable(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error creating deliverable: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def soft_delete_deliverable(
@@ -79,12 +89,81 @@ async def soft_delete_deliverable(
         async with get_deliverable_http_client(user_keycloak_uuid) as client:
             response = await client.delete(url=f"{deliverable_id}")
             response.raise_for_status()
-            return Response(status_code=204)
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error deleting deliverable: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
+
+
+async def list_deliverable_feedback_reasons(user_keycloak_uuid: UUID4) -> Response:
+    try:
+        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+            response = await client.get(url="feedback-reasons")
+            response.raise_for_status()
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                media_type="application/json",
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error(
+            "Unexpected error listing deliverable feedback reasons: {}", str(e)
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
+
+
+async def upsert_deliverable_feedback(
+    deliverable_id: int,
+    body: DeliverableFeedbackUpsertRequest,
+    user_keycloak_uuid: UUID4,
+) -> Response:
+    try:
+        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+            response = await client.put(
+                url=f"{deliverable_id}/feedback", json=body.model_dump(mode="json")
+            )
+            response.raise_for_status()
+            return Response(
+                content=response.content,
+                status_code=response.status_code,
+                media_type="application/json",
+            )
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error("Unexpected error saving deliverable feedback: {}", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
+
+
+async def deactivate_deliverable_feedback(
+    deliverable_id: int, user_keycloak_uuid: UUID4
+) -> Response:
+    try:
+        async with get_deliverable_http_client(user_keycloak_uuid) as client:
+            response = await client.delete(url=f"{deliverable_id}/feedback")
+            response.raise_for_status()
+            return Response(status_code=status.HTTP_204_NO_CONTENT)
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+    except Exception as e:
+        logger.error("Unexpected error retracting deliverable feedback: {}", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )
 
 
 async def get_deliverable_file(
@@ -99,4 +178,7 @@ async def get_deliverable_file(
         raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
     except Exception as e:
         logger.error("Unexpected error fetching deliverable file: {}", str(e))
-        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Unexpected error: {str(e)}",
+        )

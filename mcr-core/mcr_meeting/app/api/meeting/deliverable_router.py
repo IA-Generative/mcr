@@ -7,6 +7,12 @@ from mcr_meeting.app.configs.base import ApiSettings
 from mcr_meeting.app.db.db import router_db_session_context_manager
 from mcr_meeting.app.domain.deliverable_filename import build_deliverable_filename
 from mcr_meeting.app.domain.mime_types import DOCX_MIME_TYPE
+from mcr_meeting.app.models.deliverable_model import DeliverableType
+from mcr_meeting.app.schemas.deliverable_feedback_schema import (
+    DeliverableFeedbackResponse,
+    DeliverableFeedbackUpsertRequest,
+    ReasonCatalogueEntryResponse,
+)
 from mcr_meeting.app.schemas.deliverable_schema import (
     CustomDeliverableCreateRequest,
     DeliverableCreateRequest,
@@ -14,8 +20,14 @@ from mcr_meeting.app.schemas.deliverable_schema import (
     DeliverableResponse,
     DeliverableSuccessRequest,
 )
+from mcr_meeting.app.use_cases.deactivate_deliverable_feedback import (
+    deactivate_deliverable_feedback,
+)
 from mcr_meeting.app.use_cases.ensure_offline_token import ensure_offline_token
 from mcr_meeting.app.use_cases.get_deliverable_file import get_deliverable_file
+from mcr_meeting.app.use_cases.list_deliverable_feedback_reasons import (
+    list_deliverable_feedback_reasons,
+)
 from mcr_meeting.app.use_cases.list_deliverables_for_meeting import (
     list_deliverables_for_meeting,
 )
@@ -30,6 +42,9 @@ from mcr_meeting.app.use_cases.request_deliverable import (
     request_deliverable as request_deliverable_use_case,
 )
 from mcr_meeting.app.use_cases.soft_delete_deliverable import soft_delete_deliverable
+from mcr_meeting.app.use_cases.upsert_deliverable_feedback import (
+    upsert_deliverable_feedback,
+)
 
 api_settings = ApiSettings()
 
@@ -80,7 +95,7 @@ async def create_deliverable(
     return DeliverableResponse.model_validate(deliverable)
 
 
-@deliverables_router.delete("/{deliverable_id}", status_code=204)
+@deliverables_router.delete("/{deliverable_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_deliverable(
     deliverable_id: int,
     x_user_keycloak_uuid: UUID4 = Header(),
@@ -88,7 +103,44 @@ async def delete_deliverable(
     soft_delete_deliverable(
         deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
     )
-    return Response(status_code=204)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@deliverables_router.get("/feedback-reasons")
+async def list_deliverable_feedback_reasons_route() -> dict[
+    DeliverableType, ReasonCatalogueEntryResponse
+]:
+    return {
+        deliverable_type: ReasonCatalogueEntryResponse.model_validate(entry)
+        for deliverable_type, entry in list_deliverable_feedback_reasons().items()
+    }
+
+
+@deliverables_router.put("/{deliverable_id}/feedback")
+async def upsert_deliverable_feedback_route(
+    deliverable_id: int,
+    body: DeliverableFeedbackUpsertRequest,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> DeliverableFeedbackResponse:
+    feedback = upsert_deliverable_feedback(
+        deliverable_id=deliverable_id,
+        user_keycloak_uuid=x_user_keycloak_uuid,
+        feedback_request=body,
+    )
+    return DeliverableFeedbackResponse.model_validate(feedback)
+
+
+@deliverables_router.delete(
+    "/{deliverable_id}/feedback", status_code=status.HTTP_204_NO_CONTENT
+)
+async def deactivate_deliverable_feedback_route(
+    deliverable_id: int,
+    x_user_keycloak_uuid: UUID4 = Header(),
+) -> Response:
+    deactivate_deliverable_feedback(
+        deliverable_id=deliverable_id, user_keycloak_uuid=x_user_keycloak_uuid
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @deliverables_router.get("/{deliverable_id}/file")

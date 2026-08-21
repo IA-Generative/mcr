@@ -2,7 +2,7 @@
   <div>
     <DsfrAlert :title="$t('meeting.record-form.fields.notice-2.title')">
       <template #default>
-        <div class="flex mt-2 gap-2 items-center">
+        <div class="mt-2 flex items-center gap-2">
           <span class="fr-icon-warning-line mr-2"></span>
           <p>{{ $t('meeting.record-form.fields.notice-2.warning') }}</p>
         </div>
@@ -25,7 +25,7 @@
       <DsfrButton
         tertiary
         no-outline
-        class="'max-sm:!hidden'"
+        class="max-sm:hidden!"
         @click="() => $emit('cancel')"
       >
         {{ $t('common.cancel') }}
@@ -33,7 +33,7 @@
       <DsfrButton
         tertiary
         no-outline
-        class="!mr-auto"
+        class="mr-auto!"
         @click="() => $emit('previousStep')"
       >
         {{ $t('meeting.record-form.actions.back') }}

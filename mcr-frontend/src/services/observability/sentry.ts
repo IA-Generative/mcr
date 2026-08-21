@@ -89,12 +89,14 @@ function scrubRequest(event: Sentry.ErrorEvent): Sentry.ErrorEvent {
 function resolveSentryConfig() {
   const environment = (window as any).ENV_MODE || import.meta.env.VITE_ENV_MODE;
   const dsn = (window as any).VITE_SENTRY_FRONTEND_DSN || import.meta.env.VITE_SENTRY_FRONTEND_DSN;
-  return { environment, dsn };
+  // The trace must attach only to our own API calls, not to third-party requests.
+  const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
+  return { environment, dsn, apiBase };
 }
 
 export function initSentry(app: App): void {
   try {
-    const { environment, dsn } = resolveSentryConfig();
+    const { environment, dsn, apiBase } = resolveSentryConfig();
     if (!environment) return;
 
     Sentry.init({
@@ -103,8 +105,12 @@ export function initSentry(app: App): void {
       environment,
       sendDefaultPii: true,
       enableLogs: true,
-      integrations: [Sentry.consoleLoggingIntegration({ levels: ['info', 'warn', 'error'] })],
-      tracesSampleRate: 1.0,
+      integrations: [
+        Sentry.consoleLoggingIntegration({ levels: ['info', 'warn', 'error'] }),
+        Sentry.browserTracingIntegration(),
+      ],
+      tracesSampleRate: 0.1,
+      tracePropagationTargets: [apiBase],
       beforeBreadcrumb: scrubBreadcrumb,
       beforeSend: scrubRequest,
     });

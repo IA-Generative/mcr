@@ -20,6 +20,7 @@ services:
   flower:
     build:
       context: ./mcr-core
+      dockerfile: docker/Dockerfile
       target: flower
     container_name: mcr-flower
     restart: always
@@ -36,8 +37,10 @@ services:
   transcription_worker:
     build:
       context: ./mcr-core
-      target: worker-dev
+      dockerfile: docker/Dockerfile
+      target: dev
     container_name: mcr-transcription-worker
+    command: ["worker"]
     depends_on:
       - redis
     restart: always
@@ -57,6 +60,10 @@ services:
       watch:
         - action: rebuild
           path: ./mcr-core/pyproject.toml
+        # The entrypoint dispatches the role, so a stale image makes
+        # `command: ["worker"]` fail with `exec: "worker" not found`.
+        - action: rebuild
+          path: ./mcr-core/docker
     networks:
       - mcr-network
 
@@ -93,8 +100,10 @@ services:
   meeting:
     build:
       context: ./mcr-core
-      target: api-dev
+      dockerfile: docker/Dockerfile
+      target: dev
     container_name: mcr-core
+    command: ["api"]
     ports:
       - "8001:8001"
       # Debugging port
@@ -109,6 +118,10 @@ services:
       watch:
         - action: rebuild
           path: ./mcr-core/pyproject.toml
+        # The entrypoint dispatches the role, so a stale image makes
+        # `command: ["worker"]` fail with `exec: "worker" not found`.
+        - action: rebuild
+          path: ./mcr-core/docker
     env_file: *env-files
 
   generation:
@@ -191,9 +204,10 @@ services:
   migration:
     build:
       context: ./mcr-core
-      target: api-dev
+      dockerfile: docker/Dockerfile
+      target: dev
     container_name: mcr-migration
-    command: ["uv", "run", "alembic", "upgrade", "head"]
+    command: ["migrate"]
     depends_on:
       - postgres
     links:

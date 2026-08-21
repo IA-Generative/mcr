@@ -12,7 +12,7 @@ The orchestration is owned by `SpeechToTextPipeline` (`app/services/speech_to_te
 | **In** *(implicit)* audio chunks | S3 objects | Recorded audio fragments uploaded by `mcr-capture-worker`, concatenated into a single byte stream before processing. |
 | **Out** | `list[SpeakerTranscription]` | Ordered, speaker-attributed transcription segments (`meeting_id`, `transcription_index`, `speaker`, `transcription`, `start`, `end`). Serialized and POSTed back to `mcr-core`. |
 
-The pipeline is **two-stage by nature**: *pre-transcription* (turn arbitrary audio into clean, normalized speech that the models can read) and *post-transcription* (turn raw model output into a polished, human-readable transcript). The audio models (diarization + transcription) sit in between.
+The pipeline is **two-stage by nature**: *pre-transcription* (turn arbitrary audio into clean, normalized speech that the models can read) and *post-transcription* (turn raw model output into a polished, human-readable transcript). The remote audio APIs (diarization + transcription) sit in between.
 
 ## Pipeline diagram
 
@@ -64,17 +64,12 @@ flowchart TB
     %% Diarization
     subgraph DIA["Diarization (DiarizationProcessor)"]
       direction TB
-      DSW{"API_BASED_DIARIZATION?"}:::proc
-      DLOC["pyannote speaker-diarization-3.1<br/>(local model)"]:::model
-      DAPI["diarization API<br/>(remote)"]:::model
-      DSW -->|"off"| DLOC
-      DSW -->|"on"| DAPI
+      DAPI["diarization API<br/>(async job: submit + poll)"]:::model
       DSEG[/"list&lt;DiarizationSegment&gt;<br/>start, end, LOCUTEUR_NN"/]:::out
-      DLOC --> DSEG
       DAPI --> DSEG
     end
-    CLEAN --> DSW
-    DSEG -.->|"empty"| EMPTY[/"return []"/]:::out
+    CLEAN --> DAPI
+    DAPI -.->|"job completed with no segment"| DERR["DiarizationError"]:::proc
 
     %% Chunking
     CHUNK["compute_transcription_chunks()<br/>merge overlaps + greedy split<br/>on silence (≤600s)"]:::proc
@@ -85,17 +80,12 @@ flowchart TB
     subgraph TR["Transcription (TranscriptionProcessor)"]
       direction TB
       SPLIT["split_audio_on_timestamps()<br/>slice WAV per span"]:::proc
-      TSW{"API_BASED_TRANSCRIPTION?"}:::proc
-      TLOC["faster-whisper large-v3-turbo<br/>(local model)"]:::model
-      TAPI["transcription API<br/>(OpenAI-compatible)"]:::model
-      SPLIT --> TSW
-      TSW -->|"off"| TLOC
-      TSW -->|"on"| TAPI
+      TAPI["transcription API<br/>(OpenAI-compatible)<br/>MAX_CONCURRENT_CHUNKS in parallel"]:::model
+      SPLIT --> TAPI
     end
     CLEAN --> SPLIT
     SPANS --> SPLIT
-    TLOC --> TSEG[/"list&lt;TranscriptionSegment&gt;"/]:::out
-    TAPI --> TSEG
+    TAPI --> TSEG[/"list&lt;TranscriptionSegment&gt;"/]:::out
 
     %% Alignment
     ALIGN["diarize_vad_transcription_segments()<br/>assign speaker by max time overlap"]:::proc
@@ -130,11 +120,11 @@ flowchart TB
 |---|---|
 | 🟦 Blue (`io`) | Data flowing through (input, S3 objects, intermediate lists/spans) |
 | 🟪 Purple (`proc`) | Pure Python / FFmpeg signal processing — no model or LLM call |
-| 🟥 Pink (`model`) | Audio ML inference: pyannote (diarization) or Whisper (transcription), local or via API |
+| 🟥 Pink (`model`) | Audio ML inference, always remote: diarization API or transcription API |
 | 🟧 Orange (`llm`) | Step that calls an LLM via `instructor` against the LLM hub (costs time and tokens) |
 | 🟩 Green (`out`) | Final or stable intermediate structured object |
 
-Note the distinction between 🟥 **model** and 🟧 **llm**: diarization and transcription are dedicated audio models; the acronym/spelling/participant steps are general-purpose LLM calls (OpenAI-compatible LLM hub through `instructor`, JSON mode).
+Note the distinction between 🟥 **model** and 🟧 **llm**: diarization and transcription are dedicated audio models behind their own APIs; the acronym/spelling/participant steps are general-purpose LLM calls (OpenAI-compatible LLM hub through `instructor`, JSON mode).
 
 ## Stage-by-stage
 
@@ -154,10 +144,9 @@ The goal is to hand the models a single, predictable signal regardless of the so
 ### 3. Diarization (`DiarizationProcessor.diarize`)
 Answers *who spoke when* (independently of *what* was said). Output is `list[DiarizationSegment]` with `start`, `end`, and a French-formatted speaker label (`SPEAKER_03` → `LOCUTEUR_03` via `convert_to_french_speaker`).
 
-- **Local** (default): pyannote `speaker-diarization-3.1`, loaded once into the Celery worker context (or freshly in `DEV`).
-- **API** (`API_BASED_DIARIZATION` flag): POSTs the WAV to a remote diarization endpoint with `min_duration_off=1.5` and `clustering_threshold=0.65` (`PyannoteDiarizationParameters`).
+Runs against the remote diarization API only: submits the WAV as an async job (`min_duration_off=1.5`, `clustering_threshold=0.65` — `PyannoteDiarizationParameters`), then polls with an adaptive cadence until the job completes. The labels the API returns are pyannote-formatted, so `convert_to_french_speaker` applies unchanged.
 
-If diarization returns nothing, the whole pipeline short-circuits and returns `[]`.
+A job that completes with **no segment** raises `DiarizationError` — the meeting fails rather than producing an empty transcription.
 
 ### 4. Chunking (`compute_transcription_chunks`)
 Whisper degrades on very long inputs, so speech is cut into chunks of **at most `MAX_CHUNK_DURATION` (600 s ≈ 10 min)**. Overlapping diarization segments are merged into non-overlapping intervals, then greedily accumulated; when a chunk would exceed the limit, the split is placed at the **midpoint of the largest silence gap** in the last `SPLIT_SEARCH_WINDOW_RATIO` (20 %) of the chunk — falling back to a hard cut if no gap exists. Cutting on silence avoids slicing through a word. Output is `list[TimeSpan]`.
@@ -165,8 +154,9 @@ Whisper degrades on very long inputs, so speech is cut into chunks of **at most 
 ### 5. Transcription (`TranscriptionProcessor.transcribe`)
 `split_audio_on_timestamps` slices the normalized WAV into per-span mono float32 arrays, then each chunk is transcribed and its segment timestamps are offset back by the chunk start.
 
-- **Local** (default): `faster-whisper large-v3-turbo`, `language=fr`, word timestamps on, with an `INITIAL_PROMPT` that primes the model toward fluent meeting prose.
-- **API** (`API_BASED_TRANSCRIPTION` flag): OpenAI-compatible `audio.transcriptions` with `response_format="verbose_json"`.
+Runs against the OpenAI-compatible `audio.transcriptions` endpoint (`response_format="verbose_json"`, `INITIAL_PROMPT` priming the model toward fluent meeting prose), up to `MAX_CONCURRENT_CHUNKS` chunks in flight; results are reassembled in chunk order regardless of completion order.
+
+A chunk the API returns no segment for raises `TranscriptionError`, aborting the whole transcription.
 
 Output is `list[TranscriptionSegment]` (`id`, `start`, `end`, `text`) — no speaker yet.
 
@@ -190,14 +180,15 @@ Back in `transcribe_meeting`. `ParticipantExtraction` (also an `LLMPostProcessin
 
 ## Feature flags
 
-The pipeline branches on four flags (`feature_flag_service`). Defaults reflect the self-hosted/local path.
+The pipeline branches on two flags (`FeatureFlag`, resolved through Unleash).
 
 | Flag | Default | Effect when on |
 |---|---|---|
 | `audio_noise_filtering` | off | Run noise detection and conditionally apply the FFmpeg noise chain in pre-processing. |
-| `API_BASED_DIARIZATION` | off | Use the remote diarization API instead of the local pyannote model. |
-| `API_BASED_TRANSCRIPTION` | off | Use the remote OpenAI-compatible transcription API instead of local faster-whisper. |
+| `audio_phase_aware_downmix` | off | Phase-aware stereo downmix when converting to WAV. |
 | `spelling_correction` | off | Run the LLM spelling-correction pass in post-processing. |
+
+Diarization and transcription are no longer switchable: both run against their remote API. The `api_based_diarization` / `api_based_transcription` flags and the local pyannote/faster-whisper models were removed.
 
 ## Going further
 
@@ -206,12 +197,12 @@ Pointers to the key files:
 - **Orchestrator**: `app/services/speech_to_text/speech_to_text.py` — `SpeechToTextPipeline.run` (pre_process → diarize → chunk → transcribe → align → post_process).
 - **Entry point**: `app/services/meeting_to_transcription_service.py` (`transcribe_meeting`) and `transcription_worker.py` (`transcribe` Celery task + success/failure signals).
 - **Pre-transcription**: `app/services/audio_pre_transcription_processing_service.py` — normalization, silence/noise detection, FFmpeg filtering, S3 concatenation.
-- **Diarization**: `app/services/speech_to_text/diarization_processor.py` (local vs API).
+- **Diarization**: `app/infrastructure/diarization.py` (async job submit + adaptive polling).
 - **Chunking**: `app/services/speech_to_text/utils/chunking.py` (silence-aware split) and `utils/types.py` (`TimeSpan`).
 - **Transcription**: `app/services/speech_to_text/transcription_processor.py` and `utils/audio.py` (slicing).
 - **Alignment**: `app/services/speech_to_text/utils/vad.py` (`diarize_vad_transcription_segments`, speaker label conversion).
 - **Post-process**: `app/services/speech_to_text/transcription_post_process.py` (merge + de-hallucinate).
 - **LLM cleaning**: `app/services/llm_post_processing.py` (base), `correct_acronyms/`, `correct_spelling_mistakes/`, `speech_to_text/participants_naming/`.
-- **Settings**: `app/configs/base.py` — `AudioSettings`, `NoiseDetectionSettings`, `NormalizedAudioVolumeSettings`, `PyannoteDiarizationParameters`, `WhisperTranscriptionSettings`, `Speech2TextSettings`, `TranscriptionApiSettings`, `TranscriptionForbiddenSentences`, `ChunkingConfig`, `LLMSettings`.
+- **Settings**: `app/configs/base.py` — `AudioSettings`, `NoiseDetectionSettings`, `NormalizedAudioVolumeSettings`, `PyannoteDiarizationParameters`, `WhisperTranscriptionSettings`, `TranscriptionApiSettings`, `TranscriptionForbiddenSentences`, `ChunkingConfig`, `LLMSettings`.
 </content>
 </invoke>

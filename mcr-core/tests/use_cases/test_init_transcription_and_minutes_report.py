@@ -10,6 +10,7 @@ from mcr_meeting.app.exceptions.exceptions import (
     MeetingStateConflictException,
     TaskCreationException,
 )
+from mcr_meeting.app.infrastructure.unleash import FeatureFlag
 from mcr_meeting.app.models.deliverable_model import (
     Deliverable,
     DeliverableStatus,
@@ -22,19 +23,12 @@ from mcr_meeting.app.models.meeting_model import (
 )
 from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
-from mcr_meeting.app.use_cases.init_transcription import init_transcription
+from mcr_meeting.app.use_cases.init_transcription_and_minutes_report import (
+    init_transcription_and_minutes_report,
+)
 from tests.factories import MeetingFactory
 from tests.factories.deliverable_factory import DeliverableFactory
-
-
-@pytest.fixture(autouse=True)
-def structural_split_flag_off(mocker: MockerFixture) -> Mock:
-    """Keep the flag read away from a real Unleash client; tests that exercise
-    the split pipeline re-patch it to True."""
-    return mocker.patch(
-        "mcr_meeting.app.use_cases._shared.dispatch_transcription.is_enabled",
-        return_value=False,
-    )
+from tests.mocks.in_memory_feature_flags import InMemoryFeatureFlagClient
 
 
 def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
@@ -44,6 +38,18 @@ def _transcription_deliverables(meeting_id: int) -> list[Deliverable]:
         .filter(
             Deliverable.meeting_id == meeting_id,
             Deliverable.type == DeliverableType.TRANSCRIPTION,
+        )
+        .all()
+    )
+
+
+def _structured_minutes(meeting_id: int) -> list[Deliverable]:
+    return list(
+        get_db_session_ctx()
+        .query(Deliverable)
+        .filter(
+            Deliverable.meeting_id == meeting_id,
+            Deliverable.type == DeliverableType.STRUCTURED_MINUTES,
         )
         .all()
     )
@@ -61,7 +67,7 @@ def _pending_records(meeting_id: int) -> list[MeetingTransitionRecord]:
     )
 
 
-def test_init_transcription_queues_task_and_promotes_status(
+def test_init_transcription_and_minutes_report_queues_task_and_promotes_status(
     mock_celery_producer_app: Mock,
 ) -> None:
     meeting = MeetingFactory.create(
@@ -69,7 +75,7 @@ def test_init_transcription_queues_task_and_promotes_status(
         name_platform=MeetingPlatforms.COMU,
     )
 
-    result = init_transcription(meeting_id=meeting.id)
+    result = init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_PENDING
     mock_celery_producer_app.send_task.assert_called_once_with(
@@ -80,7 +86,7 @@ def test_init_transcription_queues_task_and_promotes_status(
     )
 
 
-def test_init_transcription_records_predicted_pending_transition(
+def test_init_transcription_and_minutes_report_records_predicted_pending_transition(
     mock_celery_producer_app: Mock,
 ) -> None:
     meeting = MeetingFactory.create(
@@ -88,14 +94,14 @@ def test_init_transcription_records_predicted_pending_transition(
         name_platform=MeetingPlatforms.COMU,
     )
 
-    init_transcription(meeting_id=meeting.id)
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     records = _pending_records(meeting.id)
     assert len(records) == 1
     assert records[0].predicted_date_of_next_transition is not None
 
 
-def test_init_transcription_creates_pending_transcription_deliverable(
+def test_init_transcription_and_minutes_report_creates_pending_transcription_deliverable(
     mock_celery_producer_app: Mock,
 ) -> None:
     meeting = MeetingFactory.create(
@@ -103,14 +109,14 @@ def test_init_transcription_creates_pending_transcription_deliverable(
         name_platform=MeetingPlatforms.COMU,
     )
 
-    init_transcription(meeting_id=meeting.id)
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     deliverables = _transcription_deliverables(meeting.id)
     assert len(deliverables) == 1
     assert deliverables[0].status == DeliverableStatus.PENDING
 
 
-def test_init_transcription_rejects_when_active_deliverable_exists(
+def test_init_transcription_and_minutes_report_rejects_when_active_deliverable_exists(
     mock_celery_producer_app: Mock,
 ) -> None:
     # init now only ever INSERTs; it never upserts. If an active deliverable
@@ -129,12 +135,12 @@ def test_init_transcription_rejects_when_active_deliverable_exists(
     )
 
     with pytest.raises(DeliverableConcurrentlyCreatedException):
-        init_transcription(meeting_id=meeting.id)
+        init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     mock_celery_producer_app.send_task.assert_not_called()
 
 
-def test_init_transcription_stamps_end_date_for_record_meetings(
+def test_init_transcription_and_minutes_report_stamps_end_date_for_record_meetings(
     mock_celery_producer_app: Mock,
 ) -> None:
     meeting = MeetingFactory.create(
@@ -142,12 +148,12 @@ def test_init_transcription_stamps_end_date_for_record_meetings(
         name_platform=MeetingPlatforms.MCR_RECORD,
     )
 
-    result = init_transcription(meeting_id=meeting.id)
+    result = init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     assert result.end_date is not None
 
 
-def test_init_transcription_rolls_back_on_broker_failure(
+def test_init_transcription_and_minutes_report_rolls_back_on_broker_failure(
     mock_celery_producer_app: Mock,
     db_session: Session,
 ) -> None:
@@ -158,27 +164,28 @@ def test_init_transcription_rolls_back_on_broker_failure(
     )
 
     with pytest.raises(TaskCreationException):
-        init_transcription(meeting_id=meeting.id)
+        init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     assert _pending_records(meeting.id) == []
     assert _transcription_deliverables(meeting.id) == []
+    assert _structured_minutes(meeting.id) == []
     db_session.refresh(meeting)
     assert meeting.status == MeetingStatus.TRANSCRIPTION_PENDING
 
 
-def test_init_transcription_enqueues_chain_when_split_enabled(
+def test_init_transcription_and_minutes_report_enqueues_chain_when_split_enabled(
     mock_celery_producer_app: Mock,
-    structural_split_flag_off: Mock,
+    feature_flags: InMemoryFeatureFlagClient,
     mocker: MockerFixture,
 ) -> None:
-    structural_split_flag_off.return_value = True
+    feature_flags.enable(FeatureFlag.STRUCTURAL_SPLIT_ENABLED)
     chain_mock = mocker.patch("mcr_meeting.app.infrastructure.celery.chain")
     meeting = MeetingFactory.create(
         status=MeetingStatus.CAPTURE_DONE,
         name_platform=MeetingPlatforms.COMU,
     )
 
-    result = init_transcription(meeting_id=meeting.id)
+    result = init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     assert result.status == MeetingStatus.TRANSCRIPTION_PENDING
     args = [meeting.id, str(meeting.owner.keycloak_uuid)]
@@ -205,17 +212,17 @@ def test_init_transcription_enqueues_chain_when_split_enabled(
     mock_celery_producer_app.send_task.assert_not_called()
 
 
-def test_init_transcription_falls_back_to_legacy_when_flag_unreadable(
+def test_init_transcription_and_minutes_report_falls_back_to_legacy_when_flag_unreadable(
     mock_celery_producer_app: Mock,
-    structural_split_flag_off: Mock,
+    feature_flags: InMemoryFeatureFlagClient,
 ) -> None:
-    structural_split_flag_off.side_effect = Exception("unleash down")
+    feature_flags.fail_with(Exception("unleash down"))
     meeting = MeetingFactory.create(
         status=MeetingStatus.CAPTURE_DONE,
         name_platform=MeetingPlatforms.COMU,
     )
 
-    init_transcription(meeting_id=meeting.id)
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     mock_celery_producer_app.send_task.assert_called_once_with(
         MCRTranscriptionTasks.TRANSCRIBE,
@@ -225,13 +232,13 @@ def test_init_transcription_falls_back_to_legacy_when_flag_unreadable(
     )
 
 
-def test_init_transcription_rolls_back_on_pipeline_broker_failure(
+def test_init_transcription_and_minutes_report_rolls_back_on_pipeline_broker_failure(
     mock_celery_producer_app: Mock,
-    structural_split_flag_off: Mock,
+    feature_flags: InMemoryFeatureFlagClient,
     mocker: MockerFixture,
     db_session: Session,
 ) -> None:
-    structural_split_flag_off.return_value = True
+    feature_flags.enable(FeatureFlag.STRUCTURAL_SPLIT_ENABLED)
     chain_mock = mocker.patch("mcr_meeting.app.infrastructure.celery.chain")
     chain_mock.return_value.apply_async.side_effect = Exception("broker down")
     meeting = MeetingFactory.create(
@@ -240,12 +247,12 @@ def test_init_transcription_rolls_back_on_pipeline_broker_failure(
     )
 
     with pytest.raises(TaskCreationException):
-        init_transcription(meeting_id=meeting.id)
+        init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     assert _pending_records(meeting.id) == []
 
 
-def test_init_transcription_rejects_illegal_transition(
+def test_init_transcription_and_minutes_report_rejects_illegal_transition(
     mock_celery_producer_app: Mock,
 ) -> None:
     meeting: Meeting = MeetingFactory.create(
@@ -254,7 +261,50 @@ def test_init_transcription_rejects_illegal_transition(
     )
 
     with pytest.raises(MeetingStateConflictException):
-        init_transcription(meeting_id=meeting.id)
+        init_transcription_and_minutes_report(meeting_id=meeting.id)
 
     mock_celery_producer_app.send_task.assert_not_called()
     assert _transcription_deliverables(meeting.id) == []
+
+
+def test_init_requests_default_structured_minutes(
+    mock_celery_producer_app: Mock,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.CAPTURE_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
+
+    reports = _structured_minutes(meeting.id)
+    assert len(reports) == 1
+    assert reports[0].status == DeliverableStatus.REQUESTED
+    assert reports[0].custom_prompt is None
+    # No dispatch at launch: only the transcription task is sent.
+    mock_celery_producer_app.send_task.assert_called_once_with(
+        MCRTranscriptionTasks.TRANSCRIBE,
+        args=[meeting.id, str(meeting.owner.keycloak_uuid)],
+        countdown=5,
+        link_error=mock_celery_producer_app.signature.return_value,
+    )
+
+
+def test_init_does_not_duplicate_an_existing_structured_minutes(
+    mock_celery_producer_app: Mock,
+) -> None:
+    meeting = MeetingFactory.create(
+        status=MeetingStatus.CAPTURE_DONE,
+        name_platform=MeetingPlatforms.COMU,
+    )
+    existing = DeliverableFactory.create(
+        meeting=meeting,
+        type=DeliverableType.STRUCTURED_MINUTES,
+        status=DeliverableStatus.REQUESTED,
+    )
+
+    init_transcription_and_minutes_report(meeting_id=meeting.id)
+
+    reports = _structured_minutes(meeting.id)
+    assert len(reports) == 1
+    assert reports[0].id == existing.id

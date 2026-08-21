@@ -19,10 +19,6 @@ from mcr_meeting.app.infrastructure.sentry import (
     init_sentry,
     set_sentry_meeting_context,
 )
-from mcr_meeting.app.infrastructure.speech_to_text_models import (
-    get_diarization_pipeline,
-    get_transcription_model,
-)
 from mcr_meeting.app.infrastructure.transcription import TranscriptionProcessor
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 from mcr_meeting.app.schemas.transcription_schema import (
@@ -49,8 +45,8 @@ init_langfuse()
 
 
 def run_transcription_in_task(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    run_diarization(meeting_id, DiarizationProcessor(get_diarization_pipeline))
-    run_transcribe_chunks(meeting_id, TranscriptionProcessor(get_transcription_model))
+    run_diarization(meeting_id, DiarizationProcessor())
+    run_transcribe_chunks(meeting_id, TranscriptionProcessor())
     speaker_transcriptions = run_finalize_transcription(meeting_id)
     _mark_success(meeting_id, owner_keycloak_uuid, speaker_transcriptions)
     logger.info("Transcription completed for meeting {}", meeting_id)
@@ -112,7 +108,7 @@ def transcribe(meeting_id: int, owner_keycloak_uuid: str) -> None:
 )
 def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
     asyncio.run(MeetingApiClient(owner_keycloak_uuid).start_transcription(meeting_id))
-    run_diarization(meeting_id, DiarizationProcessor(get_diarization_pipeline))
+    run_diarization(meeting_id, DiarizationProcessor())
     logger.info("Diarization completed for meeting {}", meeting_id)
 
 
@@ -121,7 +117,7 @@ def diarize(meeting_id: int, owner_keycloak_uuid: str) -> None:
     name=MCRTranscriptionTasks.TRANSCRIBE_CHUNKS,
 )
 def transcribe_chunks(meeting_id: int, owner_keycloak_uuid: str) -> None:
-    run_transcribe_chunks(meeting_id, TranscriptionProcessor(get_transcription_model))
+    run_transcribe_chunks(meeting_id, TranscriptionProcessor())
     logger.info("Chunk transcription completed for meeting {}", meeting_id)
 
 
@@ -139,8 +135,8 @@ def _evaluation_transcribe_audio() -> Callable[
 ]:
     return partial(
         run_speech_to_text,
-        diarization_processor=DiarizationProcessor(get_diarization_pipeline),
-        transcription_processor=TranscriptionProcessor(get_transcription_model),
+        diarization_processor=DiarizationProcessor(),
+        transcription_processor=TranscriptionProcessor(),
     )
 
 

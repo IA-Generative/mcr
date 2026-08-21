@@ -1,7 +1,7 @@
 <template>
   <section
     v-if="isOpen"
-    class="import-sticky"
+    class="fixed right-(--sticky-corner-margin) bottom-(--sticky-corner-margin) z-1000 w-(--import-sticky-width) rounded-lg bg-background-default-grey shadow-overlay"
     :aria-label="t('meeting.import.sticky.label')"
   >
     <header class="flex items-center justify-between gap-2 px-4 py-3">
@@ -18,12 +18,12 @@
     </header>
     <p
       v-if="etaLabel"
-      class="m-0 border-t border-default-grey px-4 py-2 text-sm text-grey-mention"
+      class="m-0 border-t border-border px-4 py-2 text-sm text-grey-mention"
       role="status"
     >
       {{ etaLabel }}
     </p>
-    <ul class="m-0 list-none overflow-y-auto p-0 max-h-[40vh]">
+    <ul class="m-0 max-h-[40vh] list-none overflow-y-auto p-0">
       <ImportStickyRow
         v-for="item in items"
         :key="item.id"
@@ -55,16 +55,3 @@ const etaLabel = computed(() =>
       }),
 );
 </script>
-
-<style scoped>
-.import-sticky {
-  position: fixed;
-  z-index: 1000;
-  bottom: var(--sticky-corner-margin);
-  right: var(--sticky-corner-margin);
-  width: var(--import-sticky-width);
-  background-color: var(--background-default-grey, #fff);
-  border-radius: 8px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
-}
-</style>

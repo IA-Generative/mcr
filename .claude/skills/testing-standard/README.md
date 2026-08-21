@@ -27,10 +27,16 @@ and worse, they look reassuring while doing so. The standard exists to tell thos
 The standard is a small set of controls, each aimed at a specific way a test gives false confidence.
 
 - Fatal flaws are caught before anything else. Some tests are worthless no matter how many assertions
-  they carry: they exercise a copy of the code instead of the real thing, they cannot fail for the
-  reason they claim, or they mock away the very behavior they exist to verify. A polished score on a
-  structurally blind test is worse than no test — it certifies confidence that isn't there — so these
-  are gated first and never scored.
+  they carry: they pin no business rule at all, they exercise a copy of the code instead of the real
+  thing, they cannot fail for the reason they claim, or they mock away the very behavior they exist to
+  verify. A polished score on a structurally blind test is worse than no test — it certifies confidence
+  that isn't there — so these are gated first and never scored.
+
+  Pinning no rule is the easiest one to miss, because such a test often looks rigorous: it can be
+  precise, thorough, and sensitive to any change in the code it targets. Sensitivity is not the same as
+  worth. A test that tracks a configuration value tracks it faithfully and still guarantees nothing about
+  the product, so no amount of rigour rescues it — and where the only effect of a change is a monitoring
+  or config value, the honest verification is review plus post-deploy, not a unit test.
 
 - The bar adapts to what the code is for. A pure business rule must be pinned across its input space; an
   external-dependency wrapper must prove it translates correctly; a flow must prove its side effects and

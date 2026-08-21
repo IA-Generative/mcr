@@ -11,6 +11,11 @@ from mcr_gateway.app.api import (
 )
 from mcr_gateway.setup.logger import setup_logging
 from mcr_gateway.setup.request_id_middleware import AddRequestIdMiddleware
+from mcr_gateway.setup.sentry import setup_sentry
+
+# Initialize Sentry before the app so its ASGI integration is in place for the
+# first request and continues the trace incoming from the frontend.
+setup_sentry()
 
 # Redirects the Gateway's Swagger route to domain/api/docs to make it available in all environments
 app = FastAPI(docs_url="/api/docs", openapi_url="/api/openapi.json")

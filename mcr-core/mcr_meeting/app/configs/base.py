@@ -50,6 +50,10 @@ class Settings(BaseSettings):
 class LoggingSettings(BaseSettings):
     COLORIZE: bool = Field(default=False, description="Should log output be colored")
     LEVEL: int | str = Field(default="INFO")
+    JSON_LOGS: bool = Field(
+        default=False,
+        description="Emit logs as JSON lines (for Loki) instead of human text",
+    )
     DISPLAY_REQUEST_ID: bool = Field(
         default=True, description="Should display request id in logs"
     )
@@ -59,10 +63,6 @@ class LoggingSettings(BaseSettings):
 
 
 class AudioSettings(BaseSettings):
-    """
-    Configuration settings for audio and transcription processing
-    """
-
     SAMPLE_RATE: int = Field(
         16000,
         description="""Target audio sample rate in Hz. 16000 Hz is standard for speech-to-text.
@@ -92,10 +92,6 @@ class AudioSettings(BaseSettings):
 
 
 class NoiseDetectionSettings(BaseSettings):
-    """
-    Configuration settings for noise detection based on spectral flatness
-    """
-
     # === PARAMETERS ===
 
     NOISE_FLATNESS_THRESHOLD: float = Field(
@@ -145,10 +141,6 @@ class NoiseDetectionSettings(BaseSettings):
 
 
 class NormalizedAudioVolumeSettings(BaseSettings):
-    """
-    Configuration settings for normalized audio volume based on EBU R128
-    """
-
     TARGET_LUFS: float = Field(
         default=-23.0,
         description="Target loudness in LUFS for EBU R128 volume normalization.",
@@ -163,34 +155,7 @@ class NormalizedAudioVolumeSettings(BaseSettings):
     )
 
 
-class VADSettings(BaseSettings):
-    """
-    Configuration settings for Voice Activity Detection (VAD)
-    """
-
-    VAD_MODEL: str = Field(
-        default="pyannote/voice-activity-detection",
-        description="Pretrained model name for voice activity detection.",
-    )
-    MIN_SPEECH_DURATION: float = Field(
-        default=0.35,
-        description="Minimum duration (in seconds) for a speech segment to be considered valid.",
-    )
-    MAX_SILENCE_GAP: float = Field(
-        default=0.3,
-        description="Maximum allowed gap of silence (in seconds) between speech segments to merge them (natural speech short pause between two spans belonging to the same sentence.).",
-    )
-    MIN_TOTAL_VOICED_DURATION: float = Field(
-        default=0.5,
-        description="Minimum total duration (in seconds) of voiced segments required to consider the audio as containing speech.",
-    )
-
-
 class PyannoteDiarizationParameters(BaseSettings):
-    """
-    Configuration settings for Pyannote Speaker Diarization
-    """
-
     min_duration_off: float = Field(
         default=1.5,
         description="Minimum duration of silence (in seconds) to consider a speaker change.",
@@ -206,18 +171,6 @@ class PyannoteDiarizationParameters(BaseSettings):
 
 
 class WhisperTranscriptionSettings(BaseSettings):
-    """
-    Configuration settings for Whisper Transcription
-    """
-
-    LANGUAGE: str | None = Field(
-        default="fr",
-        description="The language of the audio. If None, language detection will be performed.",
-    )
-    WORD_TIMESTAMPS: bool | None = Field(
-        default=True,
-        description="For the model to return word_timestamps or just segment timestamps.",
-    )
     INITIAL_PROMPT: str | None = Field(
         default="Ceci est la transcription d'une réunion d'équipe avec plusieurs intervenants ; reformule le texte dans un langage naturel et fluide, sans répétitions.",
         description="Prompt passed to the transcription model",
@@ -233,28 +186,10 @@ class WhisperTranscriptionSettings(BaseSettings):
 
 
 class Speech2TextSettings(BaseSettings):
-    """
-    Configuration settings parameters for speech to text transcription
-    """
-
-    HUGGINGFACE_API_KEY: str = Field(
-        default="", description="Hugging Face API key for accessing gated models."
-    )
-    STT_MODEL: str = Field(
-        default="large-v3-turbo", description="speech to text model name"
-    )
-    DIARIZATION_MODEL: str = Field(
-        default="pyannote/speaker-diarization-3.1",
-        description="model name for speaker diarization.",
-    )
     NOISE_FILTERS: str = "highpass=f=80,afftdn=nf=-25,agate=threshold=0.008:ratio=2,equalizer=f=250:width_type=h:width=200:g=-2,equalizer=f=3500:width_type=h:width=2500:g=3,acompressor=threshold=-18dB:ratio=2.5:attack=15:release=200:makeup=1,loudnorm=I=-18:LRA=6:TP=-1.5"
 
 
 class TranscriptionWaitingTimeSettings(BaseSettings):
-    """
-    Configuration settings for transcription waiting time
-    """
-
     model_config = SettingsConfigDict(case_sensitive=True)
 
     PARALLEL_PODS_COUNT: int = Field(
@@ -287,19 +222,20 @@ class RetrySettings(BaseSettings):
     S3_CONNECT_TIMEOUT: float = 5.0
     S3_READ_TIMEOUT: float = 30.0
 
+    # Low attempt count on purpose: sustained diarization backlog ("stale") is
+    # absorbed by the task-level backoff below, not by hammering here.
+    DIARIZATION_RETRY_ATTEMPTS: int = 2
+    DIARIZATION_RETRY_INITIAL_DELAY: float = 0.5
+    DIARIZATION_RETRY_MAX_DELAY: float = 5.0
+
     TASK_RETRY_MAX_RETRIES: int = 6
     TASK_RETRY_BACKOFF: int = 30
     TASK_RETRY_BACKOFF_MAX: int = 600
 
 
 class S3Settings(BaseSettings):
-    """
-    Configuration settings for the S3 bucket
-    """
-
     model_config = SettingsConfigDict(case_sensitive=True)
 
-    # ########################### S3 Configuration ###########################
     S3_ENDPOINT: str
     S3_EXTERNAL_ENDPOINT: str
     S3_ACCESS_KEY: str
@@ -425,10 +361,6 @@ class SMTPSettings(BaseSettings):
 
 
 class UnleashSettings(BaseSettings):
-    """
-    Configuration settings for Unleash feature flags (Gitlab Feature Flags is compatible with Unleash API)
-    """
-
     model_config = SettingsConfigDict(case_sensitive=True)
 
     UNLEASH_URL: str = Field(description="Unleash server URL")
@@ -438,10 +370,6 @@ class UnleashSettings(BaseSettings):
 
 
 class SentrySettings(BaseSettings):
-    """
-    Configuration settings for Sentry
-    """
-
     model_config = SettingsConfigDict(case_sensitive=True)
 
     SENTRY_CORE_DSN: str = Field(default="", description="Sentry DSN for core service")
@@ -463,10 +391,6 @@ class LangfuseSettings(BaseSettings):
 
 
 class LLMSettings(BaseSettings):
-    """
-    Settings parameters for calling an API hosted LLM
-    """
-
     LLM_HUB_API_URL: str = Field(
         ...,
         description="llm hub endpoint serving the llm",
@@ -501,10 +425,6 @@ class LLMSettings(BaseSettings):
 
 
 class ChunkingConfig(BaseSettings):
-    """
-    Settings of the chunking process
-    """
-
     CHUNK_SIZE: int = Field(
         default=20000, description="Maximum number of character of per chunk"
     )
@@ -514,10 +434,6 @@ class ChunkingConfig(BaseSettings):
 
 
 class TranscriptionApiSettings(BaseSettings):
-    """
-    Configuration settings for API-based transcription and diarization services
-    """
-
     model_config = SettingsConfigDict(case_sensitive=True)
 
     # Transcription API (OpenAI-compatible)
@@ -590,10 +506,6 @@ class TranscriptionApiSettings(BaseSettings):
 
 
 class EvaluationSettings(BaseSettings):
-    """
-    Configuration settings for evaluation parameters
-    """
-
     SUPPORTED_AUDIO_FORMATS: list[str] = Field(
         default=["mp3", "wav"], description="Supported audio formats for evaluation"
     )
@@ -618,10 +530,6 @@ class DriveSettings(BaseSettings):
 
 
 class TranscriptionForbiddenSentences(BaseSettings):
-    """
-    Defines the sentences to remove from any transcription
-    """
-
     FORBIDDEN_SENTENCES: list[str] = Field(
         # Be careful, the order of the sentences matters. The first pattern to match will be the one removed.
         # Longer patterns should be listed first.

@@ -1,3 +1,5 @@
+import type { DeliverableFeedbackDto } from '../deliverable-feedback/deliverable-feedback.types';
+
 export const DeliverableStatus = [
   'REQUESTED',
   'PENDING',
@@ -9,6 +11,7 @@ export type DeliverableStatus = (typeof DeliverableStatus)[number];
 
 export const DeliverableType = [
   'TRANSCRIPTION',
+  'STRUCTURED_MINUTES',
   'DECISION_RECORD',
   'DETAILED_SYNTHESIS',
   'CUSTOM_REPORT',
@@ -23,6 +26,7 @@ export interface DeliverableDto {
   external_url: string | null;
   created_at: string;
   updated_at: string;
+  feedback: DeliverableFeedbackDto | null;
 }
 
 export interface DeliverableListResponse {

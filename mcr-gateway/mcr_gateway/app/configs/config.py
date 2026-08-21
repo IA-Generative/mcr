@@ -23,10 +23,6 @@ class Settings(BaseSettings):
         return f"{self.CORE_SERVICE_BASE_URL}/api/user/"
 
     @property
-    def MEMBER_SERVICE_URL(self) -> str:
-        return f"{self.CORE_SERVICE_BASE_URL}/api/members/"
-
-    @property
     def LOOKUP_SERVICE_URL(self) -> str:
         return f"{self.CORE_SERVICE_BASE_URL}/api/lookup/"
 
@@ -49,9 +45,21 @@ class Settings(BaseSettings):
     ENV_MODE: str = "PROD"
 
 
+class SentrySettings(BaseSettings):
+    SENTRY_GATEWAY_DSN: str = Field(
+        default="", description="Sentry DSN for the gateway service"
+    )
+    SEND_DEFAULT_PII: bool = Field(default=True, description="Send default PII")
+    TRACES_SAMPLE_RATE: float = Field(default=0.2, description="Traces sample rate")
+
+
 class LoggingSettings(BaseSettings):
     COLORIZE: bool = Field(default=False, description="Should log output be colored")
     LEVEL: int | str = Field(default="INFO")
+    JSON_LOGS: bool = Field(
+        default=False,
+        description="Emit logs as JSON lines (for Loki) instead of human text",
+    )
     DISPLAY_REQUEST_ID: bool = Field(
         default=True, description="Should display request id in logs"
     )

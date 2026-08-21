@@ -1,23 +1,22 @@
-from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 
 import numpy as np
-from faster_whisper import WhisperModel
+import soundfile as sf
 from loguru import logger
 from numpy.typing import NDArray
-from openai import NotGiven, OpenAI
+from openai import APIConnectionError, APIStatusError, NotGiven, OpenAI
 
 from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
     WhisperTranscriptionSettings,
 )
 from mcr_meeting.app.domain.audio import split_audio_on_timestamps
-from mcr_meeting.app.exceptions.exceptions import TranscriptionError
-from mcr_meeting.app.infrastructure.unleash import (
-    FeatureFlag,
-    get_feature_flag_client,
+from mcr_meeting.app.exceptions.exceptions import (
+    TranscriptionError,
+    TranscriptionTransientError,
 )
+from mcr_meeting.app.infrastructure.sentry import span
 from mcr_meeting.app.schemas.transcription_schema import (
     TimeSpan,
     TranscriptionInput,
@@ -29,8 +28,7 @@ api_settings = TranscriptionApiSettings()
 
 
 class TranscriptionProcessor:
-    def __init__(self, model_provider: Callable[[], WhisperModel]) -> None:
-        self._model_provider = model_provider
+    def __init__(self) -> None:
         self._openai_client: OpenAI | None = None
 
     def _get_openai_client(self) -> OpenAI:
@@ -42,38 +40,16 @@ class TranscriptionProcessor:
             )
         return self._openai_client
 
-    def _is_api_transcription_enabled(self) -> bool:
-        """Check if API-based transcription is enabled via feature flag"""
-        try:
-            feature_flag_client = get_feature_flag_client()
-            return feature_flag_client.is_enabled(FeatureFlag.API_BASED_TRANSCRIPTION)
-        except Exception as e:
-            logger.warning(
-                "Failed to check transcription feature flag, defaulting to local mode: {}",
-                e,
-            )
-            return False
-
     def transcribe(
         self,
         audio_bytes: BytesIO,
         chunk_spans: list[TimeSpan],
     ) -> list[TranscriptionSegment]:
-        transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
-
-        logger.debug(
-            "Starting transcription of {} input audio chunks", len(transcription_inputs)
-        )
-
-        transcription_model = self._model_provider()
-
         def transcribe_one(
             indexed_chunk: tuple[int, TranscriptionInput],
         ) -> list[TranscriptionSegment]:
             idx, chunk = indexed_chunk
-            chunk_transcription_segments = self._transcribe_audio_chunk(
-                chunk.audio, transcription_model
-            )
+            chunk_transcription_segments = self._transcribe_audio_chunk_api(chunk.audio)
             if not chunk_transcription_segments:
                 logger.debug(
                     "No transcription for this chunk: start: {} - end: {}.",
@@ -92,65 +68,34 @@ class TranscriptionProcessor:
                 for segment in chunk_transcription_segments
             ]
 
-        max_workers = (
-            api_settings.MAX_CONCURRENT_CHUNKS
-            if self._is_api_transcription_enabled()
-            else 1
-        )
-
-        with ThreadPoolExecutor(max_workers=max_workers) as pool:
-            results = pool.map(transcribe_one, enumerate(transcription_inputs))
-
-            return [segment for chunk_segments in results for segment in chunk_segments]
-
-    def _transcribe_audio_chunk(
-        self,
-        audio: NDArray[np.float32],
-        transcription_model: WhisperModel,
-    ) -> list[TranscriptionSegment]:
-        if self._is_api_transcription_enabled():
-            return self._transcribe_audio_chunk_api(audio)
-        else:
-            return self._transcribe_audio_chunk_local(audio, transcription_model)
-
-    def _transcribe_audio_chunk_local(
-        self, audio: NDArray[np.float32], transcription_model: WhisperModel
-    ) -> list[TranscriptionSegment]:
-        logger.debug("Audio loaded shape: {}, dtype: {}", audio.shape, audio.dtype)
-
-        segments, info = transcription_model.transcribe(
-            audio,
-            language=transcription_settings.LANGUAGE,
-            word_timestamps=transcription_settings.WORD_TIMESTAMPS,
-            initial_prompt=transcription_settings.INITIAL_PROMPT,
-        )
-
-        result = list(segments)
-
-        logger.debug("Transcription info: {}", info)
-
-        if not result:
-            logger.debug("No segments found in transcription result.")
-            return []
-
-        transcription_segments = [
-            TranscriptionSegment(
-                id=seg.id,
-                start=seg.start,
-                end=seg.end,
-                text=seg.text,
+        # A parent span for the whole fan-out. The per-chunk API calls run in
+        # worker threads whose spans don't nest here (Sentry's scope is
+        # thread-local), but this still turns total transcription time into one
+        # named span instead of scattered, orphaned child spans.
+        with span("transcription.transcribe", "transcribe") as transcribe_span:
+            transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
+            transcribe_span.set_data(
+                "transcription.chunk_count", len(transcription_inputs)
             )
-            for seg in result
-        ]
 
-        return transcription_segments
+            logger.debug(
+                "Starting transcription of {} input audio chunks",
+                len(transcription_inputs),
+            )
+
+            with ThreadPoolExecutor(
+                max_workers=api_settings.MAX_CONCURRENT_CHUNKS
+            ) as pool:
+                results = pool.map(transcribe_one, enumerate(transcription_inputs))
+
+                return [
+                    segment for chunk_segments in results for segment in chunk_segments
+                ]
 
     def _transcribe_audio_chunk_api(
         self,
         audio: NDArray[np.float32],
     ) -> list[TranscriptionSegment]:
-        import soundfile as sf
-
         audio_bytes = BytesIO()
         sf.write(audio_bytes, audio, 16000, format="WAV")
         audio_bytes.seek(0)
@@ -181,7 +126,23 @@ class TranscriptionProcessor:
                         )
                     )
 
+        except APIStatusError as e:
+            # 5xx (backend down/cold) and 429 (overload) recover on a whole-op
+            # replay; a 4xx is a request the server rejects on replay → permanent.
+            if e.status_code == 429 or e.status_code >= 500:
+                raise TranscriptionTransientError(
+                    f"Transient transcription API error (HTTP {e.status_code})"
+                ) from e
+            raise TranscriptionError(
+                f"Transcription API rejected the request (HTTP {e.status_code})"
+            ) from e
+        except APIConnectionError as e:
+            # Covers APITimeoutError. Connect blip / timeout on a stateless POST.
+            raise TranscriptionTransientError(
+                f"Transient error calling transcription API: {e}"
+            ) from e
         except Exception as e:
+            # Unknown fault → fail loud rather than retry-storm.
             raise TranscriptionError(f"Error calling transcription API: {e}") from e
 
         if not segments:

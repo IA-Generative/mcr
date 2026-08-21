@@ -11,6 +11,7 @@ function deliverable(status: DeliverableStatus): DeliverableDto {
     external_url: null,
     created_at: '2026-07-10T00:00:00Z',
     updated_at: '2026-07-10T00:00:00Z',
+    feedback: null,
   };
 }
 

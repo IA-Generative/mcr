@@ -1,6 +1,6 @@
 <template>
-  <div class="flex flex-col items-center gap-5 py-5 bg-grey-1000 border border-grey-900">
-    <h2 class="font-bold text-3xl/10 text-blue-france-sun">
+  <div class="flex flex-col items-center gap-5 border border-grey-900 bg-grey-1000 py-5">
+    <h2 class="text-3xl/10 font-bold text-blue-france-sun">
       {{ $t('meeting-v2.visio-recording.title') }}
     </h2>
 
@@ -19,7 +19,7 @@
     <a
       v-if="isRecordLocally || isOnline"
       href=""
-      class="fr-link fr-link--sm fr-link--icon-left fr-icon-question-line self-end mr-4"
+      class="fr-link fr-link--sm fr-link--icon-left fr-icon-question-line mr-4 self-end"
       @click.prevent="isRecordLocally ? openLiveAdvices() : openVisioAdvices()"
     >
       {{

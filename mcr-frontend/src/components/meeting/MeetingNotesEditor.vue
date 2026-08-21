@@ -1,9 +1,9 @@
 <template>
-  <div class="bg-white p-6 flex flex-col gap-3 border border-grey-900">
-    <h2 class="text-blue-france-sun font-bold text-2xl">
+  <div class="flex flex-col gap-3 border border-grey-900 bg-white p-6">
+    <h2 class="text-2xl font-bold text-blue-france-sun">
       {{ $t('meeting-v2.notes.title') }}
     </h2>
-    <p class="text-grey-200 m-0 fr-text--sm">
+    <p class="fr-text--sm m-0 text-grey-200">
       {{ $t('meeting-v2.notes.description') }}
     </p>
 
@@ -12,7 +12,7 @@
       :placeholder="$t('meeting-v2.notes.placeholder')"
       @update:model-value="onUpdate"
     />
-    <div class="flex justify-end h-2">
+    <div class="flex h-2 justify-end">
       <Transition name="fade">
         <span
           v-if="syncStatus !== 'idle'"
