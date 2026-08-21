@@ -67,8 +67,8 @@ const mutation = createFeedbackMutation();
 const { defineField, values, errors, handleSubmit } = useForm({
   validationSchema: toTypedSchema(FeedbackSchema),
   initialValues: {
-    vote_type: draft.voteType.value ?? undefined,
-    comment: draft.comment.value,
+    vote_type: draft.voteType ?? undefined,
+    comment: draft.comment,
   },
   validateOnMount: true,
 });
@@ -85,8 +85,8 @@ const voteOptions = [
 // Sync the form back into the draft so the text survives the modal closing.
 // No loop: the draft only feeds the form once, through initialValues.
 watch(values, (newValues) => {
-  draft.voteType.value = newValues.vote_type ?? null;
-  draft.comment.value = newValues.comment ?? '';
+  draft.voteType = newValues.vote_type ?? null;
+  draft.comment = newValues.comment ?? '';
 });
 
 let thanksTimeout: ReturnType<typeof setTimeout> | null = null;

@@ -1,13 +1,14 @@
+import { defineStore } from 'pinia';
 import type { VoteType } from './feedback.types';
 
-const voteType = ref<VoteType | null>(null);
-const comment = ref('');
+export const useFeedbackDraft = defineStore('feedback-draft', () => {
+  const voteType = ref<VoteType | null>(null);
+  const comment = ref('');
 
-export function useFeedbackDraft() {
-  function reset() {
+  function reset(): void {
     voteType.value = null;
     comment.value = '';
   }
 
   return { voteType, comment, reset };
-}
+});

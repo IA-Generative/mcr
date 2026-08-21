@@ -36,10 +36,17 @@ const CATALOGUE: ReasonCatalogue = {
 
 function renderModal(props: Record<string, unknown> = {}) {
   const onSubmit = vi.fn();
+  const onUpdateDraft = vi.fn();
   const { rerender } = renderWithPlugins(DeliverableNegativeFeedbackModal, {
-    props: { deliverableType: 'DECISION_RECORD', isSubmitting: false, onSubmit, ...props },
+    props: {
+      deliverableType: 'DECISION_RECORD',
+      isSubmitting: false,
+      onSubmit,
+      onUpdateDraft,
+      ...props,
+    },
   });
-  return { rerender, onSubmit };
+  return { rerender, onSubmit, onUpdateDraft };
 }
 
 const chip = (name: string | RegExp) => screen.getByRole('button', { name });
@@ -79,6 +86,63 @@ describe('DeliverableNegativeFeedbackModal', () => {
 
     expect(chip('Hors sujet')).toHaveAttribute('aria-pressed', 'false');
     expect(commentBox()).toHaveValue('');
+  });
+
+  it('opens on the reasons and the comment already given for this deliverable', async () => {
+    await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC'],
+      initialComment: 'globalement à côté',
+    });
+
+    expect(chip('Hors sujet')).toHaveAttribute('aria-pressed', 'true');
+    expect(chip('Informations manquantes')).toHaveAttribute('aria-pressed', 'false');
+    expect(commentBox()).toHaveValue('globalement à côté');
+  });
+
+  it('submits what it opened on when the user changes nothing', async () => {
+    const { onSubmit } = await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC'],
+      initialComment: 'globalement à côté',
+    });
+
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith({
+      reasons: ['OFF_TOPIC'],
+      comment: 'globalement à côté',
+    });
+  });
+
+  it('reports the reasons and the text as they change, so they outlive the modal being destroyed', async () => {
+    const { onUpdateDraft } = await renderWithCatalogue();
+
+    await userEvent.click(chip('Hors sujet'));
+    await userEvent.type(commentBox(), 'à côté');
+
+    expect(onUpdateDraft).toHaveBeenLastCalledWith({
+      reasons: ['OFF_TOPIC'],
+      comment: 'à côté',
+    });
+  });
+
+  it('reports nothing when it is merely opened and closed untouched', async () => {
+    const { onUpdateDraft } = await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC'],
+      initialComment: 'globalement à côté',
+    });
+
+    expect(onUpdateDraft).not.toHaveBeenCalled();
+  });
+
+  it('lets the user drop a reason it opened on', async () => {
+    const { onSubmit } = await renderWithCatalogue({
+      initialReasons: ['OFF_TOPIC', 'MISSING_INFORMATION'],
+    });
+
+    await userEvent.click(chip('Hors sujet'));
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith({ reasons: ['MISSING_INFORMATION'], comment: '' });
   });
 
   it('lets the user report several reasons at once', async () => {

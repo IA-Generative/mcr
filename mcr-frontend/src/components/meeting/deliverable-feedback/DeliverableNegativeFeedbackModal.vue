@@ -97,7 +97,10 @@ export interface NegativeFeedbackDraft {
 const props = defineProps<{
   deliverableType: DeliverableType;
   isSubmitting: boolean;
+  initialReasons?: string[];
+  initialComment?: string;
   onSubmit: (draft: NegativeFeedbackDraft) => void;
+  onUpdateDraft: (draft: NegativeFeedbackDraft) => void;
 }>();
 
 const emit = defineEmits<{ closed: [] }>();
@@ -109,9 +112,13 @@ const {
   refetch,
 } = useDeliverableFeedbackReasons();
 
-const selectedReasons = ref<string[]>([]);
-const comment = ref('');
+const selectedReasons = ref<string[]>([...(props.initialReasons ?? [])]);
+const comment = ref(props.initialComment ?? '');
 const hasTriedToSubmit = ref(false);
+
+watch([selectedReasons, comment], () =>
+  props.onUpdateDraft({ reasons: selectedReasons.value, comment: comment.value }),
+);
 
 const offered = computed(() => catalogue.value?.[props.deliverableType]);
 

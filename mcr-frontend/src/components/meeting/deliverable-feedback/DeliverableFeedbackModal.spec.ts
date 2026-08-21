@@ -18,10 +18,11 @@ import DeliverableFeedbackModal from './DeliverableFeedbackModal.vue';
 
 function renderModal(props: Record<string, unknown> = {}) {
   const onSubmit = vi.fn();
+  const onUpdateComment = vi.fn();
   const { rerender } = renderWithPlugins(DeliverableFeedbackModal, {
-    props: { isSubmitting: false, onSubmit, ...props },
+    props: { isSubmitting: false, onSubmit, onUpdateComment, ...props },
   });
-  return { rerender, onSubmit };
+  return { rerender, onSubmit, onUpdateComment };
 }
 
 function commentBox() {
@@ -37,6 +38,43 @@ describe('DeliverableFeedbackModal', () => {
     renderModal();
 
     expect(commentBox()).toHaveValue('');
+  });
+
+  it('opens on the comment already given for this deliverable', () => {
+    renderModal({ initialComment: 'clair et fidèle' });
+
+    expect(commentBox()).toHaveValue('clair et fidèle');
+  });
+
+  it('submits the comment it opened on when the user changes nothing', async () => {
+    const { onSubmit } = renderModal({ initialComment: 'clair et fidèle' });
+
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith('clair et fidèle');
+  });
+
+  it('lets the user amend that comment instead of retyping it', async () => {
+    const { onSubmit } = renderModal({ initialComment: 'clair' });
+
+    await userEvent.type(commentBox(), ' et fidèle');
+    await userEvent.click(submitButton());
+
+    expect(onSubmit).toHaveBeenCalledWith('clair et fidèle');
+  });
+
+  it('reports the text as it is typed, so it outlives the modal being destroyed', async () => {
+    const { onUpdateComment } = renderModal();
+
+    await userEvent.type(commentBox(), 'clair');
+
+    expect(onUpdateComment).toHaveBeenLastCalledWith('clair');
+  });
+
+  it('reports nothing when it is merely opened and closed untouched', () => {
+    const { onUpdateComment } = renderModal({ initialComment: 'clair et fidèle' });
+
+    expect(onUpdateComment).not.toHaveBeenCalled();
   });
 
   it('submits without a comment, because the comment is optional', async () => {

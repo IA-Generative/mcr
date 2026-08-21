@@ -31,6 +31,7 @@ import type { DeliverableDto } from '@/services/deliverables/deliverables.types'
 import type { VoteType } from '@/services/feedback/feedback.types';
 import type { DeliverableFeedbackPayload } from '@/services/deliverable-feedback/deliverable-feedback.types';
 import { useDeliverableFeedback } from '@/services/deliverable-feedback/use-deliverable-feedback';
+import { useDeliverableFeedbackDraft } from '@/services/deliverable-feedback/use-deliverable-feedback-draft';
 import DeliverableFeedbackModal from './DeliverableFeedbackModal.vue';
 import DeliverableNegativeFeedbackModal, {
   type NegativeFeedbackDraft,
@@ -42,6 +43,12 @@ const props = defineProps<{
 
 const toaster = useToaster();
 const { upsertMutation, removeMutation } = useDeliverableFeedback(props.deliverable.meeting_id);
+const drafts = useDeliverableFeedbackDraft();
+
+const heldOpinion = (voteType: VoteType) => drafts.draftFor(props.deliverable.id, voteType);
+
+const rememberOpinion = (vote_type: VoteType, comment: string, reasons: string[]) =>
+  drafts.remember(props.deliverable.id, { vote_type, comment, reasons });
 
 const previewedVote = ref<VoteType | null | undefined>(undefined);
 
@@ -66,8 +73,12 @@ const positiveModal = useModal({
     get isSubmitting() {
       return upsertMutation.isPending.value;
     },
+    get initialComment() {
+      return heldOpinion('POSITIVE')?.comment ?? '';
+    },
     onSubmit: (comment: string) =>
       submitVote({ vote_type: 'POSITIVE', ...substantiveComment(comment) }),
+    onUpdateComment: (comment: string) => rememberOpinion('POSITIVE', comment, []),
     onClosed: () => onModalClosed(),
   },
 });
@@ -79,12 +90,20 @@ const negativeModal = useModal({
     get isSubmitting() {
       return upsertMutation.isPending.value;
     },
+    get initialComment() {
+      return heldOpinion('NEGATIVE')?.comment ?? '';
+    },
+    get initialReasons() {
+      return heldOpinion('NEGATIVE')?.reasons ?? [];
+    },
     onSubmit: (draft: NegativeFeedbackDraft) =>
       submitVote({
         vote_type: 'NEGATIVE',
         reasons: draft.reasons,
         ...substantiveComment(draft.comment),
       }),
+    onUpdateDraft: (draft: NegativeFeedbackDraft) =>
+      rememberOpinion('NEGATIVE', draft.comment, draft.reasons),
     onClosed: () => onModalClosed(),
   },
 });

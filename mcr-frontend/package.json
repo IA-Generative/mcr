@@ -41,6 +41,7 @@
     "idb": "^8.0.3",
     "keycloak-js": "^26.2.0",
     "lodash.throttle": "^4.1.1",
+    "pinia": "^3.0.4",
     "sanitize-filename": "^1.6.3",
     "tiptap-markdown": "^0.8.0",
     "unleash-proxy-client": "^3.7.8",

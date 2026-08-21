@@ -10,6 +10,7 @@ import router from '@/router/index';
 import { VueQueryPlugin } from '@tanstack/vue-query';
 
 import { i18n } from '@/plugins/i18n';
+import { createPinia } from 'pinia';
 import { vueQueryPluginOptions } from '@/plugins/vue-query';
 import { keycloakOptions } from '@/services/auth/keycloak';
 import VueKeycloak from '@dsb-norge/vue-keycloak-js';
@@ -25,6 +26,7 @@ initSentry(app);
 useUnleash();
 
 app
+  .use(createPinia())
   .use(i18n)
   .use(VueQueryPlugin, vueQueryPluginOptions)
   .use(vfm)
