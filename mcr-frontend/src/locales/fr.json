@@ -51,7 +51,7 @@
       "users": "Gestion des utilisateurs"
     },
     "notice": {
-      "title": "Contribuez au glossaire du MI !",
+      "title": "Contribuez au glossaire du MI !",
       "desc": "MCR est à la {articleLink}. Pour contribuer, {formLink}.",
       "article-link-text": "v1.8.1 du glossaire",
       "form-link-text": "cliquez sur ce lien"
@@ -99,11 +99,11 @@
   "meetings_v2": {
     "hero": {
       "title": "Faire un compte-rendu",
-      "subtitle": "Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée)."
+      "subtitle": "Simplifiez vos réunions : enregistrez, récupérez la transcription, puis générez un compte-rendu (relevé de décisions, synthèse courte ou détaillée)."
     },
     "tile-import": {
       "title": "J'importe un fichier audio ou vidéo",
-      "subtitle": "Importez un fichier au format : {formats}."
+      "subtitle": "Importez un fichier au format : {formats}."
     },
     "tile-record": {
       "title": "J'enregistre une réunion en présentiel",
@@ -206,7 +206,7 @@
     },
     "import": {
       "errors": {
-        "file-format-unsupported": "Format non supporté. Formats acceptés : {formats}.",
+        "file-format-unsupported": "Format non supporté. Formats acceptés : {formats}.",
         "file-too-long": "Fichier trop long. La durée maximum est de {maxDuration}.",
         "connection": "Importation échouée. Vérifiez votre connexion et réessayez.",
         "server": "Le serveur ne répond pas. Réessayez dans quelques minutes.",
@@ -223,7 +223,7 @@
         "button": "Quitter"
       },
       "confirm-close": {
-        "title": "Interrompre les importations en cours ?",
+        "title": "Interrompre les importations en cours ?",
         "description": "Les importations en cours seront annulées.",
         "button": "Interrompre"
       },
@@ -272,7 +272,7 @@
     },
     "transcription": {
       "wait-time": {
-        "estimation": "Temps d'attente restant estimé : ",
+        "estimation": "Temps d'attente restant estimé : ",
         "computing-estimation": "Calcul en cours...",
         "duration": {
           "less-than": "Moins de {formattedTime}",
@@ -435,14 +435,14 @@
       "title": "Rédigez votre prompt",
       "description": "Décrivez librement le compte-rendu que vous voulez obtenir, ou partez d'une suggestion.",
       "prompt-label": "votre prompt",
-      "prompt-placeholder": "Ex : Génère un compte-rendu en trois parties — ...",
+      "prompt-placeholder": "Ex : Génère un compte-rendu en trois parties — ...",
       "suggestions-label": "suggestions",
       "cancel-button": "Annuler",
       "generate-button": "Générer",
       "suggestions": {
         "action-plan": {
           "title": "Plan d'actions",
-          "prompt": "Génère un plan d'actions avec pour chaque action : le responsable, la priorité et la date d'échéance."
+          "prompt": "Génère un plan d'actions avec pour chaque action : le responsable, la priorité et la date d'échéance."
         },
         "executive-summary": {
           "title": "Note de direction",
@@ -450,7 +450,7 @@
         },
         "quick-report": {
           "title": "Compte-rendu flash",
-          "prompt": "Prépare un compte-rendu d'une page maximum : liste les 5 points clés à retenir, les décisions actées et les actions immédiates à lancer. Supprime les digressions."
+          "prompt": "Prépare un compte-rendu d'une page maximum : liste les 5 points clés à retenir, les décisions actées et les actions immédiates à lancer. Supprime les digressions."
         },
         "structured-roundtable": {
           "title": "Tour de table structuré",
@@ -462,7 +462,7 @@
     "edit": "Modifier le nom",
     "deletion-warning": "La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés aujourd'hui. | La réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés demain. | Dans {n} jours, la réunion et ses livrables associés (transcription, compte rendu) seront automatiquement supprimés.",
     "details": "{subtitle} {date} à {time}",
-    "duration-label": "Durée : {duration}",
+    "duration-label": "Durée : {duration}",
     "subtitle": {
       "import": "Fichier importé le",
       "record": "Réunion en présentiel enregistrée le",
@@ -495,7 +495,7 @@
       },
       "meeting-title": {
         "title": "Titre de votre réunion dans MCR*",
-        "example": "Exemple : Réunion d'équipe 23/01/26"
+        "example": "Exemple : Réunion d'équipe 23/01/26"
       },
       "parameters": "Paramètres de votre visioconférence",
       "submit": "Lancer la transcription",
@@ -569,7 +569,7 @@
         }
       },
       "ending": {
-        "title": "Êtes-vous sûr de vouloir terminer l’enregistrement ?",
+        "title": "Êtes-vous sûr de vouloir terminer l’enregistrement ?",
         "description": "La transcription sera générée automatiquement.",
         "buttons": {
           "cancel": "Annuler",
@@ -736,7 +736,7 @@
     },
     "modal": {
       "title": "Votre avis",
-      "body": "Cet outil vous a-t-il été utile ?"
+      "body": "Cet outil vous a-t-il été utile ?"
     },
     "vote": {
       "positive": "Oui",
@@ -749,7 +749,7 @@
     },
     "submit": "Envoyer",
     "success": {
-      "title": "Merci !",
+      "title": "Merci !",
       "body": "Votre retour a bien été pris en compte."
     }
   },
