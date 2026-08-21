@@ -1,9 +1,20 @@
+import logging  # noqa: TID251
 from typing import TypedDict
 
 import sentry_sdk
 from loguru import logger
+from sentry_sdk.integrations import Integration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.loguru import LoguruIntegration
 
 from mcr_generation.app.client.meeting_client import MeetingApiClient
+
+
+def logging_integrations() -> list[Integration]:
+    return [
+        LoguruIntegration(event_level=None, level=logging.INFO),
+        LoggingIntegration(event_level=None, level=logging.INFO),
+    ]
 
 
 def current_trace_ids() -> tuple[str | None, str | None]:

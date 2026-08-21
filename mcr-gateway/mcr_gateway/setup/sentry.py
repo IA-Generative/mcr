@@ -1,10 +1,22 @@
+import logging  # noqa: TID251
+
 import sentry_sdk
 from loguru import logger
+from sentry_sdk.integrations import Integration
+from sentry_sdk.integrations.logging import LoggingIntegration
+from sentry_sdk.integrations.loguru import LoguruIntegration
 
 from mcr_gateway.app.configs.config import SentrySettings, Settings
 
 settings = Settings()
 sentry_settings = SentrySettings()
+
+
+def _logging_integrations() -> list[Integration]:
+    return [
+        LoguruIntegration(event_level=None, level=logging.INFO),
+        LoggingIntegration(event_level=None, level=logging.INFO),
+    ]
 
 
 def setup_sentry() -> None:
@@ -18,6 +30,7 @@ def setup_sentry() -> None:
             traces_sample_rate=sentry_settings.TRACES_SAMPLE_RATE,
             environment=env_mode,
             ignore_errors=[],
+            integrations=_logging_integrations(),
         )
     except Exception as e:
         logger.warning("Sentry initialization failed, continuing without it: {}", e)

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 import mcr_meeting.app.infrastructure.email as email_infra_module
 import mcr_meeting.app.infrastructure.keycloak as keycloak_module
+import mcr_meeting.app.infrastructure.langfuse as langfuse_module
 import mcr_meeting.app.infrastructure.redis as redis_store_module
 import mcr_meeting.app.infrastructure.s3 as s3_module
 import mcr_meeting.app.use_cases._shared.drive_upload as drive_upload_module
@@ -33,6 +34,11 @@ from tests.mocks.in_memory_s3 import InMemoryS3
 from tests.mocks.report_task_mocks import (
     mock_persist_report_docx as mock_persist_report_docx,  # noqa: F401
 )
+
+
+def pytest_configure(config: Any) -> None:  # noqa: ARG001
+    langfuse_module.Langfuse = Mock()  # type: ignore[misc]
+
 
 # --- TEST DB SETUP ---
 # Use a temporary SQLite file for the test DB
