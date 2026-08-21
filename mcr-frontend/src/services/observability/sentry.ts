@@ -109,7 +109,7 @@ export function initSentry(app: App): void {
         Sentry.consoleLoggingIntegration({ levels: ['info', 'warn', 'error'] }),
         Sentry.browserTracingIntegration(),
       ],
-      tracesSampleRate: 1.0,
+      tracesSampleRate: 0.1,
       tracePropagationTargets: [apiBase],
       beforeBreadcrumb: scrubBreadcrumb,
       beforeSend: scrubRequest,
