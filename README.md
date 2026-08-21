@@ -165,6 +165,7 @@ Une fois la stack démarrée (`make start`), les services sont exposés sur les 
 | `7001` | mcr-core                 | debug mcr-core       |
 | `7002` | mcr-transcription-worker | debug transcription  |
 | `7003` | mcr-generation           | debug mcr-generation |
+| `7004` | mcr-capture-worker       | debug capture-worker |
 
 ---
 
