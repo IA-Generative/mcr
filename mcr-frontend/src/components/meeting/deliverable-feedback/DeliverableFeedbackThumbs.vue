@@ -47,6 +47,9 @@ const drafts = useDeliverableFeedbackDraft();
 
 const heldOpinion = (voteType: VoteType) => drafts.draftFor(props.deliverable.id, voteType);
 
+const rememberOpinion = (vote_type: VoteType, comment: string, reasons: string[]) =>
+  drafts.remember(props.deliverable.id, { vote_type, comment, reasons });
+
 const previewedVote = ref<VoteType | null | undefined>(undefined);
 
 const shownVote = computed(() =>
@@ -75,6 +78,7 @@ const positiveModal = useModal({
     },
     onSubmit: (comment: string) =>
       submitVote({ vote_type: 'POSITIVE', ...substantiveComment(comment) }),
+    onUpdateComment: (comment: string) => rememberOpinion('POSITIVE', comment, []),
     onClosed: () => onModalClosed(),
   },
 });
@@ -98,6 +102,8 @@ const negativeModal = useModal({
         reasons: draft.reasons,
         ...substantiveComment(draft.comment),
       }),
+    onUpdateDraft: (draft: NegativeFeedbackDraft) =>
+      rememberOpinion('NEGATIVE', draft.comment, draft.reasons),
     onClosed: () => onModalClosed(),
   },
 });

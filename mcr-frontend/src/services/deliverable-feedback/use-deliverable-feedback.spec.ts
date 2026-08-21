@@ -1,5 +1,6 @@
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
 import { flushPromises } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { defineComponent, h } from 'vue';
 import { render } from '@testing-library/vue';
 import { QUERY_KEYS } from '@/plugins/vue-query';
@@ -55,7 +56,10 @@ function cachedFeedback(queryClient: QueryClient) {
 }
 
 describe('useDeliverableFeedback optimistic cache', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    vi.clearAllMocks();
+  });
 
   it('shows the vote as cast before the server answers', async () => {
     let release: () => void = () => {};
