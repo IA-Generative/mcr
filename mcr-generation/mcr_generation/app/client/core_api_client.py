@@ -4,8 +4,13 @@ import httpx
 from loguru import logger
 
 from mcr_generation.app.client.http_client import HttpClient
-from mcr_generation.app.configs.settings import ApiSettings, InProgressCallbackSettings
+from mcr_generation.app.configs.settings import (
+    ApiSettings,
+    CallbackRetrySettings,
+    InProgressCallbackSettings,
+)
 from mcr_generation.app.exceptions.exceptions import (
+    CallbackTransientError,
     DeliverableNotYetPendingError,
     DeliverableNotYetVisibleError,
     ReportCallbackError,
@@ -14,24 +19,43 @@ from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.utils.retry import retry_transient
 
 _in_progress_settings = InProgressCallbackSettings()
+_callback_retry_settings = CallbackRetrySettings()
 
 _retry_in_progress = retry_transient(
-    on=(DeliverableNotYetVisibleError, DeliverableNotYetPendingError),
+    on=(
+        DeliverableNotYetVisibleError,
+        DeliverableNotYetPendingError,
+        CallbackTransientError,
+    ),
     attempts=_in_progress_settings.IN_PROGRESS_RETRY_MAX_ATTEMPTS,
     initial_delay=_in_progress_settings.IN_PROGRESS_RETRY_MIN_WAIT,
     max_delay=_in_progress_settings.IN_PROGRESS_RETRY_MAX_WAIT,
+)
+
+_retry_on_transient = retry_transient(
+    on=(CallbackTransientError,),
+    attempts=_callback_retry_settings.CALLBACK_RETRY_MAX_ATTEMPTS,
+    initial_delay=_callback_retry_settings.CALLBACK_RETRY_MIN_WAIT,
+    max_delay=_callback_retry_settings.CALLBACK_RETRY_MAX_WAIT,
 )
 
 
 class CoreApiClient:
     def __init__(self) -> None:
         self.api_settings = ApiSettings()
-        self.client = HttpClient(base_url=self.api_settings.MCR_CORE_API_URL)
+        self.client = HttpClient(
+            base_url=self.api_settings.MCR_CORE_API_URL,
+            timeout=httpx.Timeout(
+                self.api_settings.HTTP_READ_TIMEOUT,
+                connect=self.api_settings.HTTP_CONNECT_TIMEOUT,
+            ),
+        )
 
     @_retry_in_progress
     def mark_deliverable_in_progress(self, deliverable_id: int) -> None:
         self._post(f"/deliverables/{deliverable_id}/start", swallow_409=True)
 
+    @_retry_on_transient
     def mark_deliverable_success(
         self,
         deliverable_id: int,
@@ -43,6 +67,7 @@ class CoreApiClient:
             swallow_404=True,
         )
 
+    @_retry_on_transient
     def mark_deliverable_failure(self, deliverable_id: int) -> None:
         self._post(f"/deliverables/{deliverable_id}/fail", swallow_404=True)
 
@@ -75,5 +100,9 @@ class CoreApiClient:
                     f"Deliverable not pending yet at {url}: {e}"
                 ) from e
             raise ReportCallbackError(f"Failed to POST callback to {url}: {e}") from e
+        except httpx.TransportError as e:
+            raise CallbackTransientError(
+                f"Transient network error posting callback to {url}: {e}"
+            ) from e
         except Exception as e:
             raise ReportCallbackError(f"Failed to POST callback to {url}: {e}") from e

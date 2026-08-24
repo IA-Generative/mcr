@@ -255,3 +255,92 @@ class TestMarkDeliverableFailure:
 
         with pytest.raises(ReportCallbackError):
             core_client.mark_deliverable_failure(deliverable_id=7)
+
+
+def _read_timeout() -> httpx.ReadTimeout:
+    return httpx.ReadTimeout("connection blip")
+
+
+def _speed_up_retry(monkeypatch: Any, method: Any) -> None:  # type: ignore[explicit-any]
+    policy = getattr(method, "retry", None)
+    if policy is not None:
+        monkeypatch.setattr(policy, "stop", stop_after_attempt(3))
+        monkeypatch.setattr(policy, "wait", wait_none())
+
+
+class TestCallbackNetworkResilience:
+    def test_success_absorbs_a_single_read_timeout(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        decision_record: DecisionRecord,
+        monkeypatch: Any,  # type: ignore[explicit-any]
+    ) -> None:
+        _speed_up_retry(monkeypatch, CoreApiClient.mark_deliverable_success)
+        mock_httpx_client.post.side_effect = [_read_timeout(), MagicMock()]
+
+        core_client.mark_deliverable_success(deliverable_id=7, report=decision_record)
+
+        assert mock_httpx_client.post.call_count == 2
+
+    def test_success_surfaces_a_persistent_read_timeout(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        decision_record: DecisionRecord,
+        monkeypatch: Any,  # type: ignore[explicit-any]
+    ) -> None:
+        _speed_up_retry(monkeypatch, CoreApiClient.mark_deliverable_success)
+        mock_httpx_client.post.side_effect = _read_timeout()
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_success(
+                deliverable_id=7, report=decision_record
+            )
+
+        assert mock_httpx_client.post.call_count > 1
+
+    def test_success_does_not_retry_a_server_error(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        decision_record: DecisionRecord,
+        monkeypatch: Any,  # type: ignore[explicit-any]
+    ) -> None:
+        _speed_up_retry(monkeypatch, CoreApiClient.mark_deliverable_success)
+        mock_httpx_client.post.return_value.raise_for_status.side_effect = _http_error(
+            500
+        )
+
+        with pytest.raises(ReportCallbackError):
+            core_client.mark_deliverable_success(
+                deliverable_id=7, report=decision_record
+            )
+
+        assert mock_httpx_client.post.call_count == 1
+
+    def test_in_progress_absorbs_a_single_read_timeout(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        monkeypatch: Any,  # type: ignore[explicit-any]
+    ) -> None:
+        _speed_up_retry(monkeypatch, CoreApiClient.mark_deliverable_in_progress)
+        mock_httpx_client.post.side_effect = [_read_timeout(), MagicMock()]
+
+        core_client.mark_deliverable_in_progress(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 2
+
+    def test_failure_absorbs_a_single_read_timeout(
+        self,
+        core_client: CoreApiClient,
+        mock_httpx_client: MagicMock,
+        monkeypatch: Any,  # type: ignore[explicit-any]
+    ) -> None:
+        _speed_up_retry(monkeypatch, CoreApiClient.mark_deliverable_failure)
+        mock_httpx_client.post.side_effect = [_read_timeout(), MagicMock()]
+
+        core_client.mark_deliverable_failure(deliverable_id=7)
+
+        assert mock_httpx_client.post.call_count == 2
