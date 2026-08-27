@@ -1,8 +1,12 @@
 **2MLFDI** - Mission ministérielle de la lutte contre la fraude documentaire et à l'identité - Mission dédiée à la prévention et à la répression des fraudes liées aux documents officiels et à l'usurpation d'identité.
 
+**3E** - Entreprises, emploi, économie - Pôle d'une DDETSPP chargé des politiques relatives aux entreprises, à l'emploi et au développement économique du département.
+
 **AAH** - Allocation pour adultes handicapés - Prestation sociale versée aux personnes en situation de handicap afin de compenser la perte d'autonomie.
 
 **AAI** - Autorité administrative indépendante - Institution publique disposant d'une autonomie juridique et financière, chargée de missions de régulation ou de contrôle.
+
+**AAP** - Appel à projets - Procédure par laquelle une institution sollicite des propositions de projets, généralement assortie d'un financement ou d'une subvention.
 
 **AAPC** - Avis d'appel public à la concurrence - Document officiel annonçant le lancement d'une procédure de mise en concurrence pour un marché public.
 
@@ -12,6 +16,8 @@
 
 **ACMOSS** - Agence des communications mobiles opérationnelles de sécurité et de secours - Opérateur public chargé du Réseau Radio du Futur pour les communications sécurisées des forces de sécurité et de secours.
 
+**ADIL** - Agence départementale d'information sur le logement - Structure informant gratuitement les particuliers sur leurs droits en matière de location, d'accession à la propriété et de rénovation.
+
 **ADP** - Académie de police - Structure organisant le recrutement et la formation initiale et continue des agents de la police nationale.
 
 **ADS** - Adjoint de sécurité - Fonction de soutien aux opérations de sécurité publique au sein des services de police ou de gendarmerie.
@@ -20,19 +26,31 @@
 
 **AFC** - Amende forfaitaire et consignation - Sanction pécuniaire appliquée au titre du code de la route ou d'autres dispositions légales, avec procédure de consignation éventuelle.
 
+**AGDREF** - Application de gestion des dossiers des ressortissants étrangers en France - Système d'information gérant les dossiers administratifs des ressortissants étrangers et la production de leurs titres de séjour.
+
+**AGIR** - Accompagnement global et individualisé des réfugiés - Dispositif d'accompagnement renforcé des bénéficiaires de la protection internationale vers l'intégration sociale et professionnelle.
+
 **AGIV** - Aspirant de gendarmerie issu du volontariat - Statut de jeune volontaire recruté pour suivre la formation d'aspirant gendarme.
 
 **AIFE** - Agence pour l'informatique financière de l'État - Structure chargée de la conception, du déploiement et de la maintenance des systèmes d'information financière de l'État.
+
+**AIOT** - Activités, installations, ouvrages, travaux - Ensemble des projets et installations soumis à autorisation environnementale, regroupant notamment les ICPE et les IOTA.
 
 **AMG** - Agence ministérielle de gestion - Organisme assurant la gestion des ressources humaines, financières ou logistiques du ministère.
 
 **AMM** - Application métier ministérielle - Logiciel dédié à un processus métier spécifique développé pour le ministère.
 
+**ANAH** - Agence nationale de l'habitat - Établissement public finançant la rénovation, l'accessibilité et la performance énergétique des logements privés des propriétaires modestes.
+
 **ANAS** - Association nationale d'action sociale des personnels de la police nationale et du ministère de l'Intérieur - Structure représentant les intérêts sociaux et professionnels des personnels de police et du ministère.
 
 **ANDV** - Agence nationale des données de voyage - Service interministériel traitant les données de voyage (API-PNR) à des fins de sécurité et de prévention des menaces.
 
+**ANEF** - Administration numérique pour les étrangers en France - Plateforme dématérialisant les démarches administratives liées au séjour des étrangers en France.
+
 **ANFSI** - Agence du numérique des forces de sécurité intérieure - Service commun à la police et à la gendarmerie pilotant leur transformation numérique et l'interopérabilité de leurs outils.
+
+**ANRU** - Agence nationale pour la rénovation urbaine - Agence pilotant et finançant la rénovation des quartiers prioritaires de la politique de la ville, dont le NPNRU.
 
 **ANSC** - Agence du numérique de la sécurité civile - Établissement public chargé de réaliser le système d'information unifié des sapeurs-pompiers sur l'ensemble du territoire national.
 
@@ -40,19 +58,29 @@
 
 **ANTS** - Agence nationale des titres sécurisés - Établissement public gérant les démarches liées aux titres sécurisés (CNI, passeport, permis de conduire, certificat d'immatriculation), rebaptisé France Titres en 2025.
 
+**AOM** - Autorité organisatrice de la mobilité - Collectivité chargée d'organiser les solutions de mobilité de son territoire (transports, covoiturage, vélo), issue de la loi d'orientation des mobilités.
+
 **APPACH** - Application achat - Outil informatique utilisé pour la passation, le suivi et la gestion des marchés publics et des achats du ministère.
 
 **AR** - Achat responsable - Politique d'achat privilégiant les critères environnementaux, sociaux et de gouvernance dans le choix des fournisseurs.
 
 **ARIPA** - Agence de recouvrement des impayés des pensions alimentaires - Organisme chargé de la collecte et du recouvrement des pensions alimentaires non versées.
 
+**ARSA** - Allocataire du RSA - Terme administratif désignant une personne percevant le revenu de solidarité active, employé par les CAF et les dispositifs d'insertion.
+
 **ARUP** - Association reconnue d'utilité publique - Association à statut d'utilité publique bénéficiant d'avantages fiscaux et d'une reconnaissance officielle.
 
-**ASA** - Autorisation spéciale d'absence - Dispositif permettant à un agent de s'absenter de ses fonctions pour des motifs spécifiques.
+**ASA** - Autorisation spéciale d'absence / Associations syndicales autorisées - L'ASA autorise un agent public à s'absenter de son poste pour un motif particulier ; les ASA désignent aussi les organisations syndicales officiellement reconnues par l'État.
 
 **ATE** - Administration territoriale de l'État - Ensemble des services de l'État implantés dans les territoires pour la mise en œuvre des politiques publiques locales.
 
+**ATFPB** - Abattement de taxe foncière sur les propriétés bâties - Dispositif fiscal réduisant la taxe foncière des bailleurs sociaux pour leurs logements situés en quartier prioritaire.
+
 **ATI** - Allocation temporaire d'invalidité - Indemnité versée aux agents en arrêt pour maladie ou accident, avant passage au taux d'invalidité.
+
+**AVIP** - Crèche à vocation d'insertion professionnelle - Structure d'accueil de la petite enfance associant garde d'enfants et accompagnement des parents vers l'emploi ou la formation.
+
+**AVIS** - Crèche à vocation d'insertion sociale - Structure d'accueil de la petite enfance combinant prise en charge des jeunes enfants et accompagnement social des parents en difficulté.
 
 **BAGES** - Bureau des affaires générales, des études et des statuts - Service de la DRH chargé des questions juridiques, statutaires et d'études.
 
@@ -72,6 +100,8 @@
 
 **BCRHM** - Bureau de la coordination, des ressources humaines et des moyens - Direction transversale assurant la coordination des politiques RH et la gestion des moyens humains et matériels.
 
+**BE2I** - Bureau de l'émergence et de l'impact de l'innovation - Bureau de la sous-direction de l'innovation et de la donnée de la DTNUM.
+
 **BEGES** - Bilan d'émissions de gaz à effet de serre - Analyse périodique des émissions de gaz à effet de serre générées par les activités du ministère.
 
 **BEM** - Bureau de l'exécution des marchés - Service chargé de la mise en œuvre, du suivi et du contrôle des marchés publics attribués.
@@ -80,9 +110,13 @@
 
 **BEP** - Brevet d'études professionnelles - Diplôme professionnel délivré à l'issue d'une formation technique ou administrative.
 
+**BER** - Bureau éducation routière - Service concevant et diffusant les campagnes de prévention et les actions de formation à la sécurité routière.
+
 **BFIP** - Bureau du fonctionnement et de l'investissement des programmes - Direction assurant la planification, le suivi et l'évaluation des programmes d'investissement ministériels.
 
 **BGCC** - Bureau de gestion des contrats et des commandes - Service assurant la rédaction, le suivi et la conformité des contrats et la gestion des bons de commande.
+
+**BGP** - Border Gateway Protocol - Protocole de routage inter-domaines échangeant les routes entre systèmes autonomes, utilisé par les réseaux critiques du ministère.
 
 **BGSAC** - Bureau de la gestion des sites d'administration centrale - Unité responsable de la maintenance, de la sécurité et de l'optimisation des sites administratifs centraux.
 
@@ -108,6 +142,8 @@
 
 **BMSIC2** - Bureau des marchés système d'information et communication et conseil - Unité gérant les achats relatifs aux systèmes d'information, de communication et aux prestations de conseil associées.
 
+**BNUM** - Bureau numérique - Entité coordonnant la transformation numérique des services, les référentiels d'architecture technique et les plateformes communes du ministère.
+
 **BOMI** - Bulletin officiel du ministère de l'Intérieur - Publication officielle diffusant les textes législatifs, réglementaires et administratifs du ministère.
 
 **BOP** - Budget opérationnel de programme - Document budgétaire détaillant les ressources allouées à chaque programme d'action du ministère.
@@ -122,6 +158,8 @@
 
 **BPGP** - Bureau de la performance et de la gestion du programme - Service chargé d'évaluer la performance des programmes et de suivre les indicateurs clés.
 
+**BPI** - Bénéficiaires de la protection internationale / Banque publique d'investissement - Les BPI désignent les personnes reconnues réfugiées ou protégées subsidiaires ; la BPI désigne aussi l'établissement public finançant l'innovation et la croissance des entreprises.
+
 **BPOF** - Bureau du pilotage et de l'organisation financière - Direction assurant la coordination des processus budgétaires, la planification financière et le pilotage des dépenses.
 
 **BPRI** - Bureau de la paie et des régimes indemnitaires - Service chargé du calcul et du versement des salaires et indemnités des agents.
@@ -133,6 +171,8 @@
 **BPTS** - Bureau des personnels techniques et spécialisés - Direction assurant la gestion des carrières des agents techniques (informatique, logistique…).
 
 **BPU** - Bordereau des prix unitaires - Document contractuel listant les prix unitaires appliqués à chaque prestation ou fourniture d'un marché.
+
+**BR** - Brigade de recherches - Unité de gendarmerie spécialisée en police judiciaire au niveau d'une compagnie.
 
 **BRI** - Brigade de recherche et d'intervention - Unité opérationnelle spécialisée dans les enquêtes complexes, les interventions à haut risque et le suivi judiciaire.
 
@@ -147,6 +187,8 @@
 **CAFZ** - Centre administratif financier et zonal - Structure régionale assurant la gestion financière, comptable et budgétaire des services de l'État sur un périmètre zonal.
 
 **CAIOM** - Conseiller d'administration de l'intérieur et de l'outre-mer - Fonction d'expert conseil sur les questions d'administration intérieure et ultra-marine.
+
+**CALPAE** - Convention d'appui à la lutte contre la pauvreté et d'accès à l'emploi - Convention entre l'État et les départements pour l'insertion et l'accès à l'emploi, remplacée en 2024 par le contrat local des solidarités.
 
 **CAP** - Commission administrative paritaire - Instance de dialogue social pour les agents de catégorie A, B et C, traitant rémunération et conditions de travail.
 
@@ -178,21 +220,35 @@
 
 **CCTP** - Cahier des clauses techniques particulières - Document détaillant les spécifications techniques propres à un marché ou à un projet.
 
+**CDC** - Caisse des dépôts et consignations - Institution financière publique finançant sur le long terme les infrastructures, le logement social et la transition écologique au service de l'intérêt général.
+
 **CDD** - Contrat à durée déterminée - Contrat de travail temporaire conclu pour une mission ou une durée limitée.
 
 **CDDEP** - Club développement durable des établissements et entreprises publics - Réseau visant à promouvoir les pratiques écoresponsables et le développement durable dans les structures publiques.
 
+**CDGE** - Comité départemental de gestion de l'eau - Instance consultative définissant les orientations et les plans d'action relatifs à la ressource en eau à l'échelle du département.
+
 **CDI** - Contrat à durée indéterminée - Contrat de travail permanent, garantissant la stabilité de l'emploi.
+
+**CDPENAF** - Commission départementale de la préservation des espaces naturels, agricoles et forestiers - Commission rendant un avis sur les projets qui réduisent les espaces naturels, agricoles et forestiers.
+
+**CDPPE** - Convention départementale de prévention et de protection de l'enfance - Cadre de coopération entre l'État, les départements et les acteurs locaux pour la protection des mineurs en danger.
+
+**CDSF** - Comité départemental des services aux familles - Instance présidée par le préfet coordonnant les politiques de petite enfance, de parentalité, de jeunesse et d'animation de la vie sociale.
 
 **CE** - Corps d'encadrement - Corps regroupant les cadres exerçant des fonctions de commandement ou de management.
 
 **CEA** - Corps d'encadrement et d'application - Corps de la police nationale assurant à la fois les fonctions d'encadrement et la mise en œuvre opérationnelle des missions.
+
+**CEJ-JR** - Contrat d'engagement jeune pour les jeunes en rupture - Dispositif d'accompagnement renforcé des jeunes en décrochage, combinant formation, insertion et soutien personnalisé.
 
 **CET** - Compte épargne-temps - Dispositif permettant aux agents d'accumuler des jours de congés ou de RTT non pris en vue d'une utilisation ultérieure.
 
 **CFMG** - Conseil de la fonction militaire de la gendarmerie - Organe consultatif chargé d'émettre des avis sur l'évolution de la fonction militaire de la gendarmerie.
 
 **CFO** - Chorus Formulaire - Outil de l'État permettant la saisie, la transmission et le suivi des demandes de paiement électroniques dans Chorus.
+
+**CFOSN** - Centre de formation opérationnelle par la simulation numérique - Unité chargée de la formation opérationnelle des agents par la simulation numérique.
 
 **CFTD** - Centre de formation technique et de documentation - Unité assurant la formation technique des agents et la diffusion de la documentation institutionnelle.
 
@@ -212,7 +268,13 @@
 
 **CLD** - Congé de longue durée - Congé pour raisons de santé d'une durée pouvant aller jusqu'à cinq ans, accordé pour certaines maladies graves.
 
+**CLEDA** - Communauté locale de l'eau du Drac amont - Structure publique gérant la ressource en eau et les milieux aquatiques du bassin versant du Drac amont.
+
 **CLM** - Congé de longue maladie - Congé de maladie d'une durée maximale de trois ans, avec maintien de la rémunération selon les dispositions légales.
+
+**CLPE** - Comité local pour l'emploi - Instance territoriale réunissant les acteurs institutionnels et socio-économiques d'un bassin d'emploi pour coordonner les actions locales.
+
+**CLUAC** - Comité local des usagers et de l'amélioration continue - Réunion annuelle des services territoriaux de l'État organisée dans le cadre du label Quali-ATE.
 
 **CMA** - Comité ministériel des achats - Instance décisionnelle qui valide les grandes orientations et stratégies d'achat du ministère.
 
@@ -229,6 +291,8 @@
 **CNSL** - Centre national de soutien logistique - Structure assurant le support logistique centralisé (approvisionnement, transport, stockage) pour les services du ministère.
 
 **CNT** - Centre national de traitement - Site piloté par l'ANTAI hébergeant l'antenne du parquet de Rennes, le CASIR et l'OMP, ainsi que les prestataires du traitement automatisé des infractions.
+
+**COD** - Centre opérationnel départemental - Structure de commandement activée par le préfet pour piloter la gestion d'une crise à l'échelon départemental.
 
 **CODIR** - Comité de direction - Réunion régulière des cadres dirigeants pour la définition de la stratégie et le pilotage des projets majeurs.
 
@@ -250,6 +314,10 @@
 
 **CPFi** - Centre des prestations financières - Unité offrant des prestations de conseil, d'audit et de suivi financier aux directions du ministère.
 
+**CPH** - Conseil de prud'hommes - Juridiction civile compétente pour les litiges liés au droit du travail dans le secteur privé.
+
+**CPP** - Code de procédure pénale - Code fixant les règles de l'enquête, de l'instruction, du jugement et de l'exécution des peines en matière pénale.
+
 **CPPI** - Conduite et pilotage des politiques de l'Intérieur - Programme budgétaire (programme 216) regroupant les fonctions support et de pilotage du ministère de l'Intérieur.
 
 **CREL** - Centre de recherche et d'expertise de la logistique - Laboratoire dédié à l'innovation logistique, à la recherche opérationnelle et à l'optimisation des flux.
@@ -258,9 +326,15 @@
 
 **CRS** - Compagnies républicaines de sécurité - Force de police spécialisée dans le maintien de l'ordre public et la sécurité intérieure.
 
+**CSA** - Comité social d'administration - Instance représentative du personnel examinant l'organisation, le fonctionnement et les conditions de travail des services de l'État.
+
+**CSA-FS** - Comité social d'administration en formation spécialisée - Formation du comité social d'administration dédiée à la santé, à la sécurité et aux conditions de travail.
+
 **CSAG** - Centre de soutien automobile de la gendarmerie - Unité logistique responsable de la maintenance, de la réparation et de la gestion du parc automobile de la gendarmerie.
 
 **CSATE** - Conseil supérieur de l'appui territorial et de l'évaluation - Instance de conseil, de soutien et d'orientation à l'égard des préfets, sous-préfets et cadres supérieurs du ministère.
+
+**CSE** - Comité social et économique - Instance de représentation du personnel au sein d'une entreprise du secteur privé.
 
 **CSET II** - Cycle supérieur d'études territoriales de niveau 2 - Formation de haut niveau destinée aux cadres supérieurs de la fonction territoriale.
 
@@ -273,6 +347,8 @@
 **CSPR** - Centre de services partagés régional - Structure régionale de mutualisation des services support à destination des services déconcentrés.
 
 **CSPZ** - Centre de services partagés zonal - Unité de mutualisation des services support au niveau d'une zone de défense et de sécurité.
+
+**CSSR** - Centre de sensibilisation à la sécurité routière - Structure concevant et animant des actions de prévention routière auprès du public, des collectivités et des professionnels du transport.
 
 **CSTAGN** - Corps de soutien technique et administratif de la gendarmerie nationale - Corps regroupant les agents assurant le support technique, logistique et administratif de la gendarmerie nationale.
 
@@ -290,6 +366,8 @@
 
 **DAJ** - Direction des affaires juridiques (Bercy) - Direction du ministère de l'Économie et des Finances fournissant les avis juridiques pour la commande publique et les décisions économiques.
 
+**DAO** - Division de l'appui opérationnel - Unité d'état-major d'une région de gendarmerie nationale.
+
 **DASRI** - Déchets d'activités de soins à risques infectieux - Catégorie de déchets hospitaliers nécessitant des procédures spécifiques de collecte, de transport et d'élimination.
 
 **DB** - Direction du budget - Direction de Bercy qui élabore, prépare et suit l'exécution du budget de l'État.
@@ -306,9 +384,13 @@
 
 **DDETS** - Direction départementale de l'emploi, du travail et des solidarités - Service déconcentré chargé de la mise en œuvre des politiques emploi, formation et solidarité au niveau départemental.
 
+**DDETSPP** ou **DDETS-PP** - Direction départementale de l'emploi, du travail, des solidarités et de la protection des populations - Service déconcentré mettant en œuvre les politiques d'emploi, de travail, de solidarité et de protection des populations.
+
 **DDI** - Direction départementale interministérielle - Structure conjointe de plusieurs ministères intervenant sur des compétences partagées au niveau départemental.
 
 **DDSP** - Direction départementale de la sécurité publique - Service de la police nationale chargé de la sécurité publique, de la prévention et du maintien de l'ordre au niveau départemental.
+
+**DDT** - Direction départementale des territoires - Service déconcentré mettant en œuvre les politiques d'urbanisme, d'aménagement, d'environnement et de sécurité civile à l'échelle du département.
 
 **DEEE** - Déchets d'équipements électriques et électroniques - Déchets issus du cycle de vie des équipements électroniques, soumis à une filière de collecte et de traitement spécifique.
 
@@ -340,13 +422,21 @@
 
 **DGSI** - Direction générale de la sécurité intérieure - Service de renseignement intérieur chargé de la contre-terrorisme, la contre-ingérence et la protection des intérêts fondamentaux de la Nation.
 
+**DGT** - Direction générale du travail - Direction du ministère du Travail qui coordonne et anime la politique du travail.
+
 **DIAIR** - Délégation interministérielle à l'accueil et à l'intégration des réfugiés - Structure participant à la définition et à l'animation de la politique d'accueil et d'intégration des réfugiés en France.
 
 **DIAN** - Direction de l'intégration et de l'accès à la nationalité - Direction de la DGEF chargée des politiques d'intégration des étrangers et de la naturalisation.
 
 **DICOM** - Délégation à l'information et à la communication - Délégation définissant et mettant en œuvre la stratégie de communication du ministère et coordonnant les actions de communication des services.
 
+**DIE** - Direction de l'immobilier et de l'environnement - Service du ministère chargé de la gestion, de la valorisation et de la rénovation énergétique du patrimoine immobilier de l'État.
+
+**DIHAL** - Délégation interministérielle à l'hébergement et à l'accès au logement - Structure coordonnant les politiques d'hébergement d'urgence et d'accès au logement des personnes sans abri ou mal logées.
+
 **DIMM** - Direction de l'immigration - Direction de la DGEF traitant des politiques de séjour, de travail des étrangers et de lutte contre l'immigration irrégulière.
+
+**DIPLP** - Délégation interministérielle à la prévention et à la lutte contre la pauvreté - Instance pilotant et coordonnant les actions de prévention et de lutte contre la pauvreté et l'exclusion sociale.
 
 **DISA** - Directeur des services actifs - Responsable de la gestion opérationnelle des services et des agents en activité de la police nationale.
 
@@ -392,6 +482,8 @@
 
 **DRM** - Direction du renseignement militaire - Organe central du ministère des Armées chargé de la collecte, de l'analyse et de la diffusion du renseignement stratégique et opérationnel pour les forces armées.
 
+**DROM** - Départements et régions d'outre-mer - Collectivités issues de la réforme de 2003 : Guadeloupe, Guyane, Martinique, Mayotte et La Réunion.
+
 **DRSD** - Direction du renseignement et de la sécurité de la défense - Service chargé du contre-espionnage, de la protection des informations classifiées et de la sécurité des systèmes d'information de la défense.
 
 **DSED** - Département des statistiques, des études et de la documentation - Département de la DGEF produisant les statistiques et analyses relatives aux politiques migratoires et d'asile.
@@ -406,11 +498,23 @@
 
 **ECLPN** - Établissement central logistique de la police nationale - Infrastructure centrale assurant le stockage, la distribution et la maintenance du matériel logistique de la police nationale.
 
+**EDCF** - Escadron départemental de contrôle des flux - Unité de gendarmerie départementale chargée de la sécurité routière et du contrôle des flux.
+
+**EDF** - Électricité de France - Principal producteur et fournisseur d'électricité en France, détenu majoritairement par l'État et reposant surtout sur le parc nucléaire.
+
+**EECSR** - Établissement d'enseignement de la conduite et de la sécurité routière - Structure agréée formant les conducteurs aux règles du code de la route et délivrant les certifications de conduite.
+
+**EES** - Entry Exit System - Système européen enregistrant les entrées et sorties des ressortissants de pays tiers en court séjour aux frontières de l'espace Schengen.
+
 **EMSC** - État-major de la sécurité civile - Structure engagée 24h/24 pour la veille, la coordination opérationnelle et la planification de la réponse de la sécurité civile aux niveaux national et international.
 
 **ENP** - École nationale de police - Établissement de formation initiale des gardiens de la paix de la police nationale.
 
 **ENSP** - École nationale supérieure de la police - Établissement d'enseignement supérieur formant les commissaires et officiers de la police nationale.
+
+**EPI** - Équipements de protection individuelle - Équipements protégeant les agents contre les risques liés à leur activité professionnelle, encadrés par la réglementation du travail.
+
+**ERP** - Établissement recevant du public - Bâtiment ou local ouvert aux personnes extérieures au sens du code de la construction et de l'habitation, soumis à des règles de sécurité renforcées.
 
 **ESAT** - Établissement et service d'aide par le travail - Structure médico-sociale accueillant des travailleurs en situation de handicap et leur permettant d'exercer une activité professionnelle adaptée.
 
@@ -420,6 +524,8 @@
 
 **ESS** - Économie sociale et solidaire - Ensemble des organisations (associations, coopératives, mutuelles) visant à concilier activité économique et utilité sociale.
 
+**ETG** - Examen théorique général - Épreuve théorique du permis de conduire, couramment appelée code de la route.
+
 **ETI** - Expert technique international / Entreprise de taille intermédiaire - L'ETI désigne soit un spécialiste détaché à l'international sur des projets du ministère, soit une entreprise française de 250 à 4 999 salariés.
 
 **ETP** - Équivalent temps plein - Indicateur de charge de travail exprimé en nombre d'équivalents d'un poste à temps plein.
@@ -427,6 +533,10 @@
 **ETPI** ou **ETPT** - Équivalent temps plein travaillé - Indicateur de charge de travail prenant en compte la quotité de travail et la durée d'emploi sur l'année, utilisé pour le suivi des effectifs.
 
 **FAG(N)** - Forces aériennes de la gendarmerie nationale - Unité aérienne de la gendarmerie assurant le transport, la surveillance aérienne et le soutien tactique.
+
+**FAJ** - Fonds d'aide aux jeunes - Dispositif financier soutenant l'autonomie et l'insertion des jeunes de 18 à 25 ans en difficulté.
+
+**FAQ** - Foire aux questions - Rubrique répondant de manière synthétique aux questions les plus fréquentes des usagers ou des agents.
 
 **FARUP** - Fédération d'associations reconnues d'utilité publique - Fédération regroupant plusieurs ARUP afin de mutualiser moyens et actions d'intérêt général.
 
@@ -444,9 +554,17 @@
 
 **FMD** - Forfait mobilités durables - Aide financière versée aux agents pour l'utilisation de moyens de transport respectueux de l'environnement (vélo, covoiturage).
 
+**FNE** - France numérique Ensemble - Feuille de route interministérielle 2023-2027 en faveur de l'inclusion numérique, élaborée avec l'ANCT et la Mednum.
+
+**FOQUALE** - Réseau formation, qualification, emploi - Réseau d'acteurs traitant l'accès à la formation, à la qualification et à l'emploi des publics éloignés du marché du travail.
+
 **FRIJ** - Frais de rémunération des informateurs judiciaires - Indemnité versée aux personnes ayant fourni des informations utiles à l'instruction d'une affaire judiciaire.
 
 **FRUP** - Fondation reconnue d'utilité publique - Organisme à but non lucratif, doté d'un patrimoine dédié à la réalisation d'œuvres d'intérêt général.
+
+**FS** - Formation spécialisée - Instance représentative du personnel dédiée à la santé, à la sécurité et aux conditions de travail, complémentaire du comité social d'administration.
+
+**FSI** - Forces de sécurité intérieure - Ensemble formé par la police nationale et la gendarmerie nationale placées sous l'autorité du ministre de l'Intérieur.
 
 **FTAP** - Fonds pour la transformation de l'action publique - Fonds interministériel finançant des projets de transformation visant à moderniser et améliorer l'efficience de l'action publique.
 
@@ -457,6 +575,8 @@
 **GBCP** - Gestion budgétaire et comptable publique - Décret fixant le cadre de la gestion budgétaire et comptable publique, applicable aux administrations et opérateurs de l'État.
 
 **GDU** - Gestionnaire des utilisateurs - Responsable de la création, de la modification et de la suppression des comptes utilisateurs sur les systèmes d'information.
+
+**GEMAPI** - Gestion des milieux aquatiques et prévention des inondations - Compétence obligatoire des EPCI couvrant l'aménagement des bassins versants, l'entretien des cours d'eau et la défense contre les inondations.
 
 **GES** - Gaz à effet de serre - Gaz contribuant au réchauffement climatique (CO₂, méthane, etc.), dont les émissions sont suivies dans le cadre des politiques environnementales.
 
@@ -472,9 +592,13 @@
 
 **GIPN** - Groupe d'intervention de la police nationale - Ancienne unité d'intervention rapide de la police nationale, intégrée au RAID depuis 2015.
 
+**GIR** - Groupe interministériel de recherches - Structure réunissant des experts de plusieurs ministères pour conduire des études transversales et éclairer les politiques publiques.
+
 **GMA** - Groupement des moyens aériens - Structure de la sécurité civile assurant la mise à disposition d'aéronefs civils pour les missions de secours et de prévention.
 
 **GN** - Gendarmerie nationale - Force de sécurité intérieure à statut militaire, chargée de la police judiciaire, de la sécurité routière et du maintien de l'ordre.
+
+**GPMD** - Grand port maritime de Dunkerque - Établissement public sous tutelle de l'État exploitant l'un des principaux ports français.
 
 **GRAF** - Grade à accès fonctionnel - Grade de débouché de carrière réservé aux fonctionnaires ayant exercé certaines fonctions à responsabilité.
 
@@ -492,6 +616,8 @@
 
 **IGGN** - Inspection générale de la gendarmerie nationale - Service de contrôle, d'audit, d'inspection et d'évaluation veillant à la régularité, à la déontologie et au bon fonctionnement de la gendarmerie nationale.
 
+**IGH** - Immeuble de grande hauteur - Bâtiment dont le plancher habitable le plus haut dépasse 28 mètres, soumis à des règles de sécurité incendie spécifiques.
+
 **IGN** - Inspection générale de la gendarmerie nationale - Service de contrôle, d'audit et d'inspection veillant à la régularité et à la déontologie au sein de la gendarmerie.
 
 **IGPN** - Inspection générale de la police nationale - Service chargé du contrôle, des enquêtes internes et de la déontologie au sein de la police nationale.
@@ -508,6 +634,8 @@
 
 **IPCR** - Inspecteur du permis de conduire et de la sécurité routière - Agent assurant les examens du permis de conduire et le contrôle du respect des règles du code de la route.
 
+**IPCSR** - Inspecteur du permis de conduire et de la sécurité routière - Agent du ministère chargé de faire passer les examens du permis de conduire, sous l'autorité des DPCSR.
+
 **ISST** - Inspecteur santé et sécurité au travail - Corps d'inspecteurs assurant le contrôle de la santé et de la sécurité des agents dans leurs établissements.
 
 **IST** - Ingénieurs des services techniques - Corps de fonctionnaires techniques chargés de la conception, de la maintenance et de l'évolution des infrastructures du ministère.
@@ -518,7 +646,13 @@
 
 **LADOM** - Agence de l'outre-mer pour la mobilité - Agence favorisant l'accès à la qualification et à l'emploi des demandeurs d'emploi ultramarins via des parcours de formation en mobilité.
 
+**LCCN** - Laboratoire central de criminalistique numérique - Laboratoire du SNPS assurant la recherche, l'acquisition, le traitement et l'analyse des données numériques à des fins d'enquête.
+
 **LFI** - Loi de finances initiale - Texte législatif voté chaque année définissant le budget de l'État pour l'exercice à venir.
+
+**LIC** - Lutte contre l'immigration clandestine - Politique associant renforcement des contrôles aux frontières, coordination des services de sécurité et efficacité des procédures de retour.
+
+**LIIT** - Laboratoire interministériel d'innovation territoriale - Dispositif d'accélération de la transformation publique piloté et animé par la DITP.
 
 **LOG-MI** - Logistique du ministère de l'Intérieur - Application informatique centralisée gérant les flux matériels, les stocks, les approvisionnements et la maintenance du patrimoine du ministère.
 
@@ -539,6 +673,8 @@
 **MCSIC** - Magasin central des systèmes d'information et de communication - Unité responsable de la gestion et de la distribution des équipements informatiques et de télécommunication du ministère.
 
 **MDD** - Mission développement durable - Service dédié à l'intégration des enjeux environnementaux, sociaux et économiques dans les actions du ministère.
+
+**MEDEF** - Mouvement des entreprises de France - Principale organisation patronale française, acteur majeur du dialogue social national.
 
 **MEFR** - Ministère de l'économie, des finances et de la relance - Ministère chargé de la politique économique, fiscale, budgétaire et de la relance.
 
@@ -570,7 +706,11 @@
 
 **OA** - Officier des armées - Grade d'officier couvrant les services militaires et de défense du territoire.
 
+**OAPJ** - Officier adjoint police judiciaire - Officier animant et coordonnant l'action de police judiciaire au sein d'un groupement de gendarmerie départementale.
+
 **OCLASES** - Office central de lutte contre les atteintes à l'environnement et à la santé publique - Office central de la gendarmerie chargé de la prévention et de la répression des infractions environnementales et sanitaires.
+
+**OCLTI** - Office central de lutte contre le travail illégal - Office de la gendarmerie nationale créé en 2005 pour lutter contre le travail illégal et la fraude sociale.
 
 **OCR** - Reconnaissance optique de caractères - Technologie permettant la numérisation et l'extraction de texte à partir d'images ou de documents scannés.
 
@@ -581,6 +721,10 @@
 **ODD** - Objectifs de développement durable - Ensemble de 17 objectifs adoptés par l'ONU en 2015 pour guider les politiques publiques vers un développement durable d'ici 2030.
 
 **OECP** - Observatoire économique de la commande publique - Structure d'analyse et de suivi des achats publics, des dépenses et de la performance économique des marchés.
+
+**OFAC** - Office anti-cybercriminalité - Office à compétence nationale créé en 2023 en remplacement de l'OCLCTIC, centralisant l'expertise policière en matière de cybercriminalité.
+
+**OFB** - Office français de la biodiversité - Établissement public créé en 2020 pour la protection et la restauration de la biodiversité en métropole et outre-mer.
 
 **OFN** - Organigramme fonctionnel nominatif - Représentation graphique détaillant les fonctions, les postes et les titulaires au sein d'une organisation.
 
@@ -596,11 +740,19 @@
 
 **OPG** - Officier de police judiciaire - Officier chargé des enquêtes criminelles et de la poursuite judiciaire au sein de la police nationale.
 
+**OPJ** - Officier de police judiciaire - Agent habilité à recevoir les plaintes et à conduire les enquêtes sous l'autorité et le contrôle des magistrats.
+
+**ORSEC** - Organisation de la réponse de sécurité civile - Dispositif départemental permettant au préfet de mobiliser rapidement les moyens humains et techniques en cas de catastrophe.
+
 **P2F** - Performance de la fonction financière - Démarche d'évaluation mesurant l'efficacité, la transparence et la pertinence des activités financières du ministère.
 
 **P2M2F** - Plan ministériel de modernisation de la fonction financière - Programme structuré visant à moderniser les processus, outils et compétences de la fonction financière du ministère.
 
+**PAC** - Porter à connaissance - Acte par lequel l'État transmet aux collectivités les informations et contraintes à prendre en compte dans l'instruction d'une demande d'urbanisme.
+
 **PACS** - Pacte civil de solidarité - Union légale entre deux personnes, reconnue par le droit français et ouvrant des droits et obligations réciproques.
+
+**PAF** - Police aux frontières - Direction chargée du contrôle aux frontières, de la lutte contre la fraude documentaire et contre l'immigration irrégulière.
 
 **PATS** - Personnels administratifs, techniques et scientifiques - Ensemble des agents exerçant des fonctions administratives, techniques et scientifiques de support et d'expertise au sein du ministère.
 
@@ -622,9 +774,17 @@
 
 **PGI** - Progiciel de gestion intégré - Suite logicielle couvrant l'ensemble des processus de gestion (comptabilité, RH, achats, logistique).
 
+**PGRE** - Plan de gestion de la ressource en eau - Document encadrant le partage de la ressource en eau et le suivi de la sécheresse à l'échelle d'un territoire.
+
+**PITS** - Pôle de l'instruction des demandes de titre de séjour - Service instruisant les demandes de titre de séjour des ressortissants étrangers résidant à Paris.
+
 **PLACE** - Plateforme des achats de l'État - Site web centralisé où les acheteurs publics lancent des appels d'offres, consultent les marchés et où les fournisseurs déposent leurs offres.
 
 **PLF** - Projet de loi de finances - Texte présenté par le gouvernement au Parlement et exposant les prévisions budgétaires et les mesures fiscales pour l'année à venir.
+
+**PLU** - Plan local d'urbanisme - Document définissant les règles d'urbanisme et d'utilisation des sols à l'échelle communale.
+
+**PLUi** - Plan local d'urbanisme intercommunal - Document définissant les règles d'urbanisme et d'utilisation des sols à l'échelle intercommunale.
 
 **PME** - Petites et moyennes entreprises - Entreprises employant moins de 250 salariés et dont le chiffre d'affaires n'excède pas 50 millions d'euros.
 
@@ -636,11 +796,15 @@
 
 **PNCI** - Plan national de contrôle interne - Cadre global définissant les exigences de contrôle interne applicables à l'ensemble des administrations publiques.
 
+**PP** - Préfecture de police de Paris - Service de la police nationale dont les compétences s'exercent sur Paris et la région parisienne.
+
 **PPCR** - Parcours professionnels, carrières et rémunérations - Cadre interministériel de gestion des évolutions de carrière, des avancements et de la grille salariale applicable aux agents.
 
 **PPF** - Pôle de performance financière - Unité de pilotage qui suit les indicateurs de performance budgétaire et financière du ministère.
 
 **PPNG** - Plan préfectures nouvelle génération - Plan de modernisation des préfectures visant à rationaliser les processus, dématérialiser les services et renforcer la proximité avec les usagers.
+
+**PPR** - Plan de prévention des risques - Document d'urbanisme élaboré par l'État qui réglemente les constructions dans les zones exposées aux risques naturels ou technologiques.
 
 **PRE** - Prime de résultats exceptionnels - Récompense financière attribuée aux agents ou équipes ayant dépassé les objectifs fixés dans le cadre de leurs missions.
 
@@ -656,6 +820,8 @@
 
 **PVe** - Procès-verbal électronique - Dispositif de constatation et de transmission dématérialisée des infractions, notamment routières, par les forces de l'ordre.
 
+**PVST** - Per VLAN Spanning Tree - Protocole réseau de niveau 2 gérant les boucles de commutation, avec une instance distincte par VLAN.
+
 **RAEP** - Reconnaissance des acquis de l'expérience professionnelle - Procédure permettant de valoriser les compétences acquises dans la carrière pour accéder à des postes supérieurs ou à des formations.
 
 **RAID** - Recherche, assistance, intervention, dissuasion - Unité d'intervention d'élite de la police nationale, spécialisée dans les situations de crise et le contre-terrorisme.
@@ -663,8 +829,6 @@
 **RAM** - Responsable armes et munitions - Fonctionnaire chargé de la gestion, de la distribution et du suivi des armes et munitions des forces de l'ordre.
 
 **RAP** - Rapport annuel de performances - Document annuel présentant les résultats, indicateurs clés et actions réalisées par chaque programme budgétaire sur l'exercice écoulé.
-
-**RéaTE** - Réforme de l'administration territoriale de l'État - Ensemble des mesures visant à simplifier, moderniser et rendre plus efficace l'organisation territoriale de l'État.
 
 **RC** - Règlement de la consultation - Document contractuel fixant les règles encadrant la procédure de mise en concurrence et la sélection des offres.
 
@@ -674,7 +838,13 @@
 
 **RCO** - Renseignement contraignant sur l'origine - Décision contraignante de l'administration douanière déterminant l'origine d'une marchandise pour son application tarifaire.
 
+**RDVP** - Rendez-vous Permis - Application de gestion des examens du permis de conduire et de réservation des créneaux d'examen.
+
 **REAP** - Recensement économique des achats publics - Dispositif de remontée d'informations répertoriant les dépenses publiques afin d'analyser les tendances et d'optimiser les achats.
+
+**RéaTE** - Réforme de l'administration territoriale de l'État - Ensemble des mesures visant à simplifier, moderniser et rendre plus efficace l'organisation territoriale de l'État.
+
+**REM** - Réunion d'état-major - Réunion périodique de l'état-major d'une unité de gendarmerie.
 
 **RFAR** - Relations fournisseurs et achats responsables - Label attestant du respect par une organisation des bonnes pratiques de relations fournisseurs et d'achats responsables.
 
@@ -704,6 +874,8 @@
 
 **RPCA** - Responsable de programme carte d'achat - Agent en charge de la mise en œuvre, du suivi et de l'optimisation du dispositif de cartes d'achat.
 
+**RPI** - Regroupement pédagogique intercommunal - Organisation mutualisant la scolarisation en maternelle et en primaire entre plusieurs communes à faible démographie scolaire.
+
 **RPROG** - Responsable de programme - Fonction qui pilote la conception, la mise en œuvre et l'évaluation d'un programme budgétaire au sens de la LOLF.
 
 **RPS** - Risques psychosociaux - Ensemble des facteurs (stress, harcèlement, charge de travail) susceptibles d'impacter la santé mentale et le bien-être des agents.
@@ -717,6 +889,8 @@
 **RUO** - Responsable d'unité opérationnelle - Cadre qui dirige une unité opérationnelle (poste de police, brigade) et assure la mise en œuvre de ses missions.
 
 **SAAMI** - Service automobile du ministère de l'Intérieur - Service assurant la gestion du parc automobile ministériel et la mobilité des agents.
+
+**SAELSI** - Service de l'achat, de l'équipement et de la logistique de la sécurité intérieure - Service prédécesseur du SAILMI, chargé des achats et de la logistique de la sécurité intérieure.
 
 **SAFM** - Service des affaires financières ministériel - Direction qui gère les aspects budgétaires, comptables et fiscaux du ministère.
 
@@ -734,7 +908,13 @@
 
 **SCN** - Service à compétence nationale - Structure dont les missions s'exercent sur l'ensemble du territoire français, sans limitation géographique.
 
+**SCOT** - Schéma de cohérence territoriale - Document d'urbanisme assurant, à l'échelle d'un bassin de vie, la cohérence entre urbanisation, habitat, mobilités, économie et environnement.
+
+**SCT** - Section centrale travail - Unité locale de l'inspection du travail contrôlant l'application du droit du travail dans les entreprises de son secteur géographique.
+
 **SDAI** - Sous-direction des affaires immobilières - Sous-direction de la DEPAFI responsable de la gestion, de la valorisation et de la cession du patrimoine immobilier du ministère.
+
+**SDAN** - Service départemental d'appui numérique - Échelon de proximité assurant le maintien en condition opérationnelle du système d'information de la police nationale, sous autorité fonctionnelle du SZAN.
 
 **SDAPES** - Sous-direction des autorités préfectorales et de l'encadrement supérieur - Sous-direction de la DMATES chargée de la coordination des services préfectoraux et de l'encadrement des autorités de l'État au niveau local.
 
@@ -760,9 +940,13 @@
 
 **SDRF** - Sous-direction du recrutement et de la formation - Sous-direction chargée de l'organisation des concours et examens de recrutement des personnels relevant de la DRH.
 
+**SDSF** - Schéma départemental des services aux familles - Document stratégique organisant et coordonnant les services aux familles : petite enfance, parentalité, jeunesse et accès aux droits.
+
 **SDSPB** - Sous-direction de la synthèse et du pilotage budgétaires - Sous-direction qui consolide les données budgétaires, élabore les tableaux de bord et assure le pilotage financier du ministère.
 
 **SELFIN** - Service des élections, de la lutte contre la fraude et de l'innovation numérique - Service assurant la bonne tenue des scrutins, la prévention de la fraude électorale et le suivi des projets numériques liés aux élections.
+
+**SEPR** - Section études et projets réseaux - Section du bureau réseaux de la sous-direction des architectures sécurisées, au sein de la DTNUM.
 
 **SF** - Service fait - Constatation juridique attestant qu'une prestation contractuelle a bien été réalisée, condition préalable au paiement.
 
@@ -786,11 +970,17 @@
 
 **SHFD** - Service du haut fonctionnaire de défense - Service appuyant le haut fonctionnaire de défense dans ses missions de défense et de sécurité au sein du ministère.
 
+**SI3M** - Système d'information de la maintenance des moyens mobiles - Projet informatique destiné à remplacer les systèmes de gestion de la maintenance du parc de véhicules.
+
 **SIAF** - Système d'information des associations et fondations - Plateforme informatique centralisant les données administratives des ARUP, FRUP et fonds de dotation.
 
 **SIAJ** - Suivi informatisé des affaires juridiques - Outil de gestion électronique des dossiers juridiques et contentieux du ministère.
 
+**SIAO** - Service intégré de l'accueil et de l'orientation - Structure accueillant, évaluant et orientant les personnes sans abri vers une solution d'hébergement ou de logement adaptée.
+
 **SIC** - Systèmes d'information et de communication - Ensemble des outils informatiques et des réseaux de télécommunication permettant la création, la diffusion et la sécurisation des données du ministère.
+
+**SIDPC** - Service interministériel de défense et de protection civile - Service du cabinet préfectoral chargé de la gestion de crise, de la planification et des exercices de sécurité civile.
 
 **SIF** - Système d'information financière - Plateforme centralisée permettant la collecte, le traitement et la diffusion des informations comptables et budgétaires.
 
@@ -798,9 +988,17 @@
 
 **SIRPAG** - Service d'information et de relations publiques des Armées (Gendarmerie) - Service assurant la communication institutionnelle et les relations médias de la gendarmerie nationale.
 
+**SIT** - Système d'inspection du travail - Ensemble des services locaux d'inspection du travail rattachés aux DDETSPP, chargés du contrôle du droit du travail en entreprise.
+
 **SIV** - Système d'immatriculation des véhicules - Base de données nationale enregistrant l'ensemble des immatriculations et des modifications de véhicules.
 
+**SLIME** - Service local d'intervention pour la maîtrise de l'énergie - Dispositif accompagnant les ménages dans leurs économies d'énergie par des diagnostics, des conseils et des aides aux travaux.
+
 **SMA** - Service militaire adapté - Dispositif d'insertion socioprofessionnelle proposé aux jeunes ultramarins, basé sur un encadrement militaire et une formation adaptée.
+
+**SMAVD** - Syndicat mixte d'aménagement de la vallée de la Durance - Établissement public territorial de bassin regroupant EPCI, départements, région et communes pour l'aménagement de la Durance.
+
+**SMIGIBA** - Syndicat mixte de gestion intercommunautaire du Buëch et de ses affluents - Collectivité créée en 2003 pour la gestion des rivières du bassin versant du Buëch.
 
 **SNEAS** - Service national des enquêtes administratives de sécurité - Service de police chargé des enquêtes administratives de sécurité pour le ministère de l'Intérieur.
 
@@ -814,9 +1012,15 @@
 
 **SPE** - Services publics écoresponsables - Démarche gouvernementale visant à réduire l'empreinte environnementale des services publics à travers des pratiques durables.
 
+**SPIP** - Service pénitentiaire d'insertion et de probation - Service de l'administration pénitentiaire assurant le suivi des personnes condamnées en milieu ouvert ou en détention.
+
+**SPPE** - Service public de la petite enfance - Dispositif entré en vigueur en 2025 garantissant à chaque famille une solution d'accueil pour les enfants de moins de trois ans.
+
 **SPR** - Service de la performance et des ressources - Service de la DGEF assurant le pilotage des moyens, des ressources et des fonctions supports de la direction générale.
 
-**SSA** - Service de santé des armées - Corps médical militaire assurant les soins, la prévention et le suivi sanitaire des militaires et de leurs familles.
+**SRDT** - Service des renseignements en droit du travail - Service renseignant les salariés et les employeurs du secteur privé sur le droit du travail applicable.
+
+**SSA** - Service de santé des armées / Section de soutien analytique - Le SSA est le corps médical militaire assurant les soins et le suivi sanitaire des militaires et de leurs familles ; la SSA est la section du LCCN chargée des outils criminalistiques et de la veille technologique.
 
 **SSMSI** - Service statistique ministériel de la sécurité intérieure - Service produisant les statistiques officielles sur la sécurité intérieure et la délinquance.
 
@@ -826,9 +1030,13 @@
 
 **SUEP** - Secteur ou unité d'encadrement prioritaire - Structure hiérarchique identifiée comme prioritaire pour le pilotage et le suivi des performances opérationnelles.
 
+**SZAN** - Service zonal d'appui numérique - Échelon zonal coordonnant les services départementaux d'appui numérique de la police nationale et la résilience de son système d'information.
+
 **TA** - Tribunal administratif - Juridiction administrative de premier ressort jugeant les litiges opposant les usagers à l'administration.
 
 **TAAF** - Terres australes et antarctiques françaises - Collectivité d'outre-mer regroupant plusieurs îles et territoires situés dans l'océan Indien et l'Antarctique.
+
+**TéléRC** - Télé rupture conventionnelle - Service en ligne permettant à l'employeur et au salarié de transmettre une convention de rupture conventionnelle à l'administration.
 
 **TH** - Travailleur handicapé - Agent reconnu comme travailleur en situation de handicap, bénéficiaire de mesures d'aménagement de poste et de soutien spécifiques.
 
@@ -840,12 +1048,24 @@
 
 **UCLIR** - Unité de coordination de la lutte contre l'insécurité routière - Structure interservices coordonnant l'action de la police et de la gendarmerie en matière de sécurité routière.
 
+**UFA** - Unité de formation par apprentissage - Unité pédagogique rattachée à un centre de formation des apprentis.
+
 **UGAP** - Union des groupements d'achats publics - Centrale d'achat publique qui agrège les besoins des collectivités et des services de l'État pour réaliser des économies d'échelle.
 
 **UO** - Unité opérationnelle - Niveau de gestion budgétaire infra-BOP correspondant à une structure de terrain (poste de police, brigade de gendarmerie, etc.).
 
+**UREI** - Union régionale des entreprises d'insertion - Structure fédérant à l'échelle régionale les entreprises d'insertion par l'activité économique et représentant leurs employeurs.
+
+**VAO** - Vacances adaptées organisées - Séjours de vacances inclusifs destinés aux adultes en situation de handicap.
+
+**VMO** - Véhicule de maintien de l'ordre - Véhicule spécialisé employé par les unités engagées dans des missions de maintien de l'ordre.
+
 **VPCA** - Vie politique, cultuelle et associative - Domaine d'intervention du ministère concernant la régulation des activités politiques, cultuelles et la coopération avec le secteur associatif.
 
 **VRBG** - Véhicule blindé à roues de la gendarmerie - Flotte de véhicules protégés assurant la mobilité sécurisée des forces de gendarmerie lors d'opérations à haut risque.
+
+**ZAN** - Zéro artificialisation nette - Objectif fixé à l'horizon 2050 visant à préserver les sols et leurs fonctionnalités en limitant l'artificialisation.
+
+**ZNIEFF** - Zone naturelle d'intérêt écologique, faunistique et floristique - Secteur inventorié pour sa richesse écologique, de type I pour les biotopes d'espèces patrimoniales et de type II pour les grands ensembles naturels.
 
 **ZSM** - Zone de sensibilité majeure - Périmètre géographique identifié comme particulièrement exposé aux risques naturels ou technologiques, requérant une vigilance accrue.
