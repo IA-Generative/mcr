@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { classifyUploadFailure } from './http.utils';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 function axiosError(opts: { status?: number; code?: string }) {
   const error: Record<string, unknown> = { code: opts.code };
@@ -27,6 +28,10 @@ describe('classifyUploadFailure', () => {
 
   it('classifies a readable 5xx as "http-server"', () => {
     expect(classifyUploadFailure(axiosError({ status: 503 }), true)).toBe('http-server');
+  });
+
+  it('classifies an expired session as "auth" rather than a server fault', () => {
+    expect(classifyUploadFailure(new SessionExpiredError(), true)).toBe('auth');
   });
 
   it('falls back to "unknown" for an unrecognised no-response error', () => {

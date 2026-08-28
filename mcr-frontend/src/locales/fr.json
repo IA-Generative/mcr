@@ -207,7 +207,8 @@
         "file-too-long": "Fichier trop long. La durée maximum est de {maxDuration}.",
         "connection": "Importation échouée. Vérifiez votre connexion et réessayez.",
         "server": "Le serveur ne répond pas. Réessayez dans quelques minutes.",
-        "file-unprocessable": "Nous ne pouvons pas traiter ce fichier."
+        "file-unprocessable": "Nous ne pouvons pas traiter ce fichier.",
+        "session-expired": "Votre session a expiré. Reconnectez-vous, puis relancez l'importation."
       },
       "batch": {
         "title-active": "Importation de {count} élément(s)",

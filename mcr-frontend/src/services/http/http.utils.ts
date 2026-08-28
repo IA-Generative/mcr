@@ -1,3 +1,4 @@
+import { SessionExpiredError } from '@/services/auth/token-provider';
 import { HttpStatusCode, type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 export function setTokenForCurrentRequestConfig(
@@ -68,6 +69,7 @@ export function isUnexpectedHttpError(error: unknown): boolean {
 }
 
 export type UploadFailureType =
+  | 'auth'
   | 'offline'
   | 'blocked'
   | 'timeout'
@@ -76,6 +78,10 @@ export type UploadFailureType =
   | 'unknown';
 
 export function classifyUploadFailure(error: unknown, online: boolean): UploadFailureType {
+  if (error instanceof SessionExpiredError) {
+    return 'auth';
+  }
+
   const status = getStatusCode(error);
 
   if (status !== undefined) {

@@ -60,4 +60,5 @@ export const FAILURE_MESSAGE_KEYS: Record<UploadFailureType, string> = {
   'http-server': 'meeting.import.errors.server',
   unknown: 'meeting.import.errors.server',
   'http-client': 'meeting.import.errors.file-unprocessable',
+  auth: 'meeting.import.errors.session-expired',
 };
