@@ -19,6 +19,10 @@ CMD ["pnpm", "run", "dev", "--host"]
 
 FROM install AS build
 
+ARG VITE_SENTRY_RELEASE
+
+ENV VITE_SENTRY_RELEASE=$VITE_SENTRY_RELEASE
+
 COPY . .
 
 RUN rm -f .env

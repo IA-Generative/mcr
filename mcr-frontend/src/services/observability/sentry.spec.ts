@@ -37,6 +37,15 @@ type ScopeCallback = (scope: ReturnType<typeof fakeScope>) => void;
 describe('initSentry', () => {
   beforeEach(() => vi.clearAllMocks());
 
+  it('stamps the build release so an event can be traced back to a deploy', () => {
+    vi.stubEnv('VITE_SENTRY_RELEASE', 'mcr-frontend@abc1234');
+
+    const options = initAndGetOptions();
+
+    expect(options.release).toBe('mcr-frontend@abc1234');
+    vi.unstubAllEnvs();
+  });
+
   it('does not initialize when the environment is not set', () => {
     vi.stubGlobal('window', {});
     initSentry({} as App);

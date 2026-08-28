@@ -94,18 +94,20 @@ function resolveSentryConfig() {
   const dsn = (window as any).VITE_SENTRY_FRONTEND_DSN || import.meta.env.VITE_SENTRY_FRONTEND_DSN;
   // The trace must attach only to our own API calls, not to third-party requests.
   const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
-  return { environment, dsn, apiBase };
+  const release = import.meta.env.VITE_SENTRY_RELEASE;
+  return { environment, dsn, apiBase, release };
 }
 
 export function initSentry(app: App): void {
   try {
-    const { environment, dsn, apiBase } = resolveSentryConfig();
+    const { environment, dsn, apiBase, release } = resolveSentryConfig();
     if (!environment) return;
 
     Sentry.init({
       app,
       dsn,
       environment,
+      release,
       sendDefaultPii: true,
       enableLogs: true,
       integrations: [

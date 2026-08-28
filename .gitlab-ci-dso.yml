@@ -112,7 +112,7 @@ docker-build-frontend:
     WORKING_DIR: mcr-frontend
     IMAGE_NAMES: ${CI_PROJECT_NAME}-frontend:${IMAGE_TAG}
     DOCKERFILE: "mcr-frontend/Dockerfile"
-    EXTRA_BUILD_ARGS: "--target=production"
+    EXTRA_BUILD_ARGS: "--target=production --build-arg VITE_SENTRY_RELEASE=${CI_COMMIT_SHORT_SHA}"
   stage: docker-build
   rules:
     - if: *is-manual-trigger
