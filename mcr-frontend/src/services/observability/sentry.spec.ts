@@ -17,6 +17,7 @@ vi.mock('@sentry/vue', () => ({
 }));
 
 import { initSentry, reportError } from './sentry';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 const PRESIGNED_URL =
   'https://s3.fr-par.scw.cloud/bucket/audio/1/x.m4a?uploadId=ABC&X-Amz-Signature=secret';
@@ -138,5 +139,11 @@ describe('reportError', () => {
       'upload',
       expect.objectContaining({ phase: 'put' }),
     );
+  });
+
+  it('never reports a session expiry, whichever call site reports it', () => {
+    reportError(new SessionExpiredError(), { feature: 'meeting.import' });
+
+    expect(captureException).not.toHaveBeenCalled();
   });
 });

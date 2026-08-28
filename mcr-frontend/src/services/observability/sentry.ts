@@ -2,6 +2,7 @@ import type { UploadFailureType } from '@/services/http/http.utils';
 import * as Sentry from '@sentry/vue';
 import type { Contexts, SeverityLevel } from '@sentry/vue';
 import type { App } from 'vue';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 type Primitive = string | number | boolean;
 
@@ -46,6 +47,8 @@ export type ReportOptions =
   | (BaseReport & { feature: Exclude<Feature, 'meeting.upload'>; contexts?: Contexts });
 
 export function reportError(error: unknown, opts: ReportOptions): void {
+  if (error instanceof SessionExpiredError) return;
+
   Sentry.captureException(error, (scope) => {
     scope.setTag('feature', opts.feature);
     if (opts.level) scope.setLevel(opts.level);
