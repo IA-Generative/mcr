@@ -170,7 +170,7 @@ Turns raw model output into a readable transcript. Raises `InvalidAudioFileError
 |---|---|---|
 | Merge | `merge_consecutive_segments_per_speaker` | Collapses adjacent same-speaker segments into one turn (`groupby`), re-indexing ids. |
 | De-hallucinate | `remove_hallucinations` | Regex-strips known Whisper hallucinations (`TranscriptionForbiddenSentences.FORBIDDEN_SENTENCES`, e.g. *"Sous-titrage Société Radio-Canada"*), normalizes whitespace, drops empties. **Order matters** — longer patterns are listed first so a substring pattern doesn't shadow them. |
-| Acronym correction | `AcronymCorrector.correct` | **Always on.** LLM rewrite using a domain glossary (`correct_acronyms/`). |
+| Acronym correction | `AcronymCorrector.correct` | **Always on.** LLM rewrite using the domain glossary injected into `prompts/acronyms.py` from `prompts/data/glossary.md` — see [Glossaire d'acronymes](../../README.md#7-glossaire-dacronymes) to update it. |
 | Spelling correction | `SpellingCorrector.correct` | Gated by the `spelling_correction` flag. Chunks the dialogue with `<separatorN>` markers, sends each chunk to the LLM, then re-splits on the markers and replaces text per segment (keeping the original when a separator goes missing — see `_invalidate_missing_separators`). |
 
 Both correctors extend `LLMPostProcessing` (`app/services/llm_post_processing.py`): `instructor`-wrapped OpenAI client in JSON mode against the LLM hub, with `RecursiveCharacterTextSplitter` chunking (`ChunkingConfig`: 20000 chars, 100 overlap).

@@ -168,11 +168,31 @@ Une fois la stack démarrée (`make start`), les services sont exposés sur les 
 
 ---
 
-### **7. Licence**
+### **7. Glossaire d'acronymes**
+
+La transcription passe systématiquement par une étape de correction d'acronymes : un LLM réécrit les sigles mal transcrits (« opaque » → « OPAC ») en s'appuyant sur un glossaire métier du Ministère de l'Intérieur.
+
+Le glossaire (`mcr-core/mcr_meeting/app/infrastructure/llm/prompts/data/glossary.md`) est chargé en entier et injecté dans le prompt à **chaque** correction d'acronymes. Chaque entrée ajoutée coûte donc des tokens sur toutes les transcriptions.
+
+#### Mettre à jour le glossaire
+
+Le glossaire applicatif est dérivé d'un [Grist](https://grist.numerique.gouv.fr/o/docs/rVja5acFwanx/Glossaire-MI/p/2) maintenu par le Ministère. Exporté en tant que CSV, celui-ci contient des paragraphes de contexte rédigés à la main : il n'est pas copiable tel quel, chaque entrée doit être re-synthétisée en une phrase.
+
+Ne modifiez pas le fichier à la main. Lancez la commande Claude Code dédiée avec le chemin du nouveau CSV :
+
+```
+/update-glossary glossaire.csv
+```
+
+Attention à bien penser à bumper le libellé de version du frontend (`mcr-frontend/src/locales/fr.json`, clé `header.notice.article-link-text`).
+
+---
+
+### **8. Licence**
 
 Ce projet est distribué sous licence Apache 2.0.
 
-### **8. Avis de sécurité**
+### **9. Avis de sécurité**
 
 Tous les identifiants, noms d’utilisateurs, adresses e-mail, mots de passe et clés présents dans ce dépôt sont **des valeurs fictives**, utilisées **uniquement à des fins de développement local**.
 
