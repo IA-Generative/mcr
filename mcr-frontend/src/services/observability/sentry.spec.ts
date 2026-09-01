@@ -17,6 +17,7 @@ vi.mock('@sentry/vue', () => ({
 }));
 
 import { initSentry, reportError } from './sentry';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 const PRESIGNED_URL =
   'https://s3.fr-par.scw.cloud/bucket/audio/1/x.m4a?uploadId=ABC&X-Amz-Signature=secret';
@@ -35,6 +36,15 @@ type ScopeCallback = (scope: ReturnType<typeof fakeScope>) => void;
 
 describe('initSentry', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('stamps the build release so an event can be traced back to a deploy', () => {
+    vi.stubEnv('VITE_SENTRY_RELEASE', 'mcr-frontend@abc1234');
+
+    const options = initAndGetOptions();
+
+    expect(options.release).toBe('mcr-frontend@abc1234');
+    vi.unstubAllEnvs();
+  });
 
   it('does not initialize when the environment is not set', () => {
     vi.stubGlobal('window', {});
@@ -138,5 +148,11 @@ describe('reportError', () => {
       'upload',
       expect.objectContaining({ phase: 'put' }),
     );
+  });
+
+  it('never reports a session expiry, whichever call site reports it', () => {
+    reportError(new SessionExpiredError(), { feature: 'meeting.import' });
+
+    expect(captureException).not.toHaveBeenCalled();
   });
 });

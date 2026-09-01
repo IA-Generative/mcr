@@ -2,6 +2,7 @@ import type { UploadFailureType } from '@/services/http/http.utils';
 import * as Sentry from '@sentry/vue';
 import type { Contexts, SeverityLevel } from '@sentry/vue';
 import type { App } from 'vue';
+import { SessionExpiredError } from '@/services/auth/token-provider';
 
 type Primitive = string | number | boolean;
 
@@ -46,6 +47,8 @@ export type ReportOptions =
   | (BaseReport & { feature: Exclude<Feature, 'meeting.upload'>; contexts?: Contexts });
 
 export function reportError(error: unknown, opts: ReportOptions): void {
+  if (error instanceof SessionExpiredError) return;
+
   Sentry.captureException(error, (scope) => {
     scope.setTag('feature', opts.feature);
     if (opts.level) scope.setLevel(opts.level);
@@ -91,18 +94,20 @@ function resolveSentryConfig() {
   const dsn = (window as any).VITE_SENTRY_FRONTEND_DSN || import.meta.env.VITE_SENTRY_FRONTEND_DSN;
   // The trace must attach only to our own API calls, not to third-party requests.
   const apiBase = import.meta.env.VITE_API_BASE_URL || '/api';
-  return { environment, dsn, apiBase };
+  const release = import.meta.env.VITE_SENTRY_RELEASE;
+  return { environment, dsn, apiBase, release };
 }
 
 export function initSentry(app: App): void {
   try {
-    const { environment, dsn, apiBase } = resolveSentryConfig();
+    const { environment, dsn, apiBase, release } = resolveSentryConfig();
     if (!environment) return;
 
     Sentry.init({
       app,
       dsn,
       environment,
+      release,
       sendDefaultPii: true,
       enableLogs: true,
       integrations: [

@@ -36,7 +36,11 @@ export async function getValidToken(): Promise<string> {
     return handleDeadSession(keycloak);
   }
 
-  await keycloak.updateToken();
+  try {
+    await keycloak.updateToken();
+  } catch {
+    return handleDeadSession(keycloak);
+  }
   return keycloak.token!;
 }
 
