@@ -1,5 +1,8 @@
-from concurrent.futures import ThreadPoolExecutor
+from collections import deque
+from collections.abc import Callable, Iterable
+from concurrent.futures import Future, ThreadPoolExecutor
 from io import BytesIO
+from typing import TypeVar
 
 import numpy as np
 import soundfile as sf
@@ -11,7 +14,7 @@ from mcr_meeting.app.configs.base import (
     TranscriptionApiSettings,
     WhisperTranscriptionSettings,
 )
-from mcr_meeting.app.domain.audio import split_audio_on_timestamps
+from mcr_meeting.app.domain.audio import iter_audio_chunks
 from mcr_meeting.app.exceptions.exceptions import (
     TranscriptionError,
     TranscriptionTransientError,
@@ -25,6 +28,27 @@ from mcr_meeting.app.schemas.transcription_schema import (
 
 transcription_settings = WhisperTranscriptionSettings()
 api_settings = TranscriptionApiSettings()
+
+T = TypeVar("T")
+R = TypeVar("R")
+
+
+def _map_bounded(
+    pool: ThreadPoolExecutor,
+    work: Callable[[T], R],
+    items: Iterable[T],
+    limit: int,
+) -> list[R]:
+    in_flight: deque[Future[R]] = deque()
+    results: list[R] = []
+
+    for item in items:
+        if len(in_flight) >= limit:
+            results.append(in_flight.popleft().result())
+        in_flight.append(pool.submit(work, item))
+
+    results.extend(future.result() for future in in_flight)
+    return results
 
 
 class TranscriptionProcessor:
@@ -73,20 +97,21 @@ class TranscriptionProcessor:
         # thread-local), but this still turns total transcription time into one
         # named span instead of scattered, orphaned child spans.
         with span("transcription.transcribe", "transcribe") as transcribe_span:
-            transcription_inputs = split_audio_on_timestamps(audio_bytes, chunk_spans)
-            transcribe_span.set_data(
-                "transcription.chunk_count", len(transcription_inputs)
-            )
+            transcribe_span.set_data("transcription.chunk_count", len(chunk_spans))
 
             logger.debug(
                 "Starting transcription of {} input audio chunks",
-                len(transcription_inputs),
+                len(chunk_spans),
             )
+
+            chunks = enumerate(iter_audio_chunks(audio_bytes, chunk_spans))
 
             with ThreadPoolExecutor(
                 max_workers=api_settings.MAX_CONCURRENT_CHUNKS
             ) as pool:
-                results = pool.map(transcribe_one, enumerate(transcription_inputs))
+                results = _map_bounded(
+                    pool, transcribe_one, chunks, api_settings.MAX_CONCURRENT_CHUNKS
+                )
 
                 return [
                     segment for chunk_segments in results for segment in chunk_segments

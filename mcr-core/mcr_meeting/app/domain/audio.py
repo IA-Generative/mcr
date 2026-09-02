@@ -482,37 +482,37 @@ def is_audio_noisy(wav_bytes: BytesIO) -> bool:
     )
 
 
-def split_audio_on_timestamps(
+def iter_audio_chunks(
     audio_bytes: BytesIO,
     result_with_time: list[TimeSpan],
-) -> list[TranscriptionInput]:
+) -> Iterator[TranscriptionInput]:
     """
-    Split mono audio bytes into chunks based on time spans.
+    Read mono audio chunks for the given time spans, one at a time.
 
     Args:
-        audio_bytes (bytes): Full audio data (mono WAV/PCM encoded).
+        audio_bytes (BytesIO): Full audio data (mono WAV/PCM encoded).
         result_with_time (List[TimeSpan]): Spans with start/end times in seconds.
 
-    Returns:
-        List[TranscriptionInput]: List of audio chunks aligned with time spans.
+    Yields:
+        TranscriptionInput: One audio chunk per span, in span order.
     """
-    data, sample_rate = sf.read(audio_bytes, dtype="float32")  # already mono
-    transcription_inputs: list[TranscriptionInput] = []
+    audio_bytes.seek(0)
 
-    for span in result_with_time:
-        start_sample = int(span.start * sample_rate)
-        end_sample = int(span.end * sample_rate)
+    with sf.SoundFile(audio_bytes) as recording:  # already mono
+        total_frames = len(recording)
 
-        transcription_inputs.append(
-            TranscriptionInput(
-                audio=data[start_sample:end_sample],
+        for span in result_with_time:
+            start_frame = min(int(span.start * recording.samplerate), total_frames)
+            end_frame = min(int(span.end * recording.samplerate), total_frames)
+
+            recording.seek(start_frame)
+
+            yield TranscriptionInput(
+                audio=recording.read(max(end_frame - start_frame, 0), dtype="float32"),
                 span=span,
             )
-        )
 
     logger.debug(
-        "Created {} transcription inputs from diarization segments",
-        len(transcription_inputs),
+        "Read {} transcription inputs from diarization segments",
+        len(result_with_time),
     )
-
-    return transcription_inputs

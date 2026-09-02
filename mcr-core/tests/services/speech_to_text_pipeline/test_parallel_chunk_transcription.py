@@ -18,9 +18,7 @@ from mcr_meeting.app.schemas.transcription_schema import (
     TranscriptionSegment,
 )
 
-_SEAM_SPLIT_AUDIO = (
-    "mcr_meeting.app.infrastructure.transcription.split_audio_on_timestamps"
-)
+_SEAM_SPLIT_AUDIO = "mcr_meeting.app.infrastructure.transcription.iter_audio_chunks"
 _SEAM_CHUNK_TRANSCRIBE = (
     "mcr_meeting.app.infrastructure.transcription."
     "TranscriptionProcessor._transcribe_audio_chunk_api"
