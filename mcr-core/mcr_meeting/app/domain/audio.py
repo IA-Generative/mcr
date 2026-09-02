@@ -464,17 +464,16 @@ def split_audio_on_timestamps(
     Returns:
         List[TranscriptionInput]: List of audio chunks aligned with time spans.
     """
-    data, sample_rate = sf.read(audio_bytes)  # already mono
+    data, sample_rate = sf.read(audio_bytes, dtype="float32")  # already mono
     transcription_inputs: list[TranscriptionInput] = []
 
     for span in result_with_time:
         start_sample = int(span.start * sample_rate)
         end_sample = int(span.end * sample_rate)
-        chunk_data = data[start_sample:end_sample]
 
         transcription_inputs.append(
             TranscriptionInput(
-                audio=chunk_data.astype("float32"),
+                audio=data[start_sample:end_sample],
                 span=span,
             )
         )
