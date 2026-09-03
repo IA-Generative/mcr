@@ -338,6 +338,15 @@ class CelerySettings(BaseSettings):
         )
 
 
+class StaleCaptureSettings(BaseSettings):
+    STALE_CAPTURE_MAX_AGE_HOURS: int = Field(
+        default=18,
+        description="A capture still in progress or connecting after this many hours is failed by the sweep. Must exceed the capture worker's MAX_CAPTURE_DURATION_S so the worker gets to stop cleanly first.",
+    )
+
+    model_config = SettingsConfigDict(case_sensitive=True)
+
+
 class SMTPSettings(BaseSettings):
     """
     Configuration settings for SMTP email service

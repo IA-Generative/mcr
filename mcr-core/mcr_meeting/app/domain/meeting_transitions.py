@@ -22,6 +22,17 @@ def fail_capture_bot(meeting: Meeting) -> None:
     _apply_or_conflict(meeting, MeetingEvent.FAIL_CAPTURE_BOT)
 
 
+def fail_capture(meeting: Meeting) -> None:
+    _apply_or_conflict(meeting, MeetingEvent.FAIL_CAPTURE)
+
+
+def fail_stale_capture(meeting: Meeting) -> None:
+    if meeting.status == MeetingStatus.CAPTURE_BOT_IS_CONNECTING:
+        fail_capture_bot(meeting)
+    else:
+        fail_capture(meeting)
+
+
 def mark_transcription_done(meeting: Meeting) -> Meeting:
     _apply_or_conflict(meeting, MeetingEvent.COMPLETE_TRANSCRIPTION)
     return meeting
