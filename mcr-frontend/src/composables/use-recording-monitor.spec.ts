@@ -637,9 +637,20 @@ describe('useRecordingMonitor', () => {
       attach(createMockContext());
 
       onDeviceSwitched(usbMic());
-      holdLevel(0, LIVE_NO_SIGNAL_GRACE_MS / 2);
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
 
       expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('still warns about a microphone that never delivers after the switch', () => {
+      const { attach, onDeviceSwitched, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+
+      onDeviceSwitched(usbMic());
+      vi.advanceTimersByTime(LIVE_NO_SIGNAL_GRACE_MS);
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+
+      expect(hasNoAudioSignal.value).toBe(true);
     });
 
     it('counts each episode so an incident report says whether the user was warned', () => {
