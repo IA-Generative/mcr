@@ -81,6 +81,33 @@ def test_writes_preprocessed_audio_and_diarization_to_s3(
     ]
 
 
+def test_releases_the_source_audio_before_diarizing(
+    in_memory_s3: InMemoryS3, meeting_audio: bytes, mocker: MockerFixture
+) -> None:
+    fetched: list[BytesIO] = []
+    fetch_audio_bytes = rd.s3.fetch_audio_bytes
+
+    def _remember_source(meeting_id: int) -> BytesIO:
+        source = fetch_audio_bytes(meeting_id)
+        fetched.append(source)
+        return source
+
+    mocker.patch.object(rd.s3, "fetch_audio_bytes", side_effect=_remember_source)
+
+    processor = Mock()
+    buffers_during_diarization: list[tuple[bool, bool]] = []
+
+    def _record_buffers(audio_bytes: BytesIO) -> list[DiarizationSegment]:
+        buffers_during_diarization.append((fetched[0].closed, audio_bytes.closed))
+        return _DIARIZATION
+
+    processor.diarize.side_effect = lambda audio_bytes: _record_buffers(audio_bytes)
+
+    rd.run_diarization(MEETING_ID, processor)
+
+    assert buffers_during_diarization == [(True, False)]
+
+
 def test_uploads_full_audio_even_after_diarization_consumed_the_buffer(
     in_memory_s3: InMemoryS3, meeting_audio: bytes
 ) -> None:

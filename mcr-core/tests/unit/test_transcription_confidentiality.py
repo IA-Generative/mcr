@@ -79,7 +79,7 @@ def test_transcription_error_event_leaks_no_transcript_text(
         )
     ]
     mocker.patch(
-        "mcr_meeting.app.infrastructure.transcription.split_audio_on_timestamps",
+        "mcr_meeting.app.infrastructure.transcription.iter_audio_chunks",
         return_value=inputs,
     )
 

@@ -1,7 +1,10 @@
 import json
 import os
 import re
+import shutil
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from io import BytesIO
 from typing import Any
 
@@ -33,6 +36,32 @@ def log_ffmpeg_command(stream: Any) -> None:  # type: ignore[explicit-any]
         pass  # Don't fail if compile fails
 
 
+def _run_over(stream: Any, wav_bytes: BytesIO) -> tuple[bytes, bytes]:  # type: ignore[explicit-any]
+    with wav_bytes.getbuffer() as buffer:
+        return stream.run(  # type: ignore[no-any-return]
+            input=buffer, capture_stdout=True, capture_stderr=True
+        )
+
+
+@contextmanager
+def _temporary_path(suffix: str = "") -> Iterator[str]:
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        path = tmp.name
+    try:
+        yield path
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def _drain_into_buffer(path: str) -> BytesIO:
+    buffer = BytesIO()
+    with open(path, "rb") as produced:
+        shutil.copyfileobj(produced, buffer)
+    buffer.seek(0)
+    return buffer
+
+
 s2t_settings = Speech2TextSettings()
 audio_settings = AudioSettings()
 noise_detection_settings = NoiseDetectionSettings()
@@ -47,7 +76,7 @@ def _get_audio_duration_seconds(wav_bytes: BytesIO) -> float:
     Works because we control the WAV output format (header size, bytes per sample,
     sample rate, and channel count are all defined in AudioSettings).
     """
-    byte_count = len(wav_bytes.getvalue()) - audio_settings.WAV_HEADER_SIZE
+    byte_count = len(wav_bytes.getbuffer()) - audio_settings.WAV_HEADER_SIZE
     return byte_count / (sample_rate * nb_channels * audio_settings.BYTES_PER_SAMPLE)
 
 
@@ -63,10 +92,9 @@ def _detect_silences_absolute(
     threshold_db = noise_detection_settings.SILENT_AUDIO_NOISE_FLOOR_DB
 
     af = f"silencedetect=noise={threshold_db}dB:d={noise_detection_settings.MIN_SILENCE_DURATION}"
-    _, stderr = (
-        ffmpeg.input("pipe:0", format="wav")
-        .output("pipe:", format="null", af=af)
-        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    _, stderr = _run_over(
+        ffmpeg.input("pipe:0", format="wav").output("pipe:", format="null", af=af),
+        wav_bytes,
     )
     return _parse_silence_intervals(stderr.decode("utf-8", errors="replace"))
 
@@ -182,40 +210,44 @@ def audio_bytes_to_wav_bytes(
 
     # Use a temporary file for input because FFmpeg cannot seek on stdin
     # This is critical for formats like m4a/mp4 where metadata might be at the end
-    with tempfile.NamedTemporaryFile(delete=False) as tmp_input:
-        tmp_input.write(input_bytes.getvalue())
-        tmp_input_path = tmp_input.name
-
     try:
-        if phase_aware_downmix and _is_phase_inverted_stereo(tmp_input_path):
-            logger.warning(
-                "Phase-inverted stereo detected; using side signal (L-R)/2 for mono downmix"
-            )
-            output_kwargs = dict(
-                format="wav", ar=sample_rate, af="pan=mono|c0=0.5*c0-0.5*c1"
-            )
-        else:
-            output_kwargs = dict(format="wav", ar=sample_rate, ac=nb_channels)
+        with (
+            _temporary_path() as tmp_input_path,
+            _temporary_path(suffix=".wav") as tmp_output_path,
+        ):
+            input_bytes.seek(0)
+            with open(tmp_input_path, "wb") as tmp_input:
+                shutil.copyfileobj(input_bytes, tmp_input)
 
-        # pipe:1 = write to stdout
-        stream = ffmpeg.input(tmp_input_path, err_detect="ignore_err")
-        stream = (
-            stream.output("pipe:1", **output_kwargs)
-            .overwrite_output()
-            .global_args("-loglevel", "warning")
-        )
+            if phase_aware_downmix and _is_phase_inverted_stereo(tmp_input_path):
+                logger.warning(
+                    "Phase-inverted stereo detected; using side signal (L-R)/2 for mono downmix"
+                )
+                output_kwargs = dict(
+                    format="wav", ar=sample_rate, af="pan=mono|c0=0.5*c0-0.5*c1"
+                )
+            else:
+                output_kwargs = dict(format="wav", ar=sample_rate, ac=nb_channels)
 
-        log_ffmpeg_command(stream)
-
-        output, stderr_output = stream.run(
-            capture_stdout=True,
-            capture_stderr=True,
-        )
-        if stderr_output:
-            logger.warning(
-                "FFmpeg stderr (bytes→bytes): {}", stderr_output.decode(errors="ignore")
+            stream = ffmpeg.input(tmp_input_path, err_detect="ignore_err")
+            stream = (
+                stream.output(tmp_output_path, **output_kwargs)
+                .overwrite_output()
+                .global_args("-loglevel", "warning")
             )
-        return BytesIO(output)
+
+            log_ffmpeg_command(stream)
+
+            _, stderr_output = stream.run(
+                capture_stdout=True,
+                capture_stderr=True,
+            )
+            if stderr_output:
+                logger.warning(
+                    "FFmpeg stderr (bytes→bytes): {}",
+                    stderr_output.decode(errors="ignore"),
+                )
+            return _drain_into_buffer(tmp_output_path)
 
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
@@ -226,10 +258,6 @@ def audio_bytes_to_wav_bytes(
         raise InvalidAudioFileError(
             f"Unexpected error during normalization: {e}"
         ) from e
-    finally:
-        # Clean up the temporary file
-        if os.path.exists(tmp_input_path):
-            os.remove(tmp_input_path)
 
 
 def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
@@ -253,29 +281,26 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
     stream = ffmpeg.input("pipe:0", format="wav", err_detect="ignore_err")
 
     try:
-        # Apply audio filters - maintain WAV format with correct sample rate and channels
-        stream = stream.output(
-            "pipe:1",
-            format="wav",
-            ar=sample_rate,  # Maintain audio sample rate
-            ac=nb_channels,  # Maintain audio channels
-            af=filters,  # Audio filter string
-        )
-
-        stream = stream.overwrite_output().global_args("-loglevel", "warning")
-        log_ffmpeg_command(stream)
-
-        output, stderr_output = stream.run(
-            input=input_bytes.getvalue(),
-            capture_stdout=True,
-            capture_stderr=True,
-        )
-        if stderr_output:
-            logger.warning(
-                "FFmpeg stderr (noise filtering): {}",
-                stderr_output.decode(errors="ignore"),
+        with _temporary_path(suffix=".wav") as tmp_output_path:
+            # Apply audio filters - maintain WAV format with correct sample rate and channels
+            stream = stream.output(
+                tmp_output_path,
+                format="wav",
+                ar=sample_rate,  # Maintain audio sample rate
+                ac=nb_channels,  # Maintain audio channels
+                af=filters,  # Audio filter string
             )
-        return BytesIO(output)
+
+            stream = stream.overwrite_output().global_args("-loglevel", "warning")
+            log_ffmpeg_command(stream)
+
+            _, stderr_output = _run_over(stream, input_bytes)
+            if stderr_output:
+                logger.warning(
+                    "FFmpeg stderr (noise filtering): {}",
+                    stderr_output.decode(errors="ignore"),
+                )
+            return _drain_into_buffer(tmp_output_path)
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
         raise InvalidAudioFileError(
@@ -326,10 +351,11 @@ def _parse_loudnorm_stats(ffmpeg_stderr: str) -> dict[str, str]:
 
 def _get_mean_volume_db(wav_bytes: BytesIO) -> float:
     """Return the mean_volume in dBFS via ffmpeg volumedetect."""
-    _, stderr = (
-        ffmpeg.input("pipe:0", format="wav")
-        .output("pipe:", format="null", af="volumedetect")
-        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    _, stderr = _run_over(
+        ffmpeg.input("pipe:0", format="wav").output(
+            "pipe:", format="null", af="volumedetect"
+        ),
+        wav_bytes,
     )
     return _parse_mean_volume(stderr.decode("utf-8", errors="replace"))
 
@@ -342,10 +368,9 @@ def _detect_silences(
     threshold_db = mean_volume_db - noise_detection_settings.SILENCE_THRESHOLD_OFFSET_DB
 
     af = f"silencedetect=noise={threshold_db}dB:d={noise_detection_settings.MIN_SILENCE_DURATION}"
-    _, stderr = (
-        ffmpeg.input("pipe:0", format="wav")
-        .output("pipe:", format="null", af=af)
-        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    _, stderr = _run_over(
+        ffmpeg.input("pipe:0", format="wav").output("pipe:", format="null", af=af),
+        wav_bytes,
     )
     return _parse_silence_intervals(stderr.decode("utf-8", errors="replace"))
 
@@ -355,54 +380,61 @@ def two_pass_volume_normalization(wav_bytes: BytesIO) -> BytesIO:
     loudnorm_base = f"loudnorm=I={normalized_audio_volume_settings.TARGET_LUFS}:TP={normalized_audio_volume_settings.TRUE_PEAK}:LRA={normalized_audio_volume_settings.LOUDNESS_RANGE}"
 
     # Pass 1: measure loudness statistics
-    _, stderr = (
-        ffmpeg.input("pipe:0", format="wav")
-        .output("pipe:", format="null", af=f"{loudnorm_base}:print_format=json")
-        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
+    _, stderr = _run_over(
+        ffmpeg.input("pipe:0", format="wav").output(
+            "pipe:", format="null", af=f"{loudnorm_base}:print_format=json"
+        ),
+        wav_bytes,
     )
     stats = _parse_loudnorm_stats(stderr.decode("utf-8", errors="replace"))
 
     # Pass 2: apply normalization with measured values
-    out, _ = (
-        ffmpeg.input("pipe:0", format="wav")
-        .output(
-            "pipe:",
-            format="wav",
-            ar=audio_settings.SAMPLE_RATE,
-            af=(
-                f"{loudnorm_base}:"
-                f"measured_I={stats['input_i']}:"
-                f"measured_TP={stats['input_tp']}:"
-                f"measured_LRA={stats['input_lra']}:"
-                f"measured_thresh={stats['input_thresh']}:"
-                f"offset={stats['target_offset']}:"
-                f"linear=true"
-            ),
+    with _temporary_path(suffix=".wav") as tmp_output_path:
+        _run_over(
+            ffmpeg.input("pipe:0", format="wav")
+            .output(
+                tmp_output_path,
+                format="wav",
+                ar=audio_settings.SAMPLE_RATE,
+                af=(
+                    f"{loudnorm_base}:"
+                    f"measured_I={stats['input_i']}:"
+                    f"measured_TP={stats['input_tp']}:"
+                    f"measured_LRA={stats['input_lra']}:"
+                    f"measured_thresh={stats['input_thresh']}:"
+                    f"offset={stats['target_offset']}:"
+                    f"linear=true"
+                ),
+            )
+            .overwrite_output(),
+            wav_bytes,
         )
-        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
-    )
-    return BytesIO(out)
+        return _drain_into_buffer(tmp_output_path)
 
 
 def _read_audio_samples(
     wav_bytes: BytesIO,
 ) -> npt.NDArray[np.float32]:
     """Read WAV bytes into float32 mono samples via ffmpeg."""
-    out, _ = (
-        ffmpeg.input("pipe:0", format="wav")
-        .output(
-            "pipe:",
-            format="s16le",
-            acodec="pcm_s16le",
-            ac=1,
-            ar=audio_settings.SAMPLE_RATE,
+    with _temporary_path(suffix=".raw") as tmp_output_path:
+        _run_over(
+            ffmpeg.input("pipe:0", format="wav")
+            .output(
+                tmp_output_path,
+                format="s16le",
+                acodec="pcm_s16le",
+                ac=1,
+                ar=audio_settings.SAMPLE_RATE,
+            )
+            .overwrite_output(),
+            wav_bytes,
         )
-        .run(input=wav_bytes.getvalue(), capture_stdout=True, capture_stderr=True)
-    )
-    return (
-        np.frombuffer(out, dtype=np.int16).astype(np.float32)
-        / noise_detection_settings.INT16_MAX
-    )
+        raw = np.memmap(tmp_output_path, dtype=np.int16, mode="r")
+        samples = np.asarray(raw, dtype=np.float32)
+        del raw
+
+    samples /= noise_detection_settings.INT16_MAX
+    return samples
 
 
 def _seconds_to_samples(seconds: float) -> int:
@@ -450,38 +482,37 @@ def is_audio_noisy(wav_bytes: BytesIO) -> bool:
     )
 
 
-def split_audio_on_timestamps(
+def iter_audio_chunks(
     audio_bytes: BytesIO,
     result_with_time: list[TimeSpan],
-) -> list[TranscriptionInput]:
+) -> Iterator[TranscriptionInput]:
     """
-    Split mono audio bytes into chunks based on time spans.
+    Read mono audio chunks for the given time spans, one at a time.
 
     Args:
-        audio_bytes (bytes): Full audio data (mono WAV/PCM encoded).
+        audio_bytes (BytesIO): Full audio data (mono WAV/PCM encoded).
         result_with_time (List[TimeSpan]): Spans with start/end times in seconds.
 
-    Returns:
-        List[TranscriptionInput]: List of audio chunks aligned with time spans.
+    Yields:
+        TranscriptionInput: One audio chunk per span, in span order.
     """
-    data, sample_rate = sf.read(audio_bytes)  # already mono
-    transcription_inputs: list[TranscriptionInput] = []
+    audio_bytes.seek(0)
 
-    for span in result_with_time:
-        start_sample = int(span.start * sample_rate)
-        end_sample = int(span.end * sample_rate)
-        chunk_data = data[start_sample:end_sample]
+    with sf.SoundFile(audio_bytes) as recording:  # already mono
+        total_frames = len(recording)
 
-        transcription_inputs.append(
-            TranscriptionInput(
-                audio=chunk_data.astype("float32"),
+        for span in result_with_time:
+            start_frame = min(int(span.start * recording.samplerate), total_frames)
+            end_frame = min(int(span.end * recording.samplerate), total_frames)
+
+            recording.seek(start_frame)
+
+            yield TranscriptionInput(
+                audio=recording.read(max(end_frame - start_frame, 0), dtype="float32"),
                 span=span,
             )
-        )
 
     logger.debug(
-        "Created {} transcription inputs from diarization segments",
-        len(transcription_inputs),
+        "Read {} transcription inputs from diarization segments",
+        len(result_with_time),
     )
-
-    return transcription_inputs
