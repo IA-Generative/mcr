@@ -10,6 +10,7 @@ let currentSourceNode: MediaStreamAudioSourceNode | undefined;
 // The getUserMedia stream, kept apart: MediaRecorder.stream is the synthetic
 // destination track and stopping it would not release the microphone.
 let currentMicStream: MediaStream | undefined;
+let notifyDeviceSwitched: ((track: MediaStreamTrack) => void) | undefined;
 
 const stopwatchSettings = {
   offsetTimestamp: 0,
@@ -86,6 +87,7 @@ type RecordingOptions = {
   onDataAvailableHandler?: (event: BlobEvent) => void;
   onStopEventHandler?: () => void;
   onRecordingStart?: (ctx: RecordingStartContext) => void;
+  onDeviceSwitched?: (micTrack: MediaStreamTrack) => void;
   numberOfChunkAlreadyRecorded?: number;
 };
 
@@ -144,6 +146,7 @@ async function startRecording(options: RecordingOptions = {}) {
   currentSourceNode = audioContext.createMediaStreamSource(mediaStream);
   currentSourceNode.connect(destinationNode);
   currentMicStream = mediaStream;
+  notifyDeviceSwitched = options.onDeviceSwitched;
 
   mediaRecorder.value = new MediaRecorder(destinationNode.stream, {
     mimeType: 'audio/webm',
@@ -160,6 +163,41 @@ async function startRecording(options: RecordingOptions = {}) {
     requestedDeviceId,
     availableDevices,
   });
+}
+
+async function switchAudioDevice(deviceId: string) {
+  if (deviceId === currentAudioId.value) return;
+  if (!audioContext || !destinationNode) {
+    currentAudioId.value = deviceId;
+    return;
+  }
+
+  // Guard before IO: acquire the replacement first, so a device that cannot be
+  // opened leaves the running recording completely untouched. `exact` because a
+  // switch is an explicit demand — a silent substitution would be unexplainable.
+  const newMicStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      deviceId: { exact: deviceId },
+      echoCancellation: false,
+      noiseSuppression: false,
+    },
+  });
+
+  const previousSourceNode = currentSourceNode;
+  const previousMicStream = currentMicStream;
+
+  // Connecting before disconnecting overlaps both microphones for a few ms; the
+  // hole the reverse order would leave pollutes every silence detector.
+  const newSourceNode = audioContext.createMediaStreamSource(newMicStream);
+  newSourceNode.connect(destinationNode);
+
+  previousSourceNode?.disconnect();
+  previousMicStream?.getTracks().forEach((track) => track.stop());
+
+  currentSourceNode = newSourceNode;
+  currentMicStream = newMicStream;
+  currentAudioId.value = deviceId;
+  notifyDeviceSwitched?.(newMicStream.getAudioTracks()[0]);
 }
 
 async function getAudioInputDevices() {
@@ -210,6 +248,7 @@ function releaseAudioResources() {
   currentMicStream = undefined;
   destinationNode = undefined;
   audioContext = undefined;
+  notifyDeviceSwitched = undefined;
   mediaRecorder.value = undefined;
 }
 
@@ -249,6 +288,7 @@ export function useRecorder() {
     getDefaultDeviceId,
     currentAudioId,
     setAudioDeviceId,
+    switchAudioDevice,
     startRecording,
     resumeRecording,
     abortRecording,

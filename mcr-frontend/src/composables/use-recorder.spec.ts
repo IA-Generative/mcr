@@ -315,4 +315,117 @@ describe('use-recorder', () => {
       );
     });
   });
+
+  describe('switchAudioDevice', () => {
+    let micB: MockStream;
+
+    beforeEach(() => {
+      micB = makeStream('mic-b');
+    });
+
+    async function startThenSwitchTo(deviceId: string, options = {}) {
+      const recorder = await startOnDevice('mic-a', options);
+      mockGetUserMedia.mockResolvedValue(micB);
+      await recorder.switchAudioDevice(deviceId);
+      return recorder;
+    }
+
+    it('should keep recording into the very same recorder across a switch', async () => {
+      // The whole feature rests on this: the recorder's stop event ends the meeting
+      // and starts the transcription, and its identity must not change mid-session.
+      await startThenSwitchTo('mic-b');
+
+      expect(graph.recorders).toHaveLength(1);
+      expect(graph.recorders[0].stop).not.toHaveBeenCalled();
+      expect(graph.recorders[0].start).toHaveBeenCalledTimes(1);
+    });
+
+    it('should demand the exact device asked for, never a substitute', async () => {
+      // With `ideal` the browser silently hands back another microphone, and the
+      // silence that follows would be unexplainable.
+      await startThenSwitchTo('mic-b');
+
+      expect(mockGetUserMedia).toHaveBeenLastCalledWith({
+        audio: {
+          deviceId: { exact: 'mic-b' },
+          echoCancellation: false,
+          noiseSuppression: false,
+        },
+      });
+    });
+
+    it('should overlap both microphones rather than leave a hole in the recording', async () => {
+      await startThenSwitchTo('mic-b');
+
+      expect(graph.trace.indexOf('connect:mic-b')).toBeLessThan(
+        graph.trace.indexOf('disconnect:mic-a'),
+      );
+    });
+
+    it('should keep recording on the current microphone when the new one cannot be opened', async () => {
+      const recorder = await startOnDevice('mic-a');
+      mockGetUserMedia.mockRejectedValue(new Error('NotFoundError'));
+
+      await expect(recorder.switchAudioDevice('mic-b')).rejects.toThrow('NotFoundError');
+
+      expect(recorder.currentAudioId.value).toBe('mic-a');
+      expect(trackOf(micA).stop).not.toHaveBeenCalled();
+      expect(graph.sources[0].disconnect).not.toHaveBeenCalled();
+    });
+
+    it('should release the microphone it stops recording on', async () => {
+      await startThenSwitchTo('mic-b');
+
+      expect(trackOf(micA).stop).toHaveBeenCalled();
+      expect(trackOf(micB).stop).not.toHaveBeenCalled();
+    });
+
+    it('should record on the new microphone and name it as the current one', async () => {
+      const recorder = await startThenSwitchTo('mic-b');
+
+      expect(recorder.currentAudioId.value).toBe('mic-b');
+      expect(graph.sources[1].of).toBe(micB);
+      expect(graph.sources[1].connect).toHaveBeenCalledWith(graph.destinations[0]);
+    });
+
+    it('should leave a paused recording paused', async () => {
+      const recorder = await startOnDevice('mic-a');
+      recorder.pauseRecording();
+      graph.recorders[0].state = 'paused';
+      mockGetUserMedia.mockResolvedValue(micB);
+
+      await recorder.switchAudioDevice('mic-b');
+
+      expect(graph.recorders[0].resume).not.toHaveBeenCalled();
+      expect(graph.recorders[0].pause).toHaveBeenCalledTimes(1);
+    });
+
+    it('should do nothing when the microphone already recording is chosen again', async () => {
+      const recorder = await startOnDevice('mic-a');
+      mockGetUserMedia.mockClear();
+
+      await recorder.switchAudioDevice('mic-a');
+
+      expect(mockGetUserMedia).not.toHaveBeenCalled();
+      expect(graph.sources).toHaveLength(1);
+    });
+
+    it('should only remember the choice when no recording is running', async () => {
+      const recorder = await importRecorder();
+      recorder.setAudioDeviceId('mic-a');
+
+      await recorder.switchAudioDevice('mic-b');
+
+      expect(mockGetUserMedia).not.toHaveBeenCalled();
+      expect(recorder.currentAudioId.value).toBe('mic-b');
+    });
+
+    it('should hand the monitor the track of the microphone now recording', async () => {
+      const onDeviceSwitched = vi.fn();
+
+      await startThenSwitchTo('mic-b', { onDeviceSwitched });
+
+      expect(onDeviceSwitched).toHaveBeenCalledWith(trackOf(micB));
+    });
+  });
 });
