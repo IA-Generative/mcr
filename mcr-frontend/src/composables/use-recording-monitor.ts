@@ -45,6 +45,7 @@ export type RecordingSessionStats = {
   deviceLabelAtStop: string | null;
   deviceIdAtStop: string | null;
   deviceSwitchedMidSession: boolean;
+  deliberateDeviceSwitches: number;
   // Permission / track-liveness instrumentation (detects a device no longer authorized).
   trackMutedAtStop: boolean;
   permissionRevokedEvents: number;
@@ -56,7 +57,10 @@ export type RecordingMonitorOptions = {
 };
 
 export type RecordingMonitorContext = {
+  // The recorded stream (the audio graph destination): only the level meter reads it.
   stream: MediaStream;
+  // The microphone track currently feeding the graph: the whole device diagnosis reads it.
+  micTrack: MediaStreamTrack;
   recorder: MediaRecorder;
   meetingId: number;
   requestedDeviceId: string | null;
@@ -85,6 +89,7 @@ function createEmptyStats(): RecordingSessionStats {
     deviceLabelAtStop: null,
     deviceIdAtStop: null,
     deviceSwitchedMidSession: false,
+    deliberateDeviceSwitches: 0,
     trackMutedAtStop: false,
     permissionRevokedEvents: 0,
   };
@@ -191,6 +196,41 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     document.addEventListener('visibilitychange', visibilityHandler);
   }
 
+  function _attachTrackListeners(track: MediaStreamTrack | undefined): void {
+    attachedTrack = track;
+    if (!track) return;
+
+    trackMuteHandler = () => {
+      stats.trackMuteEvents += 1;
+    };
+    track.addEventListener('mute', trackMuteHandler);
+
+    // A device unplugged mid-session fires `ended` (not `mute`) on the track.
+    trackEndedHandler = () => {
+      stats.trackEndedEvents += 1;
+    };
+    track.addEventListener('ended', trackEndedHandler);
+  }
+
+  function _detachTrackListeners(track: MediaStreamTrack | undefined): void {
+    if (!track) return;
+    if (trackMuteHandler) track.removeEventListener('mute', trackMuteHandler);
+    if (trackEndedHandler) track.removeEventListener('ended', trackEndedHandler);
+    trackMuteHandler = undefined;
+    trackEndedHandler = undefined;
+  }
+
+  function onDeviceSwitched(newTrack: MediaStreamTrack): void {
+    _detachTrackListeners(attachedTrack);
+    _attachTrackListeners(newTrack);
+
+    // Rewriting the baseline, rather than muting the test, keeps a device lost
+    // *after* the switch detectable.
+    stats.deviceLabel = newTrack.label;
+    stats.deviceSettings = newTrack.getSettings();
+    stats.deliberateDeviceSwitches += 1;
+  }
+
   function attach(ctx: RecordingMonitorContext): void {
     // Reset
     stats = createEmptyStats();
@@ -203,7 +243,7 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     hiddenSince = undefined;
 
     // Capture device info
-    const track = ctx.stream.getAudioTracks()[0];
+    const track = ctx.micTrack;
     if (track) {
       stats.deviceLabel = track.label;
       stats.deviceSettings = track.getSettings();
@@ -212,21 +252,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     stats.availableDevices = ctx.availableDevices;
 
     // Attach event listeners
-    attachedTrack = track;
     attachedRecorder = ctx.recorder;
-
-    if (track) {
-      trackMuteHandler = () => {
-        stats.trackMuteEvents += 1;
-      };
-      track.addEventListener('mute', trackMuteHandler);
-
-      // A device unplugged mid-session fires `ended` (not `mute`) on the track.
-      trackEndedHandler = () => {
-        stats.trackEndedEvents += 1;
-      };
-      track.addEventListener('ended', trackEndedHandler);
-    }
+    _attachTrackListeners(track);
 
     // A device plugged/unplugged mid-session fires `devicechange`.
     if (typeof navigator !== 'undefined' && navigator.mediaDevices) {
@@ -344,12 +371,7 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     }
 
     // Remove listeners
-    if (attachedTrack && trackMuteHandler) {
-      attachedTrack.removeEventListener('mute', trackMuteHandler);
-    }
-    if (attachedTrack && trackEndedHandler) {
-      attachedTrack.removeEventListener('ended', trackEndedHandler);
-    }
+    _detachTrackListeners(attachedTrack);
     if (deviceChangeHandler && typeof navigator !== 'undefined' && navigator.mediaDevices) {
       navigator.mediaDevices.removeEventListener('devicechange', deviceChangeHandler);
     }
@@ -373,12 +395,10 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
 
     attachedTrack = undefined;
     attachedRecorder = undefined;
-    trackMuteHandler = undefined;
     recorderErrorHandler = undefined;
     recorderDataHandler = undefined;
     recorderStopHandler = undefined;
     visibilityHandler = undefined;
-    trackEndedHandler = undefined;
     deviceChangeHandler = undefined;
     permissionStatus = undefined;
     permissionChangeHandler = undefined;
@@ -414,5 +434,5 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     return { isSilent, cause, stats: currentStats };
   }
 
-  return { audioInputLevel, attach, detach, getStats, silenceVerdict };
+  return { audioInputLevel, attach, detach, onDeviceSwitched, getStats, silenceVerdict };
 }

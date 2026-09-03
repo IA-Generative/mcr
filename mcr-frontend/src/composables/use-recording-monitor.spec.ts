@@ -28,6 +28,7 @@ function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSes
     deviceLabelAtStop: null,
     deviceIdAtStop: null,
     deviceSwitchedMidSession: false,
+    deliberateDeviceSwitches: 0,
     trackMutedAtStop: false,
     permissionRevokedEvents: 0,
     ...overrides,
@@ -63,11 +64,13 @@ vi.mock('@sentry/vue', () => ({
   },
 }));
 
-function createMockContext(
-  overrides: Partial<RecordingMonitorContext> = {},
-): RecordingMonitorContext {
-  const track = {
-    label: 'Mock Microphone',
+type MockTrack = MediaStreamTrack & { emit: (type: string) => void };
+
+function createMockTrack(settings: MediaTrackSettings = {}, label = 'Mock Microphone'): MockTrack {
+  const listeners = new Map<string, Set<() => void>>();
+  return {
+    label,
+    muted: false,
     getSettings: () => ({
       deviceId: 'device-1',
       sampleRate: 48000,
@@ -75,19 +78,30 @@ function createMockContext(
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
+      ...settings,
     }),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  };
+    addEventListener: vi.fn((type: string, handler: () => void) => {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type)!.add(handler);
+    }),
+    removeEventListener: vi.fn((type: string, handler: () => void) => {
+      listeners.get(type)?.delete(handler);
+    }),
+    emit: (type: string) => listeners.get(type)?.forEach((handler) => handler()),
+  } as unknown as MockTrack;
+}
 
-  const stream = {
-    getAudioTracks: () => [track],
-  } as unknown as MediaStream;
+function createMockContext(
+  overrides: Partial<RecordingMonitorContext> = {},
+): RecordingMonitorContext {
+  // The recorded stream is the graph's destination: only the level meter reads it.
+  const stream = { getAudioTracks: () => [] } as unknown as MediaStream;
 
   const recorder = new EventTarget() as unknown as MediaRecorder;
 
   return {
     stream,
+    micTrack: createMockTrack(),
     recorder,
     meetingId: 42,
     requestedDeviceId: null,
@@ -300,7 +314,8 @@ describe('useRecordingMonitor', () => {
         removeEventListener: vi.fn(),
       };
       const ctx = {
-        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        stream: { getAudioTracks: () => [] } as unknown as MediaStream,
+        micTrack: track as unknown as MediaStreamTrack,
         recorder: new EventTarget() as unknown as MediaRecorder,
         meetingId: 42,
         requestedDeviceId: 'device-1',
@@ -329,7 +344,8 @@ describe('useRecordingMonitor', () => {
         removeEventListener: vi.fn(),
       };
       const ctx = {
-        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        stream: { getAudioTracks: () => [] } as unknown as MediaStream,
+        micTrack: track as unknown as MediaStreamTrack,
         recorder: new EventTarget() as unknown as MediaRecorder,
         meetingId: 42,
         requestedDeviceId: 'device-1',
@@ -404,15 +420,7 @@ describe('useRecordingMonitor', () => {
       const ctx = createMockContext();
       attach(ctx);
 
-      // Get the mute handler from addEventListener call
-      const track = ctx.stream.getAudioTracks()[0];
-      const muteCall = (track.addEventListener as ReturnType<typeof vi.fn>).mock.calls.find(
-        (call: unknown[]) => call[0] === 'mute',
-      );
-      expect(muteCall).toBeDefined();
-
-      // Invoke the handler
-      muteCall![1]();
+      (ctx.micTrack as MockTrack).emit('mute');
 
       expect(getStats().trackMuteEvents).toBe(1);
     });
@@ -451,6 +459,91 @@ describe('useRecordingMonitor', () => {
       const verdict = silenceVerdict();
       expect(verdict.isSilent).toBe(false);
       expect(verdict.stats.maxAudioLevel).toBe(0.5);
+    });
+  });
+
+  describe('microphone switched mid-session', () => {
+    const usbMic = () => createMockTrack({ deviceId: 'usb-1' }, 'Casque USB');
+
+    it('should read the diagnosis on the microphone, not on the recorded stream', () => {
+      // The recorded stream is the graph destination: its synthetic track carries no
+      // device identity at all.
+      const ctx = createMockContext({
+        stream: {
+          getAudioTracks: () => [createMockTrack({ deviceId: 'destination' }, 'Graph output')],
+        } as unknown as MediaStream,
+        micTrack: usbMic(),
+      });
+
+      const { attach, getStats } = useRecordingMonitor();
+      attach(ctx);
+
+      expect(getStats().deviceLabel).toBe('Casque USB');
+      expect(getStats().deviceSettings?.deviceId).toBe('usb-1');
+    });
+
+    it('should keep the level meter running across a switch', () => {
+      const { attach, onDeviceSwitched } = useRecordingMonitor();
+      attach(createMockContext());
+      mockAudioLevelMonitorInstance.start.mockClear();
+
+      onDeviceSwitched(usbMic());
+
+      expect(mockAudioLevelMonitorInstance.stop).not.toHaveBeenCalled();
+      expect(mockAudioLevelMonitorInstance.start).not.toHaveBeenCalled();
+    });
+
+    it('should not blame the capture device for a switch the user asked for', () => {
+      const { attach, onDeviceSwitched, detach, silenceVerdict } = useRecordingMonitor();
+      attach(createMockContext());
+
+      onDeviceSwitched(usbMic());
+      detach();
+
+      const { cause, stats } = silenceVerdict();
+      expect(stats.deviceSwitchedMidSession).toBe(false);
+      expect(stats.deliberateDeviceSwitches).toBe(1);
+      expect(cause).toBe('true-silence');
+    });
+
+    it('should watch the microphone now recording, and only it', () => {
+      const ctx = createMockContext();
+      const newTrack = usbMic();
+      const { attach, onDeviceSwitched, getStats } = useRecordingMonitor();
+      attach(ctx);
+
+      onDeviceSwitched(newTrack);
+      (ctx.micTrack as MockTrack).emit('ended');
+      newTrack.emit('ended');
+
+      expect(getStats().trackEndedEvents).toBe(1);
+    });
+
+    it('should keep the incidents counted before the switch', () => {
+      const ctx = createMockContext();
+      const { attach, onDeviceSwitched, getStats } = useRecordingMonitor();
+      attach(ctx);
+
+      (ctx.micTrack as MockTrack).emit('mute');
+      onDeviceSwitched(usbMic());
+
+      expect(getStats().trackMuteEvents).toBe(1);
+    });
+
+    it('should still catch a device lost after the switch', () => {
+      // Rewriting the baseline must not deafen the detector: this is why the switch
+      // does not simply raise an "ignore device drift" flag.
+      const settings: MediaTrackSettings = { deviceId: 'usb-1' };
+      const { attach, onDeviceSwitched, detach, silenceVerdict } = useRecordingMonitor();
+      attach(createMockContext());
+
+      onDeviceSwitched(createMockTrack(settings, 'Casque USB'));
+      settings.deviceId = 'bluetooth-1';
+      detach();
+
+      const { cause, stats } = silenceVerdict();
+      expect(stats.deviceSwitchedMidSession).toBe(true);
+      expect(cause).toBe('wrong-device');
     });
   });
 });
