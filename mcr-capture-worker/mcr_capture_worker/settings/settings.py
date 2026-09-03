@@ -66,6 +66,10 @@ class CaptureSettings(BaseSettings):
         300,
         description="Time in seconds the bot waits alone in a meeting before auto-disconnecting",
     )
+    MAX_CAPTURE_DURATION_S: int = Field(
+        16 * 60 * 60,
+        description="Hard cap in seconds on a single capture, counted from the bot connection. Ends the capture through the regular stop path when the user never stops the meeting",
+    )
     TEARDOWN_TIMEOUT: int = Field(
         30,
         description="Time in seconds the bot waits to be disconnected after stop recording before forcing browser to close",
