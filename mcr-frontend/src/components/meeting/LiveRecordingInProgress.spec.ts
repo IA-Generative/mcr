@@ -8,7 +8,10 @@ const { session } = vi.hoisted(() => ({
   session: {
     availableDevices: { value: [] as { deviceId: string; label: string; groupId: string }[] },
     currentDeviceId: { value: '' },
+    hasNoAudioSignal: { value: false },
+    isNoSignalAlertMuted: { value: false },
     switchAudioDevice: vi.fn(),
+    muteNoSignalAlert: vi.fn(),
   },
 }));
 
@@ -21,9 +24,16 @@ vi.mock('@/composables/use-recording-session', () => ({
     availableDevices: session.availableDevices,
     currentDeviceId: session.currentDeviceId,
     audioInputLevel: ref(0),
+    get hasNoAudioSignal() {
+      return session.hasNoAudioSignal;
+    },
+    get isNoSignalAlertMuted() {
+      return session.isNoSignalAlertMuted;
+    },
     effectiveOffline: ref(false),
     statusLabel: ref('EN COURS'),
     switchAudioDevice: session.switchAudioDevice,
+    muteNoSignalAlert: session.muteNoSignalAlert,
     pauseRecording: vi.fn(),
     resumeRecording: vi.fn(),
     stopRecording: vi.fn(),
@@ -45,6 +55,8 @@ describe('LiveRecordingInProgress', () => {
       { deviceId: 'usb-1', label: 'Casque USB', groupId: 'g2' },
     ];
     session.currentDeviceId.value = 'mic-1';
+    session.hasNoAudioSignal = ref(false);
+    session.isNoSignalAlertMuted = ref(false);
     session.switchAudioDevice.mockResolvedValue(undefined);
   });
 
@@ -91,5 +103,43 @@ describe('LiveRecordingInProgress', () => {
     await fireEvent.update(microphoneSelect(), 'usb-1');
 
     expect(microphoneSelect().value).toBe('mic-1');
+  });
+
+  describe('no-signal alert', () => {
+    it('tells the user in words that nothing is being captured', () => {
+      session.hasNoAudioSignal.value = true;
+
+      renderWithPlugins(LiveRecordingInProgress, { props: { meetingId: 1 } });
+
+      expect(screen.getByText('Aucun son détecté')).toBeTruthy();
+      expect(screen.getByText(/Vérifiez qu'il n'est pas coupé/)).toBeTruthy();
+    });
+
+    it('says nothing while the microphone is delivering', () => {
+      renderWithPlugins(LiveRecordingInProgress, { props: { meetingId: 1 } });
+
+      expect(screen.queryByText('Aucun son détecté')).toBeNull();
+    });
+
+    it('announces itself to a screen reader when it appears', () => {
+      session.hasNoAudioSignal.value = true;
+
+      renderWithPlugins(LiveRecordingInProgress, { props: { meetingId: 1 } });
+
+      expect(screen.getByRole('alert')).toBeTruthy();
+    });
+
+    it('lets the user silence the sound and then drops the offer', async () => {
+      session.muteNoSignalAlert.mockImplementation(() => {
+        session.isNoSignalAlertMuted.value = true;
+      });
+      session.hasNoAudioSignal.value = true;
+      renderWithPlugins(LiveRecordingInProgress, { props: { meetingId: 1 } });
+
+      await fireEvent.click(screen.getByRole('button', { name: /Couper le signal sonore/ }));
+
+      expect(session.muteNoSignalAlert).toHaveBeenCalled();
+      expect(screen.queryByRole('button', { name: /Couper le signal sonore/ })).toBeNull();
+    });
   });
 });
