@@ -10,6 +10,8 @@ def run_diarization(
 ) -> None:
     audio_bytes = s3.fetch_audio_bytes(meeting_id)
     preprocessed_audio = preprocess_audio(audio_bytes)
+    audio_bytes.close()
+
     diarization = diarization_processor.diarize(audio_bytes=preprocessed_audio)
     s3.write_preprocessed_audio(meeting_id, preprocessed_audio)
     s3.write_diarization(meeting_id, diarization)
