@@ -1,4 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import {
+  LIVE_NO_SIGNAL_DURATION_MS,
+  LIVE_NO_SIGNAL_GRACE_MS,
+} from '@/config/audioMonitor';
 import {
   useRecordingMonitor,
   classifySilence,
@@ -31,6 +35,7 @@ function makeStats(overrides: Partial<RecordingSessionStats> = {}): RecordingSes
     deliberateDeviceSwitches: 0,
     trackMutedAtStop: false,
     permissionRevokedEvents: 0,
+    noSignalEpisodes: 0,
     ...overrides,
   };
 }
@@ -544,6 +549,131 @@ describe('useRecordingMonitor', () => {
       const { cause, stats } = silenceVerdict();
       expect(stats.deviceSwitchedMidSession).toBe(true);
       expect(cause).toBe('wrong-device');
+    });
+  });
+  describe('live no-signal detection', () => {
+    const usbMic = () => createMockTrack({ deviceId: 'usb-1' }, 'Casque USB');
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      setVisibility('visible');
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+      setVisibility('visible');
+    });
+
+    function setVisibility(state: DocumentVisibilityState) {
+      Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+      document.dispatchEvent(new Event('visibilitychange'));
+    }
+
+    function holdLevel(level: number, durationMs: number) {
+      simulateAudioLevels([level]);
+      vi.advanceTimersByTime(durationMs);
+      simulateAudioLevels([level]);
+    }
+
+    it('warns the user once the microphone has been delivering nothing long enough', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+
+      expect(hasNoAudioSignal.value).toBe(true);
+    });
+
+    it('stays quiet on a dropout shorter than the configured window', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS - 1_000);
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('does not cry wolf in a merely quiet room', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+
+      holdLevel(0.03, LIVE_NO_SIGNAL_DURATION_MS * 2);
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('clears the warning as soon as any signal comes back', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+
+      simulateAudioLevels([0.5]);
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('never warns while the tab is hidden', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+
+      setVisibility('hidden');
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS * 2);
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('does not count the time spent in a hidden tab towards the window', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS / 2);
+
+      setVisibility('hidden');
+      vi.advanceTimersByTime(LIVE_NO_SIGNAL_DURATION_MS * 2);
+      setVisibility('visible');
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS / 2);
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('gives a microphone the user just chose time to start delivering', () => {
+      const { attach, onDeviceSwitched, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+
+      onDeviceSwitched(usbMic());
+      holdLevel(0, LIVE_NO_SIGNAL_GRACE_MS / 2);
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('counts each episode so an incident report says whether the user was warned', () => {
+      const { attach, getStats } = useRecordingMonitor();
+      attach(createMockContext());
+
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+      simulateAudioLevels([0.5]);
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+
+      expect(getStats().noSignalEpisodes).toBe(2);
+    });
+
+    it('clears the flag on detach', () => {
+      const { attach, detach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+
+      detach();
+
+      expect(hasNoAudioSignal.value).toBe(false);
+    });
+
+    it('starts a new session without the previous warning', () => {
+      const { attach, hasNoAudioSignal } = useRecordingMonitor();
+      attach(createMockContext());
+      holdLevel(0, LIVE_NO_SIGNAL_DURATION_MS);
+
+      attach(createMockContext());
+
+      expect(hasNoAudioSignal.value).toBe(false);
     });
   });
 });
