@@ -9,6 +9,8 @@ vi.mock('@/composables/use-recording-session', () => ({
     isRecording: { value: true },
     isInactive: { value: false },
     isSendingLastAudioChunks: { value: false },
+    availableDevices: { value: [{ deviceId: 'mic-1', label: 'Micro intégré', groupId: 'g1' }] },
+    currentDeviceId: { value: 'mic-1' },
     audioInputLevel: { value: 0 },
     effectiveOffline: { value: false },
     statusLabel: { value: 'En cours' },

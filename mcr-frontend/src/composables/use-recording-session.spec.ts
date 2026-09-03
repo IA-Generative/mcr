@@ -218,7 +218,7 @@ describe('useRecordingSession devices', () => {
 
   it('tells the user which microphone has been unplugged', async () => {
     recorder.currentAudioId.value = 'mic-1';
-    const { unmount: _unmount } = mountSession();
+    mountSession();
     await flush();
     startRecordingWith([device('mic-1', 'Micro intégré'), device('usb-1', 'Casque USB')]);
 
