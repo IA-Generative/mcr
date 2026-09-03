@@ -93,6 +93,19 @@ function setAudioDeviceId(id: string) {
   currentAudioId.value = id;
 }
 
+// Passive counterpart of getAudioInputDevices: it never asks for the microphone permission,
+// so it can be called without holding a device open.
+async function listAudioInputDevices(): Promise<AudioDeviceInfo[]> {
+  return navigator.mediaDevices
+    .enumerateDevices()
+    .then((devices) =>
+      (devices ?? [])
+        .filter((d) => d.kind === 'audioinput')
+        .map((d) => ({ deviceId: d.deviceId, label: d.label, groupId: d.groupId })),
+    )
+    .catch(() => []);
+}
+
 async function startRecording(options: RecordingOptions = {}) {
   if (!currentAudioId.value) {
     const devices = await getAudioInputDevices();
@@ -111,14 +124,7 @@ async function startRecording(options: RecordingOptions = {}) {
     },
   });
 
-  const availableDevices: AudioDeviceInfo[] = await navigator.mediaDevices
-    .enumerateDevices()
-    .then((devices) =>
-      (devices ?? [])
-        .filter((d) => d.kind === 'audioinput')
-        .map((d) => ({ deviceId: d.deviceId, label: d.label, groupId: d.groupId })),
-    )
-    .catch(() => []);
+  const availableDevices = await listAudioInputDevices();
   const requestedDeviceId = currentAudioId.value ?? null;
 
   mediaRecorder.value = new MediaRecorder(mediaStream, {
@@ -214,7 +220,9 @@ export function useRecorder() {
       hours: stopwatch.hours,
     },
     getAudioInputDevices,
+    listAudioInputDevices,
     getDefaultDeviceId,
+    currentAudioId,
     setAudioDeviceId,
     startRecording,
     resumeRecording,

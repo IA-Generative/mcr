@@ -89,6 +89,51 @@ describe('use-recorder', () => {
     });
   });
 
+  describe('listAudioInputDevices', () => {
+    it('should list only the audio inputs the browser exposes', async () => {
+      const { useRecorder } = await import('./use-recorder');
+      const { listAudioInputDevices } = useRecorder();
+
+      navigator.mediaDevices.enumerateDevices = vi.fn().mockResolvedValue([
+        { deviceId: 'mic-1', label: 'Micro intégré', groupId: 'g1', kind: 'audioinput' },
+        { deviceId: 'cam-1', label: 'Webcam', groupId: 'g2', kind: 'videoinput' },
+      ]);
+
+      expect(await listAudioInputDevices()).toEqual([
+        { deviceId: 'mic-1', label: 'Micro intégré', groupId: 'g1' },
+      ]);
+    });
+
+    it('should not ask for the microphone permission', async () => {
+      const { useRecorder } = await import('./use-recorder');
+      const { listAudioInputDevices } = useRecorder();
+
+      navigator.mediaDevices.enumerateDevices = vi.fn().mockResolvedValue([]);
+
+      await listAudioInputDevices();
+
+      expect(mockGetUserMedia).not.toHaveBeenCalled();
+    });
+
+    it('should return an empty list when the devices cannot be enumerated', async () => {
+      const { useRecorder } = await import('./use-recorder');
+      const { listAudioInputDevices } = useRecorder();
+
+      navigator.mediaDevices.enumerateDevices = vi.fn().mockRejectedValue(new Error('denied'));
+
+      expect(await listAudioInputDevices()).toEqual([]);
+    });
+  });
+
+  it('should expose the device the recording is running on', async () => {
+    const { useRecorder } = await import('./use-recorder');
+    const { setAudioDeviceId, currentAudioId } = useRecorder();
+
+    setAudioDeviceId('mic-1');
+
+    expect(currentAudioId.value).toBe('mic-1');
+  });
+
   describe('getDefaultDeviceId', () => {
     it('should return the preferred device ID (default) when it matches a device', async () => {
       const { useRecorder } = await import('./use-recorder');
