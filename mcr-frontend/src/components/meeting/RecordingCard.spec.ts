@@ -14,6 +14,7 @@ vi.mock('@/composables/use-recording-session', () => ({
     audioInputLevel: { value: 0 },
     effectiveOffline: { value: false },
     statusLabel: { value: 'En cours' },
+    switchAudioDevice: vi.fn(),
     pauseRecording: vi.fn(),
     resumeRecording: vi.fn(),
     stopRecording: vi.fn(),

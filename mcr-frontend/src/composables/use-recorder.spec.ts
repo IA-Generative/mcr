@@ -18,111 +18,119 @@ vi.mock('@/utils/audio-level-monitor', () => ({
   })),
 }));
 
-const { mockGetUserMedia } = vi.hoisted(() => ({
-  mockGetUserMedia: vi.fn(),
-}));
-
-type MockTrack = MediaStreamTrack & { stop: ReturnType<typeof vi.fn> };
-type MockStream = MediaStream & { id: string };
-
-type MockNode = {
-  stream?: MockStream;
-  connect: ReturnType<typeof vi.fn>;
-  disconnect: ReturnType<typeof vi.fn>;
-};
-
-type MockSourceNode = MockNode & { of: MockStream };
-
-const graph = {
-  initialState: 'running' as AudioContextState,
-  contexts: [] as MockAudioContext[],
-  sources: [] as MockSourceNode[],
-  destinations: [] as MockNode[],
-  destinationArgs: [] as unknown[][],
-  recorders: [] as MockMediaRecorder[],
-  // Ordered trace of the calls whose sequence is part of the contract.
-  trace: [] as string[],
-};
-
-function makeStream(id: string): MockStream {
-  const track = {
-    id,
-    label: id,
-    stop: vi.fn(),
-    getSettings: () => ({ deviceId: id }),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-  } as unknown as MockTrack;
-  return {
-    id,
-    getTracks: () => [track],
-    getAudioTracks: () => [track],
-  } as unknown as MockStream;
-}
-
-function trackOf(stream: MockStream): MockTrack {
-  return stream.getTracks()[0] as MockTrack;
-}
-
-class MockAudioContext {
-  state: AudioContextState = graph.initialState;
-
-  constructor() {
-    graph.contexts.push(this);
-  }
-
-  resume = vi.fn(async () => {
-    graph.trace.push('resume');
-    this.state = 'running';
-  });
-
-  close = vi.fn(async () => {
-    graph.trace.push('close');
-    this.state = 'closed';
-  });
-
-  createMediaStreamDestination = vi.fn((...args: unknown[]): MockNode => {
-    graph.destinationArgs.push(args);
-    const node: MockNode = {
-      stream: makeStream(`destination-${graph.destinations.length}`),
-      connect: vi.fn(),
-      disconnect: vi.fn(),
+const { mockGetUserMedia, graph, makeStream, trackOf, MockAudioContext, MockMediaRecorder } =
+  vi.hoisted(() => {
+    type MockTrack = MediaStreamTrack & { stop: ReturnType<typeof vi.fn> };
+    type MockStream = MediaStream & { id: string };
+    type MockNode = {
+      stream?: MockStream;
+      connect: ReturnType<typeof vi.fn>;
+      disconnect: ReturnType<typeof vi.fn>;
     };
-    graph.destinations.push(node);
-    return node;
-  });
+    type MockSourceNode = MockNode & { of: MockStream };
 
-  createMediaStreamSource = vi.fn((stream: MockStream): MockSourceNode => {
-    const node: MockSourceNode = {
-      of: stream,
-      connect: vi.fn(() => graph.trace.push(`connect:${stream.id}`)),
-      disconnect: vi.fn(() => graph.trace.push(`disconnect:${stream.id}`)),
+    function makeStream(id: string): MockStream {
+      const track = {
+        id,
+        label: id,
+        stop: vi.fn(),
+        getSettings: () => ({ deviceId: id }),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      } as unknown as MockTrack;
+      return {
+        id,
+        getTracks: () => [track],
+        getAudioTracks: () => [track],
+      } as unknown as MockStream;
+    }
+
+    function trackOf(stream: MockStream): MockTrack {
+      return stream.getTracks()[0] as MockTrack;
+    }
+
+    class MockAudioContext {
+      state: AudioContextState = graph.initialState;
+
+      constructor() {
+        graph.contexts.push(this);
+      }
+
+      resume = vi.fn(async () => {
+        graph.trace.push('resume');
+        this.state = 'running';
+      });
+
+      close = vi.fn(async () => {
+        graph.trace.push('close');
+        this.state = 'closed';
+      });
+
+      createMediaStreamDestination = vi.fn((...args: unknown[]): MockNode => {
+        graph.destinationArgs.push(args);
+        const node: MockNode = {
+          stream: makeStream(`destination-${graph.destinations.length}`),
+          connect: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        graph.destinations.push(node);
+        return node;
+      });
+
+      createMediaStreamSource = vi.fn((stream: MockStream): MockSourceNode => {
+        const node: MockSourceNode = {
+          of: stream,
+          connect: vi.fn(() => graph.trace.push(`connect:${stream.id}`)),
+          disconnect: vi.fn(() => graph.trace.push(`disconnect:${stream.id}`)),
+        };
+        graph.sources.push(node);
+        return node;
+      });
+    }
+
+    class MockMediaRecorder {
+      stream: MediaStream;
+      state: 'inactive' | 'recording' | 'paused' = 'recording';
+      ondataavailable: ((event: BlobEvent) => void) | null = null;
+      onstop: (() => void) | null = null;
+      onstart: (() => void) | null = null;
+      onresume: (() => void) | null = null;
+      onpause: (() => void) | null = null;
+
+      start = vi.fn();
+      stop = vi.fn();
+      pause = vi.fn();
+      resume = vi.fn();
+
+      constructor(stream: MediaStream) {
+        this.stream = stream;
+        graph.recorders.push(this);
+        graph.trace.push('new MediaRecorder');
+      }
+    }
+
+    const graph = {
+      initialState: 'running' as AudioContextState,
+      contexts: [] as MockAudioContext[],
+      sources: [] as MockSourceNode[],
+      destinations: [] as MockNode[],
+      destinationArgs: [] as unknown[][],
+      recorders: [] as MockMediaRecorder[],
+      // Ordered trace of the calls whose sequence is part of the contract.
+      trace: [] as string[],
     };
-    graph.sources.push(node);
-    return node;
+
+    return {
+      mockGetUserMedia: vi.fn(),
+      graph,
+      makeStream,
+      trackOf,
+      MockAudioContext,
+      MockMediaRecorder,
+    };
   });
-}
 
-class MockMediaRecorder {
-  stream: MediaStream;
-  state: MediaRecorderState = 'recording';
-  ondataavailable: ((event: BlobEvent) => void) | null = null;
-  onstop: (() => void) | null = null;
-  onstart: (() => void) | null = null;
-  onresume: (() => void) | null = null;
-  onpause: (() => void) | null = null;
-
-  start = vi.fn();
-  stop = vi.fn();
-  pause = vi.fn();
-  resume = vi.fn();
-
-  constructor(stream: MediaStream) {
-    this.stream = stream;
-    graph.recorders.push(this);
-    graph.trace.push('new MediaRecorder');
-  }
-}
+type MockStream = ReturnType<typeof makeStream>;
 
 vi.stubGlobal('MediaRecorder', MockMediaRecorder);
 vi.stubGlobal('AudioContext', MockAudioContext);

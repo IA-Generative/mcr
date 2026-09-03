@@ -373,9 +373,7 @@ describe('useRecordingSession devices', () => {
 
       await expect(session().switchAudioDevice('usb-1')).resolves.toBeUndefined();
 
-      expect(toaster.addErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining('microphone'),
-      );
+      expect(toaster.addErrorMessage).toHaveBeenCalledWith(expect.stringContaining('microphone'));
     });
 
     it('reports a microphone that vanished as a warning, not as an error', async () => {
