@@ -4,6 +4,13 @@ const currentAudioId = ref<string | undefined>('');
 const mediaRecorder = ref<MediaRecorder | undefined>(undefined);
 const TIME_BETWEEN_CHUNK_SPLIT = 60_000; // 1 minute
 
+let audioContext: AudioContext | undefined;
+let destinationNode: MediaStreamAudioDestinationNode | undefined;
+let currentSourceNode: MediaStreamAudioSourceNode | undefined;
+// The getUserMedia stream, kept apart: MediaRecorder.stream is the synthetic
+// destination track and stopping it would not release the microphone.
+let currentMicStream: MediaStream | undefined;
+
 const stopwatchSettings = {
   offsetTimestamp: 0,
   autoStart: false,
@@ -69,6 +76,7 @@ export type AudioDeviceInfo = {
 
 export type RecordingStartContext = {
   stream: MediaStream;
+  micTrack: MediaStreamTrack;
   recorder: MediaRecorder;
   requestedDeviceId: string | null;
   availableDevices: AudioDeviceInfo[];
@@ -127,7 +135,17 @@ async function startRecording(options: RecordingOptions = {}) {
   const availableDevices = await listAudioInputDevices();
   const requestedDeviceId = currentAudioId.value ?? null;
 
-  mediaRecorder.value = new MediaRecorder(mediaStream, {
+  audioContext = new AudioContext();
+  if (audioContext.state === 'suspended') await audioContext.resume();
+
+  // The recorder is wired once to the destination, whose stream never changes:
+  // switching microphones then never touches the recorder's lifecycle.
+  destinationNode = audioContext.createMediaStreamDestination();
+  currentSourceNode = audioContext.createMediaStreamSource(mediaStream);
+  currentSourceNode.connect(destinationNode);
+  currentMicStream = mediaStream;
+
+  mediaRecorder.value = new MediaRecorder(destinationNode.stream, {
     mimeType: 'audio/webm',
   });
   _initMediaRecorderEvents(options);
@@ -136,7 +154,8 @@ async function startRecording(options: RecordingOptions = {}) {
   stopwatch.start();
 
   options.onRecordingStart?.({
-    stream: mediaStream,
+    stream: destinationNode.stream,
+    micTrack: mediaStream.getAudioTracks()[0],
     recorder: mediaRecorder.value,
     requestedDeviceId,
     availableDevices,
@@ -182,9 +201,15 @@ function stopRecording() {
 }
 
 function releaseAudioResources() {
-  if (!mediaRecorder.value) return;
+  currentSourceNode?.disconnect();
+  currentMicStream?.getTracks().forEach((track) => track.stop());
+  destinationNode?.disconnect();
+  audioContext?.close().catch(() => {});
 
-  mediaRecorder.value.stream.getTracks().forEach((track) => track.stop());
+  currentSourceNode = undefined;
+  currentMicStream = undefined;
+  destinationNode = undefined;
+  audioContext = undefined;
   mediaRecorder.value = undefined;
 }
 
