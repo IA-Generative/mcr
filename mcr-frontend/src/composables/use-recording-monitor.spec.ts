@@ -1,8 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import {
-  LIVE_NO_SIGNAL_DURATION_MS,
-  LIVE_NO_SIGNAL_GRACE_MS,
-} from '@/config/audioMonitor';
+import { LIVE_NO_SIGNAL_DURATION_MS, LIVE_NO_SIGNAL_GRACE_MS } from '@/config/audioMonitor';
 import {
   useRecordingMonitor,
   classifySilence,
