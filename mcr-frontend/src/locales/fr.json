@@ -574,6 +574,13 @@
           "end": "Terminer l'enregistrement"
         }
       },
+      "device": {
+        "label": "Microphone",
+        "unknown": "périphérique inconnu",
+        "connected": "Nouveau microphone détecté : {devices}",
+        "disconnected": "Microphone déconnecté : {devices}",
+        "disconnected-active": "Le microphone utilisé pour l'enregistrement a été déconnecté : {devices}. Rebranchez-le pour continuer à enregistrer."
+      },
       "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez."
     },
     "visio-recording": {
