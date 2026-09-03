@@ -17,6 +17,7 @@ export function useRecordingSession(meetingId: number) {
     currentAudioId,
     listAudioInputDevices,
     startRecording,
+    switchAudioDevice: switchRecorderAudioDevice,
     resumeRecording,
     stopRecording,
     pauseRecording,
@@ -93,6 +94,32 @@ export function useRecordingSession(meetingId: number) {
       } else {
         toaster.addInfoMessage(message);
       }
+    }
+  }
+
+  async function switchAudioDevice(deviceId: string) {
+    try {
+      await switchRecorderAudioDevice(deviceId);
+    } catch (error) {
+      toaster.addErrorMessage(t('meeting-v2.recording.device.switch-failed'));
+      // A device unplugged between the listing and the click is expected, and the
+      // recording carries on: an error-level event would pollute the prod report.
+      Sentry.captureException(error, {
+        level: 'warning',
+        tags: {
+          feature: 'recording',
+          'meeting.id': meetingId,
+        },
+        contexts: {
+          recordingDevice: {
+            requestedDeviceId: deviceId,
+            currentDeviceId: currentDeviceId.value,
+            availableDevices: availableDevices.value.map(
+              (d) => `${d.label} [deviceId=${d.deviceId}, groupId=${d.groupId}]`,
+            ),
+          },
+        },
+      });
     }
   }
 
@@ -183,6 +210,7 @@ export function useRecordingSession(meetingId: number) {
           deviceLabelAtStop: stats.deviceLabelAtStop,
           deviceIdAtStop: stats.deviceIdAtStop,
           deviceSwitchedMidSession: stats.deviceSwitchedMidSession,
+          deliberateDeviceSwitches: stats.deliberateDeviceSwitches,
           trackMutedAtStop: stats.trackMutedAtStop,
           permissionRevokedEvents: stats.permissionRevokedEvents,
         };
@@ -243,6 +271,7 @@ export function useRecordingSession(meetingId: number) {
           hasDeviceBaseline = true;
           recordingMonitor.attach({ ...ctx, meetingId });
         },
+        onDeviceSwitched: (micTrack) => recordingMonitor.onDeviceSwitched(micTrack),
         numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
       });
     } catch (error) {
@@ -280,6 +309,7 @@ export function useRecordingSession(meetingId: number) {
     audioInputLevel,
     effectiveOffline,
     statusLabel,
+    switchAudioDevice,
     pauseRecording,
     resumeRecording,
     stopRecording,

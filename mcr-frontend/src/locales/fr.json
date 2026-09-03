@@ -577,9 +577,10 @@
       "device": {
         "label": "Microphone",
         "unknown": "périphérique inconnu",
-        "connected": "Nouveau microphone détecté : {device}",
-        "disconnected": "Microphone déconnecté : {device}",
-        "disconnected-active": "Le microphone utilisé pour l'enregistrement a été déconnecté : {device}. Rebranchez-le pour continuer à enregistrer."
+        "connected": "Nouveau microphone détecté : {device}",
+        "disconnected": "Microphone déconnecté : {device}",
+        "disconnected-active": "Le microphone utilisé pour l'enregistrement a été déconnecté : {device}. Rebranchez-le pour continuer à enregistrer.",
+        "switch-failed": "Impossible d'utiliser ce microphone. L'enregistrement continue sur le microphone précédent."
       },
       "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez."
     },
