@@ -1,24 +1,45 @@
+from collections.abc import Generator
 from unittest.mock import Mock
 
 import pytest
 from celery.exceptions import Ignore, Retry
 from pytest_mock import MockerFixture
 
+import mcr_meeting.app.infrastructure.celery_consumer as celery_consumer
 import mcr_meeting.transcription_worker as tw
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     S3TransientError,
+    TranscriptionAttemptsExhaustedError,
+    TransientInfraError,
 )
+from tests.mocks.in_memory_redis import InMemoryRedis
 
 MEETING_ID = 123
 OWNER = "owner-uuid"
+TASK_ID = "task-id"
+ATTEMPT_KEY = f"transcription_attempts:{TASK_ID}"
 
 
 def _patch_start_transcription(mocker: MockerFixture) -> Mock:
     client_cls = mocker.patch.object(tw, "MeetingApiClient")
     client_cls.return_value.start_transcription = mocker.AsyncMock()
     return client_cls.return_value.start_transcription
+
+
+def _patch_task_context(mocker: MockerFixture) -> Mock:
+    mocker.patch.object(tw, "MeetingApiClient")
+    mocker.patch.object(tw, "gather_meeting_context")
+    return mocker.patch.object(tw, "set_sentry_meeting_context")
+
+
+def _before_start(delivery_info: dict[str, bool] | None) -> None:
+    tw.diarize.push_request(delivery_info=delivery_info)
+    try:
+        tw.diarize.before_start(TASK_ID, (MEETING_ID, OWNER), {})
+    finally:
+        tw.diarize.pop_request()
 
 
 class TestTaskDelegation:
@@ -128,15 +149,11 @@ class TestPipelineTaskBase:
         assert "on_failure" not in tw.MeetingPipelineTask.__dict__
 
     def test_before_start_sets_sentry_context(self, mocker: MockerFixture) -> None:
-        mocker.patch.object(tw, "MeetingApiClient")
-        gather = mocker.patch.object(tw, "gather_meeting_context")
-        set_ctx = mocker.patch.object(tw, "set_sentry_meeting_context")
-        task = tw.TranscriptionPipelineTask()
+        set_ctx = _patch_task_context(mocker)
 
-        task.before_start("task-id", (MEETING_ID, OWNER), {})
+        _before_start(None)
 
-        gather.assert_called_once()
-        set_ctx.assert_called_once_with(gather.return_value)
+        set_ctx.assert_called_once()
 
     def test_all_pipeline_tasks_use_the_base(self) -> None:
         for task in (
@@ -149,6 +166,68 @@ class TestPipelineTaskBase:
 
     def test_meeting_deleted_is_ignore_so_errback_is_skipped(self) -> None:
         assert issubclass(MeetingDeletedException, Ignore)
+
+    def test_exhausted_attempts_fail_the_task_without_retry(self) -> None:
+        assert not issubclass(TranscriptionAttemptsExhaustedError, TransientInfraError)
+        assert not issubclass(TranscriptionAttemptsExhaustedError, Ignore)
+
+
+class TestAttemptBudget:
+    @pytest.mark.parametrize("delivery_info", [None, {"redelivered": False}])
+    def test_first_delivery_is_not_an_attempt(
+        self,
+        mocker: MockerFixture,
+        in_memory_redis: InMemoryRedis,
+        delivery_info: dict[str, bool] | None,
+    ) -> None:
+        _patch_task_context(mocker)
+
+        _before_start(delivery_info)
+
+        assert not in_memory_redis.exists(ATTEMPT_KEY)
+
+    def test_redeliveries_within_budget_let_the_task_run(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        _patch_task_context(mocker)
+
+        _before_start({"redelivered": True})
+        _before_start({"redelivered": True})
+
+        assert in_memory_redis.get(ATTEMPT_KEY) == "2"
+
+    def test_redelivery_beyond_budget_fails_and_reaches_sentry_with_context(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        set_ctx = _patch_task_context(mocker)
+        capture = mocker.patch.object(celery_consumer, "capture_exception")
+        in_memory_redis.store[ATTEMPT_KEY] = "2"
+
+        with pytest.raises(TranscriptionAttemptsExhaustedError) as raised:
+            _before_start({"redelivered": True})
+
+        set_ctx.assert_called_once()
+        capture.assert_called_once_with(raised.value)
+
+    def test_a_new_dispatch_starts_from_zero(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        _patch_task_context(mocker)
+        in_memory_redis.store["transcription_attempts:previous-dispatch"] = "2"
+
+        _before_start({"redelivered": True})
+
+        assert in_memory_redis.get(ATTEMPT_KEY) == "1"
+
+    def test_redis_outage_lets_the_task_run(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        _patch_task_context(mocker)
+        mocker.patch.object(
+            in_memory_redis, "incr", side_effect=ConnectionError("redis down")
+        )
+
+        _before_start({"redelivered": True})
 
 
 class TestTransientRetryNet:
@@ -191,6 +270,38 @@ class TestTransientRetryNet:
             tw.evaluate_from_s3.run("dataset.zip")
 
         retry.assert_called_once()
+
+
+class TestBeforeStartFailureEndToEnd:
+    @pytest.fixture
+    def eager_worker(self) -> Generator[None, None, None]:
+        previous = tw.celery_worker.conf.task_always_eager
+        tw.celery_worker.conf.task_always_eager = True
+        yield
+        tw.celery_worker.conf.task_always_eager = previous
+
+    @pytest.mark.usefixtures("eager_worker")
+    def test_error_in_before_start_marks_the_meeting_failed_and_skips_the_body(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(
+            tw.TranscriptionPipelineTask,
+            "set_task_context",
+            side_effect=TranscriptionAttemptsExhaustedError("spent"),
+        )
+        body = mocker.patch.object(tw, "run_diarization")
+        mark_failed = mocker.patch.object(tw, "run_mark_transcription_failed")
+        errback = tw.mark_transcription_failed.signature(
+            args=[MEETING_ID, OWNER], immutable=True
+        )
+
+        result = tw.diarize.apply(
+            args=(MEETING_ID, OWNER), link_error=errback, throw=False
+        )
+
+        assert result.failed()
+        body.assert_not_called()
+        mark_failed.assert_called_once_with(MEETING_ID, OWNER)
 
 
 def test_no_celery_signal_handlers_remain() -> None:

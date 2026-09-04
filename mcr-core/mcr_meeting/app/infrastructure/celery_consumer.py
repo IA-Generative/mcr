@@ -3,10 +3,16 @@ from typing import Any
 import celery.app.trace  # type: ignore[import-untyped]
 from celery import Celery, Task
 from celery.signals import setup_logging as celery_setup_logging
+from loguru import logger
 
 from mcr_meeting.app.configs.base import CelerySettings, RetrySettings
-from mcr_meeting.app.exceptions.exceptions import TransientInfraError
+from mcr_meeting.app.exceptions.exceptions import (
+    TranscriptionAttemptsExhaustedError,
+    TransientInfraError,
+)
 from mcr_meeting.app.infrastructure.logger import setup_logging
+from mcr_meeting.app.infrastructure.redis import increment_transcription_attempt
+from mcr_meeting.app.infrastructure.sentry import capture_exception
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 
 setup_logging()
@@ -76,3 +82,31 @@ class MeetingPipelineTask(RetryableInfraTask):
         self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> None:
         self.set_task_context(args[0], args[1])
+        if (self.request.delivery_info or {}).get("redelivered"):
+            _register_redelivery(task_id, args[0])
+
+
+def _register_redelivery(task_id: str, meeting_id: int) -> None:
+    try:
+        attempt = increment_transcription_attempt(task_id) + 1
+    except Exception:
+        logger.exception(
+            "Could not count redelivery of task {} for meeting {}", task_id, meeting_id
+        )
+        return
+    logger.warning(
+        "Task {} for meeting {} redelivered: attempt #{}/{}",
+        task_id,
+        meeting_id,
+        attempt,
+        _retry.TRANSCRIPTION_MAX_ATTEMPTS,
+    )
+    if attempt > _retry.TRANSCRIPTION_MAX_ATTEMPTS:
+        error = TranscriptionAttemptsExhaustedError(
+            f"Meeting {meeting_id}: task {task_id} exhausted its "
+            f"{_retry.TRANSCRIPTION_MAX_ATTEMPTS} attempts"
+        )
+        # Sentry's Celery integration only wraps task.run; an error raised from
+        # before_start would otherwise never reach Sentry.
+        capture_exception(error)
+        raise error
