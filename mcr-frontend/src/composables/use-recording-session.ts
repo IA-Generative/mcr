@@ -1,4 +1,4 @@
-import { useRecorder } from '@/composables/use-recorder';
+import { useRecorder, type AudioDeviceInfo } from '@/composables/use-recorder';
 import { useRecordingMonitor, SILENCE_MESSAGES } from '@/composables/use-recording-monitor';
 import { useNetworkStatus } from '@/composables/use-network-status';
 import { useAudioChunkStore } from '@/composables/use-audio-chunk-store';
@@ -14,6 +14,8 @@ export function useRecordingSession(meetingId: number) {
     time,
     isRecording,
     isInactive,
+    currentAudioId,
+    listAudioInputDevices,
     startRecording,
     resumeRecording,
     stopRecording,
@@ -43,6 +45,56 @@ export function useRecordingSession(meetingId: number) {
       ? t('meeting-v2.recording.status.in-progress').toUpperCase()
       : t('meeting-v2.recording.status.paused').toUpperCase(),
   );
+
+  const availableDevices = ref<AudioDeviceInfo[]>([]);
+  const currentDeviceId = computed(() => currentAudioId.value ?? '');
+  let hasDeviceBaseline = false;
+
+  function describeDevice(device: AudioDeviceInfo) {
+    return device.label || t('meeting-v2.recording.device.unknown');
+  }
+
+  async function refreshAvailableDevices() {
+    availableDevices.value = await listAudioInputDevices().catch(() => []);
+  }
+
+  async function handleDeviceChange() {
+    const previous = availableDevices.value;
+    await refreshAvailableDevices();
+
+    // Until the recorder has enumerated with the permission granted, the list carries no labels
+    // and may be incomplete: diffing it would announce devices that were already there.
+    if (!hasDeviceBaseline) return;
+
+    const previousIds = new Set(previous.map((device) => device.deviceId));
+    const currentIds = new Set(availableDevices.value.map((device) => device.deviceId));
+    // Diffing on deviceId, not on labels: Chromium renames its `default` pseudo-device when the
+    // system default moves, which a label diff would announce as a phantom device.
+    const connected = availableDevices.value.filter((device) => !previousIds.has(device.deviceId));
+    const disconnected = previous.filter((device) => !currentIds.has(device.deviceId));
+
+    for (const device of connected) {
+      toaster.addInfoMessage(
+        t('meeting-v2.recording.device.connected', { device: describeDevice(device) }),
+      );
+    }
+    // One message per device: only the recorded one deserves the warning, so a batch unplug must
+    // not blame the others for interrupting the recording.
+    for (const device of disconnected) {
+      const wasRecording = device.deviceId === currentDeviceId.value;
+      const message = t(
+        wasRecording
+          ? 'meeting-v2.recording.device.disconnected-active'
+          : 'meeting-v2.recording.device.disconnected',
+        { device: describeDevice(device) },
+      );
+      if (wasRecording) {
+        toaster.addWarningMessage(message);
+      } else {
+        toaster.addInfoMessage(message);
+      }
+    }
+  }
 
   let emptyChunkToastShown = false;
   function handleEmptyChunk() {
@@ -169,6 +221,11 @@ export function useRecordingSession(meetingId: number) {
   );
 
   onMounted(async () => {
+    refreshAvailableDevices();
+    // The monitor listens to `devicechange` too, but only to count them for the diagnosis:
+    // this one refreshes what the screen shows. Merging them would couple display to telemetry.
+    navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange);
+
     const totalAlreadyRecordedChunks = await getChunkCountForMeeting(meetingId).catch(() => 0);
 
     const pending = await getPendingChunksForMeeting(meetingId).catch(() => []);
@@ -180,7 +237,12 @@ export function useRecordingSession(meetingId: number) {
       await startRecording({
         onDataAvailableHandler: (e) => handleDataChunkEvent(e),
         onStopEventHandler: () => handleOnStopEvent(),
-        onRecordingStart: (ctx) => recordingMonitor.attach({ ...ctx, meetingId }),
+        onRecordingStart: (ctx) => {
+          // Enumerated after getUserMedia, so this is the first list carrying real labels.
+          availableDevices.value = ctx.availableDevices;
+          hasDeviceBaseline = true;
+          recordingMonitor.attach({ ...ctx, meetingId });
+        },
         numberOfChunkAlreadyRecorded: totalAlreadyRecordedChunks,
       });
     } catch (error) {
@@ -204,11 +266,17 @@ export function useRecordingSession(meetingId: number) {
     }
   });
 
+  onUnmounted(() => {
+    navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange);
+  });
+
   return {
     time,
     isRecording,
     isInactive,
     isSendingLastAudioChunks,
+    availableDevices,
+    currentDeviceId,
     audioInputLevel,
     effectiveOffline,
     statusLabel,

@@ -17,6 +17,9 @@
         }}
       </h2>
     </div>
+    <p class="text-grey-425 text-sm">
+      {{ $t('meeting-v2.recording.device.label') }}&nbsp;: {{ currentDeviceLabel }}
+    </p>
     <div class="recording-actions flex w-full flex-row justify-center gap-4">
       <DsfrButton
         v-if="isRecording"
@@ -72,6 +75,8 @@ const {
   isRecording,
   isInactive,
   isSendingLastAudioChunks,
+  availableDevices,
+  currentDeviceId,
   audioInputLevel,
   effectiveOffline,
   statusLabel,
@@ -79,6 +84,12 @@ const {
   resumeRecording,
   stopRecording,
 } = useRecordingSession(props.meetingId);
+
+const currentDeviceLabel = computed(
+  () =>
+    availableDevices.value.find((device) => device.deviceId === currentDeviceId.value)?.label ||
+    t('meeting-v2.recording.device.unknown'),
+);
 
 const { open: openEndLiveMeetingModal } = useModal({
   component: EndLiveMeetingModal,

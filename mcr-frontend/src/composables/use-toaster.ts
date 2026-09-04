@@ -65,6 +65,20 @@ function useToaster(defaultTimeout = 10000) {
       type: 'success',
     });
   }
+  function addInfoMessage(message: Message | string) {
+    const msg = typeof message === 'string' ? { description: message } : message;
+    addMessage({
+      ...msg,
+      type: 'info',
+    });
+  }
+  function addWarningMessage(message: Message | string) {
+    const msg = typeof message === 'string' ? { description: message } : message;
+    addMessage({
+      ...msg,
+      type: 'warning',
+    });
+  }
   function addErrorMessage(message: Message | string) {
     const msg = typeof message === 'string' ? { description: message } : message;
     addMessage({
@@ -78,6 +92,8 @@ function useToaster(defaultTimeout = 10000) {
     addMessage,
     removeMessage,
     addSuccessMessage,
+    addInfoMessage,
+    addWarningMessage,
     addErrorMessage,
   };
 }
