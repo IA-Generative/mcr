@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from unittest.mock import Mock
 
 import pytest
@@ -256,6 +257,41 @@ class TestTransientRetryNet:
             tw.evaluate_from_s3.run("dataset.zip")
 
         retry.assert_called_once()
+
+
+class TestExhaustedBudgetEndToEnd:
+    @pytest.fixture
+    def eager_worker(self) -> Generator[None, None, None]:
+        previous = tw.celery_worker.conf.task_always_eager
+        tw.celery_worker.conf.task_always_eager = True
+        yield
+        tw.celery_worker.conf.task_always_eager = previous
+
+    @pytest.mark.usefixtures("eager_worker")
+    def test_spent_budget_marks_the_meeting_failed_and_skips_the_body(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(tw, "MeetingApiClient")
+        mocker.patch.object(tw, "gather_meeting_context")
+        mocker.patch.object(tw, "set_sentry_meeting_context")
+        mocker.patch.object(
+            tw,
+            "register_redelivery",
+            side_effect=TranscriptionAttemptsExhaustedError("spent"),
+        )
+        body = mocker.patch.object(tw, "run_diarization")
+        mark_failed = mocker.patch.object(tw, "run_mark_transcription_failed")
+        errback = tw.mark_transcription_failed.signature(
+            args=[MEETING_ID, OWNER], immutable=True
+        )
+
+        result = tw.diarize.apply(
+            args=(MEETING_ID, OWNER), link_error=errback, throw=False
+        )
+
+        assert result.failed()
+        body.assert_not_called()
+        mark_failed.assert_called_once_with(MEETING_ID, OWNER)
 
 
 def test_no_celery_signal_handlers_remain() -> None:
