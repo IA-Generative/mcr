@@ -133,12 +133,70 @@ class TestPipelineTaskBase:
         mocker.patch.object(tw, "MeetingApiClient")
         gather = mocker.patch.object(tw, "gather_meeting_context")
         set_ctx = mocker.patch.object(tw, "set_sentry_meeting_context")
-        task = tw.TranscriptionPipelineTask()
+        mocker.patch.object(tw, "register_redelivery")
 
-        task.before_start("task-id", (MEETING_ID, OWNER), {})
+        tw.diarize.before_start("task-id", (MEETING_ID, OWNER), {})
 
         gather.assert_called_once()
         set_ctx.assert_called_once_with(gather.return_value)
+
+    def _before_start(
+        self, mocker: MockerFixture, delivery_info: dict[str, bool] | None
+    ) -> Mock:
+        mocker.patch.object(tw, "MeetingApiClient")
+        mocker.patch.object(tw, "gather_meeting_context")
+        mocker.patch.object(tw, "set_sentry_meeting_context")
+        register = mocker.patch.object(tw, "register_redelivery")
+        tw.diarize.push_request(delivery_info=delivery_info)
+        try:
+            tw.diarize.before_start("task-id", (MEETING_ID, OWNER), {})
+        finally:
+            tw.diarize.pop_request()
+        return register
+
+    def test_redelivered_message_is_registered_as_an_attempt(
+        self, mocker: MockerFixture
+    ) -> None:
+        register = self._before_start(mocker, {"redelivered": True})
+
+        register.assert_called_once_with(
+            "task-id", MEETING_ID, tw.diarize.name, redelivered=True
+        )
+
+    def test_first_delivery_is_not_an_attempt(self, mocker: MockerFixture) -> None:
+        register = self._before_start(mocker, {"redelivered": False})
+
+        register.assert_called_once_with(
+            "task-id", MEETING_ID, tw.diarize.name, redelivered=False
+        )
+
+    def test_missing_delivery_info_is_not_an_attempt(
+        self, mocker: MockerFixture
+    ) -> None:
+        register = self._before_start(mocker, None)
+
+        assert register.call_args.kwargs == {"redelivered": False}
+
+    def test_exhausted_budget_propagates_after_sentry_context_is_set(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch.object(tw, "MeetingApiClient")
+        mocker.patch.object(tw, "gather_meeting_context")
+        set_ctx = mocker.patch.object(tw, "set_sentry_meeting_context")
+        mocker.patch.object(
+            tw,
+            "register_redelivery",
+            side_effect=TranscriptionAttemptsExhaustedError("spent"),
+        )
+        tw.diarize.push_request(delivery_info={"redelivered": True})
+
+        try:
+            with pytest.raises(TranscriptionAttemptsExhaustedError):
+                tw.diarize.before_start("task-id", (MEETING_ID, OWNER), {})
+        finally:
+            tw.diarize.pop_request()
+
+        set_ctx.assert_called_once()
 
     def test_all_pipeline_tasks_use_the_base(self) -> None:
         for task in (
