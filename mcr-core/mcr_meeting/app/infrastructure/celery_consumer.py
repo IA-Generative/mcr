@@ -12,6 +12,7 @@ from mcr_meeting.app.exceptions.exceptions import (
 )
 from mcr_meeting.app.infrastructure.logger import setup_logging
 from mcr_meeting.app.infrastructure.redis import increment_transcription_attempt
+from mcr_meeting.app.infrastructure.sentry import capture_exception
 from mcr_meeting.app.schemas.celery_types import MCRTranscriptionTasks
 
 setup_logging()
@@ -101,7 +102,11 @@ def _register_redelivery(task_id: str, meeting_id: int) -> None:
         _retry.TRANSCRIPTION_MAX_ATTEMPTS,
     )
     if attempt > _retry.TRANSCRIPTION_MAX_ATTEMPTS:
-        raise TranscriptionAttemptsExhaustedError(
+        error = TranscriptionAttemptsExhaustedError(
             f"Meeting {meeting_id}: task {task_id} exhausted its "
             f"{_retry.TRANSCRIPTION_MAX_ATTEMPTS} attempts"
         )
+        # Sentry's Celery integration only wraps task.run; an error raised from
+        # before_start would otherwise never reach Sentry.
+        capture_exception(error)
+        raise error
