@@ -305,6 +305,8 @@ class CelerySettings(BaseSettings):
     (OOM / SIGKILL / node loss) — covering those needs the full attempt window
     """,
     )
+    TRANSCRIPTION_MAX_ATTEMPTS: int = 3
+    TRANSCRIPTION_ATTEMPT_COUNTER_TTL_SECONDS: int = 604_800
     WORKER_SOFT_SHUTDOWN_TIMEOUT_SECONDS: int = Field(
         default=60,
         description="""

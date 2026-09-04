@@ -145,6 +145,17 @@ class TranscriptionTransientError(TransientInfraError):
     — no job id, so a re-run creates no duplicate."""
 
 
+class TranscriptionAttemptsExhaustedError(MCRException):
+    """Raised before a transcription task body runs when the broker has redelivered
+    its message more times than ``TRANSCRIPTION_MAX_ATTEMPTS`` allows.
+
+    A hard kill (OOM, eviction, node loss) never reaches ``task_failure``: with
+    ``acks_late`` the message just comes back after ``visibility_timeout``, and
+    ``max_retries`` only counts ``self.retry()`` calls, never broker redeliveries.
+    This error bounds that loop: it is not a TransientInfraError (no autoretry) and
+    not an Ignore (the mark-failed errback must run)."""
+
+
 class TokenValidationError(Exception):
     """Raised when a bearer token is absent, malformed, expired, tampered, or not
     minted by the expected frontend client."""

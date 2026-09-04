@@ -9,6 +9,8 @@ from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.exceptions.exceptions import (
     InvalidAudioFileError,
     S3TransientError,
+    TranscriptionAttemptsExhaustedError,
+    TransientInfraError,
 )
 
 MEETING_ID = 123
@@ -149,6 +151,11 @@ class TestPipelineTaskBase:
 
     def test_meeting_deleted_is_ignore_so_errback_is_skipped(self) -> None:
         assert issubclass(MeetingDeletedException, Ignore)
+
+    def test_exhausted_attempts_fail_the_task_without_retry(self) -> None:
+        assert issubclass(TranscriptionAttemptsExhaustedError, Exception)
+        assert not issubclass(TranscriptionAttemptsExhaustedError, TransientInfraError)
+        assert not issubclass(TranscriptionAttemptsExhaustedError, Ignore)
 
 
 class TestTransientRetryNet:
