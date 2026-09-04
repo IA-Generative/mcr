@@ -113,15 +113,6 @@ class MeetingAudioRecorder:
                     await self.stop_recording(page)
                     break
 
-                if await self._should_auto_disconnect(page):
-                    logger.info(
-                        "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
-                        self.meeting_id,
-                        capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S,
-                    )
-                    await self.stop_recording(page)
-                    break
-
                 await self.meeting_monitor.enforce_bot_muted(page)
                 # Continue capturing and processing audio chunks
                 # Use asyncio.sleep instead of time.sleep to avoid blocking the event loop.
@@ -141,19 +132,6 @@ class MeetingAudioRecorder:
             return False
         elapsed = time.monotonic() - self._connected_at
         return elapsed >= capture_settings.MAX_CAPTURE_DURATION_S
-
-    async def _should_auto_disconnect(self, page: Page) -> bool:
-        # if self._connected_at is not None:
-        #     elapsed_since_connect = time.monotonic() - self._connected_at
-        #     if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
-        #         return False
-
-        # return await self.meeting_monitor.should_disconnect(
-        #     page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
-        # )
-
-        # The bot's automatic disconnection is a dysfunctional feature, it is currently disabled
-        return False
 
     async def handle_audio_chunk(self, data: BytesIO) -> None:
         try:

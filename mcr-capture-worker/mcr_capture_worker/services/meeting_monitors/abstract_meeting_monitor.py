@@ -26,17 +26,6 @@ class MeetingMonitor(ABC):
             return False
         return (time.monotonic() - self._alone_since) >= grace_period_s
 
-    async def should_disconnect(self, page: Page, grace_period_s: int) -> bool:
-        """Check participant count and return True if the bot should auto-disconnect."""
-        participant_count = await self.get_participant_count(page)
-
-        if participant_count is None or participant_count <= 1:
-            self.start_alone_timer()
-            return self.is_alone_timer_expired(grace_period_s)
-
-        self.reset_alone_timer()
-        return False
-
     async def get_participant_count(self, page: Page) -> int | None:
         """Safely retrieve participant count from the meeting UI.
 
