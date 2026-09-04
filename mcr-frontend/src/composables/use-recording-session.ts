@@ -50,10 +50,8 @@ export function useRecordingSession(meetingId: number) {
   const currentDeviceId = computed(() => currentAudioId.value ?? '');
   let hasDeviceBaseline = false;
 
-  function describeDevices(devices: AudioDeviceInfo[]) {
-    return devices
-      .map((device) => device.label || t('meeting-v2.recording.device.unknown'))
-      .join(', ');
+  function describeDevice(device: AudioDeviceInfo) {
+    return device.label || t('meeting-v2.recording.device.unknown');
   }
 
   async function refreshAvailableDevices() {
@@ -75,22 +73,22 @@ export function useRecordingSession(meetingId: number) {
     const connected = availableDevices.value.filter((device) => !previousIds.has(device.deviceId));
     const disconnected = previous.filter((device) => !currentIds.has(device.deviceId));
 
-    if (connected.length > 0) {
+    for (const device of connected) {
       toaster.addInfoMessage(
-        t('meeting-v2.recording.device.connected', { devices: describeDevices(connected) }),
+        t('meeting-v2.recording.device.connected', { device: describeDevice(device) }),
       );
     }
-    if (disconnected.length > 0) {
-      const lostRecordingDevice = disconnected.some(
-        (device) => device.deviceId === currentDeviceId.value,
-      );
+    // One message per device: only the recorded one deserves the warning, so a batch unplug must
+    // not blame the others for interrupting the recording.
+    for (const device of disconnected) {
+      const wasRecording = device.deviceId === currentDeviceId.value;
       const message = t(
-        lostRecordingDevice
+        wasRecording
           ? 'meeting-v2.recording.device.disconnected-active'
           : 'meeting-v2.recording.device.disconnected',
-        { devices: describeDevices(disconnected) },
+        { device: describeDevice(device) },
       );
-      if (lostRecordingDevice) {
+      if (wasRecording) {
         toaster.addWarningMessage(message);
       } else {
         toaster.addInfoMessage(message);

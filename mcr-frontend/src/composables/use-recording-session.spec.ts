@@ -242,6 +242,51 @@ describe('useRecordingSession devices', () => {
     expect(toaster.addInfoMessage).not.toHaveBeenCalled();
   });
 
+  it('blames only the recorded microphone when several are unplugged at once', async () => {
+    recorder.currentAudioId.value = 'usb-1';
+    mountSession();
+    await flush();
+    startRecordingWith([
+      device('mic-1', 'Micro intégré'),
+      device('usb-1', 'Casque USB'),
+      device('bt-1', 'Oreillette Bluetooth'),
+    ]);
+
+    recorder.listAudioInputDevices.mockResolvedValue([device('mic-1', 'Micro intégré')]);
+    await emitDeviceChange();
+
+    expect(toaster.addWarningMessage).toHaveBeenCalledTimes(1);
+    expect(toaster.addWarningMessage).toHaveBeenCalledWith(expect.stringContaining('Casque USB'));
+    expect(toaster.addWarningMessage).not.toHaveBeenCalledWith(
+      expect.stringContaining('Oreillette Bluetooth'),
+    );
+    expect(toaster.addInfoMessage).toHaveBeenCalledWith(
+      expect.stringContaining('Oreillette Bluetooth'),
+    );
+  });
+
+  it('names each microphone plugged in at once in its own message', async () => {
+    const { session } = mountSession();
+    await flush();
+    startRecordingWith([device('mic-1', 'Micro intégré')]);
+
+    recorder.listAudioInputDevices.mockResolvedValue([
+      device('mic-1', 'Micro intégré'),
+      device('usb-1', 'Casque USB'),
+      device('bt-1', 'Oreillette Bluetooth'),
+    ]);
+    await emitDeviceChange();
+
+    expect(toaster.addInfoMessage).toHaveBeenCalledWith(expect.stringContaining('Casque USB'));
+    expect(toaster.addInfoMessage).toHaveBeenCalledWith(
+      expect.stringContaining('Oreillette Bluetooth'),
+    );
+    expect(toaster.addInfoMessage).not.toHaveBeenCalledWith(
+      expect.stringContaining('Casque USB, Oreillette Bluetooth'),
+    );
+    expect(session().currentDeviceId.value).toBe('');
+  });
+
   it('announces nothing for the devices already there when the card opens', async () => {
     // Before the permission is granted the browser hides part of the list: the devices it then
     // reveals were already plugged in, and announcing them would fire at every card opening.
