@@ -17,6 +17,10 @@ def _key(user_sub: str) -> str:
     return f"drive_token:{user_sub}"
 
 
+def _attempt_key(task_id: str) -> str:
+    return f"transcription_attempts:{task_id}"
+
+
 def save_refresh_token(user_sub: str, refresh_token: str) -> None:
     _client.set(_key(user_sub), refresh_token, ex=_settings.REDIS_TOKEN_TTL_SECONDS)
     logger.debug("Stored refresh token for user {}", user_sub)
@@ -28,3 +32,10 @@ def get_refresh_token(user_sub: str) -> str | None:
 
 def delete_refresh_token(user_sub: str) -> None:
     _client.delete(_key(user_sub))
+
+
+def increment_transcription_attempt(task_id: str) -> int:
+    key = _attempt_key(task_id)
+    count: int = _client.incr(key)  # type: ignore[assignment]
+    _client.expire(key, _settings.TRANSCRIPTION_ATTEMPT_COUNTER_TTL_SECONDS)
+    return count
