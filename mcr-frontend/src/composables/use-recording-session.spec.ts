@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { defineComponent, ref } from 'vue';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { defineComponent, nextTick, ref } from 'vue';
+import { LIVE_NO_SIGNAL_MAX_BEEPS, LIVE_NO_SIGNAL_REPEAT_MS } from '@/config/audioMonitor';
 import { render } from '@testing-library/vue';
 import type { AudioDeviceInfo, RecordingStartContext } from '@/composables/use-recorder';
 
-const { recorder, toaster, monitor, sentry } = vi.hoisted(() => ({
+const { recorder, toaster, monitor, sentry, audioAlert } = vi.hoisted(() => ({
   recorder: {
+    isRecording: { value: true },
     currentAudioId: { value: '' as string | undefined },
     listAudioInputDevices: vi.fn(),
     startRecording: vi.fn(),
@@ -18,6 +20,11 @@ const { recorder, toaster, monitor, sentry } = vi.hoisted(() => ({
   monitor: {
     attach: vi.fn(),
     onDeviceSwitched: vi.fn(),
+    hasNoAudioSignal: { value: false },
+  },
+  audioAlert: {
+    playNoSignalAlert: vi.fn(),
+    closeAlertAudio: vi.fn(),
   },
   sentry: {
     captureException: vi.fn(),
@@ -27,7 +34,9 @@ const { recorder, toaster, monitor, sentry } = vi.hoisted(() => ({
 vi.mock('@/composables/use-recorder', () => ({
   useRecorder: () => ({
     time: { hours: ref(0), minutes: ref(0), seconds: ref(0) },
-    isRecording: ref(true),
+    get isRecording() {
+      return recorder.isRecording;
+    },
     isInactive: ref(false),
     currentAudioId: recorder.currentAudioId,
     listAudioInputDevices: recorder.listAudioInputDevices,
@@ -43,10 +52,18 @@ vi.mock('@/composables/use-recording-monitor', () => ({
   SILENCE_MESSAGES: {},
   useRecordingMonitor: () => ({
     audioInputLevel: ref(0),
+    get hasNoAudioSignal() {
+      return monitor.hasNoAudioSignal;
+    },
     attach: monitor.attach,
     onDeviceSwitched: monitor.onDeviceSwitched,
     silenceVerdict: () => ({ isSilent: false, cause: 'none', stats: {} }),
   }),
+}));
+
+vi.mock('@/utils/audio-alert', () => ({
+  playNoSignalAlert: (...args: unknown[]) => audioAlert.playNoSignalAlert(...args),
+  closeAlertAudio: (...args: unknown[]) => audioAlert.closeAlertAudio(...args),
 }));
 
 vi.mock('@/composables/use-toaster', () => ({ default: () => toaster }));
@@ -141,6 +158,8 @@ describe('useRecordingSession devices', () => {
     vi.clearAllMocks();
     deviceChangeListeners.clear();
     recorder.currentAudioId.value = '';
+    recorder.isRecording = ref(true);
+    monitor.hasNoAudioSignal = ref(false);
     recorder.listAudioInputDevices.mockResolvedValue([]);
     recorder.startRecording.mockResolvedValue(undefined);
     recorder.switchAudioDevice.mockResolvedValue(undefined);
@@ -400,5 +419,98 @@ describe('useRecordingSession devices', () => {
 
       expect(monitor.onDeviceSwitched).toHaveBeenCalledWith(newTrack);
     });
+  });
+});
+
+describe('useRecordingSession no-signal alert', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    recorder.isRecording = ref(true);
+    monitor.hasNoAudioSignal = ref(false);
+    recorder.listAudioInputDevices.mockResolvedValue([]);
+    recorder.startRecording.mockResolvedValue(undefined);
+
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { addEventListener: vi.fn(), removeEventListener: vi.fn() },
+      writable: true,
+      configurable: true,
+    });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function settle() {
+    await nextTick();
+    await nextTick();
+  }
+
+  it('beeps as soon as the microphone stops delivering', async () => {
+    mountSession();
+
+    monitor.hasNoAudioSignal.value = true;
+    await settle();
+
+    expect(audioAlert.playNoSignalAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops beeping after the capped number of repetitions', async () => {
+    mountSession();
+
+    monitor.hasNoAudioSignal.value = true;
+    await settle();
+    vi.advanceTimersByTime(LIVE_NO_SIGNAL_REPEAT_MS * (LIVE_NO_SIGNAL_MAX_BEEPS + 5));
+
+    expect(audioAlert.playNoSignalAlert).toHaveBeenCalledTimes(LIVE_NO_SIGNAL_MAX_BEEPS);
+  });
+
+  it('goes quiet the moment the signal comes back', async () => {
+    mountSession();
+    monitor.hasNoAudioSignal.value = true;
+    await settle();
+
+    monitor.hasNoAudioSignal.value = false;
+    await settle();
+    vi.advanceTimersByTime(LIVE_NO_SIGNAL_REPEAT_MS * 3);
+
+    expect(audioAlert.playNoSignalAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('lets the user silence the sound while the problem lasts', async () => {
+    const { session } = mountSession();
+    monitor.hasNoAudioSignal.value = true;
+    await settle();
+
+    session().muteNoSignalAlert();
+    await settle();
+    vi.advanceTimersByTime(LIVE_NO_SIGNAL_REPEAT_MS * 3);
+
+    expect(session().isNoSignalAlertMuted.value).toBe(true);
+    expect(audioAlert.playNoSignalAlert).toHaveBeenCalledTimes(1);
+  });
+
+  it('says nothing while the recording is paused', async () => {
+    recorder.isRecording.value = false;
+    mountSession();
+
+    monitor.hasNoAudioSignal.value = true;
+    await settle();
+    vi.advanceTimersByTime(LIVE_NO_SIGNAL_REPEAT_MS * 3);
+
+    expect(audioAlert.playNoSignalAlert).not.toHaveBeenCalled();
+  });
+
+  it('releases the alert audio when the card is gone', async () => {
+    const { unmount } = mountSession();
+    monitor.hasNoAudioSignal.value = true;
+    await settle();
+
+    unmount();
+    vi.advanceTimersByTime(LIVE_NO_SIGNAL_REPEAT_MS * 3);
+
+    expect(audioAlert.closeAlertAudio).toHaveBeenCalled();
+    expect(audioAlert.playNoSignalAlert).toHaveBeenCalledTimes(1);
   });
 });

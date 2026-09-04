@@ -8,6 +8,9 @@ import {
   LOOPBACK_DEVICE_REGEX,
   CONTINUITY_DEVICE_REGEX,
   BUILTIN_DEVICE_REGEX,
+  LIVE_NO_SIGNAL_LEVEL_THRESHOLD,
+  LIVE_NO_SIGNAL_DURATION_MS,
+  LIVE_NO_SIGNAL_GRACE_MS,
 } from '@/config/audioMonitor';
 import * as Sentry from '@sentry/vue';
 
@@ -49,6 +52,7 @@ export type RecordingSessionStats = {
   // Permission / track-liveness instrumentation (detects a device no longer authorized).
   trackMutedAtStop: boolean;
   permissionRevokedEvents: number;
+  noSignalEpisodes: number;
 };
 
 export type RecordingMonitorOptions = {
@@ -92,6 +96,7 @@ function createEmptyStats(): RecordingSessionStats {
     deliberateDeviceSwitches: 0,
     trackMutedAtStop: false,
     permissionRevokedEvents: 0,
+    noSignalEpisodes: 0,
   };
 }
 
@@ -150,6 +155,7 @@ export function readTrackStateAtStopToDetectDeviceProblems(
 
 export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   const audioInputLevel = ref<number>(0);
+  const hasNoAudioSignal = ref(false);
 
   let stats = createEmptyStats();
   let sumAudioLevel = 0;
@@ -173,6 +179,36 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
   let startedAt: number | undefined;
   let stoppedAt: number | undefined;
   let hiddenSince: number | undefined;
+  let belowThresholdSince: number | undefined;
+  let signalGraceUntil = 0;
+
+  function _resetNoSignalState(): void {
+    belowThresholdSince = undefined;
+    hasNoAudioSignal.value = false;
+  }
+
+  function _updateNoSignalState(level: number): void {
+    const now = Date.now();
+
+    // The rAF sampler stops delivering levels in a background tab: alerting on that would
+    // recreate the MCR-FRONTEND-5P false positives.
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      _resetNoSignalState();
+      return;
+    }
+
+    if (now < signalGraceUntil) return;
+
+    if (level >= LIVE_NO_SIGNAL_LEVEL_THRESHOLD) {
+      _resetNoSignalState();
+      return;
+    }
+
+    belowThresholdSince ??= now;
+    const isDown = now - belowThresholdSince >= LIVE_NO_SIGNAL_DURATION_MS;
+    if (isDown && !hasNoAudioSignal.value) stats.noSignalEpisodes += 1;
+    hasNoAudioSignal.value = isDown;
+  }
 
   function trackBackgroundedTabTime(): void {
     if (typeof document === 'undefined') return;
@@ -180,6 +216,7 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     const enterHiddenTab = () => {
       hiddenSince = Date.now();
       stats.visibilityHiddenCount += 1;
+      _resetNoSignalState();
     };
     const leaveHiddenTab = () => {
       if (hiddenSince === undefined) return;
@@ -229,6 +266,9 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     stats.deviceLabel = newTrack.label;
     stats.deviceSettings = newTrack.getSettings();
     stats.deliberateDeviceSwitches += 1;
+
+    signalGraceUntil = Date.now() + LIVE_NO_SIGNAL_GRACE_MS;
+    _resetNoSignalState();
   }
 
   function attach(ctx: RecordingMonitorContext): void {
@@ -241,6 +281,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     startedAt = Date.now();
     stoppedAt = undefined;
     hiddenSince = undefined;
+    signalGraceUntil = 0;
+    _resetNoSignalState();
 
     // Capture device info
     const track = ctx.micTrack;
@@ -343,6 +385,7 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
       if (level < SILENCE_LEVEL_THRESHOLD) {
         silentSampleCount += 1;
       }
+      _updateNoSignalState(level);
     });
   }
 
@@ -363,6 +406,8 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     if (attachedTrack) {
       readTrackStateAtStopToDetectDeviceProblems(attachedTrack, stats);
     }
+
+    _resetNoSignalState();
 
     // Stop audio level monitor
     if (audioLevelMonitor) {
@@ -434,5 +479,13 @@ export function useRecordingMonitor(options: RecordingMonitorOptions = {}) {
     return { isSilent, cause, stats: currentStats };
   }
 
-  return { audioInputLevel, attach, detach, onDeviceSwitched, getStats, silenceVerdict };
+  return {
+    audioInputLevel,
+    hasNoAudioSignal,
+    attach,
+    detach,
+    onDeviceSwitched,
+    getStats,
+    silenceVerdict,
+  };
 }

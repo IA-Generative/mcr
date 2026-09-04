@@ -7,6 +7,8 @@ import { useAudioChunkCleanup } from '@/composables/use-audio-chunk-cleanup';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import { t } from '@/plugins/i18n';
 import useToaster from '@/composables/use-toaster';
+import { closeAlertAudio, playNoSignalAlert } from '@/utils/audio-alert';
+import { LIVE_NO_SIGNAL_MAX_BEEPS, LIVE_NO_SIGNAL_REPEAT_MS } from '@/config/audioMonitor';
 import * as Sentry from '@sentry/vue';
 
 export function useRecordingSession(meetingId: number) {
@@ -26,6 +28,7 @@ export function useRecordingSession(meetingId: number) {
   const toaster = useToaster();
   const recordingMonitor = useRecordingMonitor({ onEmptyChunk: handleEmptyChunk });
   const audioInputLevel = recordingMonitor.audioInputLevel;
+  const hasNoAudioSignal = recordingMonitor.hasNoAudioSignal;
 
   const { isOnline } = useNetworkStatus();
   const effectiveOffline = computed(() => !isOnline.value);
@@ -123,6 +126,40 @@ export function useRecordingSession(meetingId: number) {
     }
   }
 
+  const isNoSignalAlertMuted = ref(false);
+  let beepTimer: ReturnType<typeof setInterval> | undefined;
+  let beepCount = 0;
+
+  function stopBeeping() {
+    if (beepTimer) clearInterval(beepTimer);
+    beepTimer = undefined;
+    beepCount = 0;
+  }
+
+  function muteNoSignalAlert() {
+    isNoSignalAlertMuted.value = true;
+    stopBeeping();
+  }
+
+  watch([hasNoAudioSignal, isRecording, isNoSignalAlertMuted], ([noSignal, recording, muted]) => {
+    if (!noSignal || !recording || muted) {
+      stopBeeping();
+      return;
+    }
+    if (beepTimer) return;
+
+    beepCount = 1;
+    playNoSignalAlert();
+    beepTimer = setInterval(() => {
+      if (beepCount >= LIVE_NO_SIGNAL_MAX_BEEPS) {
+        stopBeeping();
+        return;
+      }
+      beepCount += 1;
+      playNoSignalAlert();
+    }, LIVE_NO_SIGNAL_REPEAT_MS);
+  });
+
   let emptyChunkToastShown = false;
   function handleEmptyChunk() {
     if (emptyChunkToastShown) return;
@@ -213,6 +250,7 @@ export function useRecordingSession(meetingId: number) {
           deliberateDeviceSwitches: stats.deliberateDeviceSwitches,
           trackMutedAtStop: stats.trackMutedAtStop,
           permissionRevokedEvents: stats.permissionRevokedEvents,
+          noSignalEpisodes: stats.noSignalEpisodes,
         };
 
         Sentry.captureMessage(SILENCE_MESSAGES[cause], {
@@ -297,6 +335,8 @@ export function useRecordingSession(meetingId: number) {
 
   onUnmounted(() => {
     navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange);
+    stopBeeping();
+    closeAlertAudio();
   });
 
   return {
@@ -307,8 +347,11 @@ export function useRecordingSession(meetingId: number) {
     availableDevices,
     currentDeviceId,
     audioInputLevel,
+    hasNoAudioSignal,
+    isNoSignalAlertMuted,
     effectiveOffline,
     statusLabel,
+    muteNoSignalAlert,
     switchAudioDevice,
     pauseRecording,
     resumeRecording,

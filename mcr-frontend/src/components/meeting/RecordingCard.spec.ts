@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { ref } from 'vue';
 import { screen } from '@testing-library/vue';
 import RecordingCard from '@/components/meeting/RecordingCard.vue';
 import { renderWithPlugins } from '@/vitest.setup';
@@ -12,8 +13,11 @@ vi.mock('@/composables/use-recording-session', () => ({
     availableDevices: { value: [{ deviceId: 'mic-1', label: 'Micro intégré', groupId: 'g1' }] },
     currentDeviceId: { value: 'mic-1' },
     audioInputLevel: { value: 0 },
+    hasNoAudioSignal: ref(false),
+    isNoSignalAlertMuted: ref(false),
     effectiveOffline: { value: false },
     statusLabel: { value: 'En cours' },
+    muteNoSignalAlert: vi.fn(),
     switchAudioDevice: vi.fn(),
     pauseRecording: vi.fn(),
     resumeRecording: vi.fn(),

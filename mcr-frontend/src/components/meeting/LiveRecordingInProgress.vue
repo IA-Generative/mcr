@@ -9,6 +9,25 @@
       "
       icon="fr-icon-circle-fill"
     />
+    <div
+      v-if="hasNoAudioSignal"
+      role="alert"
+      class="w-full px-4"
+    >
+      <DsfrAlert
+        type="error"
+        :title="$t('meeting-v2.recording.no-signal.title')"
+        :description="$t('meeting-v2.recording.no-signal.description')"
+        title-tag="h3"
+      />
+      <DsfrButton
+        v-if="!isNoSignalAlertMuted"
+        tertiary
+        no-outline
+        :label="$t('meeting-v2.recording.no-signal.mute')"
+        @click="muteNoSignalAlert"
+      />
+    </div>
     <div class="flex flex-row items-center gap-2">
       <AudioLevelMeter :level="audioInputLevel" />
       <h2 class="text-2xl/8 font-bold">
@@ -83,8 +102,11 @@ const {
   availableDevices,
   currentDeviceId,
   audioInputLevel,
+  hasNoAudioSignal,
+  isNoSignalAlertMuted,
   effectiveOffline,
   statusLabel,
+  muteNoSignalAlert,
   switchAudioDevice,
   pauseRecording,
   resumeRecording,

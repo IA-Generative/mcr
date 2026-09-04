@@ -582,7 +582,12 @@
         "disconnected-active": "Le microphone utilisé pour l'enregistrement a été déconnecté : {device}. Rebranchez-le pour continuer à enregistrer.",
         "switch-failed": "Impossible d'utiliser ce microphone. L'enregistrement continue sur le microphone précédent."
       },
-      "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez."
+      "silent-detected": "Aucun son n'a été détecté pendant l'enregistrement. Vérifiez votre microphone et réessayez.",
+      "no-signal": {
+        "title": "Aucun son détecté",
+        "description": "Votre microphone ne capte rien depuis plusieurs secondes. Vérifiez qu'il n'est pas coupé et que le bon microphone est sélectionné ci-dessous.",
+        "mute": "Couper le signal sonore"
+      }
     },
     "visio-recording": {
       "title": "Enregistrement",
