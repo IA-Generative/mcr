@@ -4,6 +4,14 @@ const currentAudioId = ref<string | undefined>('');
 const mediaRecorder = ref<MediaRecorder | undefined>(undefined);
 const TIME_BETWEEN_CHUNK_SPLIT = 60_000; // 1 minute
 
+let audioContext: AudioContext | undefined;
+let destinationNode: MediaStreamAudioDestinationNode | undefined;
+let currentSourceNode: MediaStreamAudioSourceNode | undefined;
+// The getUserMedia stream, kept apart: MediaRecorder.stream is the synthetic
+// destination track and stopping it would not release the microphone.
+let currentMicStream: MediaStream | undefined;
+let notifyDeviceSwitched: ((track: MediaStreamTrack) => void) | undefined;
+
 const stopwatchSettings = {
   offsetTimestamp: 0,
   autoStart: false,
@@ -69,6 +77,7 @@ export type AudioDeviceInfo = {
 
 export type RecordingStartContext = {
   stream: MediaStream;
+  micTrack: MediaStreamTrack;
   recorder: MediaRecorder;
   requestedDeviceId: string | null;
   availableDevices: AudioDeviceInfo[];
@@ -78,6 +87,7 @@ type RecordingOptions = {
   onDataAvailableHandler?: (event: BlobEvent) => void;
   onStopEventHandler?: () => void;
   onRecordingStart?: (ctx: RecordingStartContext) => void;
+  onDeviceSwitched?: (micTrack: MediaStreamTrack) => void;
   numberOfChunkAlreadyRecorded?: number;
 };
 
@@ -127,7 +137,18 @@ async function startRecording(options: RecordingOptions = {}) {
   const availableDevices = await listAudioInputDevices();
   const requestedDeviceId = currentAudioId.value ?? null;
 
-  mediaRecorder.value = new MediaRecorder(mediaStream, {
+  audioContext = new AudioContext();
+  if (audioContext.state === 'suspended') await audioContext.resume();
+
+  // The recorder is wired once to the destination, whose stream never changes:
+  // switching microphones then never touches the recorder's lifecycle.
+  destinationNode = audioContext.createMediaStreamDestination();
+  currentSourceNode = audioContext.createMediaStreamSource(mediaStream);
+  currentSourceNode.connect(destinationNode);
+  currentMicStream = mediaStream;
+  notifyDeviceSwitched = options.onDeviceSwitched;
+
+  mediaRecorder.value = new MediaRecorder(destinationNode.stream, {
     mimeType: 'audio/webm',
   });
   _initMediaRecorderEvents(options);
@@ -136,11 +157,47 @@ async function startRecording(options: RecordingOptions = {}) {
   stopwatch.start();
 
   options.onRecordingStart?.({
-    stream: mediaStream,
+    stream: destinationNode.stream,
+    micTrack: mediaStream.getAudioTracks()[0],
     recorder: mediaRecorder.value,
     requestedDeviceId,
     availableDevices,
   });
+}
+
+async function switchAudioDevice(deviceId: string) {
+  if (deviceId === currentAudioId.value) return;
+  if (!audioContext || !destinationNode) {
+    currentAudioId.value = deviceId;
+    return;
+  }
+
+  // Guard before IO: acquire the replacement first, so a device that cannot be
+  // opened leaves the running recording completely untouched. `exact` because a
+  // switch is an explicit demand — a silent substitution would be unexplainable.
+  const newMicStream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      deviceId: { exact: deviceId },
+      echoCancellation: false,
+      noiseSuppression: false,
+    },
+  });
+
+  const previousSourceNode = currentSourceNode;
+  const previousMicStream = currentMicStream;
+
+  // Connecting before disconnecting overlaps both microphones for a few ms; the
+  // hole the reverse order would leave pollutes every silence detector.
+  const newSourceNode = audioContext.createMediaStreamSource(newMicStream);
+  newSourceNode.connect(destinationNode);
+
+  previousSourceNode?.disconnect();
+  previousMicStream?.getTracks().forEach((track) => track.stop());
+
+  currentSourceNode = newSourceNode;
+  currentMicStream = newMicStream;
+  currentAudioId.value = deviceId;
+  notifyDeviceSwitched?.(newMicStream.getAudioTracks()[0]);
 }
 
 async function getAudioInputDevices() {
@@ -182,9 +239,16 @@ function stopRecording() {
 }
 
 function releaseAudioResources() {
-  if (!mediaRecorder.value) return;
+  currentSourceNode?.disconnect();
+  currentMicStream?.getTracks().forEach((track) => track.stop());
+  destinationNode?.disconnect();
+  audioContext?.close().catch(() => {});
 
-  mediaRecorder.value.stream.getTracks().forEach((track) => track.stop());
+  currentSourceNode = undefined;
+  currentMicStream = undefined;
+  destinationNode = undefined;
+  audioContext = undefined;
+  notifyDeviceSwitched = undefined;
   mediaRecorder.value = undefined;
 }
 
@@ -224,6 +288,7 @@ export function useRecorder() {
     getDefaultDeviceId,
     currentAudioId,
     setAudioDeviceId,
+    switchAudioDevice,
     startRecording,
     resumeRecording,
     abortRecording,

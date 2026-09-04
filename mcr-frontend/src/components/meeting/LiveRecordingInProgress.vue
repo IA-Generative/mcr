@@ -17,9 +17,14 @@
         }}
       </h2>
     </div>
-    <p class="text-grey-425 text-sm">
-      {{ $t('meeting-v2.recording.device.label') }}&nbsp;: {{ currentDeviceLabel }}
-    </p>
+    <DsfrSelect
+      v-model="selectedDeviceId"
+      class="w-full max-w-xs"
+      :label="$t('meeting-v2.recording.device.label')"
+      border-bottom
+      :options="deviceOptions"
+      @update:model-value="onSelectDevice"
+    />
     <div class="recording-actions flex w-full flex-row justify-center gap-4">
       <DsfrButton
         v-if="isRecording"
@@ -80,16 +85,30 @@ const {
   audioInputLevel,
   effectiveOffline,
   statusLabel,
+  switchAudioDevice,
   pauseRecording,
   resumeRecording,
   stopRecording,
 } = useRecordingSession(props.meetingId);
 
-const currentDeviceLabel = computed(
-  () =>
-    availableDevices.value.find((device) => device.deviceId === currentDeviceId.value)?.label ||
-    t('meeting-v2.recording.device.unknown'),
+const selectedDeviceId = ref(currentDeviceId.value);
+watch(currentDeviceId, (deviceId) => (selectedDeviceId.value = deviceId));
+
+// A device plugged in mid-session can still carry an empty label: without the fallback
+// it would render as a blank option.
+const deviceOptions = computed(() =>
+  availableDevices.value.map((device) => ({
+    value: device.deviceId,
+    text: device.label || t('meeting-v2.recording.device.unknown'),
+  })),
 );
+
+async function onSelectDevice(deviceId: string | number) {
+  await switchAudioDevice(String(deviceId));
+  // Realign with the recorder: a failed switch leaves currentDeviceId untouched, and
+  // Vue would not patch the select back on its own.
+  selectedDeviceId.value = currentDeviceId.value;
+}
 
 const { open: openEndLiveMeetingModal } = useModal({
   component: EndLiveMeetingModal,

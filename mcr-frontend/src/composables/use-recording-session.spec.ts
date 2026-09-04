@@ -3,11 +3,12 @@ import { defineComponent, ref } from 'vue';
 import { render } from '@testing-library/vue';
 import type { AudioDeviceInfo, RecordingStartContext } from '@/composables/use-recorder';
 
-const { recorder, toaster, monitor } = vi.hoisted(() => ({
+const { recorder, toaster, monitor, sentry } = vi.hoisted(() => ({
   recorder: {
     currentAudioId: { value: '' as string | undefined },
     listAudioInputDevices: vi.fn(),
     startRecording: vi.fn(),
+    switchAudioDevice: vi.fn(),
   },
   toaster: {
     addInfoMessage: vi.fn(),
@@ -16,6 +17,10 @@ const { recorder, toaster, monitor } = vi.hoisted(() => ({
   },
   monitor: {
     attach: vi.fn(),
+    onDeviceSwitched: vi.fn(),
+  },
+  sentry: {
+    captureException: vi.fn(),
   },
 }));
 
@@ -27,6 +32,7 @@ vi.mock('@/composables/use-recorder', () => ({
     currentAudioId: recorder.currentAudioId,
     listAudioInputDevices: recorder.listAudioInputDevices,
     startRecording: recorder.startRecording,
+    switchAudioDevice: recorder.switchAudioDevice,
     resumeRecording: vi.fn(),
     stopRecording: vi.fn(),
     pauseRecording: vi.fn(),
@@ -38,11 +44,24 @@ vi.mock('@/composables/use-recording-monitor', () => ({
   useRecordingMonitor: () => ({
     audioInputLevel: ref(0),
     attach: monitor.attach,
+    onDeviceSwitched: monitor.onDeviceSwitched,
     silenceVerdict: () => ({ isSilent: false, cause: 'none', stats: {} }),
   }),
 }));
 
 vi.mock('@/composables/use-toaster', () => ({ default: () => toaster }));
+
+vi.mock('@sentry/vue', () => ({
+  captureException: (...args: unknown[]) => sentry.captureException(...args),
+  captureMessage: vi.fn(),
+  startSpan: (_options: unknown, callback: () => unknown) => callback(),
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    fmt: (strings: TemplateStringsArray, ...values: unknown[]) =>
+      strings.reduce((acc, str, i) => acc + str + (values[i] ?? ''), ''),
+  },
+}));
 
 vi.mock('@/composables/use-network-status', () => ({
   useNetworkStatus: () => ({ isOnline: ref(true) }),
@@ -108,6 +127,7 @@ async function emitDeviceChange() {
 function startRecordingWith(devices: AudioDeviceInfo[]) {
   const ctx = {
     stream: { getAudioTracks: () => [] },
+    micTrack: { label: 'Micro intégré' },
     recorder: {},
     requestedDeviceId: null,
     availableDevices: devices,
@@ -123,6 +143,7 @@ describe('useRecordingSession devices', () => {
     recorder.currentAudioId.value = '';
     recorder.listAudioInputDevices.mockResolvedValue([]);
     recorder.startRecording.mockResolvedValue(undefined);
+    recorder.switchAudioDevice.mockResolvedValue(undefined);
 
     Object.defineProperty(navigator, 'mediaDevices', {
       value: {
@@ -333,5 +354,51 @@ describe('useRecordingSession devices', () => {
     expect(toaster.addInfoMessage).toHaveBeenCalledWith(
       expect.stringContaining('périphérique inconnu'),
     );
+  });
+
+  describe('switching microphone', () => {
+    it('asks the recorder to move the recording onto the chosen microphone', async () => {
+      const { session } = mountSession();
+      await flush();
+
+      await session().switchAudioDevice('usb-1');
+
+      expect(recorder.switchAudioDevice).toHaveBeenCalledWith('usb-1');
+    });
+
+    it('keeps the recording running and tells the user when the microphone cannot be opened', async () => {
+      recorder.switchAudioDevice.mockRejectedValue(new Error('NotFoundError'));
+      const { session } = mountSession();
+      await flush();
+
+      await expect(session().switchAudioDevice('usb-1')).resolves.toBeUndefined();
+
+      expect(toaster.addErrorMessage).toHaveBeenCalledWith(expect.stringContaining('microphone'));
+    });
+
+    it('reports a microphone that vanished as a warning, not as an error', async () => {
+      // A device unplugged between the listing and the click is expected: reporting it
+      // as an error would pollute the production error report.
+      recorder.switchAudioDevice.mockRejectedValue(new Error('NotFoundError'));
+      const { session } = mountSession();
+      await flush();
+
+      await session().switchAudioDevice('usb-1');
+
+      expect(sentry.captureException).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ level: 'warning' }),
+      );
+    });
+
+    it('tells the monitor which microphone is being recorded now', async () => {
+      mountSession();
+      await flush();
+      const newTrack = { label: 'Casque USB' } as MediaStreamTrack;
+
+      recorder.startRecording.mock.calls.at(-1)?.[0]?.onDeviceSwitched?.(newTrack);
+
+      expect(monitor.onDeviceSwitched).toHaveBeenCalledWith(newTrack);
+    });
   });
 });
