@@ -104,11 +104,11 @@ class MeetingAudioRecorder:
                     await self.stop_recording(page)
                     break
 
-                if await self._should_auto_disconnect(page):
-                    logger.info(
-                        "Auto-disconnecting from meeting {} -- bot has been alone for {} seconds",
+                if self._has_outlived_max_duration():
+                    logger.warning(
+                        "Capture of meeting {} outlived the {}s cap -- stopping recording",
                         self.meeting_id,
-                        capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S,
+                        capture_settings.MAX_CAPTURE_DURATION_S,
                     )
                     await self.stop_recording(page)
                     break
@@ -127,18 +127,11 @@ class MeetingAudioRecorder:
             )
             await self.browser.close()
 
-    async def _should_auto_disconnect(self, page: Page) -> bool:
-        # if self._connected_at is not None:
-        #     elapsed_since_connect = time.monotonic() - self._connected_at
-        #     if elapsed_since_connect < capture_settings.AUTO_DISCONNECT_INITIAL_DELAY_S:
-        #         return False
-
-        # return await self.meeting_monitor.should_disconnect(
-        #     page, capture_settings.AUTO_DISCONNECT_GRACE_PERIOD_S
-        # )
-
-        # The bot's automatic disconnection is a dysfunctional feature, it is currently disabled
-        return False
+    def _has_outlived_max_duration(self) -> bool:
+        if self._connected_at is None:
+            return False
+        elapsed = time.monotonic() - self._connected_at
+        return elapsed >= capture_settings.MAX_CAPTURE_DURATION_S
 
     async def handle_audio_chunk(self, data: BytesIO) -> None:
         try:

@@ -58,13 +58,9 @@ class CaptureSettings(BaseSettings):
         10_000,
         description="Time in ms before a playwright action raise a TimeoutError when trying an action",
     )
-    AUTO_DISCONNECT_INITIAL_DELAY_S: int = Field(
-        300,
-        description="Time in seconds after bot connection before starting participant monitoring",
-    )
-    AUTO_DISCONNECT_GRACE_PERIOD_S: int = Field(
-        300,
-        description="Time in seconds the bot waits alone in a meeting before auto-disconnecting",
+    MAX_CAPTURE_DURATION_S: int = Field(
+        16 * 60 * 60,
+        description="Hard cap in seconds on a single capture, counted from the bot connection. Ends the capture through the regular stop path when the user never stops the meeting",
     )
     TEARDOWN_TIMEOUT: int = Field(
         30,

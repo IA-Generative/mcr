@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Query, joinedload, selectinload
 
 from mcr_meeting.app.db.apply_dto import apply_dto
@@ -14,6 +15,7 @@ from mcr_meeting.app.models import (
     MeetingStatus,
     Transcription,
 )
+from mcr_meeting.app.models.meeting_transition_record import MeetingTransitionRecord
 from mcr_meeting.app.schemas.meeting_schema import MeetingCreate, PaginatedMeetings
 
 
@@ -214,4 +216,39 @@ def count_pending_meetings() -> int:
             Meeting.creation_date > staleness_threshold,
         )
         .count()
+    )
+
+
+def get_capture_meetings_stuck_since_before(before: datetime) -> list[Meeting]:
+    """
+    Meetings still capturing or connecting whose last known transition is older
+    than ``before``.
+
+    The reference time is the latest transition record, because a scheduled
+    meeting can be created days before its bot connects. Legacy rows without
+    records fall back to the start date, then the creation date.
+    """
+    db = get_db_session_ctx()
+    latest_transition = (
+        select(func.max(MeetingTransitionRecord.timestamp))
+        .where(MeetingTransitionRecord.meeting_id == Meeting.id)
+        .correlate(Meeting)
+        .scalar_subquery()
+    )
+    stuck_since = func.coalesce(
+        latest_transition, Meeting.start_date, Meeting.creation_date
+    )
+    return (
+        db.query(Meeting)
+        .filter(
+            Meeting.status.in_(
+                [
+                    MeetingStatus.CAPTURE_IN_PROGRESS,
+                    MeetingStatus.CAPTURE_BOT_IS_CONNECTING,
+                ]
+            ),
+            stuck_since < before,
+        )
+        .order_by(Meeting.id)
+        .all()
     )

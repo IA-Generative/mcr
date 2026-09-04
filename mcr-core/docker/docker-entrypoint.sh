@@ -17,6 +17,9 @@ worker)
 migrate)
     exec alembic upgrade head
     ;;
+sweep-stale-captures)
+    exec python -m mcr_meeting.sweep_stale_captures
+    ;;
 *)
     # escape hatch: any other command runs as given (debug shells, one-off scripts)
     exec "$@"
