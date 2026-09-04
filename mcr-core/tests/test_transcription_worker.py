@@ -13,15 +13,32 @@ from mcr_meeting.app.exceptions.exceptions import (
     TranscriptionAttemptsExhaustedError,
     TransientInfraError,
 )
+from tests.mocks.in_memory_redis import InMemoryRedis
 
 MEETING_ID = 123
 OWNER = "owner-uuid"
+TASK_ID = "task-id"
+ATTEMPT_KEY = f"transcription_attempts:{TASK_ID}"
 
 
 def _patch_start_transcription(mocker: MockerFixture) -> Mock:
     client_cls = mocker.patch.object(tw, "MeetingApiClient")
     client_cls.return_value.start_transcription = mocker.AsyncMock()
     return client_cls.return_value.start_transcription
+
+
+def _patch_task_context(mocker: MockerFixture) -> Mock:
+    mocker.patch.object(tw, "MeetingApiClient")
+    mocker.patch.object(tw, "gather_meeting_context")
+    return mocker.patch.object(tw, "set_sentry_meeting_context")
+
+
+def _before_start(delivery_info: dict[str, bool] | None) -> None:
+    tw.diarize.push_request(delivery_info=delivery_info)
+    try:
+        tw.diarize.before_start(TASK_ID, (MEETING_ID, OWNER), {})
+    finally:
+        tw.diarize.pop_request()
 
 
 class TestTaskDelegation:
@@ -131,71 +148,9 @@ class TestPipelineTaskBase:
         assert "on_failure" not in tw.MeetingPipelineTask.__dict__
 
     def test_before_start_sets_sentry_context(self, mocker: MockerFixture) -> None:
-        mocker.patch.object(tw, "MeetingApiClient")
-        gather = mocker.patch.object(tw, "gather_meeting_context")
-        set_ctx = mocker.patch.object(tw, "set_sentry_meeting_context")
-        mocker.patch.object(tw, "register_redelivery")
+        set_ctx = _patch_task_context(mocker)
 
-        tw.diarize.before_start("task-id", (MEETING_ID, OWNER), {})
-
-        gather.assert_called_once()
-        set_ctx.assert_called_once_with(gather.return_value)
-
-    def _before_start(
-        self, mocker: MockerFixture, delivery_info: dict[str, bool] | None
-    ) -> Mock:
-        mocker.patch.object(tw, "MeetingApiClient")
-        mocker.patch.object(tw, "gather_meeting_context")
-        mocker.patch.object(tw, "set_sentry_meeting_context")
-        register = mocker.patch.object(tw, "register_redelivery")
-        tw.diarize.push_request(delivery_info=delivery_info)
-        try:
-            tw.diarize.before_start("task-id", (MEETING_ID, OWNER), {})
-        finally:
-            tw.diarize.pop_request()
-        return register
-
-    def test_redelivered_message_is_registered_as_an_attempt(
-        self, mocker: MockerFixture
-    ) -> None:
-        register = self._before_start(mocker, {"redelivered": True})
-
-        register.assert_called_once_with(
-            "task-id", MEETING_ID, tw.diarize.name, redelivered=True
-        )
-
-    def test_first_delivery_is_not_an_attempt(self, mocker: MockerFixture) -> None:
-        register = self._before_start(mocker, {"redelivered": False})
-
-        register.assert_called_once_with(
-            "task-id", MEETING_ID, tw.diarize.name, redelivered=False
-        )
-
-    def test_missing_delivery_info_is_not_an_attempt(
-        self, mocker: MockerFixture
-    ) -> None:
-        register = self._before_start(mocker, None)
-
-        assert register.call_args.kwargs == {"redelivered": False}
-
-    def test_exhausted_budget_propagates_after_sentry_context_is_set(
-        self, mocker: MockerFixture
-    ) -> None:
-        mocker.patch.object(tw, "MeetingApiClient")
-        mocker.patch.object(tw, "gather_meeting_context")
-        set_ctx = mocker.patch.object(tw, "set_sentry_meeting_context")
-        mocker.patch.object(
-            tw,
-            "register_redelivery",
-            side_effect=TranscriptionAttemptsExhaustedError("spent"),
-        )
-        tw.diarize.push_request(delivery_info={"redelivered": True})
-
-        try:
-            with pytest.raises(TranscriptionAttemptsExhaustedError):
-                tw.diarize.before_start("task-id", (MEETING_ID, OWNER), {})
-        finally:
-            tw.diarize.pop_request()
+        _before_start(None)
 
         set_ctx.assert_called_once()
 
@@ -212,9 +167,64 @@ class TestPipelineTaskBase:
         assert issubclass(MeetingDeletedException, Ignore)
 
     def test_exhausted_attempts_fail_the_task_without_retry(self) -> None:
-        assert issubclass(TranscriptionAttemptsExhaustedError, Exception)
         assert not issubclass(TranscriptionAttemptsExhaustedError, TransientInfraError)
         assert not issubclass(TranscriptionAttemptsExhaustedError, Ignore)
+
+
+class TestAttemptBudget:
+    @pytest.mark.parametrize("delivery_info", [None, {"redelivered": False}])
+    def test_first_delivery_is_not_an_attempt(
+        self,
+        mocker: MockerFixture,
+        in_memory_redis: InMemoryRedis,
+        delivery_info: dict[str, bool] | None,
+    ) -> None:
+        _patch_task_context(mocker)
+
+        _before_start(delivery_info)
+
+        assert not in_memory_redis.exists(ATTEMPT_KEY)
+
+    def test_redeliveries_within_budget_let_the_task_run(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        _patch_task_context(mocker)
+
+        _before_start({"redelivered": True})
+        _before_start({"redelivered": True})
+
+        assert in_memory_redis.get(ATTEMPT_KEY) == "2"
+
+    def test_redelivery_beyond_budget_fails_after_sentry_context_is_set(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        set_ctx = _patch_task_context(mocker)
+        in_memory_redis.store[ATTEMPT_KEY] = "2"
+
+        with pytest.raises(TranscriptionAttemptsExhaustedError):
+            _before_start({"redelivered": True})
+
+        set_ctx.assert_called_once()
+
+    def test_a_new_dispatch_starts_from_zero(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        _patch_task_context(mocker)
+        in_memory_redis.store["transcription_attempts:previous-dispatch"] = "2"
+
+        _before_start({"redelivered": True})
+
+        assert in_memory_redis.get(ATTEMPT_KEY) == "1"
+
+    def test_redis_outage_lets_the_task_run(
+        self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
+    ) -> None:
+        _patch_task_context(mocker)
+        mocker.patch.object(
+            in_memory_redis, "incr", side_effect=ConnectionError("redis down")
+        )
+
+        _before_start({"redelivered": True})
 
 
 class TestTransientRetryNet:
@@ -259,7 +269,7 @@ class TestTransientRetryNet:
         retry.assert_called_once()
 
 
-class TestExhaustedBudgetEndToEnd:
+class TestBeforeStartFailureEndToEnd:
     @pytest.fixture
     def eager_worker(self) -> Generator[None, None, None]:
         previous = tw.celery_worker.conf.task_always_eager
@@ -268,15 +278,12 @@ class TestExhaustedBudgetEndToEnd:
         tw.celery_worker.conf.task_always_eager = previous
 
     @pytest.mark.usefixtures("eager_worker")
-    def test_spent_budget_marks_the_meeting_failed_and_skips_the_body(
+    def test_error_in_before_start_marks_the_meeting_failed_and_skips_the_body(
         self, mocker: MockerFixture
     ) -> None:
-        mocker.patch.object(tw, "MeetingApiClient")
-        mocker.patch.object(tw, "gather_meeting_context")
-        mocker.patch.object(tw, "set_sentry_meeting_context")
         mocker.patch.object(
-            tw,
-            "register_redelivery",
+            tw.TranscriptionPipelineTask,
+            "set_task_context",
             side_effect=TranscriptionAttemptsExhaustedError("spent"),
         )
         body = mocker.patch.object(tw, "run_diarization")

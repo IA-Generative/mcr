@@ -2,7 +2,6 @@ import asyncio
 from collections.abc import Callable
 from functools import partial
 from io import BytesIO
-from typing import Any
 
 from loguru import logger
 
@@ -27,9 +26,6 @@ from mcr_meeting.app.schemas.transcription_schema import (
     SpeakerTranscription,
 )
 from mcr_meeting.app.use_cases.run_evaluation_from_zip import run_evaluation_from_zip
-from mcr_meeting.app.use_cases.transcription.register_redelivery import (
-    register_redelivery,
-)
 from mcr_meeting.app.use_cases.transcription.run_diarization import run_diarization
 from mcr_meeting.app.use_cases.transcription.run_finalize_transcription import (
     run_finalize_transcription,
@@ -81,18 +77,6 @@ class TranscriptionPipelineTask(MeetingPipelineTask):
             meeting_id, owner_keycloak_uuid, client
         )
         set_sentry_meeting_context(meeting_context)
-
-    def before_start(  # type: ignore[explicit-any]
-        self, task_id: str, args: tuple[Any, ...], kwargs: dict[str, Any]
-    ) -> None:
-        super().before_start(task_id, args, kwargs)
-        delivery_info = self.request.delivery_info or {}
-        register_redelivery(
-            task_id,
-            args[0],
-            self.name,
-            redelivered=bool(delivery_info.get("redelivered", False)),
-        )
 
 
 @celery_worker.task(name=MCRTranscriptionTasks.MARK_TRANSCRIPTION_FAILED)
