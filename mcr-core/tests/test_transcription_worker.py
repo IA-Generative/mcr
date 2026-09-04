@@ -5,6 +5,7 @@ import pytest
 from celery.exceptions import Ignore, Retry
 from pytest_mock import MockerFixture
 
+import mcr_meeting.app.infrastructure.celery_consumer as celery_consumer
 import mcr_meeting.transcription_worker as tw
 from mcr_meeting.app.exceptions.celery_exceptions import MeetingDeletedException
 from mcr_meeting.app.exceptions.exceptions import (
@@ -195,16 +196,18 @@ class TestAttemptBudget:
 
         assert in_memory_redis.get(ATTEMPT_KEY) == "2"
 
-    def test_redelivery_beyond_budget_fails_after_sentry_context_is_set(
+    def test_redelivery_beyond_budget_fails_and_reaches_sentry_with_context(
         self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
     ) -> None:
         set_ctx = _patch_task_context(mocker)
+        capture = mocker.patch.object(celery_consumer, "capture_exception")
         in_memory_redis.store[ATTEMPT_KEY] = "2"
 
-        with pytest.raises(TranscriptionAttemptsExhaustedError):
+        with pytest.raises(TranscriptionAttemptsExhaustedError) as raised:
             _before_start({"redelivered": True})
 
         set_ctx.assert_called_once()
+        capture.assert_called_once_with(raised.value)
 
     def test_a_new_dispatch_starts_from_zero(
         self, mocker: MockerFixture, in_memory_redis: InMemoryRedis
