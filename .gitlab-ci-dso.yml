@@ -340,9 +340,7 @@ rollout-infra:
     - apk add --no-cache curl
   script:
     - |
-      set -x
-
-      # Use a case statement instead of arrays
+      # No `set -x` here: it would echo the Authorization header, and the token, into the job log
       case "$TARGET_ENV" in
         staging|prod)
           deploy_images_automatically=true
@@ -357,7 +355,8 @@ rollout-infra:
         exit 0
       fi
 
-      curl -L --fail \
+      echo "Dispatching mcr-update-values.yaml for ${TARGET_ENV} with tag ${IMAGE_TAG} (commit ${MCR_COMMIT})"
+      curl -sS -L --fail-with-body \
         -X POST \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
