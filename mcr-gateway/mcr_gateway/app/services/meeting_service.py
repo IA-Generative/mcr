@@ -3,9 +3,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 import httpx
-from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse, StreamingResponse
-from loguru import logger
 from pydantic import UUID4
 
 from mcr_gateway.app.configs.config import settings
@@ -20,6 +18,7 @@ from mcr_gateway.app.schemas.meeting_schema import (
 from mcr_gateway.app.schemas.S3_types import PresignedAudioFileRequest
 from mcr_gateway.app.utils.core_http_client import core_client
 from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
+from mcr_gateway.app.utils.upstream_errors import relay_upstream_errors
 
 
 class MCRCoreCustomAuth(httpx.Auth):
@@ -58,6 +57,7 @@ async def get_meeting_http_client(
         await client.aclose()
 
 
+@relay_upstream_errors("create meeting")
 async def create_meeting_service(
     meeting_data: MeetingCreate, user_keycloak_uuid: UUID4
 ) -> Meeting:
@@ -70,58 +70,33 @@ async def create_meeting_service(
     Returns:
         Meeting: The newly created meeting object.
     """
-    try:
-        meeting_data_dict = update_dict_with_iso_dates(
-            meeting_data.model_dump(), meeting_data
-        )
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            # TODO: This would be clearer with the slash not included in the base url
-            # To make that change, one would need to change all of the services urls
-            response = await client.post("", json=meeting_data_dict)
-            response.raise_for_status()
-            result = response.json()
-            return Meeting(**result)
-
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
-        )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    meeting_data_dict = update_dict_with_iso_dates(
+        meeting_data.model_dump(), meeting_data
+    )
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        # TODO: This would be clearer with the slash not included in the base url
+        # To make that change, one would need to change all of the services urls
+        response = await client.post("", json=meeting_data_dict)
+        response.raise_for_status()
+        result = response.json()
+        return Meeting(**result)
 
 
+@relay_upstream_errors("generate presigned url")
 async def generate_presigned_url_service(
     meeting_id: int,
     presigned_request: PresignedAudioFileRequest,
     user_keycloak_uuid: UUID4,
 ) -> str:
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(
-                f"{meeting_id}/presigned_url/generate",
-                json=presigned_request.model_dump(),
-            )
-            response.raise_for_status()
-
-            presigned_url: str = response.json()
-            return presigned_url
-
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.post(
+            f"{meeting_id}/presigned_url/generate",
+            json=presigned_request.model_dump(),
         )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+        response.raise_for_status()
+
+        presigned_url: str = response.json()
+        return presigned_url
 
 
 async def get_meeting_service(
@@ -144,6 +119,7 @@ async def get_meeting_service(
         return MeetingWithDetails(**meeting_data)
 
 
+@relay_upstream_errors("update meeting")
 async def update_meeting_service(
     meeting_id: int, user_keycloak_uuid: UUID4, meeting_update: MeetingUpdate
 ) -> Meeting:
@@ -157,31 +133,19 @@ async def update_meeting_service(
     Returns:
         Meeting: The updated meeting object.
     """
-    try:
-        meeting_update_dict = update_dict_with_iso_dates(
-            meeting_update.model_dump(exclude_unset=True), meeting_update
-        )
+    meeting_update_dict = update_dict_with_iso_dates(
+        meeting_update.model_dump(exclude_unset=True), meeting_update
+    )
 
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.patch(f"{meeting_id}", json=meeting_update_dict)
-            response.raise_for_status()
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.patch(f"{meeting_id}", json=meeting_update_dict)
+        response.raise_for_status()
 
-            updated_meeting_data = response.json()
-            return Meeting(**updated_meeting_data)
-
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
-        )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+        updated_meeting_data = response.json()
+        return Meeting(**updated_meeting_data)
 
 
+@relay_upstream_errors("delete meeting")
 async def delete_meeting_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
@@ -192,25 +156,13 @@ async def delete_meeting_service(
     Args:
         meeting_id (int): The ID of the meeting to delete.
     """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.delete(f"{meeting_id}")
-            response.raise_for_status()
-            return None
-
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
-        )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.delete(f"{meeting_id}")
+        response.raise_for_status()
+        return None
 
 
+@relay_upstream_errors("delete meetings")
 async def delete_meetings_service(
     meeting_ids: list[int],
     user_keycloak_uuid: UUID4,
@@ -221,26 +173,14 @@ async def delete_meetings_service(
     Args:
         meeting_ids (list[int]): The IDs of the meetings to delete.
     """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            # `delete()` carries no body, so the id list goes through `request()`
-            response = await client.request("DELETE", "", json={"ids": meeting_ids})
-            response.raise_for_status()
-            return None
-
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            "HTTP error occurred: {} - {}", e.response.status_code, e.response.text
-        )
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error occurred: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        # `delete()` carries no body, so the id list goes through `request()`
+        response = await client.request("DELETE", "", json={"ids": meeting_ids})
+        response.raise_for_status()
+        return None
 
 
+@relay_upstream_errors("init meeting capture")
 async def init_meeting_capture_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
@@ -251,20 +191,12 @@ async def init_meeting_capture_service(
     Args:
         meeting_id (int): The ID of the meeting to start the transcription for.
     """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(f"{meeting_id}/capture/init")
-            response.raise_for_status()
-
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while starting transcription",
-        )
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.post(f"{meeting_id}/capture/init")
+        response.raise_for_status()
 
 
+@relay_upstream_errors("stop meeting capture")
 async def stop_meeting_capture_service(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
@@ -276,20 +208,12 @@ async def stop_meeting_capture_service(
     Args:
         meeting_id (int): The ID of the meeting for which the transcription should be stopped.
     """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid, access_token) as client:
-            response = await client.post(url=f"{meeting_id}/capture/stop")
-            response.raise_for_status()  # Raise an error for non-200 responses
-
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while stopping transcription.",
-        )
+    async with get_meeting_http_client(user_keycloak_uuid, access_token) as client:
+        response = await client.post(url=f"{meeting_id}/capture/stop")
+        response.raise_for_status()  # Raise an error for non-200 responses
 
 
+@relay_upstream_errors("get meetings")
 async def get_meetings_service(
     user_keycloak_uuid: UUID4,
     search: str | None,
@@ -307,30 +231,18 @@ async def get_meetings_service(
     Returns:
         PaginatedMeetingsResponse: Réponse paginée contenant les réunions et les métadonnées.
     """
-    try:
-        params: dict[str, str | int] = {
-            "page": page,
-            "page_size": page_size,
-        }
+    params: dict[str, str | int] = {
+        "page": page,
+        "page_size": page_size,
+    }
 
-        if search:
-            params["search"] = search
+    if search:
+        params["search"] = search
 
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.get("", params=params)
-            response.raise_for_status()
-            return PaginatedMeetingsResponse(**response.json())
-
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"Erreur lors de l'appel à mcr-core : {e.response.text}",
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Erreur inattendue : {str(e)}",
-        )
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.get("", params=params)
+        response.raise_for_status()
+        return PaginatedMeetingsResponse(**response.json())
 
 
 async def start_meeting_transcription_service(
@@ -343,6 +255,7 @@ async def start_meeting_transcription_service(
         response.raise_for_status()
 
 
+@relay_upstream_errors("generate meeting transcription document")
 async def generate_meeting_transcription_document(
     meeting_id: int,
     user_keycloak_uuid: UUID4,
@@ -356,40 +269,24 @@ async def generate_meeting_transcription_document(
     Returns:
         StreamingResponse: The DOCX file as a streaming response.
     """
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.post(url=f"{meeting_id}/transcription")
-            response.raise_for_status()  # Raise an error for non-200 responses
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.post(url=f"{meeting_id}/transcription")
+        response.raise_for_status()  # Raise an error for non-200 responses
 
-            return proxy_streaming_response(response)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while fetching the transcription.",
-        )
+        return proxy_streaming_response(response)
 
 
+@relay_upstream_errors("get meeting audio")
 async def get_meeting_audio_service(
     meeting_id: int, user_keycloak_uuid: UUID4
 ) -> StreamingResponse:
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.get(url=f"{meeting_id}/audio")
-            response.raise_for_status()
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.get(url=f"{meeting_id}/audio")
+        response.raise_for_status()
 
-            return StreamingResponse(
-                response.aiter_bytes(),
-                media_type="audio/webm",
-            )
-
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred while requesting the meeting audio.",
+        return StreamingResponse(
+            response.aiter_bytes(),
+            media_type="audio/webm",
         )
 
 

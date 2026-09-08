@@ -380,10 +380,10 @@ def read_full_transcript(meeting_id: int) -> FullTranscript:
 
 
 @_with_retry_transient
+@_transient_errors_as_s3_transient("s3 read")
 def get_file_from_s3(object_name: str) -> BytesIO:
-    with _transient_errors_as_s3_transient(f"s3 read: {object_name}"):
-        response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
-        return BytesIO(response["Body"].read())
+    response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
+    return BytesIO(response["Body"].read())
 
 
 def get_file_from_s3_or_none(object_name: str) -> BytesIO | None:
@@ -402,6 +402,7 @@ def get_presigned_url_for_put_file(name: str) -> str:
 
 
 @_with_retry_transient
+@_transient_errors_as_s3_transient("s3 multipart init")
 def create_multipart_upload(
     meeting_id: int,
     init_request: MultipartInitRequest,
@@ -412,12 +413,11 @@ def create_multipart_upload(
     object_key = get_audio_object_name(meeting_id, init_request.filename)
     content_type = init_request.content_type or guess_mime_type(init_request.filename)
 
-    with _transient_errors_as_s3_transient(f"s3 multipart init: {object_key}"):
-        response = s3_client.create_multipart_upload(
-            Bucket=s3_settings.S3_BUCKET,
-            Key=object_key,
-            ContentType=content_type,
-        )
+    response = s3_client.create_multipart_upload(
+        Bucket=s3_settings.S3_BUCKET,
+        Key=object_key,
+        ContentType=content_type,
+    )
     return {
         "upload_id": response["UploadId"],
         "key": response["Key"],
@@ -444,49 +444,47 @@ def get_presigned_url_for_upload_part(
 
 
 @_with_retry_transient
+@_transient_errors_as_s3_transient("s3 multipart complete")
 def complete_multipart_upload_in_s3(complete_request: MultipartCompleteRequest) -> None:
     """
     Complete an S3 multipart upload with the list of parts:
     parts = [{ 'ETag': '<etag-from-upload>', 'PartNumber': <int> }, ...]
     """
-    with _transient_errors_as_s3_transient(
-        f"s3 multipart complete: {complete_request.object_key}"
-    ):
-        s3_client.complete_multipart_upload(
-            Bucket=s3_settings.S3_BUCKET,
-            Key=complete_request.object_key,
-            UploadId=complete_request.upload_id,
-            MultipartUpload={
-                "Parts": cast(
-                    list[CompletedPartTypeDef],
-                    [part.model_dump(by_alias=True) for part in complete_request.parts],
-                )
-            },
-        )
+    s3_client.complete_multipart_upload(
+        Bucket=s3_settings.S3_BUCKET,
+        Key=complete_request.object_key,
+        UploadId=complete_request.upload_id,
+        MultipartUpload={
+            "Parts": cast(
+                list[CompletedPartTypeDef],
+                [part.model_dump(by_alias=True) for part in complete_request.parts],
+            )
+        },
+    )
 
 
 @_with_retry_transient
+@_transient_errors_as_s3_transient("s3 multipart abort")
 def abort_multipart_upload_in_s3(object_key: str, upload_id: str) -> None:
     """
     Abort a previously initiated S3 multipart upload.
     """
-    with _transient_errors_as_s3_transient(f"s3 multipart abort: {object_key}"):
-        s3_client.abort_multipart_upload(
-            Bucket=s3_settings.S3_BUCKET, Key=object_key, UploadId=upload_id
-        )
+    s3_client.abort_multipart_upload(
+        Bucket=s3_settings.S3_BUCKET, Key=object_key, UploadId=upload_id
+    )
 
 
 @_with_retry_transient
+@_transient_errors_as_s3_transient("s3 list")
 def _list_objects_under_prefix(prefix: str) -> list[S3Object]:
-    with _transient_errors_as_s3_transient(f"s3 list: {prefix}"):
-        paginator = s3_client.get_paginator("list_objects_v2")
-        page_iterator = paginator.paginate(
-            Bucket=s3_settings.S3_BUCKET, Prefix=get_audio_object_prefix(prefix)
-        )
-        objects: list[S3Object] = []
-        for page in page_iterator:
-            objects.extend(S3ListObjectsPage.model_validate(page).contents)
-        return objects
+    paginator = s3_client.get_paginator("list_objects_v2")
+    page_iterator = paginator.paginate(
+        Bucket=s3_settings.S3_BUCKET, Prefix=get_audio_object_prefix(prefix)
+    )
+    objects: list[S3Object] = []
+    for page in page_iterator:
+        objects.extend(S3ListObjectsPage.model_validate(page).contents)
+    return objects
 
 
 def get_objects_list_from_prefix(prefix: str) -> list[S3Object]:
@@ -504,19 +502,19 @@ def validate_object_list(objects: Iterable[S3Object]) -> Iterator[S3Object]:
 
 
 @_with_retry_transient
+@_transient_errors_as_s3_transient("s3 upload")
 def put_file_to_s3(
     content: BytesIO,
     object_name: str,
     content_type: str = "application/octet-stream",
 ) -> None:
-    with _transient_errors_as_s3_transient(f"s3 upload: {object_name}"):
-        content.seek(0)
-        s3_client.put_object(
-            Bucket=s3_settings.S3_BUCKET,
-            Key=object_name,
-            Body=content,
-            ContentType=content_type,
-        )
+    content.seek(0)
+    s3_client.put_object(
+        Bucket=s3_settings.S3_BUCKET,
+        Key=object_name,
+        Body=content,
+        ContentType=content_type,
+    )
 
 
 def get_report_object_name(meeting_id: int, filename: str) -> str:
