@@ -231,6 +231,7 @@ class RetrySettings(BaseSettings):
     TASK_RETRY_MAX_RETRIES: int = 6
     TASK_RETRY_BACKOFF: int = 30
     TASK_RETRY_BACKOFF_MAX: int = 600
+    TRANSCRIPTION_MAX_ATTEMPTS: int = 3
 
 
 class S3Settings(BaseSettings):
@@ -305,6 +306,7 @@ class CelerySettings(BaseSettings):
     (OOM / SIGKILL / node loss) — covering those needs the full attempt window
     """,
     )
+    TRANSCRIPTION_ATTEMPT_COUNTER_TTL_SECONDS: int = 604_800
     WORKER_SOFT_SHUTDOWN_TIMEOUT_SECONDS: int = Field(
         default=60,
         description="""

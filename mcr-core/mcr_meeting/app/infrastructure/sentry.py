@@ -123,6 +123,10 @@ def gather_meeting_context(
     )
 
 
+def capture_exception(error: BaseException) -> None:
+    sentry_sdk.capture_exception(error)
+
+
 def set_sentry_meeting_context(meeting_context: MeetingContext) -> None:
     sentry_sdk.set_tag("meeting.id", meeting_context["meeting_id"])
     sentry_sdk.set_user({"id": meeting_context["owner_keycloak_uuid"]})
