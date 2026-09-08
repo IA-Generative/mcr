@@ -5,13 +5,16 @@ from enum import StrEnum
 from io import BytesIO
 from typing import Any, BinaryIO
 
-from botocore.exceptions import ResponseStreamingError
+from botocore.exceptions import ClientError, ResponseStreamingError
 
 
 class S3Op(StrEnum):
     GET = "get_object"
     PUT = "put_object"
     LIST = "list_objects_v2"
+    CREATE_MULTIPART = "create_multipart_upload"
+    COMPLETE_MULTIPART = "complete_multipart_upload"
+    ABORT_MULTIPART = "abort_multipart_upload"
 
 
 class NoSuchKey(Exception):
@@ -47,11 +50,32 @@ def transient_error() -> ResponseStreamingError:
     return ResponseStreamingError(error=Exception("connection reset mid-body"))
 
 
+def server_error(operation: str = "CompleteMultipartUpload") -> ClientError:
+    return ClientError(
+        {
+            "Error": {"Code": "InternalError", "Message": "internal error"},
+            "ResponseMetadata": {"HTTPStatusCode": 500},
+        },
+        operation,
+    )
+
+
+def client_fault(operation: str = "CompleteMultipartUpload") -> ClientError:
+    return ClientError(
+        {
+            "Error": {"Code": "InvalidPart", "Message": "invalid part"},
+            "ResponseMetadata": {"HTTPStatusCode": 400},
+        },
+        operation,
+    )
+
+
 class InMemoryS3:
     exceptions = _Exceptions
 
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
+        self.multipart_uploads: dict[str, str] = {}
         self.calls: Counter[S3Op] = Counter()
         self._faults: dict[S3Op, list[Exception]] = {}
 
@@ -89,3 +113,26 @@ class InMemoryS3:
     def get_paginator(self, operation_name: str) -> _ListObjectsPaginator:
         assert operation_name == "list_objects_v2"
         return _ListObjectsPaginator(self.objects, self._tick)
+
+    def create_multipart_upload(
+        self, *, Bucket: str, Key: str, ContentType: str = ""
+    ) -> dict[str, Any]:
+        self._tick(S3Op.CREATE_MULTIPART)
+        upload_id = f"upload-{len(self.multipart_uploads) + 1}"
+        self.multipart_uploads[upload_id] = Key
+        return {"UploadId": upload_id, "Key": Key, "Bucket": Bucket}
+
+    def complete_multipart_upload(
+        self, *, Bucket: str, Key: str, UploadId: str, MultipartUpload: dict[str, Any]
+    ) -> dict[str, Any]:
+        self._tick(S3Op.COMPLETE_MULTIPART)
+        assert self.multipart_uploads.pop(UploadId) == Key
+        self.objects[Key] = b""
+        return {}
+
+    def abort_multipart_upload(
+        self, *, Bucket: str, Key: str, UploadId: str
+    ) -> dict[str, Any]:
+        self._tick(S3Op.ABORT_MULTIPART)
+        assert self.multipart_uploads.pop(UploadId) == Key
+        return {}

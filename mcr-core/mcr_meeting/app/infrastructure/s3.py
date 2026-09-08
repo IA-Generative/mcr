@@ -1,17 +1,19 @@
 import itertools
 from collections.abc import Generator, Iterable, Iterator
+from contextlib import contextmanager
 from io import BytesIO
 from typing import cast
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import (
-    ConnectionError as BotoConnectionError,
-)
-from botocore.exceptions import (
+    ClientError,
     ConnectTimeoutError,
     ReadTimeoutError,
     ResponseStreamingError,
+)
+from botocore.exceptions import (
+    ConnectionError as BotoConnectionError,
 )
 from loguru import logger
 from mypy_boto3_s3 import S3Client
@@ -93,12 +95,35 @@ S3_TRANSIENT = (
     IncompleteRead,
 )
 
+S3_TRANSIENT_ERROR_CODES = frozenset(
+    {"InternalError", "SlowDown", "ServiceUnavailable", "RequestTimeout"}
+)
+
 _with_retry_transient = retry_transient(
     on=(S3TransientError,),
     attempts=_retry_settings.S3_RETRY_ATTEMPTS,
     initial_delay=_retry_settings.S3_RETRY_INITIAL_DELAY,
     max_delay=_retry_settings.S3_RETRY_MAX_DELAY,
 )
+
+
+def _is_server_side_failure(error: ClientError) -> bool:
+    status_code = error.response.get("ResponseMetadata", {}).get("HTTPStatusCode", 0)
+    error_code = error.response.get("Error", {}).get("Code", "")
+    return status_code >= 500 or error_code in S3_TRANSIENT_ERROR_CODES
+
+
+@contextmanager
+def _transient_errors_as_s3_transient(description: str) -> Iterator[None]:
+    try:
+        yield
+    except S3_TRANSIENT as e:
+        raise S3TransientError(f"Transient error for {description}") from e
+    except ClientError as e:
+        if not _is_server_side_failure(e):
+            raise
+        raise S3TransientError(f"Transient error for {description}") from e
+
 
 AUDIO_MEDIA_TYPE = "audio/webm"
 
@@ -356,11 +381,9 @@ def read_full_transcript(meeting_id: int) -> FullTranscript:
 
 @_with_retry_transient
 def get_file_from_s3(object_name: str) -> BytesIO:
-    try:
+    with _transient_errors_as_s3_transient(f"s3 read: {object_name}"):
         response = s3_client.get_object(Bucket=s3_settings.S3_BUCKET, Key=object_name)
         return BytesIO(response["Body"].read())
-    except S3_TRANSIENT as e:
-        raise S3TransientError(f"Transient error for s3 read: {object_name}") from e
 
 
 def get_file_from_s3_or_none(object_name: str) -> BytesIO | None:
@@ -378,6 +401,7 @@ def get_presigned_url_for_put_file(name: str) -> str:
     )
 
 
+@_with_retry_transient
 def create_multipart_upload(
     meeting_id: int,
     init_request: MultipartInitRequest,
@@ -388,11 +412,12 @@ def create_multipart_upload(
     object_key = get_audio_object_name(meeting_id, init_request.filename)
     content_type = init_request.content_type or guess_mime_type(init_request.filename)
 
-    response = s3_client.create_multipart_upload(
-        Bucket=s3_settings.S3_BUCKET,
-        Key=object_key,
-        ContentType=content_type,
-    )
+    with _transient_errors_as_s3_transient(f"s3 multipart init: {object_key}"):
+        response = s3_client.create_multipart_upload(
+            Bucket=s3_settings.S3_BUCKET,
+            Key=object_key,
+            ContentType=content_type,
+        )
     return {
         "upload_id": response["UploadId"],
         "key": response["Key"],
@@ -418,36 +443,42 @@ def get_presigned_url_for_upload_part(
     )
 
 
+@_with_retry_transient
 def complete_multipart_upload_in_s3(complete_request: MultipartCompleteRequest) -> None:
     """
     Complete an S3 multipart upload with the list of parts:
     parts = [{ 'ETag': '<etag-from-upload>', 'PartNumber': <int> }, ...]
     """
-    s3_client.complete_multipart_upload(
-        Bucket=s3_settings.S3_BUCKET,
-        Key=complete_request.object_key,
-        UploadId=complete_request.upload_id,
-        MultipartUpload={
-            "Parts": cast(
-                list[CompletedPartTypeDef],
-                [part.model_dump(by_alias=True) for part in complete_request.parts],
-            )
-        },
-    )
+    with _transient_errors_as_s3_transient(
+        f"s3 multipart complete: {complete_request.object_key}"
+    ):
+        s3_client.complete_multipart_upload(
+            Bucket=s3_settings.S3_BUCKET,
+            Key=complete_request.object_key,
+            UploadId=complete_request.upload_id,
+            MultipartUpload={
+                "Parts": cast(
+                    list[CompletedPartTypeDef],
+                    [part.model_dump(by_alias=True) for part in complete_request.parts],
+                )
+            },
+        )
 
 
+@_with_retry_transient
 def abort_multipart_upload_in_s3(object_key: str, upload_id: str) -> None:
     """
     Abort a previously initiated S3 multipart upload.
     """
-    s3_client.abort_multipart_upload(
-        Bucket=s3_settings.S3_BUCKET, Key=object_key, UploadId=upload_id
-    )
+    with _transient_errors_as_s3_transient(f"s3 multipart abort: {object_key}"):
+        s3_client.abort_multipart_upload(
+            Bucket=s3_settings.S3_BUCKET, Key=object_key, UploadId=upload_id
+        )
 
 
 @_with_retry_transient
 def _list_objects_under_prefix(prefix: str) -> list[S3Object]:
-    try:
+    with _transient_errors_as_s3_transient(f"s3 list: {prefix}"):
         paginator = s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(
             Bucket=s3_settings.S3_BUCKET, Prefix=get_audio_object_prefix(prefix)
@@ -456,8 +487,6 @@ def _list_objects_under_prefix(prefix: str) -> list[S3Object]:
         for page in page_iterator:
             objects.extend(S3ListObjectsPage.model_validate(page).contents)
         return objects
-    except S3_TRANSIENT as e:
-        raise S3TransientError(f"Transient error for s3 list: {prefix}") from e
 
 
 def get_objects_list_from_prefix(prefix: str) -> list[S3Object]:
@@ -480,7 +509,7 @@ def put_file_to_s3(
     object_name: str,
     content_type: str = "application/octet-stream",
 ) -> None:
-    try:
+    with _transient_errors_as_s3_transient(f"s3 upload: {object_name}"):
         content.seek(0)
         s3_client.put_object(
             Bucket=s3_settings.S3_BUCKET,
@@ -488,8 +517,6 @@ def put_file_to_s3(
             Body=content,
             ContentType=content_type,
         )
-    except S3_TRANSIENT as e:
-        raise S3TransientError(f"Transient error for s3 upload: {object_name}") from e
 
 
 def get_report_object_name(meeting_id: int, filename: str) -> str:
