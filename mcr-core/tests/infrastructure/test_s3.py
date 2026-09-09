@@ -2,6 +2,7 @@ from io import BytesIO
 from unittest.mock import Mock, patch
 
 import pytest
+from botocore.exceptions import ClientError
 
 from mcr_meeting.app.exceptions.exceptions import (
     MeetingMultipartException,
@@ -27,7 +28,13 @@ from mcr_meeting.app.schemas.S3_types import (
     MultipartSignPartRequest,
     S3Object,
 )
-from tests.mocks.in_memory_s3 import InMemoryS3, S3Op, transient_error
+from tests.mocks.in_memory_s3 import (
+    InMemoryS3,
+    S3Op,
+    client_fault,
+    server_error,
+    transient_error,
+)
 
 
 def test_stream_meeting_audio_returns_chunks_in_key_order(
@@ -223,3 +230,85 @@ def test_s3_list_persistent_failure_surfaces_as_s3_transient(
 
     with pytest.raises(S3TransientError):
         get_objects_list_from_prefix("1/")
+
+
+def test_s3_read_absorbs_a_server_side_blip(in_memory_s3: InMemoryS3) -> None:
+    in_memory_s3.objects[_KEY] = b"audio-bytes"
+    in_memory_s3.fail(S3Op.GET, server_error("GetObject"), times=1)
+
+    assert get_file_from_s3(_KEY).getvalue() == b"audio-bytes"
+
+
+def test_s3_put_absorbs_a_server_side_blip(in_memory_s3: InMemoryS3) -> None:
+    in_memory_s3.fail(S3Op.PUT, server_error("PutObject"), times=1)
+
+    put_file_to_s3(BytesIO(b"audio-bytes"), _KEY)
+
+    assert in_memory_s3.objects[_KEY] == b"audio-bytes"
+
+
+def _pending_upload(in_memory_s3: InMemoryS3) -> MultipartCompleteRequest:
+    upload = initiate_multipart_upload(1, MultipartInitRequest(filename="audio.mp3"))
+    return MultipartCompleteRequest(
+        upload_id=upload.upload_id,
+        object_key=upload.object_key,
+        parts=[MultipartCompletePart(part_number=1, etag="etag1")],
+    )
+
+
+def test_multipart_init_absorbs_a_server_side_blip(in_memory_s3: InMemoryS3) -> None:
+    in_memory_s3.fail(S3Op.CREATE_MULTIPART, server_error(), times=1)
+
+    upload = initiate_multipart_upload(1, MultipartInitRequest(filename="audio.mp3"))
+
+    assert in_memory_s3.multipart_uploads[upload.upload_id] == upload.object_key
+
+
+def test_multipart_complete_absorbs_a_server_side_blip(
+    in_memory_s3: InMemoryS3,
+) -> None:
+    request = _pending_upload(in_memory_s3)
+    in_memory_s3.fail(S3Op.COMPLETE_MULTIPART, server_error(), times=1)
+
+    complete_multipart_upload(1, request)
+
+    assert request.upload_id not in in_memory_s3.multipart_uploads
+    assert request.object_key in in_memory_s3.objects
+
+
+def test_multipart_complete_persistent_server_failure_surfaces_as_s3_transient(
+    in_memory_s3: InMemoryS3,
+) -> None:
+    request = _pending_upload(in_memory_s3)
+    in_memory_s3.fail(S3Op.COMPLETE_MULTIPART, server_error(), times=_ALWAYS_FAIL)
+
+    with pytest.raises(S3TransientError):
+        complete_multipart_upload(1, request)
+    assert request.upload_id in in_memory_s3.multipart_uploads
+
+
+def test_multipart_complete_client_fault_is_not_retried(
+    in_memory_s3: InMemoryS3,
+) -> None:
+    request = _pending_upload(in_memory_s3)
+    in_memory_s3.fail(S3Op.COMPLETE_MULTIPART, client_fault(), times=_ALWAYS_FAIL)
+
+    with pytest.raises(ClientError):
+        complete_multipart_upload(1, request)
+    assert in_memory_s3.calls[S3Op.COMPLETE_MULTIPART] == 1
+
+
+def test_multipart_abort_absorbs_a_server_side_blip(in_memory_s3: InMemoryS3) -> None:
+    request = _pending_upload(in_memory_s3)
+    in_memory_s3.fail(
+        S3Op.ABORT_MULTIPART, server_error("AbortMultipartUpload"), times=1
+    )
+
+    abort_multipart_upload(
+        1,
+        MultipartAbortRequest(
+            upload_id=request.upload_id, object_key=request.object_key
+        ),
+    )
+
+    assert request.upload_id not in in_memory_s3.multipart_uploads

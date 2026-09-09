@@ -1,6 +1,5 @@
-from venv import logger
-
 from fastapi import APIRouter, Depends, HTTPException, status
+from loguru import logger
 
 from mcr_gateway.app.schemas.S3_types import (
     MultipartAbortRequest,

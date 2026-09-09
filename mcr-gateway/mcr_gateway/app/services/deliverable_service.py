@@ -2,9 +2,8 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import HTTPException, status
+from fastapi import status
 from fastapi.responses import Response, StreamingResponse
-from loguru import logger
 from pydantic import UUID4
 
 from mcr_gateway.app.configs.config import settings
@@ -21,6 +20,7 @@ from mcr_gateway.app.services.meeting_service import (
 )
 from mcr_gateway.app.utils.core_http_client import core_client
 from mcr_gateway.app.utils.streaming_proxy import proxy_streaming_response
+from mcr_gateway.app.utils.upstream_errors import relay_upstream_errors
 
 
 @asynccontextmanager
@@ -38,147 +38,87 @@ async def get_deliverable_http_client(
         await client.aclose()
 
 
+@relay_upstream_errors("list deliverables for meeting")
 async def list_deliverables_for_meeting(
     meeting_id: int, user_keycloak_uuid: UUID4
 ) -> DeliverableListResponse:
-    try:
-        async with get_meeting_http_client(user_keycloak_uuid) as client:
-            response = await client.get(url=f"{meeting_id}/deliverables")
-            response.raise_for_status()
-            return DeliverableListResponse.model_validate(response.json())
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error listing deliverables: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    async with get_meeting_http_client(user_keycloak_uuid) as client:
+        response = await client.get(url=f"{meeting_id}/deliverables")
+        response.raise_for_status()
+        return DeliverableListResponse.model_validate(response.json())
 
 
+@relay_upstream_errors("request deliverable")
 async def request_deliverable(
     body: DeliverableCreateRequest,
     user_keycloak_uuid: UUID4,
     access_token: str | None = None,
 ) -> Response:
-    try:
-        async with get_deliverable_http_client(
-            user_keycloak_uuid, access_token
-        ) as client:
-            response = await client.post(url="", json=body.model_dump(mode="json"))
-            response.raise_for_status()
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                media_type="application/json",
-            )
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error creating deliverable: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
+    async with get_deliverable_http_client(user_keycloak_uuid, access_token) as client:
+        response = await client.post(url="", json=body.model_dump(mode="json"))
+        response.raise_for_status()
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
         )
 
 
+@relay_upstream_errors("soft delete deliverable")
 async def soft_delete_deliverable(
     deliverable_id: int, user_keycloak_uuid: UUID4
 ) -> Response:
-    try:
-        async with get_deliverable_http_client(user_keycloak_uuid) as client:
-            response = await client.delete(url=f"{deliverable_id}")
-            response.raise_for_status()
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error deleting deliverable: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    async with get_deliverable_http_client(user_keycloak_uuid) as client:
+        response = await client.delete(url=f"{deliverable_id}")
+        response.raise_for_status()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@relay_upstream_errors("list deliverable feedback reasons")
 async def list_deliverable_feedback_reasons(user_keycloak_uuid: UUID4) -> Response:
-    try:
-        async with get_deliverable_http_client(user_keycloak_uuid) as client:
-            response = await client.get(url="feedback-reasons")
-            response.raise_for_status()
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                media_type="application/json",
-            )
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error(
-            "Unexpected error listing deliverable feedback reasons: {}", str(e)
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
+    async with get_deliverable_http_client(user_keycloak_uuid) as client:
+        response = await client.get(url="feedback-reasons")
+        response.raise_for_status()
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
         )
 
 
+@relay_upstream_errors("upsert deliverable feedback")
 async def upsert_deliverable_feedback(
     deliverable_id: int,
     body: DeliverableFeedbackUpsertRequest,
     user_keycloak_uuid: UUID4,
 ) -> Response:
-    try:
-        async with get_deliverable_http_client(user_keycloak_uuid) as client:
-            response = await client.put(
-                url=f"{deliverable_id}/feedback", json=body.model_dump(mode="json")
-            )
-            response.raise_for_status()
-            return Response(
-                content=response.content,
-                status_code=response.status_code,
-                media_type="application/json",
-            )
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error saving deliverable feedback: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
+    async with get_deliverable_http_client(user_keycloak_uuid) as client:
+        response = await client.put(
+            url=f"{deliverable_id}/feedback", json=body.model_dump(mode="json")
+        )
+        response.raise_for_status()
+        return Response(
+            content=response.content,
+            status_code=response.status_code,
+            media_type="application/json",
         )
 
 
+@relay_upstream_errors("deactivate deliverable feedback")
 async def deactivate_deliverable_feedback(
     deliverable_id: int, user_keycloak_uuid: UUID4
 ) -> Response:
-    try:
-        async with get_deliverable_http_client(user_keycloak_uuid) as client:
-            response = await client.delete(url=f"{deliverable_id}/feedback")
-            response.raise_for_status()
-            return Response(status_code=status.HTTP_204_NO_CONTENT)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error retracting deliverable feedback: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    async with get_deliverable_http_client(user_keycloak_uuid) as client:
+        response = await client.delete(url=f"{deliverable_id}/feedback")
+        response.raise_for_status()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@relay_upstream_errors("get deliverable file")
 async def get_deliverable_file(
     deliverable_id: int, user_keycloak_uuid: UUID4
 ) -> StreamingResponse:
-    try:
-        async with get_deliverable_http_client(user_keycloak_uuid) as client:
-            response = await client.get(url=f"{deliverable_id}/file")
-            response.raise_for_status()
-            return proxy_streaming_response(response)
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
-    except Exception as e:
-        logger.error("Unexpected error fetching deliverable file: {}", str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Unexpected error: {str(e)}",
-        )
+    async with get_deliverable_http_client(user_keycloak_uuid) as client:
+        response = await client.get(url=f"{deliverable_id}/file")
+        response.raise_for_status()
+        return proxy_streaming_response(response)
