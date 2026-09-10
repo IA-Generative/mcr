@@ -223,7 +223,24 @@ def get_capture_meetings_stuck_since_before(before: datetime) -> list[Meeting]:
     """
     Meetings still capturing or connecting whose last known transition is older
     than ``before``.
+    """
+    return _get_meetings_stuck_since_before(
+        before,
+        [MeetingStatus.CAPTURE_IN_PROGRESS, MeetingStatus.CAPTURE_BOT_IS_CONNECTING],
+    )
 
+
+def get_transcription_meetings_stuck_since_before(before: datetime) -> list[Meeting]:
+    return _get_meetings_stuck_since_before(
+        before,
+        [MeetingStatus.TRANSCRIPTION_PENDING, MeetingStatus.TRANSCRIPTION_IN_PROGRESS],
+    )
+
+
+def _get_meetings_stuck_since_before(
+    before: datetime, statuses: list[MeetingStatus]
+) -> list[Meeting]:
+    """
     The reference time is the latest transition record, because a scheduled
     meeting can be created days before its bot connects. Legacy rows without
     records fall back to the start date, then the creation date.
@@ -240,15 +257,7 @@ def get_capture_meetings_stuck_since_before(before: datetime) -> list[Meeting]:
     )
     return (
         db.query(Meeting)
-        .filter(
-            Meeting.status.in_(
-                [
-                    MeetingStatus.CAPTURE_IN_PROGRESS,
-                    MeetingStatus.CAPTURE_BOT_IS_CONNECTING,
-                ]
-            ),
-            stuck_since < before,
-        )
+        .filter(Meeting.status.in_(statuses), stuck_since < before)
         .order_by(Meeting.id)
         .all()
     )
