@@ -34,8 +34,8 @@ def _build_llm_client() -> instructor.Instructor:
     settings = LLMSettings()
     return instructor.from_openai(
         OpenAI(
-            base_url=settings.LLM_HUB_API_URL,
-            api_key=settings.LLM_HUB_API_KEY,
+            base_url=settings.LLM_API_BASE_URL,
+            api_key=settings.LLM_API_KEY,
             timeout=settings.LLM_API_TIMEOUT,
             max_retries=settings.LLM_MAX_RETRIES,
         ),

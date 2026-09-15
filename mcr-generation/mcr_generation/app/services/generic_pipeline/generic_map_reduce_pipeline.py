@@ -60,8 +60,8 @@ class GenericMapReducePipeline:
         self.llm_config = LLMConfig()
         self.client = instructor.from_openai(
             AsyncOpenAI(
-                base_url=self.llm_config.LLM_HUB_API_URL,
-                api_key=self.llm_config.LLM_HUB_API_KEY,
+                base_url=self.llm_config.LLM_API_BASE_URL,
+                api_key=self.llm_config.LLM_API_KEY,
             ),
             mode=instructor.Mode.JSON,
         )
