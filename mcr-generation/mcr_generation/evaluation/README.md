@@ -44,7 +44,7 @@ Variables d'environnement :
 - `EVALUATION_DATA_DIR` (défaut `./mcr_generation/evaluation/data`).
 - `EVALUATION_OUTPUT_DIR` (défaut `$EVALUATION_DATA_DIR/outputs`).
 - Le scorer G-Eval consomme les mêmes credentials LLM que le report generator
-  (`LLM_HUB_API_URL`, `LLM_HUB_API_KEY`).
+  (`LLM_API_BASE_URL`, `LLM_API_KEY`).
 - `LANGFUSE_TRACING_ENABLED` est **forcé à `False`** par le CLI : les `@observe`
   des modules de prod deviennent des no-ops et l'export OTel est désactivé.
   Override en exportant explicitement `LANGFUSE_TRACING_ENABLED=True` (et en

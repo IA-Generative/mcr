@@ -114,9 +114,8 @@ jobs:
     if: ${{ needs.filter-out-unmodified-services.outputs.mcr-generation == 'true' }}
     runs-on: actions-runner-controller
     env:
-      LLM_API_URL: ${{ vars.LLM_API_URL }}
-      LLM_HUB_API_URL: ${{ vars.LLM_HUB_API_URL }}
-      LLM_HUB_API_KEY: ${{ secrets.LLM_HUB_API_KEY }}
+      LLM_API_BASE_URL: ${{ vars.LLM_API_BASE_URL }}
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
       LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
       LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
       LANGFUSE_HOST: ${{ secrets.LANGFUSE_HOST }}

@@ -39,14 +39,15 @@ class LLMConfig(BaseSettings):
     Settings parameters for calling an API hosted LLM
     """
 
-    LLM_HUB_API_URL: str = Field(
+    LLM_API_BASE_URL: str = Field(
         ...,
-        description="llm hub endpoint serving the llm",
+        description="Base URL of the OpenAI-compatible LLM API on the AI gateway, /v1 included",
     )
-    LLM_HUB_API_KEY: str = Field(..., description="llm hub api key")
+    LLM_API_KEY: str = Field(..., description="AI gateway API key")
 
     LLM_MODEL_NAME: str = Field(
-        default="gptoss-120b", description="large language model"
+        default="chat-pro",
+        description="Model alias on the AI gateway (chat-pro serves gpt-oss-120b)",
     )
     TEMPERATURE: float = Field(
         default=0,

@@ -121,10 +121,10 @@ flowchart TB
 | 🟦 Blue (`io`) | Data flowing through (input, S3 objects, intermediate lists/spans) |
 | 🟪 Purple (`proc`) | Pure Python / FFmpeg signal processing — no model or LLM call |
 | 🟥 Pink (`model`) | Audio ML inference, always remote: diarization API or transcription API |
-| 🟧 Orange (`llm`) | Step that calls an LLM via `instructor` against the LLM hub (costs time and tokens) |
+| 🟧 Orange (`llm`) | Step that calls an LLM via `instructor` against the AI gateway (costs time and tokens) |
 | 🟩 Green (`out`) | Final or stable intermediate structured object |
 
-Note the distinction between 🟥 **model** and 🟧 **llm**: diarization and transcription are dedicated audio models behind their own APIs; the acronym/spelling/participant steps are general-purpose LLM calls (OpenAI-compatible LLM hub through `instructor`, JSON mode).
+Note the distinction between 🟥 **model** and 🟧 **llm**: diarization and transcription are dedicated audio models behind their own APIs; the acronym/spelling/participant steps are general-purpose LLM calls (OpenAI-compatible AI gateway through `instructor`, JSON mode).
 
 ## Stage-by-stage
 
@@ -173,7 +173,7 @@ Turns raw model output into a readable transcript. Raises `InvalidAudioFileError
 | Acronym correction | `AcronymCorrector.correct` | **Always on.** LLM rewrite using the domain glossary injected into `prompts/acronyms.py` from `prompts/data/glossary.md` — see [Glossaire d'acronymes](../../README.md#7-glossaire-dacronymes) to update it. |
 | Spelling correction | `SpellingCorrector.correct` | Gated by the `spelling_correction` flag. Chunks the dialogue with `<separatorN>` markers, sends each chunk to the LLM, then re-splits on the markers and replaces text per segment (keeping the original when a separator goes missing — see `_invalidate_missing_separators`). |
 
-Both correctors extend `LLMPostProcessing` (`app/services/llm_post_processing.py`): `instructor`-wrapped OpenAI client in JSON mode against the LLM hub, with `RecursiveCharacterTextSplitter` chunking (`ChunkingConfig`: 20000 chars, 100 overlap).
+Both correctors extend `LLMPostProcessing` (`app/services/llm_post_processing.py`): `instructor`-wrapped OpenAI client in JSON mode against the AI gateway, with `RecursiveCharacterTextSplitter` chunking (`ChunkingConfig`: 20000 chars, 100 overlap).
 
 ### 8. Participant naming (`enrich_segments_with_participants`)
 Back in `transcribe_meeting`. `ParticipantExtraction` (also an `LLMPostProcessing`) runs an **init-then-refine** loop — seed `Participant` list from the first chunk, refine across subsequent chunks — to deduce each speaker's real name/role/confidence from the dialogue. `replace_speaker_name_if_available` then swaps `LOCUTEUR_NN` for the deduced name where confidence allows. This whole step is wrapped in a `try/except`: if naming fails, the pipeline keeps the `LOCUTEUR_NN` labels rather than failing the transcription. Name losses between refine steps are logged and recorded to Langfuse (`record_participant_name_lost_event`).
