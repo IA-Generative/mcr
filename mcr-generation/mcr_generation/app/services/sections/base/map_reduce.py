@@ -11,7 +11,6 @@ from abc import ABC
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, ClassVar, Generic, Protocol, TypeVar, cast
 
-import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import get_client, observe
 from loguru import logger
@@ -114,13 +113,10 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         participants: list[Participant] | None = None,
     ) -> None:
         self.llm_config = LLMConfig()
-        self.client_instructor = instructor.from_openai(
-            OpenAI(
-                base_url=self.llm_config.LLM_API_BASE_URL,
-                api_key=self.llm_config.LLM_API_KEY,
-                timeout=self.llm_config.LLM_API_TIMEOUT,
-            ),
-            mode=instructor.Mode.JSON,
+        self.llm_client = OpenAI(
+            base_url=self.llm_config.LLM_API_BASE_URL,
+            api_key=self.llm_config.LLM_API_KEY,
+            timeout=self.llm_config.LLM_API_TIMEOUT,
         )
         self.meeting_subject = meeting_subject
         self.speaker_mapping = str(participants) if participants else None
@@ -197,7 +193,7 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         ).to_string()
 
         resp = call_llm_with_structured_output(
-            client=self.client_instructor,
+            client=self.llm_client,
             response_model=self.map_response_model,
             user_message_content=content,
         )
@@ -258,7 +254,7 @@ class BaseMapReduce(ABC, Generic[MappedT, ContentT]):
         return cast(
             ContentT,
             call_llm_with_structured_output(
-                client=self.client_instructor,
+                client=self.llm_client,
                 response_model=self.content_model,
                 user_message_content=reduce_message,
             ),

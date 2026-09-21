@@ -2,7 +2,6 @@ import asyncio
 from collections.abc import Awaitable, Iterable
 from typing import Any
 
-import instructor
 from langfuse import observe
 from loguru import logger
 from openai import AsyncOpenAI
@@ -55,13 +54,10 @@ class NotesExtractor:
     def __init__(self) -> None:
         self.llm_config = LLMConfig()
         self.chunking_config = ChunkingConfig()
-        self.client_instructor = instructor.from_openai(
-            AsyncOpenAI(
-                base_url=self.llm_config.LLM_API_BASE_URL,
-                api_key=self.llm_config.LLM_API_KEY,
-                timeout=self.llm_config.LLM_API_TIMEOUT,
-            ),
-            mode=instructor.Mode.JSON,
+        self.llm_client = AsyncOpenAI(
+            base_url=self.llm_config.LLM_API_BASE_URL,
+            api_key=self.llm_config.LLM_API_KEY,
+            timeout=self.llm_config.LLM_API_TIMEOUT,
         )
         self._semaphore = asyncio.Semaphore(self.max_workers)
 
@@ -146,7 +142,7 @@ class NotesExtractor:
         prompt = EXTRACT_INTENT_PROMPT_TEMPLATE.format(notes_content=notes_content)
         async with self._semaphore:
             return await async_call_llm_with_structured_output(
-                client=self.client_instructor,
+                client=self.llm_client,
                 response_model=Intent,
                 user_message_content=prompt,
             )
@@ -158,7 +154,7 @@ class NotesExtractor:
         )
         async with self._semaphore:
             return await async_call_llm_with_structured_output(
-                client=self.client_instructor,
+                client=self.llm_client,
                 response_model=NextMeeting,
                 user_message_content=prompt,
             )
@@ -168,7 +164,7 @@ class NotesExtractor:
         prompt = EXTRACT_TOPICS_HINT_PROMPT_TEMPLATE.format(notes_content=notes_content)
         async with self._semaphore:
             return await async_call_llm_with_structured_output(
-                client=self.client_instructor,
+                client=self.llm_client,
                 response_model=TopicsContent,
                 user_message_content=prompt,
             )
@@ -180,7 +176,7 @@ class NotesExtractor:
         )
         async with self._semaphore:
             return await async_call_llm_with_structured_output(
-                client=self.client_instructor,
+                client=self.llm_client,
                 response_model=DiscussionsContent,
                 user_message_content=prompt,
             )
@@ -192,7 +188,7 @@ class NotesExtractor:
         )
         async with self._semaphore:
             return await async_call_llm_with_structured_output(
-                client=self.client_instructor,
+                client=self.llm_client,
                 response_model=MinutesContent,
                 user_message_content=prompt,
             )
@@ -208,7 +204,7 @@ class NotesExtractor:
         try:
             async with self._semaphore:
                 response = await async_call_llm_with_structured_output(
-                    client=self.client_instructor,
+                    client=self.llm_client,
                     response_model=_NotesFacts,
                     user_message_content=prompt,
                 )

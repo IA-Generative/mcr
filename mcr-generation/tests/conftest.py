@@ -18,7 +18,6 @@ from tests.mocks.docx_mocks import mock_docx_loader  # noqa: F401
 from tests.mocks.llm_mocks import (  # noqa: F401
     fake_async_call_llm_with_structured_output,
     fake_call_llm_with_structured_output,
-    mock_instructor_client,
 )
 from tests.mocks.s3_mocks import mock_s3_client  # noqa: F401
 from tests.mocks.task_service_mocks import (  # noqa: F401
@@ -34,7 +33,6 @@ def pytest_configure(config):  # noqa: ARG001
     mock_langfuse.observe = lambda *args, **kwargs: (lambda fn: fn)
     sys.modules["langfuse"] = mock_langfuse
     sys.modules["openai"] = MagicMock()
-    sys.modules["instructor"] = MagicMock()
 
     # -- S3 client: calls boto3.client() at import time with live env vars ---
     sys.modules["mcr_generation.app.utils.s3_client"] = MagicMock()

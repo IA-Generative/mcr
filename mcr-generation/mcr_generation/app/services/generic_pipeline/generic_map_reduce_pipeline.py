@@ -7,7 +7,6 @@ Callers (rewriter / orchestrator) are responsible for crafting the instruction.
 import asyncio
 import re
 
-import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import observe
 from loguru import logger
@@ -58,13 +57,10 @@ class GenericMapReducePipeline:
 
     def __init__(self, max_concurrency: int = 4) -> None:
         self.llm_config = LLMConfig()
-        self.client = instructor.from_openai(
-            AsyncOpenAI(
-                base_url=self.llm_config.LLM_API_BASE_URL,
-                api_key=self.llm_config.LLM_API_KEY,
-                timeout=self.llm_config.LLM_API_TIMEOUT,
-            ),
-            mode=instructor.Mode.JSON,
+        self.llm_client = AsyncOpenAI(
+            base_url=self.llm_config.LLM_API_BASE_URL,
+            api_key=self.llm_config.LLM_API_KEY,
+            timeout=self.llm_config.LLM_API_TIMEOUT,
         )
         self.semaphore = asyncio.Semaphore(max_concurrency)
 
@@ -113,7 +109,7 @@ class GenericMapReducePipeline:
                 .to_string()
             )
             resp = await async_call_llm_with_structured_output(
-                client=self.client,
+                client=self.llm_client,
                 response_model=_MapResponse,
                 user_message_content=msg,
             )
@@ -137,7 +133,7 @@ class GenericMapReducePipeline:
             notes_section=self._build_notes_facts_section(notes_facts),
         )
         resp = await async_call_llm_with_structured_output(
-            client=self.client,
+            client=self.llm_client,
             response_model=_ReduceResponse,
             user_message_content=msg,
         )

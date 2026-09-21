@@ -45,7 +45,6 @@ worker = [
     "httpx>=0.28.1",
     "sentry-sdk[celery]>=2.34.1",
     "openai==1.92.2",
-    "instructor==1.9.0",
     "langchain-text-splitters == 0.3.9",
     "num2words>=0.5.13",
     "langfuse>=3.10.5,<4",

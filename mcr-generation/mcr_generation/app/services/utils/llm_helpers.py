@@ -1,9 +1,12 @@
-from typing import TypeVar
+import json
+from collections.abc import AsyncIterator, Iterator
+from textwrap import dedent
+from typing import Any, TypeVar
 
-from instructor import AsyncInstructor, Instructor
 from langfuse import observe
 from loguru import logger
-from pydantic import BaseModel
+from openai import AsyncOpenAI, OpenAI
+from pydantic import BaseModel, ValidationError
 from tenacity import (
     AsyncRetrying,
     RetryCallState,
@@ -45,9 +48,105 @@ def _emit_retry_event(retry_state: RetryCallState) -> None:
     )
 
 
+def _json_schema_instruction(response_model: type[T]) -> str:
+    return dedent(
+        f"""
+        As a genius expert, your task is to understand the content and provide
+        the parsed objects in json that match the following json_schema:\n
+
+        {json.dumps(response_model.model_json_schema(), indent=2, ensure_ascii=False)}
+
+        Make sure to return an instance of the JSON, not the schema itself
+        """
+    )
+
+
+def _initial_conversation(
+    response_model: type[T], user_message_content: str
+) -> list[dict[str, str]]:
+    return [
+        {"role": "system", "content": _json_schema_instruction(response_model)},
+        {"role": "user", "content": user_message_content},
+    ]
+
+
+def _stream_kwargs(
+    messages: list[dict[str, str]], model_name: str, temperature: float
+) -> dict[str, Any]:
+    return {
+        "model": model_name,
+        "temperature": temperature,
+        "messages": messages,
+        "response_format": {"type": "json_object"},
+        "stream": True,
+        "stream_options": {"include_usage": True},
+    }
+
+
+def _json_payload(content: str) -> str:
+    text = content.strip()
+    if not text.startswith("```"):
+        return text
+    fenced = text.split("```")
+    if len(fenced) < 2:
+        return text
+    body = fenced[1]
+    if body.startswith("json"):
+        body = body[len("json") :]
+    return body.strip()
+
+
+def _parse(
+    response_model: type[T],
+    conversation: list[dict[str, str]],
+    content: str,
+) -> T:
+    try:
+        return response_model.model_validate_json(_json_payload(content))
+    except ValidationError as error:
+        conversation.append({"role": "assistant", "content": content})
+        conversation.append(
+            {
+                "role": "user",
+                "content": f"Recall the function correctly, fix the errors, exceptions found\n{error}",
+            }
+        )
+        raise
+
+
+def _record_usage(usage: Any) -> None:
+    if usage is None:
+        return
+    record_generation_usage(
+        prompt_tokens=usage.prompt_tokens,
+        completion_tokens=usage.completion_tokens,
+        total_tokens=usage.total_tokens,
+    )
+
+
+def _collect(stream: Iterator[Any]) -> tuple[str, Any]:
+    parts: list[str] = []
+    usage: Any = None
+    for chunk in stream:
+        usage = chunk.usage or usage
+        if chunk.choices and chunk.choices[0].delta.content:
+            parts.append(chunk.choices[0].delta.content)
+    return "".join(parts), usage
+
+
+async def _collect_async(stream: AsyncIterator[Any]) -> tuple[str, Any]:
+    parts: list[str] = []
+    usage: Any = None
+    async for chunk in stream:
+        usage = chunk.usage or usage
+        if chunk.choices and chunk.choices[0].delta.content:
+            parts.append(chunk.choices[0].delta.content)
+    return "".join(parts), usage
+
+
 @observe(as_type="generation", capture_input=False)
 def call_llm_with_structured_output(
-    client: Instructor,
+    client: OpenAI,
     response_model: type[T],
     user_message_content: str,
     model_name: str = llm_config.LLM_MODEL_NAME,
@@ -67,39 +166,35 @@ def call_llm_with_structured_output(
         retry_min_wait=retry_min_wait,
         retry_max_wait=retry_max_wait,
     )
-    try:
-        response: T = client.chat.completions.create(
-            model=model_name,
-            response_model=response_model,
-            temperature=temperature,
-            messages=[{"role": "user", "content": user_message_content}],
-            max_retries=Retrying(
-                stop=stop_after_attempt(max_retry_attempts),
-                wait=wait_exponential(
-                    multiplier=retry_wait_multiplier,
-                    min=retry_min_wait,
-                    max=retry_max_wait,
-                ),
-                before_sleep=_emit_retry_event,
-            ),
+    conversation = _initial_conversation(response_model, user_message_content)
+
+    def _attempt() -> T:
+        stream = client.chat.completions.create(
+            **_stream_kwargs(conversation, model_name, temperature)
         )
+        content, usage = _collect(stream)
+        parsed = _parse(response_model, conversation, content)
+        _record_usage(usage)
+        return parsed
+
+    try:
+        return Retrying(
+            stop=stop_after_attempt(max_retry_attempts),
+            wait=wait_exponential(
+                multiplier=retry_wait_multiplier,
+                min=retry_min_wait,
+                max=retry_max_wait,
+            ),
+            before_sleep=_emit_retry_event,
+            reraise=True,
+        )(_attempt)
     except Exception as e:
         raise LLMCallError(f"LLM call failed for {response_model.__name__}: {e}") from e
-
-    raw = getattr(response, "_raw_response", None)
-    usage = getattr(raw, "usage", None)
-    if usage is not None:
-        record_generation_usage(
-            prompt_tokens=usage.prompt_tokens,
-            completion_tokens=usage.completion_tokens,
-            total_tokens=usage.total_tokens,
-        )
-    return response
 
 
 @observe(as_type="generation", capture_input=False)
 async def async_call_llm_with_structured_output(
-    client: AsyncInstructor,
+    client: AsyncOpenAI,
     response_model: type[T],
     user_message_content: str,
     model_name: str = llm_config.LLM_MODEL_NAME,
@@ -119,31 +214,27 @@ async def async_call_llm_with_structured_output(
         retry_min_wait=retry_min_wait,
         retry_max_wait=retry_max_wait,
     )
-    try:
-        response: T = await client.chat.completions.create(
-            model=model_name,
-            response_model=response_model,
-            temperature=temperature,
-            messages=[{"role": "user", "content": user_message_content}],
-            max_retries=AsyncRetrying(
-                stop=stop_after_attempt(max_retry_attempts),
-                wait=wait_exponential(
-                    multiplier=retry_wait_multiplier,
-                    min=retry_min_wait,
-                    max=retry_max_wait,
-                ),
-                before_sleep=_emit_retry_event,
-            ),
+    conversation = _initial_conversation(response_model, user_message_content)
+
+    async def _attempt() -> T:
+        stream = await client.chat.completions.create(
+            **_stream_kwargs(conversation, model_name, temperature)
         )
+        content, usage = await _collect_async(stream)
+        parsed = _parse(response_model, conversation, content)
+        _record_usage(usage)
+        return parsed
+
+    try:
+        return await AsyncRetrying(
+            stop=stop_after_attempt(max_retry_attempts),
+            wait=wait_exponential(
+                multiplier=retry_wait_multiplier,
+                min=retry_min_wait,
+                max=retry_max_wait,
+            ),
+            before_sleep=_emit_retry_event,
+            reraise=True,
+        )(_attempt)
     except Exception as e:
         raise LLMCallError(f"LLM call failed for {response_model.__name__}: {e}") from e
-
-    raw = getattr(response, "_raw_response", None)
-    usage = getattr(raw, "usage", None)
-    if usage is not None:
-        record_generation_usage(
-            prompt_tokens=usage.prompt_tokens,
-            completion_tokens=usage.completion_tokens,
-            total_tokens=usage.total_tokens,
-        )
-    return response

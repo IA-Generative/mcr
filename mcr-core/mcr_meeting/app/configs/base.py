@@ -420,7 +420,7 @@ class LLMSettings(BaseSettings):
     )
     LLM_MAX_RETRIES: int = Field(
         default=3,
-        description="Maximum retry attempts for LLM calls, unified across HTTP transport (429/5xx) and instructor validation retries",
+        description="Maximum retry attempts for LLM calls, unified across HTTP transport (429/5xx) and JSON validation reasks",
     )
     LLM_API_TIMEOUT: float = Field(
         default=3600.0,

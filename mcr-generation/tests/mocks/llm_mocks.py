@@ -9,14 +9,6 @@ from pydantic import BaseModel
 LLMResponseValues = BaseModel | list[BaseModel] | tuple[BaseModel, ...]
 
 
-@pytest.fixture
-def mock_instructor_client() -> MagicMock:
-    """Pre-wired Instructor client — chat.completions.create is a MagicMock."""
-    client = MagicMock()
-    client.chat.completions.create = MagicMock()
-    return client
-
-
 def _patch_kwargs(values: LLMResponseValues) -> dict[str, Any]:
     """Build the `patch()` kwargs that configure the mock to return `values`:
     a list/tuple is consumed call-by-call via `side_effect`, a single instance

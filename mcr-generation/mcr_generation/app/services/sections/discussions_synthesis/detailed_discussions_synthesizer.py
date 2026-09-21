@@ -1,6 +1,5 @@
 import json
 
-import instructor
 from langfuse import observe
 from openai import OpenAI
 
@@ -26,13 +25,10 @@ class DetailedDiscussionsSynthesizer:
         participants: list[Participant] = [],
     ) -> None:
         self.llm_config = LLMConfig()
-        self.client_instructor = instructor.from_openai(
-            OpenAI(
-                base_url=self.llm_config.LLM_API_BASE_URL,
-                api_key=self.llm_config.LLM_API_KEY,
-                timeout=self.llm_config.LLM_API_TIMEOUT,
-            ),
-            mode=instructor.Mode.JSON,
+        self.llm_client = OpenAI(
+            base_url=self.llm_config.LLM_API_BASE_URL,
+            api_key=self.llm_config.LLM_API_KEY,
+            timeout=self.llm_config.LLM_API_TIMEOUT,
         )
         self.meeting_subject = meeting_subject
         self.speaker_mapping = str(participants) if participants else None
@@ -57,7 +53,7 @@ class DetailedDiscussionsSynthesizer:
         )
 
         return call_llm_with_structured_output(
-            client=self.client_instructor,
+            client=self.llm_client,
             response_model=DiscussionsSynthesisContent,
             user_message_content=user_message_content,
         )

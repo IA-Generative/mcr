@@ -9,7 +9,9 @@ The seams mock the *stable leaves* (clients / HTTP), never the wrapper classes
 that the refacto dissolves.
 """
 
+import json
 import re
+from collections.abc import Iterator
 from io import BytesIO
 from threading import Lock
 from types import SimpleNamespace
@@ -36,9 +38,7 @@ _SEAM_TRANSCRIPTION_API = (
     "mcr_meeting.app.infrastructure.transcription."
     "TranscriptionProcessor._get_openai_client"
 )
-_SEAM_LLM_FROM_OPENAI = (
-    "mcr_meeting.app.infrastructure.llm.client.instructor.from_openai"
-)
+_SEAM_LLM_OPENAI = "mcr_meeting.app.infrastructure.llm.client.OpenAI"
 _SEAM_AUDIO_SOURCE = "mcr_meeting.app.infrastructure.s3.fetch_audio_bytes"
 
 
@@ -51,13 +51,30 @@ class _FakeLLMCompletions:
         self._participants = participants
         self._participants_error = participants_error
 
-    def create(self, *, response_model, messages, **kwargs):  # type: ignore[no-untyped-def]
-        content = messages[-1]["content"]
-        if response_model is CorrectedText:
-            return CorrectedText(corrected_text=_last_delimited_block(content))
+    def create(self, *, messages, **kwargs):  # type: ignore[no-untyped-def]
+        if "corrected_text" in messages[0]["content"]:
+            corrected = CorrectedText(
+                corrected_text=_last_delimited_block(messages[-1]["content"])
+            )
+            return _stream(corrected.model_dump_json())
         if self._participants_error is not None:
             raise self._participants_error
-        return list(self._participants)
+        return _stream(
+            json.dumps(
+                {
+                    "content": [
+                        json.loads(participant.model_dump_json())
+                        for participant in self._participants
+                    ]
+                }
+            )
+        )
+
+
+def _stream(payload: str) -> Iterator[SimpleNamespace]:
+    yield SimpleNamespace(
+        choices=[SimpleNamespace(delta=SimpleNamespace(content=payload))], usage=None
+    )
 
 
 def _last_delimited_block(content: str) -> str:
@@ -152,11 +169,11 @@ class TranscriptionSeams:
             )
         )
         # Reset the lazy singleton so this test's client is built from the
-        # patched from_openai (and the cache is restored after the test).
+        # patched OpenAI (and the cache is restored after the test).
         self._mocker.patch(
             "mcr_meeting.app.infrastructure.llm.client._client", new=None
         )
-        self._mocker.patch(_SEAM_LLM_FROM_OPENAI, return_value=fake_client)
+        self._mocker.patch(_SEAM_LLM_OPENAI, return_value=fake_client)
 
     def install_audio_source(self, audio_bytes: BytesIO) -> None:
         self._mocker.patch(_SEAM_AUDIO_SOURCE, return_value=audio_bytes)
