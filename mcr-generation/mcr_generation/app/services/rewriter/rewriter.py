@@ -24,6 +24,7 @@ class Rewriter:
             AsyncOpenAI(
                 base_url=self.llm_config.LLM_API_BASE_URL,
                 api_key=self.llm_config.LLM_API_KEY,
+                timeout=self.llm_config.LLM_API_TIMEOUT,
             ),
             mode=instructor.Mode.JSON,
         )

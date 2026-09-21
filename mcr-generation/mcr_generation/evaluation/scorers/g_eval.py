@@ -31,6 +31,7 @@ class GEvalScorer:
             OpenAI(
                 base_url=llm_config.LLM_API_BASE_URL,
                 api_key=llm_config.LLM_API_KEY,
+                timeout=llm_config.LLM_API_TIMEOUT,
             ),
             mode=instructor.Mode.JSON,
         )
