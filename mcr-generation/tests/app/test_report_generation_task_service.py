@@ -289,6 +289,25 @@ class TestGenerateReportFromDocxSuccess:
 
         mock_core_api_client.cls.assert_not_called()
 
+    def test_terminal_callback_failure_marks_deliverable_failed(
+        self,
+        decision_record: DecisionRecord,
+        mock_core_api_client: MagicMock,
+    ) -> None:
+        sender = MagicMock()
+        sender.request.args = [42]
+        sender.request.kwargs = {"owner_keycloak_uuid": "abc", "deliverable_id": 7}
+        mock_core_api_client.mark_deliverable_success.side_effect = ReportCallbackError(
+            "boom"
+        )
+
+        with pytest.raises(ReportCallbackError):
+            generate_report_from_docx_success(sender=sender, result=decision_record)
+
+        mock_core_api_client.mark_deliverable_failure.assert_called_once_with(
+            deliverable_id=7
+        )
+
     def test_returns_early_when_no_meeting_id(
         self,
         mock_core_api_client: MagicMock,

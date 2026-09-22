@@ -7,6 +7,7 @@ from loguru import logger
 from mcr_generation.app.client.core_api_client import CoreApiClient
 from mcr_generation.app.client.meeting_client import MeetingApiClient
 from mcr_generation.app.configs.settings import LangfuseSettings
+from mcr_generation.app.exceptions.exceptions import ReportCallbackError
 from mcr_generation.app.schemas.base import BaseReport, CustomMarkdownReport
 from mcr_generation.app.schemas.celery_types import (
     MCRReportGenerationTasks,
@@ -89,9 +90,23 @@ def generate_report_from_docx_success(
         return
 
     client = CoreApiClient()
-    client.mark_deliverable_success(
-        deliverable_id=task_args.deliverable_id, report=result
-    )
+    try:
+        client.mark_deliverable_success(
+            deliverable_id=task_args.deliverable_id, report=result
+        )
+    except ReportCallbackError:
+        logger.exception(
+            "Success callback failed terminally for deliverable {}",
+            task_args.deliverable_id,
+        )
+        try:
+            client.mark_deliverable_failure(deliverable_id=task_args.deliverable_id)
+        except ReportCallbackError:
+            logger.exception(
+                "Could not mark deliverable {} FAILED after success-callback failure",
+                task_args.deliverable_id,
+            )
+        raise
 
 
 @task_failure.connect
