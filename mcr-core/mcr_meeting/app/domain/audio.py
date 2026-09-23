@@ -219,6 +219,24 @@ def audio_bytes_to_wav_bytes(
             with open(tmp_input_path, "wb") as tmp_input:
                 shutil.copyfileobj(input_bytes, tmp_input)
 
+            # Browser recordings (MediaRecorder webm) have no duration in their
+            # metadata: ffprobe returns "N/A". This is a valid file, so an unknown
+            # duration must not fail the transcode, only skip the check.
+            input_duration: float | None
+            try:
+                input_duration = float(
+                    ffmpeg.probe(tmp_input_path)["format"]["duration"]
+                )
+            except (ffmpeg.Error, KeyError, ValueError):
+                input_duration = None
+
+            if input_duration is None:
+                logger.warning(
+                    "Input audio duration unknown (ffprobe); signal-loss check cannot run"
+                )
+            else:
+                logger.info("Input audio duration (ffprobe): {:.2f}s", input_duration)
+
             if phase_aware_downmix and _is_phase_inverted_stereo(tmp_input_path):
                 logger.warning(
                     "Phase-inverted stereo detected; using side signal (L-R)/2 for mono downmix"
@@ -247,7 +265,27 @@ def audio_bytes_to_wav_bytes(
                     "FFmpeg stderr (bytes→bytes): {}",
                     stderr_output.decode(errors="ignore"),
                 )
-            return _drain_into_buffer(tmp_output_path)
+            wav_bytes = _drain_into_buffer(tmp_output_path)
+
+            if input_duration is not None and input_duration > 0:
+                output_duration = _get_audio_duration_seconds(wav_bytes)
+                deviation = abs(output_duration - input_duration) / input_duration
+                if deviation > audio_settings.DURATION_MISMATCH_TOLERANCE:
+                    logger.warning(
+                        "Transcoded duration mismatch | input={:.2f}s output={:.2f}s deviation={:.1%}",
+                        input_duration,
+                        output_duration,
+                        deviation,
+                    )
+                else:
+                    logger.info(
+                        "Transcoded duration | input={:.2f}s output={:.2f}s deviation={:.1%}",
+                        input_duration,
+                        output_duration,
+                        deviation,
+                    )
+
+            return wav_bytes
 
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)

@@ -84,6 +84,12 @@ class AudioSettings(BaseSettings):
         description="Bytes per audio sample (2 for 16-bit PCM).",
     )
 
+    DURATION_MISMATCH_TOLERANCE: float = Field(
+        0.02,
+        description="""Maximum relative gap between the input duration (ffprobe) and the
+                transcoded WAV duration before the transcode is considered to have lost signal.""",
+    )
+
     NO_SPEECH_PROB_THRESHOLD: float = Field(
         0.6,
         description="""non speech probability threshold. we exclude segment
