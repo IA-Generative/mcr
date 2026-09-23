@@ -21,6 +21,7 @@ from mcr_meeting.app.configs.base import (
     Speech2TextSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import (
+    AudioSignalLossError,
     InvalidAudioFileError,
     SilentAudioError,
 )
@@ -136,6 +137,32 @@ def check_audio_is_not_silent(wav_bytes: BytesIO) -> None:
             f"Silent audio detected: "
             f"audio is {silence_ratio:.0%} silent "
             f"(threshold: {noise_detection_settings.SILENT_AUDIO_THRESHOLD:.0%})"
+        )
+
+
+def check_transcode_preserved_duration(
+    input_duration: float | None, wav_bytes: BytesIO
+) -> None:
+    """Check that transcoding kept the input's duration, raise AudioSignalLossError otherwise.
+
+    Args:
+        input_duration: Input duration in seconds as declared by its container (ffprobe),
+            or None when unknown — the check is then skipped.
+        wav_bytes: Normalized WAV audio bytes produced from that input.
+
+    Raises:
+        AudioSignalLossError: If the relative gap exceeds the configured tolerance.
+    """
+    if input_duration is None or input_duration <= 0:
+        return
+
+    output_duration = _get_audio_duration_seconds(wav_bytes)
+    deviation = abs(output_duration - input_duration) / input_duration
+    if deviation > audio_settings.DURATION_MISMATCH_TOLERANCE:
+        raise AudioSignalLossError(
+            f"Transcoded audio duration mismatch: input={input_duration:.2f}s "
+            f"output={output_duration:.2f}s deviation={deviation:.1%} "
+            f"(tolerance: {audio_settings.DURATION_MISMATCH_TOLERANCE:.0%})"
         )
 
 
@@ -267,26 +294,6 @@ def audio_bytes_to_wav_bytes(
                 )
             wav_bytes = _drain_into_buffer(tmp_output_path)
 
-            if input_duration is not None and input_duration > 0:
-                output_duration = _get_audio_duration_seconds(wav_bytes)
-                deviation = abs(output_duration - input_duration) / input_duration
-                if deviation > audio_settings.DURATION_MISMATCH_TOLERANCE:
-                    logger.warning(
-                        "Transcoded duration mismatch | input={:.2f}s output={:.2f}s deviation={:.1%}",
-                        input_duration,
-                        output_duration,
-                        deviation,
-                    )
-                else:
-                    logger.info(
-                        "Transcoded duration | input={:.2f}s output={:.2f}s deviation={:.1%}",
-                        input_duration,
-                        output_duration,
-                        deviation,
-                    )
-
-            return wav_bytes
-
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
         raise InvalidAudioFileError(
@@ -296,6 +303,9 @@ def audio_bytes_to_wav_bytes(
         raise InvalidAudioFileError(
             f"Unexpected error during normalization: {e}"
         ) from e
+
+    check_transcode_preserved_duration(input_duration, wav_bytes)
+    return wav_bytes
 
 
 def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:

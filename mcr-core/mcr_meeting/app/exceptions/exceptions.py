@@ -24,6 +24,10 @@ class SilentAudioError(MCRException):
     """Raised when the audio is silent or contains no meaningful audio content."""
 
 
+class AudioSignalLossError(MCRException):
+    """Raised when transcoding produced audio noticeably shorter or longer than the input."""
+
+
 class NoAudioFoundError(MCRException):
     """Raised when no audio files are found for a given meeting."""
 

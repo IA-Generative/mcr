@@ -4,11 +4,13 @@ from io import BytesIO
 from unittest.mock import Mock
 
 import pytest
+from pydub.generators import Sine
 from pytest_mock import MockerFixture
 
 import mcr_meeting.app.use_cases.transcription._shared.preprocess_audio as pa
 import mcr_meeting.app.use_cases.transcription.run_diarization as rd
 from mcr_meeting.app.configs.base import S3Settings
+from mcr_meeting.app.exceptions.exceptions import AudioSignalLossError
 from mcr_meeting.app.schemas.transcription_schema import DiarizationSegment
 from tests.mocks.in_memory_s3 import InMemoryS3
 
@@ -20,6 +22,9 @@ DIARIZATION_KEY = "artifacts/123/diarization.json"
 
 _AUDIO_FOLDER = S3Settings().S3_AUDIO_FOLDER
 _DIARIZATION = [DiarizationSegment(start=0.0, end=1.0, speaker="A")]
+
+_DECLARED_DURATION_MS = 10_000
+_KEPT_BYTES_RATIO = 0.3
 
 
 def _patch_preprocessing(mocker: MockerFixture, wav: BytesIO) -> None:
@@ -54,6 +59,19 @@ def meeting_audio(in_memory_s3: InMemoryS3) -> bytes:
     ).stdout
     in_memory_s3.objects[f"{_AUDIO_FOLDER}/{MEETING_ID}/chunk_001.wav"] = audio
     return audio
+
+
+@pytest.fixture
+def truncated_meeting_audio(in_memory_s3: InMemoryS3) -> None:
+    """An mp3 whose header still declares its full duration after truncation."""
+    buffer = BytesIO()
+    Sine(440).to_audio_segment(duration=_DECLARED_DURATION_MS).export(
+        buffer, format="mp3", bitrate="128k"
+    )
+    data = buffer.getvalue()
+    in_memory_s3.objects[f"{_AUDIO_FOLDER}/{MEETING_ID}/chunk_001.mp3"] = data[
+        : int(len(data) * _KEPT_BYTES_RATIO)
+    ]
 
 
 @pytest.fixture(autouse=True)
@@ -123,3 +141,17 @@ def test_uploads_full_audio_even_after_diarization_consumed_the_buffer(
     rd.run_diarization(MEETING_ID, processor)
 
     assert consumed == [len(in_memory_s3.objects[PREPROCESSED_KEY])]
+
+
+def test_recording_that_loses_audio_at_transcoding_is_neither_diarized_nor_stored(
+    in_memory_s3: InMemoryS3, truncated_meeting_audio: None
+) -> None:
+    processor = Mock()
+    processor.diarize.return_value = _DIARIZATION
+
+    with pytest.raises(AudioSignalLossError):
+        rd.run_diarization(MEETING_ID, processor)
+
+    processor.diarize.assert_not_called()
+    assert PREPROCESSED_KEY not in in_memory_s3.objects
+    assert DIARIZATION_KEY not in in_memory_s3.objects
