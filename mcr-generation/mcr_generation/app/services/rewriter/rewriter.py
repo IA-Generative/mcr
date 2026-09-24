@@ -1,13 +1,14 @@
-import instructor
 from langchain.prompts import PromptTemplate
 from langfuse import observe
 from openai import AsyncOpenAI
 
 from mcr_generation.app.configs.settings import LLMConfig
-from mcr_generation.app.exceptions.exceptions import LLMCallError
 from mcr_generation.app.schemas.custom_prompt import RewriterOutput
 from mcr_generation.app.services.metadata_collectors import METADATA_COLLECTORS
 from mcr_generation.app.services.rewriter.prompts import REWRITER_PROMPT_TEMPLATE
+from mcr_generation.app.services.utils.llm_helpers import (
+    async_call_llm_with_structured_output,
+)
 
 
 def _format_collectors_doc() -> str:
@@ -20,12 +21,10 @@ def _format_collectors_doc() -> str:
 class Rewriter:
     def __init__(self) -> None:
         self.llm_config = LLMConfig()
-        self.client = instructor.from_openai(
-            AsyncOpenAI(
-                base_url=self.llm_config.LLM_API_BASE_URL,
-                api_key=self.llm_config.LLM_API_KEY,
-            ),
-            mode=instructor.Mode.JSON,
+        self.llm_client = AsyncOpenAI(
+            base_url=self.llm_config.LLM_API_BASE_URL,
+            api_key=self.llm_config.LLM_API_KEY,
+            timeout=self.llm_config.LLM_API_TIMEOUT,
         )
 
     @observe(name="rewriter")
@@ -43,13 +42,8 @@ class Rewriter:
             )
             .to_string()
         )
-        try:
-            output: RewriterOutput = await self.client.chat.completions.create(
-                model=self.llm_config.LLM_MODEL_NAME,
-                response_model=RewriterOutput,
-                temperature=self.llm_config.TEMPERATURE,
-                messages=[{"role": "user", "content": message}],
-            )
-        except Exception as e:
-            raise LLMCallError(f"Rewriter LLM call failed: {e}") from e
-        return output
+        return await async_call_llm_with_structured_output(
+            client=self.llm_client,
+            response_model=RewriterOutput,
+            user_message_content=message,
+        )

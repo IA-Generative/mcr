@@ -55,6 +55,10 @@ class LLMConfig(BaseSettings):
         le=1.0,
         description="LLM sampling temperature (0-1). Lower values (0) produce deterministic, focused outputs. Higher values (0.7-1) increase creativity and randomness.",
     )
+    LLM_API_TIMEOUT: float = Field(
+        default=3600.0,
+        description="Maximum wait time in seconds for an LLM call, aligned on the AI gateway's own one-hour upstream timeout",
+    )
     RETRY_MAX_ATTEMPTS: int = Field(
         default=5, description="Maximum number of retry attempts for LLM API calls"
     )

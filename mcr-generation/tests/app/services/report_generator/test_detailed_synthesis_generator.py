@@ -136,6 +136,9 @@ class TestDetailedSynthesisGeneratorGenerate:
             patch(
                 "mcr_generation.app.services.report_generator.detailed_synthesis_generator.MapReduceDetailedDiscussions"
             ) as mock_map_reduce_class,
+            patch(
+                "mcr_generation.app.services.report_generator.detailed_synthesis_generator.DetailedDiscussionsSynthesizer"
+            ),
         ):
             mock_map_reduce = mock_map_reduce_class.return_value
             mock_map_reduce.map_reduce_all_steps.return_value.detailed_discussions = (

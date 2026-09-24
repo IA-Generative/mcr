@@ -1,5 +1,9 @@
 """Unit tests for services.utils.llm_helpers."""
 
+import json
+from collections.abc import Iterator
+from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import langfuse
@@ -18,49 +22,116 @@ class _FakeResponse(BaseModel):
     text: str
 
 
+def _chunk(content: str | None, usage: Any = None) -> SimpleNamespace:
+    choices = (
+        [SimpleNamespace(delta=SimpleNamespace(content=content))]
+        if content is not None
+        else []
+    )
+    return SimpleNamespace(choices=choices, usage=usage)
+
+
+def _stream(payload: str, usage: Any = None) -> Iterator[SimpleNamespace]:
+    for char in payload:
+        yield _chunk(char)
+    yield _chunk(None, usage)
+
+
+async def _async_stream(payload: str, usage: Any = None) -> Any:
+    for chunk in _stream(payload, usage):
+        yield chunk
+
+
+def _usage(prompt: int, completion: int, total: int) -> SimpleNamespace:
+    return SimpleNamespace(
+        prompt_tokens=prompt, completion_tokens=completion, total_tokens=total
+    )
+
+
+@pytest.fixture
+def llm_client() -> MagicMock:
+    client = MagicMock()
+    client.chat.completions.create = MagicMock()
+    return client
+
+
 class TestCallLLMWithStructuredOutput:
-    def test_returns_response_on_success(
-        self, mock_instructor_client: MagicMock
+    def test_returns_response_parsed_from_the_stream(
+        self, llm_client: MagicMock
     ) -> None:
-        expected = _FakeResponse(text="hello")
-        mock_instructor_client.chat.completions.create.return_value = expected
+        llm_client.chat.completions.create.return_value = _stream(
+            json.dumps({"text": "hello"})
+        )
 
         result = call_llm_with_structured_output(
-            client=mock_instructor_client,
+            client=llm_client,
             response_model=_FakeResponse,
             user_message_content="ping",
         )
 
-        assert result == expected
+        assert result == _FakeResponse(text="hello")
 
-    def test_wraps_client_errors_as_llm_call_error(
-        self, mock_instructor_client: MagicMock
+    def test_asks_the_gateway_to_stream_and_to_report_usage(
+        self, llm_client: MagicMock
     ) -> None:
-        mock_instructor_client.chat.completions.create.side_effect = RuntimeError(
-            "boom"
+        llm_client.chat.completions.create.return_value = _stream(
+            json.dumps({"text": "hello"})
         )
+
+        call_llm_with_structured_output(
+            client=llm_client,
+            response_model=_FakeResponse,
+            user_message_content="ping",
+        )
+
+        kwargs = llm_client.chat.completions.create.call_args.kwargs
+        assert kwargs["stream"] is True
+        assert kwargs["stream_options"] == {"include_usage": True}
+
+    def test_wraps_client_errors_as_llm_call_error(self, llm_client: MagicMock) -> None:
+        llm_client.chat.completions.create.side_effect = RuntimeError("boom")
 
         with pytest.raises(LLMCallError, match="LLM call failed for _FakeResponse"):
             call_llm_with_structured_output(
-                client=mock_instructor_client,
+                client=llm_client,
                 response_model=_FakeResponse,
                 user_message_content="ping",
+                max_retry_attempts=1,
             )
 
-    def test_extracts_usage_details_from_raw_response(
-        self, mock_instructor_client: MagicMock
+    def test_reasks_the_model_when_the_streamed_json_is_invalid(
+        self, llm_client: MagicMock
+    ) -> None:
+        llm_client.chat.completions.create.side_effect = [
+            _stream(json.dumps({"texte": "hello"})),
+            _stream(json.dumps({"text": "hello"})),
+        ]
+
+        result = call_llm_with_structured_output(
+            client=llm_client,
+            response_model=_FakeResponse,
+            user_message_content="ping",
+            retry_min_wait=0,
+            retry_max_wait=0,
+            retry_wait_multiplier=0,
+        )
+
+        assert result == _FakeResponse(text="hello")
+        messages = llm_client.chat.completions.create.call_args.kwargs["messages"]
+        assert messages[-2]["role"] == "assistant"
+        assert "fix the errors" in messages[-1]["content"]
+
+    def test_extracts_usage_details_from_the_final_chunk(
+        self, llm_client: MagicMock
     ) -> None:
         langfuse_client = langfuse.get_client.return_value
         langfuse_client.reset_mock()
-
-        response = MagicMock()
-        response._raw_response.usage.prompt_tokens = 12
-        response._raw_response.usage.completion_tokens = 34
-        response._raw_response.usage.total_tokens = 46
-        mock_instructor_client.chat.completions.create.return_value = response
+        llm_client.chat.completions.create.return_value = _stream(
+            json.dumps({"text": "hello"}), _usage(12, 34, 46)
+        )
 
         call_llm_with_structured_output(
-            client=mock_instructor_client,
+            client=llm_client,
             response_model=_FakeResponse,
             user_message_content="ping",
         )
@@ -72,10 +143,11 @@ class TestCallLLMWithStructuredOutput:
 
 class TestAsyncCallLLMWithStructuredOutput:
     @pytest.mark.asyncio
-    async def test_returns_response_on_success(self) -> None:
+    async def test_returns_response_parsed_from_the_stream(self) -> None:
         client = MagicMock()
-        expected = _FakeResponse(text="async hello")
-        client.chat.completions.create = AsyncMock(return_value=expected)
+        client.chat.completions.create = AsyncMock(
+            return_value=_async_stream(json.dumps({"text": "async hello"}))
+        )
 
         result = await async_call_llm_with_structured_output(
             client=client,
@@ -83,7 +155,7 @@ class TestAsyncCallLLMWithStructuredOutput:
             user_message_content="ping",
         )
 
-        assert result == expected
+        assert result == _FakeResponse(text="async hello")
 
     @pytest.mark.asyncio
     async def test_wraps_client_errors_as_llm_call_error(self) -> None:
@@ -95,6 +167,7 @@ class TestAsyncCallLLMWithStructuredOutput:
                 client=client,
                 response_model=_FakeResponse,
                 user_message_content="ping",
+                max_retry_attempts=1,
             )
 
 

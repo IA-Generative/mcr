@@ -420,10 +420,11 @@ class LLMSettings(BaseSettings):
     )
     LLM_MAX_RETRIES: int = Field(
         default=3,
-        description="Maximum retry attempts for LLM calls, unified across HTTP transport (429/5xx) and instructor validation retries",
+        description="Maximum retry attempts for LLM calls, unified across HTTP transport (429/5xx) and JSON validation reasks",
     )
     LLM_API_TIMEOUT: float = Field(
-        default=120.0, description="Maximum wait time in seconds for API timeout"
+        default=3600.0,
+        description="Maximum wait time in seconds for an LLM call, aligned on the AI gateway's own one-hour upstream timeout",
     )
     RETRY_WAIT_MULTIPLIER: int = Field(
         default=5, description="Exponential backoff multiplier for retry wait times"

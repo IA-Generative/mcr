@@ -1,7 +1,5 @@
 """G-Eval scorer: drives the LLM-judge from a `Criterion`'s prompt template."""
 
-import instructor
-from instructor import Instructor
 from loguru import logger
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -25,14 +23,12 @@ class _JudgeResponse(BaseModel):
 class GEvalScorer:
     """Calls the configured LLM to score a single criterion."""
 
-    def __init__(self, client: Instructor | None = None) -> None:
+    def __init__(self, client: OpenAI | None = None) -> None:
         llm_config = LLMConfig()
-        self._client = client or instructor.from_openai(
-            OpenAI(
-                base_url=llm_config.LLM_API_BASE_URL,
-                api_key=llm_config.LLM_API_KEY,
-            ),
-            mode=instructor.Mode.JSON,
+        self._client = client or OpenAI(
+            base_url=llm_config.LLM_API_BASE_URL,
+            api_key=llm_config.LLM_API_KEY,
+            timeout=llm_config.LLM_API_TIMEOUT,
         )
 
     def score(

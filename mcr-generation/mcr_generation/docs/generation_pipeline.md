@@ -73,7 +73,7 @@ Each branch is detailed in the two diagrams below: one for the structured types 
 |---|---|
 | 🟦 Blue (`io`) | Data flowing through (input/output, S3 file, list of chunks) |
 | 🟪 Purple (`proc`) | Pure Python step (no LLM call) |
-| 🟧 Orange (`llm`) | Step that calls an LLM via `instructor` (costs time and tokens) |
+| 🟧 Orange (`llm`) | Step that calls an LLM over a streamed connection (costs time and tokens) |
 | 🟩 Green (`out`) | Final or stable intermediate structured object |
 
 ## DECISION_RECORD & DETAILED_SYNTHESIS — detail
