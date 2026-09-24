@@ -66,6 +66,7 @@ declare module 'vue' {
     MeetingNotesEditor: typeof import('./components/meeting/MeetingNotesEditor.vue')['default']
     MeetingsDataTable: typeof import('./components/meeting/table/MeetingsDataTable.vue')['default']
     PageFrontMatter: typeof import('./components/core/PageFrontMatter.vue')['default']
+    PendingChunksCard: typeof import('./components/meeting/PendingChunksCard.vue')['default']
     ProgressBar: typeof import('./components/core/ProgressBar.vue')['default']
     RecordingCard: typeof import('./components/meeting/RecordingCard.vue')['default']
     RecordMeetingForm: typeof import('./components/meeting/forms/RecordMeetingForm.vue')['default']
