@@ -214,6 +214,24 @@ def _is_phase_inverted_stereo(input_path: str) -> bool:
     return side_db - mid_db > noise_detection_settings.PHASE_INVERSION_THRESHOLD_DB
 
 
+def _probe_duration_seconds(input_path: str) -> float | None:
+    """Return the duration in seconds declared by the input's container, or None if unknown."""
+
+    try:
+        input_duration = float(ffmpeg.probe(input_path)["format"]["duration"])
+        logger.info("Input audio duration (ffprobe): {:.2f}s", input_duration)
+        return input_duration
+
+    except (ffmpeg.Error, KeyError, ValueError):
+        # Browser recordings (MediaRecorder webm) have no duration in their
+        # metadata: ffprobe returns "N/A". This is a valid file, so an unknown
+        # duration must not fail the transcode, only skip the check.
+        logger.warning(
+            "Input audio duration unknown (ffprobe); signal-loss check cannot run"
+        )
+        return None
+
+
 def audio_bytes_to_wav_bytes(
     input_bytes: BytesIO, phase_aware_downmix: bool = False
 ) -> BytesIO:
@@ -246,23 +264,7 @@ def audio_bytes_to_wav_bytes(
             with open(tmp_input_path, "wb") as tmp_input:
                 shutil.copyfileobj(input_bytes, tmp_input)
 
-            # Browser recordings (MediaRecorder webm) have no duration in their
-            # metadata: ffprobe returns "N/A". This is a valid file, so an unknown
-            # duration must not fail the transcode, only skip the check.
-            input_duration: float | None
-            try:
-                input_duration = float(
-                    ffmpeg.probe(tmp_input_path)["format"]["duration"]
-                )
-            except (ffmpeg.Error, KeyError, ValueError):
-                input_duration = None
-
-            if input_duration is None:
-                logger.warning(
-                    "Input audio duration unknown (ffprobe); signal-loss check cannot run"
-                )
-            else:
-                logger.info("Input audio duration (ffprobe): {:.2f}s", input_duration)
+            input_duration = _probe_duration_seconds(tmp_input_path)
 
             if phase_aware_downmix and _is_phase_inverted_stereo(tmp_input_path):
                 logger.warning(
