@@ -321,11 +321,15 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
         filters (str): FFmpeg audio filter string to apply.
     Returns:
         BytesIO: Filtered audio bytes.
+    Raises:
+        AudioSignalLossError: If the filtered audio duration drifts from the input's.
     """
     s2t_settings = Speech2TextSettings()
     filters = s2t_settings.NOISE_FILTERS
 
     logger.info("Applying noise reduction filters: {}", filters)
+
+    input_duration = _get_audio_duration_seconds(input_bytes)
 
     # Input is already normalized WAV, specify format explicitly
     stream = ffmpeg.input("pipe:0", format="wav", err_detect="ignore_err")
@@ -350,7 +354,7 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
                     "FFmpeg stderr (noise filtering): {}",
                     stderr_output.decode(errors="ignore"),
                 )
-            return _drain_into_buffer(tmp_output_path)
+            wav_bytes = _drain_into_buffer(tmp_output_path)
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
         raise InvalidAudioFileError(
@@ -360,6 +364,9 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
         raise InvalidAudioFileError(
             f"Unexpected error during noise filtering: {e}"
         ) from e
+
+    check_transcode_preserved_duration(input_duration, wav_bytes)
+    return wav_bytes
 
 
 def _parse_mean_volume(ffmpeg_stderr: str) -> float:
