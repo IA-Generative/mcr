@@ -192,7 +192,7 @@ jobs:
       - name: Install FFmpeg
         uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
         with:
-          ffmpeg-version: "7.0"
+          ffmpeg-version: "7.1.5"
 
       - name: Install dependencies
         working-directory: mcr-core
