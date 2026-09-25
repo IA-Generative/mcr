@@ -63,7 +63,6 @@ def meeting_audio(in_memory_s3: InMemoryS3) -> bytes:
 
 @pytest.fixture
 def truncated_meeting_audio(in_memory_s3: InMemoryS3) -> None:
-    """An mp3 whose header still declares its full duration after truncation."""
     buffer = BytesIO()
     Sine(440).to_audio_segment(duration=_DECLARED_DURATION_MS).export(
         buffer, format="mp3", bitrate="128k"

@@ -143,16 +143,6 @@ def check_audio_is_not_silent(wav_bytes: BytesIO) -> None:
 def check_transcode_preserved_duration(
     input_duration: float | None, wav_bytes: BytesIO
 ) -> None:
-    """Check that transcoding kept the input's duration, raise AudioSignalLossError otherwise.
-
-    Args:
-        input_duration: Input duration in seconds as declared by its container (ffprobe),
-            or None when unknown — the check is then skipped.
-        wav_bytes: Normalized WAV audio bytes produced from that input.
-
-    Raises:
-        AudioSignalLossError: If the relative gap exceeds the configured tolerance.
-    """
     if input_duration is None or input_duration <= 0:
         return
 
@@ -215,17 +205,13 @@ def _is_phase_inverted_stereo(input_path: str) -> bool:
 
 
 def _probe_duration_seconds(input_path: str) -> float | None:
-    """Return the duration in seconds declared by the input's container, or None if unknown."""
-
     try:
         input_duration = float(ffmpeg.probe(input_path)["format"]["duration"])
         logger.info("Input audio duration (ffprobe): {:.2f}s", input_duration)
         return input_duration
 
     except (ffmpeg.Error, KeyError, ValueError):
-        # Browser recordings (MediaRecorder webm) have no duration in their
-        # metadata: ffprobe returns "N/A". This is a valid file, so an unknown
-        # duration must not fail the transcode, only skip the check.
+        # MediaRecorder webm declares no duration: a valid file, so skip the check rather than fail.
         logger.warning(
             "Input audio duration unknown (ffprobe); signal-loss check cannot run"
         )
@@ -321,8 +307,6 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
         filters (str): FFmpeg audio filter string to apply.
     Returns:
         BytesIO: Filtered audio bytes.
-    Raises:
-        AudioSignalLossError: If the filtered audio duration drifts from the input's.
     """
     s2t_settings = Speech2TextSettings()
     filters = s2t_settings.NOISE_FILTERS

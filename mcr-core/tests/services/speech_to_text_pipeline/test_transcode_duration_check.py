@@ -1,5 +1,3 @@
-"""Tests for rejecting transcodes whose duration drifts from the input's."""
-
 from io import BytesIO
 
 import pytest
