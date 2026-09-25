@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "MCR Capture Worker - Docker",
+      "type": "debugpy",
+      "request": "attach",
+      "connect": {
+        "host": "localhost",
+        "port": 7004
+      },
+      "pathMappings": [
+        {
+          "localRoot": "${workspaceFolder}/mcr_capture_worker",
+          "remoteRoot": "/app/mcr_capture_worker"
+        }
+      ]
+    }
+  ]
+}
