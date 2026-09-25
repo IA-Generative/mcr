@@ -349,6 +349,19 @@ class StaleCaptureSettings(BaseSettings):
     model_config = SettingsConfigDict(case_sensitive=True)
 
 
+class StaleTranscriptionSettings(BaseSettings):
+    STALE_TRANSCRIPTION_MAX_AGE_HOURS: int = Field(
+        default=24,
+        description="""
+    A transcription still pending or in progress after this many hours is failed
+    by the sweep. Must exceed TRANSCRIPTION_MAX_ATTEMPTS * REDIS_VISIBILITY_TIMEOUT
+    so the broker finishes its own redeliveries before the sweep gives up
+    """,
+    )
+
+    model_config = SettingsConfigDict(case_sensitive=True)
+
+
 class SMTPSettings(BaseSettings):
     """
     Configuration settings for SMTP email service
