@@ -85,9 +85,11 @@ class AudioSettings(BaseSettings):
     )
 
     DURATION_MISMATCH_TOLERANCE: float = Field(
-        0.02,
+        0.30,
         description="""Maximum relative gap between the input duration (ffprobe) and the
-                transcoded WAV duration before the transcode is considered to have lost signal.""",
+                transcoded WAV duration before the transcode is considered to have lost signal.
+                Loose on purpose to only catch massive losses: codec frame padding on short
+                recordings and bitrate-estimated durations drift legitimately.""",
     )
 
     NO_SPEECH_PROB_THRESHOLD: float = Field(
