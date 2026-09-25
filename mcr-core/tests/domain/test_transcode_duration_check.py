@@ -41,13 +41,13 @@ def normalized_recording() -> BytesIO:
     return buffer
 
 
-def test_transcode_within_tolerance_is_accepted():
+def test_transcode_within_tolerance_is_accepted() -> None:
     check_transcode_preserved_duration(
         _INPUT_SECONDS, _wav_of(_OUTPUT_WITHIN_TOLERANCE_SECONDS)
     )
 
 
-def test_transcode_that_lost_audio_is_rejected_with_both_durations():
+def test_transcode_that_lost_audio_is_rejected_with_both_durations() -> None:
     with pytest.raises(
         AudioSignalLossError,
         match=f"input={_INPUT_SECONDS:.2f}s output={_OUTPUT_LOST_AUDIO_SECONDS:.2f}s",
@@ -57,14 +57,14 @@ def test_transcode_that_lost_audio_is_rejected_with_both_durations():
         )
 
 
-def test_transcode_that_gained_audio_is_rejected():
+def test_transcode_that_gained_audio_is_rejected() -> None:
     with pytest.raises(AudioSignalLossError):
         check_transcode_preserved_duration(
             _INPUT_SECONDS, _wav_of(_OUTPUT_GAINED_AUDIO_SECONDS)
         )
 
 
-def test_recording_without_declared_duration_is_never_rejected():
+def test_recording_without_declared_duration_is_never_rejected() -> None:
     check_transcode_preserved_duration(None, _wav_of(_INPUT_SECONDS))
 
 
