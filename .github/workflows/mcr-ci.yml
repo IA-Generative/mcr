@@ -158,6 +158,10 @@ jobs:
     needs: filter-out-unmodified-services
     if: ${{ needs.filter-out-unmodified-services.outputs.mcr-core == 'true' }}
     runs-on: actions-runner-controller
+    # Same base image and ffmpeg as mcr-core/docker/Dockerfile — keep them in sync:
+    # audio behaviour depends on the ffmpeg version, and setup-ffmpeg ships no 7.1.x on Linux (#1067).
+    container:
+      image: python:3.12-slim-trixie@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -183,21 +187,24 @@ jobs:
       DIARIZATION_API_BASE_URL: ${{ secrets.DIARIZATION_API_BASE_URL }}
       DIARIZATION_API_KEY: ${{ secrets.DIARIZATION_API_KEY }}
     steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ffmpeg=7:7.1.5-0+deb13u1 build-essential curl git ca-certificates
+
       - uses: actions/checkout@v4
 
       - name: Install uv
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
 
-      - name: Install FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
-        with:
-          ffmpeg-version: "7.1.5"
+      - name: Show FFmpeg version
+        run: ffmpeg -version | head -1
 
       - name: Install dependencies
         working-directory: mcr-core
         run: |
-          uv venv --python=3.11
+          uv venv --python=/usr/local/bin/python3
           uv sync --group test --all-extras
 
       - name: Run Ruff format check
