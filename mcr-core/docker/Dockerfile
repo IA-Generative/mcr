@@ -1,4 +1,4 @@
-FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS build
+FROM python:3.12-slim-trixie@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9 AS build
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -35,14 +35,14 @@ ENV VENV_LOCATION="/app/.venv"
 ENV PATH="${VENV_LOCATION}/bin:$PATH"
 
 # Runtime image — the venv and the app, nothing else: no uv, no compiler, no caches.
-FROM python:3.12.10-slim@sha256:fd95fa221297a88e1cf49c55ec1828edd7c5a428187e67b5d1805692d11588db AS prod
+FROM python:3.12-slim-trixie@sha256:2f17fc044b579bab302c2e8054d3a686e2cb9a83de48e70534b94cd8ebbe06a9 AS prod
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # ffmpeg is a runtime dependency: audio pre-processing shells out to it.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg && \
+    apt-get install -y --no-install-recommends ffmpeg=7:7.1.5-0+deb13u1 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
