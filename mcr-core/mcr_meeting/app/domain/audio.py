@@ -21,6 +21,7 @@ from mcr_meeting.app.configs.base import (
     Speech2TextSettings,
 )
 from mcr_meeting.app.exceptions.exceptions import (
+    AudioSignalLossError,
     InvalidAudioFileError,
     SilentAudioError,
 )
@@ -139,6 +140,22 @@ def check_audio_is_not_silent(wav_bytes: BytesIO) -> None:
         )
 
 
+def check_transcode_preserved_duration(
+    input_duration: float | None, wav_bytes: BytesIO
+) -> None:
+    if input_duration is None or input_duration <= 0:
+        return
+
+    output_duration = _get_audio_duration_seconds(wav_bytes)
+    deviation = abs(output_duration - input_duration) / input_duration
+    if deviation > audio_settings.DURATION_MISMATCH_TOLERANCE:
+        raise AudioSignalLossError(
+            f"Transcoded audio duration mismatch: input={input_duration:.2f}s "
+            f"output={output_duration:.2f}s deviation={deviation:.1%} "
+            f"(tolerance: {audio_settings.DURATION_MISMATCH_TOLERANCE:.0%})"
+        )
+
+
 def _mean_volume_with_pan(input_path: str, pan_expr: str) -> float:
     """Return the mean volume in dBFS of a mono mixdown defined by a pan expression.
 
@@ -187,6 +204,20 @@ def _is_phase_inverted_stereo(input_path: str) -> bool:
     return side_db - mid_db > noise_detection_settings.PHASE_INVERSION_THRESHOLD_DB
 
 
+def _probe_duration_seconds(input_path: str) -> float | None:
+    try:
+        input_duration = float(ffmpeg.probe(input_path)["format"]["duration"])
+        logger.info("Input audio duration (ffprobe): {:.2f}s", input_duration)
+        return input_duration
+
+    except (ffmpeg.Error, KeyError, ValueError):
+        # MediaRecorder webm declares no duration: a valid file, so skip the check rather than fail.
+        logger.warning(
+            "Input audio duration unknown (ffprobe); signal-loss check cannot run"
+        )
+        return None
+
+
 def audio_bytes_to_wav_bytes(
     input_bytes: BytesIO, phase_aware_downmix: bool = False
 ) -> BytesIO:
@@ -219,6 +250,8 @@ def audio_bytes_to_wav_bytes(
             with open(tmp_input_path, "wb") as tmp_input:
                 shutil.copyfileobj(input_bytes, tmp_input)
 
+            input_duration = _probe_duration_seconds(tmp_input_path)
+
             if phase_aware_downmix and _is_phase_inverted_stereo(tmp_input_path):
                 logger.warning(
                     "Phase-inverted stereo detected; using side signal (L-R)/2 for mono downmix"
@@ -247,7 +280,7 @@ def audio_bytes_to_wav_bytes(
                     "FFmpeg stderr (bytes→bytes): {}",
                     stderr_output.decode(errors="ignore"),
                 )
-            return _drain_into_buffer(tmp_output_path)
+            wav_bytes = _drain_into_buffer(tmp_output_path)
 
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
@@ -258,6 +291,9 @@ def audio_bytes_to_wav_bytes(
         raise InvalidAudioFileError(
             f"Unexpected error during normalization: {e}"
         ) from e
+
+    check_transcode_preserved_duration(input_duration, wav_bytes)
+    return wav_bytes
 
 
 def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
@@ -276,6 +312,8 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
     filters = s2t_settings.NOISE_FILTERS
 
     logger.info("Applying noise reduction filters: {}", filters)
+
+    input_duration = _get_audio_duration_seconds(input_bytes)
 
     # Input is already normalized WAV, specify format explicitly
     stream = ffmpeg.input("pipe:0", format="wav", err_detect="ignore_err")
@@ -300,7 +338,7 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
                     "FFmpeg stderr (noise filtering): {}",
                     stderr_output.decode(errors="ignore"),
                 )
-            return _drain_into_buffer(tmp_output_path)
+            wav_bytes = _drain_into_buffer(tmp_output_path)
     except ffmpeg.Error as e:
         stderr_text = e.stderr.decode(errors="ignore") if e.stderr else str(e)
         raise InvalidAudioFileError(
@@ -310,6 +348,9 @@ def filter_noise_from_audio_bytes(input_bytes: BytesIO) -> BytesIO:
         raise InvalidAudioFileError(
             f"Unexpected error during noise filtering: {e}"
         ) from e
+
+    check_transcode_preserved_duration(input_duration, wav_bytes)
+    return wav_bytes
 
 
 def _parse_mean_volume(ffmpeg_stderr: str) -> float:
