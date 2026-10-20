@@ -229,7 +229,7 @@ services:
       - mcr-network
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: mcr-minio
     ports:
       - "9000:9000"
@@ -245,7 +245,7 @@ services:
       - mcr-network
 
   minio-setup:
-    image: minio/mc:latest
+    image: quay.io/minio/mc:latest
     container_name: mcr-minio-setup
     depends_on:
       - minio

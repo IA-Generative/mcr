@@ -41,6 +41,12 @@
         <div v-if="meeting">
           <MeetingPageAlert />
 
+          <PendingChunksCard
+            v-if="showPendingChunksCard"
+            class="mt-6"
+            :meeting-id="meeting.id"
+          />
+
           <div class="mt-6 grid grid-cols-2 items-start gap-6 max-sm:grid-cols-1">
             <div class="grid items-start gap-6">
               <MeetingAudioCard :meeting="meeting" />
@@ -96,6 +102,7 @@ import {
 } from '@/services/meetings/meetings.types';
 import { useMeetings } from '@/services/meetings/use-meeting';
 import RecordingCard from '@/components/meeting/RecordingCard.vue';
+import PendingChunksCard from '@/components/meeting/PendingChunksCard.vue';
 import { useModal } from 'vue-final-modal';
 import MeetingPageAlert from './MeetingPageAlert.vue';
 import { useFeatureFlag } from '@/composables/use-feature-flag';
@@ -126,6 +133,8 @@ const isVisioCapture = computed(() => {
 });
 
 const showRecordingCard = computed(() => isRecordingLocally.value || isVisioCapture.value);
+
+const showPendingChunksCard = computed(() => meeting?.value?.name_platform === 'MCR_RECORD');
 
 watch(isError, () => {
   if (isError.value && (is403Error(error.value) || is404Error(error.value))) {

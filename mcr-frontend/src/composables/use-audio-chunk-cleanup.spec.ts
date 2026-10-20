@@ -74,9 +74,45 @@ describe('useAudioChunkCleanup', () => {
     });
   });
 
-  describe('STALE_CHUNKS_MAX_AGE_MS', () => {
-    it('is 24 hours in milliseconds', () => {
-      expect(STALE_CHUNKS_MAX_AGE_MS).toBe(24 * 60 * 60 * 1000);
+  describe('retention', () => {
+    async function backdate(id: number, ageMs: number) {
+      const { openDB } = await import('idb');
+      const db = await openDB('mcr-audio-chunks', 1);
+      const record = await db.get('audio-chunks', id);
+      record.createdAt = Date.now() - ageMs;
+      await db.put('audio-chunks', record);
+      db.close();
+      await _resetDb();
+    }
+
+    it('still holds a friday recording when the user comes back on monday', async () => {
+      const id = await store.addChunk({
+        meetingId: 1,
+        filename: 'friday.weba',
+        blob: new Blob(['friday']),
+      });
+      await backdate(id, 72 * 60 * 60 * 1000);
+
+      const { cleanupStaleChunks } = useAudioChunkCleanup();
+      cleanupStaleChunks();
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(await store.getChunkCountForMeeting(1)).toBe(1);
+    });
+
+    it('holds nothing once a recording is older than the retention window', async () => {
+      const id = await store.addChunk({
+        meetingId: 1,
+        filename: 'forgotten.weba',
+        blob: new Blob(['forgotten']),
+      });
+      await backdate(id, STALE_CHUNKS_MAX_AGE_MS + 1000);
+
+      const { cleanupStaleChunks } = useAudioChunkCleanup();
+      cleanupStaleChunks();
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(await store.getChunkCountForMeeting(1)).toBe(0);
     });
   });
 });

@@ -587,7 +587,8 @@
         "title": "Aucun son détecté",
         "description": "Votre microphone ne capte rien depuis plusieurs secondes. Vérifiez qu'il n'est pas coupé et que le bon microphone est sélectionné ci-dessous.",
         "mute": "Couper le signal sonore"
-      }
+      },
+      "upload-failed": "Certains fragments audio n'ont pas pu être envoyés. Revenez sur cette page pour les envoyer à nouveau."
     },
     "visio-recording": {
       "title": "Enregistrement",
@@ -640,6 +641,14 @@
           "confirm": "J'ai compris"
         }
       }
+    },
+    "recovery": {
+      "title": "Enregistrement incomplet",
+      "description": "{count} fragment(s) audio sont restés sur cet appareil et n'ont jamais été envoyés. Envoyez-les pour lancer la transcription.",
+      "send": "Envoyer les fragments manquants",
+      "sending": "Envoi en cours…",
+      "success": "Les fragments manquants ont été envoyés. La transcription démarre.",
+      "failure": "L'envoi a échoué. Vérifiez votre connexion puis réessayez."
     }
   },
   "members": {

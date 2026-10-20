@@ -29,8 +29,8 @@ class GEvalScorer:
         llm_config = LLMConfig()
         self._client = client or instructor.from_openai(
             OpenAI(
-                base_url=llm_config.LLM_HUB_API_URL,
-                api_key=llm_config.LLM_HUB_API_KEY,
+                base_url=llm_config.LLM_API_BASE_URL,
+                api_key=llm_config.LLM_API_KEY,
             ),
             mode=instructor.Mode.JSON,
         )
