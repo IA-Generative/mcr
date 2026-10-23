@@ -23,6 +23,13 @@ class ReportCallbackError(MCRGenerationException):
     """Raised when posting the generated report back to mcr-core fails."""
 
 
+class CallbackTransientError(ReportCallbackError):
+    """Raised on a transport-level failure (timeout, connection drop) while
+    calling mcr-core. Retryable: a replay of the same idempotent callback can
+    succeed once the blip clears. Subclasses ReportCallbackError so an exhausted
+    retry still surfaces as a callback error to the signal handler."""
+
+
 class DeliverableNotYetVisibleError(ReportCallbackError):
     """Raised when mcr-core returns 404 on in_progress: the deliverable row is
     not committed yet (send_task ran inside the transaction). Triggers a retry."""

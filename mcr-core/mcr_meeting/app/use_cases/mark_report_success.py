@@ -8,7 +8,7 @@ from mcr_meeting.app.domain.report_rendering import render_report
 from mcr_meeting.app.exceptions.exceptions import DeliverableStateConflictException
 from mcr_meeting.app.infrastructure import email as email_infra
 from mcr_meeting.app.infrastructure.s3 import upload_report_to_s3
-from mcr_meeting.app.models.deliverable_model import Deliverable
+from mcr_meeting.app.models.deliverable_model import Deliverable, DeliverableStatus
 from mcr_meeting.app.models.meeting_model import Meeting
 from mcr_meeting.app.schemas.report_generation import ReportResponse
 from mcr_meeting.app.use_cases._shared.drive_upload import (
@@ -21,6 +21,10 @@ def mark_report_success(
     report_response: ReportResponse,
 ) -> Deliverable:
     deliverable = deliverable_repository.get_by_id(deliverable_id)
+
+    if deliverable.status == DeliverableStatus.AVAILABLE:
+        return deliverable
+
     meeting = meeting_repository.get_meeting_with_owner(deliverable.meeting_id)
 
     try:
